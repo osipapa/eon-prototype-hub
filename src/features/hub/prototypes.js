@@ -152,17 +152,51 @@ const BUILDERS = {
   dashboard: (args, theme, media) => dashboard({ theme, ...args, media }),
 };
 
-// Render a project to HTML. Uploaded prototype_html wins; else a built-in
-// builder by slug; else a friendly placeholder.
-export function renderStory(project, theme, media = {}) {
-  if (project?.prototype_html) return project.prototype_html;
+// Render a project to HTML. Uploaded prototype_html wins (decorated so the hub's
+// theme + control args reach it); else a built-in builder by slug; else a
+// friendly placeholder. `args` overrides the stored defaults (live controls).
+export function renderStory(project, theme, media = {}, args) {
+  const a = args || currentArgs(project);
+  if (project?.prototype_html) return decorateUploadedHtml(project.prototype_html, theme, a);
   const builder = BUILDERS[project?.slug];
-  if (builder) return builder(currentArgs(project), theme, media);
+  if (builder) return builder(a, theme, media);
   const p = proto(theme);
   return docWrap(
     `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:${p.muted};font-family:sans-serif;text-align:center;padding:40px">
        <div><div style="font-size:16px;color:${p.text};font-weight:600">No prototype uploaded</div>
        <div style="font-size:13px;margin-top:6px">Add prototype_html to this project or match a built-in builder.</div></div></div>`, p);
+}
+
+// Uploaded HTML is arbitrary, so we can't restyle it — but we can drive the
+// theming/state hooks it's most likely to read. This prepends a script (runs
+// before the prototype's own scripts) that reflects the hub's theme + args onto
+// the document: `.dark`/`.light` class, data-theme / data-color-mode, CSS
+// color-scheme, a forced prefers-color-scheme via matchMedia, and each control
+// value as data-<key> plus window.__story = { theme, args }.
+export function decorateUploadedHtml(html, theme, args = {}) {
+  const s = JSON.stringify({ theme, args });
+  const script = `<script>(function(){var s=${s};
+function apply(){[document.documentElement,document.body].forEach(function(el){if(!el)return;el.classList.remove('light','dark');el.classList.add(s.theme);el.setAttribute('data-theme',s.theme);el.setAttribute('data-color-mode',s.theme);});
+if(document.documentElement){document.documentElement.style.colorScheme=s.theme;Object.keys(s.args||{}).forEach(function(k){document.documentElement.setAttribute('data-'+k,String(s.args[k]));});}}
+try{var mm=window.matchMedia?window.matchMedia.bind(window):null;window.matchMedia=function(q){if(/prefers-color-scheme/i.test(q)){var asksDark=/dark/i.test(q),isDark=s.theme==='dark',m=asksDark?isDark:!isDark;return{matches:m,media:q,onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false;}};}return mm?mm(q):{matches:false,media:q,onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false;}};};}catch(e){}
+window.__story=s;apply();document.addEventListener('DOMContentLoaded',apply);})();</script>`;
+  if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => m + script);
+  if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (m) => m + script);
+  return script + html;
+}
+
+// All combinations of a story's controls, e.g. plan×state -> [{plan,state},...].
+// Returns null when the story has no controls.
+export function stateCombos(project, cap = 16) {
+  const controls = project?.controls || [];
+  if (!controls.length) return null;
+  let out = [{}];
+  for (const ctrl of controls) {
+    const next = [];
+    for (const acc of out) for (const opt of ctrl.options || []) next.push({ ...acc, [ctrl.key]: opt });
+    out = next;
+  }
+  return out.slice(0, cap);
 }
 
 // helper: merge a project's stored defaults (used when no live args passed)

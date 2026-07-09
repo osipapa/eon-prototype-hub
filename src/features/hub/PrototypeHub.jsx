@@ -8,8 +8,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Search, Monitor, Laptop, Tablet, Smartphone, Sun, Moon, Maximize2, ExternalLink,
   Figma, CircleDot, ChevronDown, Link2, FileText, Plus, Shield, LogOut, Upload, Trash2,
+  Square, LayoutGrid,
 } from "lucide-react";
-import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, renderStory, currentArgs } from "./prototypes";
+import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, renderStory, currentArgs, stateCombos } from "./prototypes";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 
@@ -22,6 +23,8 @@ export default function PrototypeHub({
   const [view, setView] = useState("stories");
   const [activeId, setActiveId] = useState(projects[0]?.id);
   const [viewport, setViewport] = useState("laptop");
+  const [layout, setLayout] = useState("single"); // single | grid
+  const [gridBy, setGridBy] = useState("states"); // states | themes | screens
   const [query, setQuery] = useState("");
   const [canvasBg, setCanvasBg] = useState("#808080");
   const [liveArgs, setLiveArgs] = useState({}); // {projectId: {key:val}} ephemeral
@@ -47,7 +50,7 @@ export default function PrototypeHub({
   const media = { eonLogo: assets.eonLogo, acmeLogo: assets.acmeLogo };
 
   const html = useMemo(
-    () => (story ? renderStory(story, protoTheme, media) : ""),
+    () => (story ? renderStory(story, protoTheme, media, args) : ""),
     [story, args, protoTheme, media.eonLogo, media.acmeLogo]
   );
   const scale = useMemo(() => Math.min(760 / vp.w, 460 / vp.h, 1), [viewport]);
@@ -71,6 +74,9 @@ export default function PrototypeHub({
       </div>
     );
   }
+
+  const gridOptions = (story.controls || []).length ? ["states", "themes", "screens"] : ["themes", "screens"];
+  const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
 
   const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR["Exploration"];
   const isFigma = /figma\.com/i.test(story.figma_url || "") && !/REPLACE/i.test(story.figma_url || "");
@@ -194,6 +200,17 @@ export default function PrototypeHub({
                 );
               })}
             </div>
+            <div style={{ display: "flex", gap: 2, background: c.raised, borderRadius: 8, padding: 3, border: `1px solid ${c.border}` }}>
+              {[["single", Square, "Single view"], ["grid", LayoutGrid, "All states"]].map(([k, Icon, label]) => {
+                const on = layout === k;
+                return (
+                  <button key={k} onClick={() => setLayout(k)} title={label} aria-label={label} aria-pressed={on}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 28, borderRadius: 6, border: "none", cursor: "pointer", background: on ? c.panel : "transparent", color: on ? c.brand : c.muted }}>
+                    <Icon style={{ width: 15, height: 15 }} />
+                  </button>
+                );
+              })}
+            </div>
             <button onClick={() => setHubTheme(hubTheme === "dark" ? "light" : "dark")} title="Interface theme"
               aria-label={`Switch to ${hubTheme === "dark" ? "light" : "dark"} interface theme`}
               style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${c.border}`, background: c.panel, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -215,26 +232,43 @@ export default function PrototypeHub({
               onCancel={() => setShowUpload(false)} />
           )}
 
-          {/* canvas + floating controls */}
-          <div style={{ position: "relative", background: canvasBg, minHeight: 540, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 24px 88px" }}>
-            <div style={{ width: vp.w * scale, height: vp.h * scale, flexShrink: 0 }}>
-              <iframe key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`} title={story.title} srcDoc={html}
-                style={{ width: vp.w, height: vp.h, border: "none", borderRadius: 10, background: "#fff", transform: `scale(${scale})`, transformOrigin: "top left", boxShadow: "0 12px 48px rgba(0,0,0,.28)" }} />
-            </div>
+          {/* canvas (single) or all-states grid + shared floating controls */}
+          <div style={{ position: "relative", background: canvasBg, minHeight: 540, display: "flex", alignItems: layout === "single" ? "center" : "flex-start", justifyContent: "center", padding: "32px 24px 88px" }}>
+            {layout === "single" ? (
+              <div style={{ width: vp.w * scale, height: vp.h * scale, flexShrink: 0 }}>
+                <iframe key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`} title={story.title} srcDoc={html}
+                  style={{ width: vp.w, height: vp.h, border: "none", borderRadius: 10, background: "#fff", colorScheme: protoTheme, transform: `scale(${scale})`, transformOrigin: "top left", boxShadow: "0 12px 48px rgba(0,0,0,.28)" }} />
+              </div>
+            ) : (
+              <StateGrid c={c} story={story} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
+            )}
             <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 14, background: c.panel, border: `1px solid ${c.border}`, borderRadius: 100, padding: "8px 14px", boxShadow: "0 8px 30px rgba(0,0,0,.35)", maxWidth: "92%", flexWrap: "wrap", justifyContent: "center" }}>
-              {(story.controls || []).map((ctrl, i) => (
+              {layout === "single" && (story.controls || []).map((ctrl, i) => (
                 <div key={ctrl.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {i > 0 && <span style={{ width: 1, height: 20, background: c.border }} />}
                   <span style={{ fontSize: 12, color: c.muted }}>{ctrl.label}</span>
                   {seg(ctrl.options, args[ctrl.key], (o) => setArg(ctrl.key, o))}
                 </div>
               ))}
-              {(story.controls || []).length > 0 && <span style={{ width: 1, height: 20, background: c.border }} />}
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 12, color: c.muted }}>Theme</span>
-                {seg(["light", "dark"], protoTheme, setProtoTheme)}
-              </div>
-              <span style={{ width: 1, height: 20, background: c.border }} />
+              {layout === "single" && (story.controls || []).length > 0 && <span style={{ width: 1, height: 20, background: c.border }} />}
+              {layout === "grid" && (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 12, color: c.muted }}>Lay out by</span>
+                    {seg(gridOptions, effGridBy, setGridBy)}
+                  </div>
+                  <span style={{ width: 1, height: 20, background: c.border }} />
+                </>
+              )}
+              {!(layout === "grid" && effGridBy === "themes") && (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 12, color: c.muted }}>Theme</span>
+                    {seg(["light", "dark"], protoTheme, setProtoTheme)}
+                  </div>
+                  <span style={{ width: 1, height: 20, background: c.border }} />
+                </>
+              )}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 12, color: c.muted }}>Canvas</span>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
@@ -290,6 +324,44 @@ export default function PrototypeHub({
           </div>
         </>)}
       </div>
+    </div>
+  );
+}
+
+/* ---- All-states grid. `by` fans out over control states, light/dark themes,
+   or every viewport — each combination rendered in its own labeled tile. ---- */
+function StateGrid({ c, story, media, theme, viewport, by }) {
+  const base = currentArgs(story);
+  let tiles;
+  if (by === "themes") {
+    tiles = ["light", "dark"].map((t) => ({ key: `t-${t}`, label: t, sub: null, theme: t, viewport, args: base }));
+  } else if (by === "screens") {
+    tiles = Object.keys(VIEWPORTS).map((v) => ({ key: `v-${v}`, label: VIEWPORTS[v].label, sub: `${VIEWPORTS[v].w}×${VIEWPORTS[v].h}`, theme, viewport: v, args: base }));
+  } else {
+    const combos = stateCombos(story) || [{}];
+    tiles = combos.map((combo) => ({ key: JSON.stringify(combo), label: Object.values(combo).join(" · ") || "Default", sub: theme, theme, viewport, args: { ...base, ...combo } }));
+  }
+
+  const TILE_W = 360;
+
+  return (
+    <div style={{ width: "100%", display: "flex", flexWrap: "wrap", gap: 20, alignContent: "flex-start" }}>
+      {tiles.map((tile) => {
+        const tvp = VIEWPORTS[tile.viewport];
+        const s = Math.min(TILE_W / tvp.w, 1);
+        return (
+          <div key={tile.key} style={{ display: "flex", flexDirection: "column", gap: 8, width: TILE_W }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 500, color: c.text, background: c.panel, border: `1px solid ${c.border}`, borderRadius: 6, padding: "3px 8px", textTransform: "capitalize" }}>{tile.label}</span>
+              {tile.sub && <span style={{ fontSize: 11, color: c.muted, textTransform: "capitalize" }}>{tile.sub}</span>}
+            </div>
+            <div style={{ width: TILE_W, height: tvp.h * s, borderRadius: 10, overflow: "hidden", border: `1px solid ${c.border}`, background: "#fff", boxShadow: "0 8px 30px rgba(0,0,0,.22)" }}>
+              <iframe title={tile.label} srcDoc={renderStory(story, tile.theme, media, tile.args)}
+                style={{ width: tvp.w, height: tvp.h, border: "none", background: "#fff", colorScheme: tile.theme, transform: `scale(${s})`, transformOrigin: "top left" }} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -374,6 +446,12 @@ function UploadPanel({ c, story, onSave, onClear, onCancel }) {
         placeholder="…or paste a self-contained HTML document here"
         aria-label="Prototype HTML source"
         style={{ minHeight: 160, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 8 }} />
+      <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5 }}>
+        Theme tip: the hub sets <code style={{ color: c.text }}>class="dark"/"light"</code> and{" "}
+        <code style={{ color: c.text }}>data-theme</code> on <code style={{ color: c.text }}>&lt;html&gt;</code>, exposes{" "}
+        <code style={{ color: c.text }}>window.__story</code>, and forces <code style={{ color: c.text }}>prefers-color-scheme</code> for JS.
+        Style against those (or Tailwind <code style={{ color: c.text }}>dark:</code>) so the Theme toggle drives your prototype — hardcoded colors won't switch.
+      </p>
       {err && <div role="alert" style={{ fontSize: 12, color: "#FF508F" }}>{err}</div>}
       <div style={{ display: "flex", gap: 8 }}>
         <Button onClick={() => html.trim() && onSave(html)} disabled={!html.trim()}
