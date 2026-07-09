@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { fetchLinearIssue } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -276,15 +277,7 @@ export default function PrototypeHub({
                     <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/..." style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
                     <button onClick={() => story.issue_url && window.open(story.issue_url, "_blank")} aria-label="Open Linear issue in a new tab" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
                   </div>
-                  <div style={{ height: 300, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{story.issue_id || "ISSUE"}</span>
-                      <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500, fontSize: 11 }}>{story.status}</Badge>
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 500, marginTop: 12 }}>{story.title} — design + build</div>
-                    <div style={{ fontSize: 13, color: c.secondary, marginTop: 6, lineHeight: 1.5, flex: 1 }}>{(story.notes || "").slice(0, 160)}{(story.notes || "").length > 160 ? "…" : ""}</div>
-                    <div style={{ fontSize: 11, color: c.muted, paddingTop: 12, borderTop: `1px solid ${c.border}` }}>Connect Linear to pull live title, status, and assignee.</div>
-                  </div>
+                  <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} />
                 </div>
               </div>
             </div>
@@ -296,6 +289,44 @@ export default function PrototypeHub({
             </div>
           </div>
         </>)}
+      </div>
+    </div>
+  );
+}
+
+/* ---- Linear issue card: live via edge function, static preview fallback ---- */
+function LinearCard({ c, story, sc0, sc1 }) {
+  const [live, setLive] = useState(null);
+
+  useEffect(() => {
+    let stale = false;
+    setLive(null);
+    if (story.issue_id) {
+      fetchLinearIssue(story.issue_id).then((issue) => { if (!stale) setLive(issue); });
+    }
+    return () => { stale = true; };
+  }, [story.id, story.issue_id]);
+
+  const stateColor = live?.state?.color;
+  return (
+    <div style={{ height: 300, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{live?.identifier || story.issue_id || "ISSUE"}</span>
+        {live?.state
+          ? <Badge style={{ background: stateColor ? `${stateColor}26` : c.raised, color: stateColor || c.text, border: "none", fontWeight: 500, fontSize: 11 }}>{live.state.name}</Badge>
+          : <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500, fontSize: 11 }}>{story.status}</Badge>}
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 500, marginTop: 12 }}>
+        {live ? live.title : `${story.title} — design + build`}
+      </div>
+      {live?.assignee && (
+        <div style={{ fontSize: 12, color: c.muted, marginTop: 6 }}>Assigned to {live.assignee.displayName || live.assignee.name}</div>
+      )}
+      <div style={{ fontSize: 13, color: c.secondary, marginTop: 6, lineHeight: 1.5, flex: 1 }}>{(story.notes || "").slice(0, 160)}{(story.notes || "").length > 160 ? "…" : ""}</div>
+      <div style={{ fontSize: 11, color: c.muted, paddingTop: 12, borderTop: `1px solid ${c.border}` }}>
+        {live
+          ? `Live from Linear — updated ${new Date(live.updatedAt).toLocaleDateString()}`
+          : "Live Linear data appears here once LINEAR_API_KEY is set in Supabase edge function secrets."}
       </div>
     </div>
   );

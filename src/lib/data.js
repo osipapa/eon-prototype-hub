@@ -96,3 +96,15 @@ export async function removeInvite(email) {
   const { error } = await supabase.from("invites").delete().eq("email", email);
   if (error) throw error;
 }
+
+/* Linear ----------------------------------------------------------------------
+   Server-side read via the linear-issue edge function (token stays in Supabase
+   secrets). Returns null when the function isn't configured or the issue isn't
+   found, so callers can fall back to the static preview. */
+export async function fetchLinearIssue(issueId) {
+  const { data, error } = await supabase.functions.invoke("linear-issue", {
+    body: { issueId },
+  });
+  if (error || data?.error) return null;
+  return data?.issue ?? null;
+}
