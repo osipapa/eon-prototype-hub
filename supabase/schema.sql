@@ -78,28 +78,52 @@ returns boolean language sql stable security definer set search_path = public as
   select coalesce((select role = 'admin' from public.profiles where id = auth.uid()), false);
 $$;
 
--- Auto-create a profile on signup. First user becomes admin; assign to a default team.
+-- Invite-gated signup: strangers who sign up get a profile with no team,
+-- which RLS resolves to zero data access. Admins pre-approve emails here.
+create table if not exists public.invites (
+  email text primary key,
+  team_id uuid not null references public.teams(id) on delete cascade,
+  role text not null default 'member' check (role in ('admin', 'member')),
+  invited_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+-- Auto-create a profile on signup. First user becomes admin of the default
+-- team; later signups only join a team if their email was invited.
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
   default_team uuid;
   user_count int;
+  inv record;
 begin
-  select id into default_team from public.teams order by created_at asc limit 1;
-  if default_team is null then
-    insert into public.teams (name) values ('Design') returning id into default_team;
+  select count(*) into user_count from public.profiles;
+
+  if user_count = 0 then
+    select id into default_team from public.teams order by created_at asc limit 1;
+    if default_team is null then
+      insert into public.teams (name) values ('Design') returning id into default_team;
+    end if;
+    insert into public.profiles (id, email, full_name, role, team_id)
+    values (new.id, new.email, coalesce(new.raw_user_meta_data->>'full_name', new.email), 'admin', default_team);
+    return new;
   end if;
 
-  select count(*) into user_count from public.profiles;
+  select * into inv from public.invites where lower(email) = lower(new.email);
 
   insert into public.profiles (id, email, full_name, role, team_id)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', new.email),
-    case when user_count = 0 then 'admin' else 'member' end,
-    default_team
+    coalesce(inv.role, 'member'),
+    inv.team_id  -- null when not invited
   );
+
+  if inv.email is not null then
+    delete from public.invites where lower(email) = lower(new.email);
+  end if;
+
   return new;
 end;
 $$;
@@ -145,6 +169,15 @@ alter table public.teams    enable row level security;
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
 alter table public.assets   enable row level security;
+alter table public.invites  enable row level security;
+
+-- invites: team members read; admins manage.
+create policy "team read invites" on public.invites for select
+  using (team_id = public.current_team_id());
+create policy "admin insert invites" on public.invites for insert
+  with check (public.is_admin() and team_id = public.current_team_id());
+create policy "admin delete invites" on public.invites for delete
+  using (public.is_admin() and team_id = public.current_team_id());
 
 -- teams: members can read their own team; admins can update it.
 create policy "read own team" on public.teams for select
