@@ -71,3 +71,28 @@ export async function setProfileRole(id, role) {
   const { error } = await supabase.from("profiles").update({ role }).eq("id", id);
   if (error) throw error;
 }
+
+/* Invites (admin) -------------------------------------------------------------
+   Signup is invite-gated: uninvited accounts get no team and see no data.
+   The `invite` edge function upserts the row and emails the invite, keeping
+   the service_role key server-side. */
+export async function listInvites() {
+  const { data, error } = await supabase
+    .from("invites").select("*").order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function sendInvite(email, role = "member") {
+  const { data, error } = await supabase.functions.invoke("invite", {
+    body: { email, role, redirectTo: window.location.origin + window.location.pathname },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+export async function removeInvite(email) {
+  const { error } = await supabase.from("invites").delete().eq("email", email);
+  if (error) throw error;
+}
