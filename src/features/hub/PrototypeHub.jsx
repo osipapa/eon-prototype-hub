@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, memo } from "react";
 import { fetchLinearIssue } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,31 @@ export default function PrototypeHub({
   const [showUpload, setShowUpload] = useState(false);
   const [dragId, setDragId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
+
+  // Resizable layout, persisted per browser.
+  const [canvasH, setCanvasH] = useState(() => Number(localStorage.getItem("eon.canvasH")) || 560);
+  const [linksSplit, setLinksSplit] = useState(() => Number(localStorage.getItem("eon.linksSplit")) || 0.62);
+  const linksRowRef = useRef(null);
+  const [resizeHover, setResizeHover] = useState(false);
+  useEffect(() => { localStorage.setItem("eon.canvasH", String(canvasH)); }, [canvasH]);
+  useEffect(() => { localStorage.setItem("eon.linksSplit", String(linksSplit)); }, [linksSplit]);
+
+  // Generic mouse-drag helper: onMove(dx, dy) until mouseup.
+  const startDrag = (e, onMove) => {
+    e.preventDefault();
+    const x0 = e.clientX, y0 = e.clientY;
+    const move = (ev) => onMove(ev.clientX - x0, ev.clientY - y0, ev);
+    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); document.body.style.userSelect = ""; };
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+  const startCanvasResize = (e) => { const h0 = canvasH; startDrag(e, (_dx, dy) => setCanvasH(Math.min(1600, Math.max(320, h0 + dy)))); };
+  const startLinksResize = (e) => {
+    const row = linksRowRef.current; if (!row) return;
+    const rect = row.getBoundingClientRect();
+    startDrag(e, (_dx, _dy, ev) => setLinksSplit(Math.min(0.8, Math.max(0.3, (ev.clientX - rect.left) / rect.width))));
+  };
 
   // Drop the dragged story in front of the target, adopting the target's group.
   const handleDrop = (targetId) => {
@@ -79,8 +104,9 @@ export default function PrototypeHub({
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
 
   const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR["Exploration"];
+  // Linear identifier like "DES-418", parsed from the issue URL (falls back to issue_id).
+  const linearId = story.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story.issue_id || null;
   const isFigma = /figma\.com/i.test(story.figma_url || "") && !/REPLACE/i.test(story.figma_url || "");
-  const figmaEmbed = `https://www.figma.com/embed?embed_host=eon-hub&url=${encodeURIComponent(story.figma_url || "")}`;
 
   const setArg = (key, val) => setLiveArgs((p) => ({ ...p, [story.id]: { ...p[story.id], [key]: val } }));
   const patch = (field, val) => onPatchProject(story.id, { [field]: val });
@@ -233,7 +259,8 @@ export default function PrototypeHub({
           )}
 
           {/* canvas (single) or all-states grid + shared floating controls */}
-          <div style={{ position: "relative", background: canvasBg, minHeight: 540, display: "flex", alignItems: layout === "single" ? "center" : "flex-start", justifyContent: "center", padding: "32px 24px 88px" }}>
+          <div style={{ position: "relative" }}>
+            <div style={{ height: canvasH, overflow: "auto", background: canvasBg, display: "flex", alignItems: layout === "single" ? "center" : "flex-start", justifyContent: "center", padding: "32px 24px 88px" }}>
             {layout === "single" ? (
               <div style={{ width: vp.w * scale, height: vp.h * scale, flexShrink: 0 }}>
                 <iframe key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`} title={story.title} srcDoc={html}
@@ -242,6 +269,7 @@ export default function PrototypeHub({
             ) : (
               <StateGrid c={c} story={story} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
             )}
+            </div>
             <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 14, background: c.panel, border: `1px solid ${c.border}`, borderRadius: 100, padding: "8px 14px", boxShadow: "0 8px 30px rgba(0,0,0,.35)", maxWidth: "92%", flexWrap: "wrap", justifyContent: "center" }}>
               {layout === "single" && (story.controls || []).map((ctrl, i) => (
                 <div key={ctrl.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -282,36 +310,47 @@ export default function PrototypeHub({
                 </div>
               </div>
             </div>
+            <div onMouseDown={startCanvasResize} onMouseEnter={() => setResizeHover(true)} onMouseLeave={() => setResizeHover(false)}
+              title="Drag to resize canvas" role="separator" aria-orientation="horizontal"
+              style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 16, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 6 }}>
+              <div style={{ width: 46, height: 5, borderRadius: 3, background: resizeHover ? c.brand : "transparent", transition: "background .15s" }} />
+            </div>
           </div>
 
           {/* links + docs */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: 20 }}>
             <div style={{ background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, fontSize: 14, fontWeight: 500 }}><Link2 style={{ width: 15, height: 15, color: c.muted }} /> Links</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div ref={linksRowRef} style={{ display: "flex", alignItems: "stretch" }}>
                 {/* figma */}
-                <div>
+                <div style={{ flexBasis: `${linksSplit * 100}%`, minWidth: 200, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: 12, color: c.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}><Figma style={{ width: 13, height: 13, color: c.brand }} /> Figma frame</div>
                   <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
                     <Input value={story.figma_url || ""} onChange={(e) => patch("figma_url", e.target.value)} placeholder="Paste a Figma URL"
                       style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
-                    <button onClick={() => isFigma && window.open(story.figma_url, "_blank")} aria-label="Open Figma link in a new tab" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
+                    <button onClick={() => story.figma_url && window.open(story.figma_url, "_blank")} aria-label="Open Figma link in a new tab" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
                   </div>
-                  <div style={{ height: 300, borderRadius: 12, overflow: "hidden", border: `1px solid ${c.border}`, background: c.bg }}>
+                  <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px solid ${c.border}`, background: c.bg }}>
                     {isFigma
-                      ? <iframe title="Figma preview" src={figmaEmbed} allowFullScreen style={{ width: "100%", height: "100%", border: "none" }} />
-                      : <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20 }}><Figma style={{ width: 22, height: 22, color: c.muted }} /><div style={{ fontSize: 13, color: c.text }}>No Figma frame linked</div><div style={{ fontSize: 12, color: c.muted }}>Paste a share URL to embed a live preview.</div></div>}
+                      ? <FigmaEmbed url={story.figma_url} />
+                      : story.figma_url
+                        ? <a href={story.figma_url} target="_blank" rel="noreferrer" style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20, color: c.text, textDecoration: "none" }}><Figma style={{ width: 22, height: 22, color: c.brand }} /><div style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>Open in Figma <ExternalLink style={{ width: 12, height: 12 }} /></div><div style={{ fontSize: 12, color: c.muted, wordBreak: "break-all" }}>{story.figma_url}</div></a>
+                        : <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20 }}><Figma style={{ width: 22, height: 22, color: c.muted }} /><div style={{ fontSize: 13, color: c.text }}>No Figma frame linked</div><div style={{ fontSize: 12, color: c.muted }}>Paste a share URL to embed a live preview.</div></div>}
                   </div>
                 </div>
+                {/* resizer */}
+                <div onMouseDown={startLinksResize} title="Drag to resize" role="separator" aria-orientation="vertical"
+                  style={{ width: 16, flexShrink: 0, alignSelf: "stretch", cursor: "col-resize", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 3, height: 44, borderRadius: 3, background: c.border }} />
+                </div>
                 {/* linear */}
-                <div>
+                <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: 12, color: c.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}><CircleDot style={{ width: 13, height: 13, color: "#5E6AD2" }} /> Linear issue</div>
                   <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                    <Input value={story.issue_id || ""} onChange={(e) => patch("issue_id", e.target.value)} placeholder="PRO-12" style={{ height: 34, width: 88, flexShrink: 0, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
-                    <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/..." style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
+                    <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/…/issue/DES-418/…" style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
                     <button onClick={() => story.issue_url && window.open(story.issue_url, "_blank")} aria-label="Open Linear issue in a new tab" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
                   </div>
-                  <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} />
+                  <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} identifier={linearId} issueUrl={story.issue_url} />
                 </div>
               </div>
             </div>
@@ -366,27 +405,38 @@ function StateGrid({ c, story, media, theme, viewport, by }) {
   );
 }
 
-/* ---- Linear issue card: live via edge function, static preview fallback ---- */
-function LinearCard({ c, story, sc0, sc1 }) {
+/* ---- Figma embed, memoized on the URL so it doesn't reload on every parent
+   re-render (typing notes, toggling theme, realtime updates). ---- */
+const FigmaEmbed = memo(function FigmaEmbed({ url }) {
+  const src = `https://www.figma.com/embed?embed_host=eon-hub&url=${encodeURIComponent(url)}`;
+  return <iframe title="Figma preview" src={src} allowFullScreen style={{ width: "100%", height: "100%", border: "none", display: "block" }} />;
+});
+
+/* ---- Linear issue card: live via edge function, static preview fallback.
+   The whole card links to the issue. ---- */
+function LinearCard({ c, story, sc0, sc1, identifier, issueUrl }) {
   const [live, setLive] = useState(null);
 
   useEffect(() => {
     let stale = false;
     setLive(null);
-    if (story.issue_id) {
-      fetchLinearIssue(story.issue_id).then((issue) => { if (!stale) setLive(issue); });
+    if (identifier) {
+      fetchLinearIssue(identifier).then((issue) => { if (!stale) setLive(issue); });
     }
     return () => { stale = true; };
-  }, [story.id, story.issue_id]);
+  }, [story.id, identifier]);
 
   const stateColor = live?.state?.color;
+  const clickable = Boolean(issueUrl);
   return (
-    <div style={{ height: 300, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column" }}>
+    <a href={issueUrl || undefined} target={clickable ? "_blank" : undefined} rel="noreferrer"
+      style={{ height: 360, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column", textDecoration: "none", color: c.text, cursor: clickable ? "pointer" : "default" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{live?.identifier || story.issue_id || "ISSUE"}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{live?.identifier || identifier || "ISSUE"}</span>
         {live?.state
           ? <Badge style={{ background: stateColor ? `${stateColor}26` : c.raised, color: stateColor || c.text, border: "none", fontWeight: 500, fontSize: 11 }}>{live.state.name}</Badge>
           : <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500, fontSize: 11 }}>{story.status}</Badge>}
+        {clickable && <ExternalLink style={{ width: 13, height: 13, color: c.muted, marginLeft: "auto" }} />}
       </div>
       <div style={{ fontSize: 15, fontWeight: 500, marginTop: 12 }}>
         {live ? live.title : `${story.title} — design + build`}
@@ -394,13 +444,15 @@ function LinearCard({ c, story, sc0, sc1 }) {
       {live?.assignee && (
         <div style={{ fontSize: 12, color: c.muted, marginTop: 6 }}>Assigned to {live.assignee.displayName || live.assignee.name}</div>
       )}
-      <div style={{ fontSize: 13, color: c.secondary, marginTop: 6, lineHeight: 1.5, flex: 1 }}>{(story.notes || "").slice(0, 160)}{(story.notes || "").length > 160 ? "…" : ""}</div>
+      <div style={{ fontSize: 13, color: c.secondary, marginTop: 6, lineHeight: 1.5, flex: 1 }}>{(story.notes || "").slice(0, 200)}{(story.notes || "").length > 200 ? "…" : ""}</div>
       <div style={{ fontSize: 11, color: c.muted, paddingTop: 12, borderTop: `1px solid ${c.border}` }}>
         {live
           ? `Live from Linear — updated ${new Date(live.updatedAt).toLocaleDateString()}`
-          : "Live Linear data appears here once LINEAR_API_KEY is set in Supabase edge function secrets."}
+          : identifier
+            ? "Live title/status/assignee appear here once LINEAR_API_KEY is set in Supabase secrets."
+            : "Paste a Linear issue URL to link it."}
       </div>
-    </div>
+    </a>
   );
 }
 

@@ -1,7 +1,8 @@
 // Reads a Linear issue server-side so the Linear API token never reaches the
 // client. Callers must be signed-in team members. Configure with:
-//   supabase secrets set LINEAR_API_KEY=lin_api_...
+//   Supabase dashboard → Edge Functions → Secrets → LINEAR_API_KEY = lin_api_...
 // Until then this returns 501 and the app falls back to its static card.
+// Looks up by human identifier (e.g. "DES-418") via team key + issue number.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
@@ -21,8 +22,13 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
   try {
-    const { issueId } = await req.json();
-    if (!issueId || typeof issueId !== "string") return json({ error: "issueId required" }, 400);
+    const body = await req.json();
+    const id = body.identifier || body.issueId;
+    if (!id || typeof id !== "string") return json({ error: "identifier required" }, 400);
+    const m = id.match(/^([A-Za-z][A-Za-z0-9]*)-(\d+)$/);
+    if (!m) return json({ error: "identifier must look like TEAM-123" }, 400);
+    const teamKey = m[1].toUpperCase();
+    const number = Number(m[2]);
 
     const caller = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -47,18 +53,16 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: token },
       body: JSON.stringify({
-        query: `query Issue($id: String!) {
-          issue(id: $id) {
-            identifier title url updatedAt
-            state { name color type }
-            assignee { name displayName }
+        query: `query Issue($team: String!, $number: Float!) {
+          issues(filter: { team: { key: { eq: $team } }, number: { eq: $number } }, first: 1) {
+            nodes { identifier title url updatedAt state { name color type } assignee { name displayName } }
           }
         }`,
-        variables: { id: issueId },
+        variables: { team: teamKey, number },
       }),
     });
     const payload = await res.json();
-    const issue = payload?.data?.issue;
+    const issue = payload?.data?.issues?.nodes?.[0];
     if (!issue) return json({ error: payload?.errors?.[0]?.message ?? "issue not found" }, 404);
     return json({ issue });
   } catch (e) {
