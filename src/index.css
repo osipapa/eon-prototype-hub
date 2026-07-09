@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* shadcn tokens. Dark is the default for this app. Values approximate the Eon
+   design system (near-black surfaces, pinkling brand). */
+@layer base {
+  :root {
+    --background: 240 6% 5%;
+    --foreground: 0 0% 100%;
+    --card: 240 8% 8%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 8% 8%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 288 79% 89%;         /* baby-elephant #EDD2F6 */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 240 5% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 5% 12%;
+    --muted-foreground: 230 8% 61%; /* #9094A5 */
+    --accent: 289 89% 66%;          /* pinkling #E15CF7 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 336 100% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 12%;
+    --input: 240 6% 18%;
+    --ring: 289 89% 66%;
+    --radius: 0.5rem;
+  }
+  .light {
+    --background: 240 40% 98%;
+    --foreground: 240 6% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 6% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 6% 12%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 20% 96%;
+    --secondary-foreground: 240 6% 12%;
+    --muted: 240 20% 96%;
+    --muted-foreground: 230 9% 38%;
+    --accent: 289 100% 48%;         /* #D400F7 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 336 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 228 27% 89%;
+    --input: 228 27% 89%;
+    --ring: 289 100% 48%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; font-family: "DM Sans", sans-serif; }
+}
