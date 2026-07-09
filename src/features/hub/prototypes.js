@@ -28,7 +28,7 @@ export const STATUS_COLOR = {
   "Shipped": ["rgba(111,236,123,0.15)", "#6FEC7B"],
 };
 
-export const CANVAS_PRESETS = ["#FFFFFF", "#E5E7EB", "#808080", "#3F3F46", "#000000"];
+export const CANVAS_PRESETS = ["#FFFFFF", "#000000"];
 
 export const MEDIA = {
   logos: {

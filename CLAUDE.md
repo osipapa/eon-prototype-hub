@@ -1,4 +1,16 @@
-# CLAUDE.md — build + ship the Eon Prototype Hub
+# CLAUDE.md — Eon Prototype Hub
+
+> **STATUS: already built, deployed, and live.** The app runs against a shared Supabase
+> project and auto-deploys to GitHub Pages from `main`
+> (https://osipapa.github.io/eon-prototype-hub/). The from-scratch build steps below are
+> **complete** — do not re-run them.
+>
+> **Joining the team?** Read [CONTRIBUTING.md](CONTRIBUTING.md) and run `npm run setup`.
+> That connects you to the shared backend and installs everything in one command.
+
+---
+
+The following is the original build brief, kept for reference.
 
 This repo is a scaffold. Your job is to install dependencies, generate the shadcn/ui
 components, wire up Supabase, run it locally, and deploy to GitHub Pages. Everything

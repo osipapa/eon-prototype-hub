@@ -210,7 +210,7 @@ export default function PrototypeHub({
         {view === "media" && <MediaManager c={c} assets={assets} onSetAsset={onSetAsset} />}
         {view === "stories" && (<>
           {/* toolbar */}
-          <div style={{ height: 56, borderBottom: `1px solid ${c.border}`, background: c.nav, display: "flex", alignItems: "center", gap: 12, padding: "0 16px", flexShrink: 0, position: "sticky", top: 0, zIndex: 5 }}>
+          <div className="eon-toolbar" style={{ minHeight: 56, borderBottom: `1px solid ${c.border}`, background: c.nav, display: "flex", alignItems: "center", gap: 12, padding: "0 16px", flexShrink: 0, position: "sticky", top: 0, zIndex: 5 }}>
             <span style={{ fontSize: 15, fontWeight: 500 }}>{story.title}</span>
             <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500 }}>{story.status}</Badge>
             <div style={{ flex: 1 }} />
@@ -270,11 +270,11 @@ export default function PrototypeHub({
               <StateGrid c={c} story={story} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
             )}
             </div>
-            <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", gap: 14, background: c.panel, border: `1px solid ${c.border}`, borderRadius: 100, padding: "8px 14px", boxShadow: "0 8px 30px rgba(0,0,0,.35)", maxWidth: "92%", flexWrap: "wrap", justifyContent: "center" }}>
+            <div className="eon-ctlbar" style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", background: c.panel, border: `1px solid ${c.border}`, borderRadius: 100, boxShadow: "0 8px 30px rgba(0,0,0,.35)", maxWidth: "94%", flexWrap: "wrap", justifyContent: "center" }}>
               {layout === "single" && (story.controls || []).map((ctrl, i) => (
                 <div key={ctrl.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {i > 0 && <span style={{ width: 1, height: 20, background: c.border }} />}
-                  <span style={{ fontSize: 12, color: c.muted }}>{ctrl.label}</span>
+                  <span className="eon-ctl-label" style={{ fontSize: 12, color: c.muted }}>{ctrl.label}</span>
                   {seg(ctrl.options, args[ctrl.key], (o) => setArg(ctrl.key, o))}
                 </div>
               ))}
@@ -282,7 +282,7 @@ export default function PrototypeHub({
               {layout === "grid" && (
                 <>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 12, color: c.muted }}>Lay out by</span>
+                    <span className="eon-ctl-label" style={{ fontSize: 12, color: c.muted }}>Lay out by</span>
                     {seg(gridOptions, effGridBy, setGridBy)}
                   </div>
                   <span style={{ width: 1, height: 20, background: c.border }} />
@@ -291,14 +291,14 @@ export default function PrototypeHub({
               {!(layout === "grid" && effGridBy === "themes") && (
                 <>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 12, color: c.muted }}>Theme</span>
+                    <span className="eon-ctl-label" style={{ fontSize: 12, color: c.muted }}>Theme</span>
                     {seg(["light", "dark"], protoTheme, setProtoTheme)}
                   </div>
                   <span style={{ width: 1, height: 20, background: c.border }} />
                 </>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 12, color: c.muted }}>Canvas</span>
+                <span className="eon-ctl-label" style={{ fontSize: 12, color: c.muted }}>Canvas</span>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   {CANVAS_PRESETS.map((bg) => (
                     <button key={bg} onClick={() => setCanvasBg(bg)} title={bg} aria-label={`Canvas background ${bg}`} aria-pressed={canvasBg === bg}
