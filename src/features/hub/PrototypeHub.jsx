@@ -104,7 +104,7 @@ export default function PrototypeHub({
           </div>
           <div style={{ position: "relative" }}>
             <Search style={{ position: "absolute", left: 10, top: 10, width: 15, height: 15, color: c.muted }} />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search stories"
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search stories" aria-label="Search stories"
               style={{ paddingLeft: 30, height: 34, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 8 }} />
           </div>
           <div style={{ display: "flex", gap: 3, marginTop: 12, background: c.raised, border: `1px solid ${c.border}`, borderRadius: 8, padding: 3 }}>
@@ -162,11 +162,11 @@ export default function PrototypeHub({
         <div style={{ borderTop: `1px solid ${c.border}`, padding: 10, display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12, color: c.muted, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</span>
           {isAdmin && (
-            <button onClick={onOpenAdmin} title="Admin" style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button onClick={onOpenAdmin} title="Admin" aria-label="Admin dashboard" style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Shield style={{ width: 14, height: 14 }} />
             </button>
           )}
-          <button onClick={onSignOut} title="Sign out" style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button onClick={onSignOut} title="Sign out" aria-label="Sign out" style={{ width: 30, height: 30, borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <LogOut style={{ width: 14, height: 14 }} />
           </button>
         </div>
@@ -186,6 +186,7 @@ export default function PrototypeHub({
                 const Icon = VP_ICON[k]; const on = viewport === k;
                 return (
                   <button key={k} onClick={() => setViewport(k)} title={VIEWPORTS[k].label}
+                    aria-label={`${VIEWPORTS[k].label} viewport`} aria-pressed={on}
                     style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 34, height: 28, borderRadius: 6, border: "none", cursor: "pointer", background: on ? c.panel : "transparent", color: on ? c.brand : c.muted }}>
                     <Icon style={{ width: 15, height: 15 }} />
                   </button>
@@ -193,6 +194,7 @@ export default function PrototypeHub({
               })}
             </div>
             <button onClick={() => setHubTheme(hubTheme === "dark" ? "light" : "dark")} title="Interface theme"
+              aria-label={`Switch to ${hubTheme === "dark" ? "light" : "dark"} interface theme`}
               style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${c.border}`, background: c.panel, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {hubTheme === "dark" ? <Sun style={{ width: 15, height: 15 }} /> : <Moon style={{ width: 15, height: 15 }} />}
             </button>
@@ -236,11 +238,11 @@ export default function PrototypeHub({
                 <span style={{ fontSize: 12, color: c.muted }}>Canvas</span>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   {CANVAS_PRESETS.map((bg) => (
-                    <button key={bg} onClick={() => setCanvasBg(bg)} title={bg}
+                    <button key={bg} onClick={() => setCanvasBg(bg)} title={bg} aria-label={`Canvas background ${bg}`} aria-pressed={canvasBg === bg}
                       style={{ width: 20, height: 20, borderRadius: 6, cursor: "pointer", background: bg, border: canvasBg === bg ? `2px solid ${c.brand}` : `1px solid ${c.border}` }} />
                   ))}
                   <label style={{ width: 20, height: 20, borderRadius: 6, cursor: "pointer", overflow: "hidden", border: `1px solid ${c.border}`, display: "block", position: "relative", background: "conic-gradient(red,yellow,lime,cyan,blue,magenta,red)" }}>
-                    <input type="color" value={canvasBg} onChange={(e) => setCanvasBg(e.target.value)} style={{ opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
+                    <input type="color" value={canvasBg} onChange={(e) => setCanvasBg(e.target.value)} aria-label="Custom canvas background color" style={{ opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
                   </label>
                 </div>
               </div>
@@ -258,7 +260,7 @@ export default function PrototypeHub({
                   <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
                     <Input value={story.figma_url || ""} onChange={(e) => patch("figma_url", e.target.value)} placeholder="Paste a Figma URL"
                       style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
-                    <button onClick={() => isFigma && window.open(story.figma_url, "_blank")} style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
+                    <button onClick={() => isFigma && window.open(story.figma_url, "_blank")} aria-label="Open Figma link in a new tab" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
                   </div>
                   <div style={{ height: 300, borderRadius: 12, overflow: "hidden", border: `1px solid ${c.border}`, background: c.bg }}>
                     {isFigma
@@ -272,7 +274,7 @@ export default function PrototypeHub({
                   <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
                     <Input value={story.issue_id || ""} onChange={(e) => patch("issue_id", e.target.value)} placeholder="PRO-12" style={{ height: 34, width: 88, flexShrink: 0, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
                     <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/..." style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
-                    <button onClick={() => story.issue_url && window.open(story.issue_url, "_blank")} style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
+                    <button onClick={() => story.issue_url && window.open(story.issue_url, "_blank")} aria-label="Open Linear issue in a new tab" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
                   </div>
                   <div style={{ height: 300, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
