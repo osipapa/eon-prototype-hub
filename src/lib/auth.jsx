@@ -36,10 +36,8 @@ export function AuthProvider({ children }) {
     isAdmin: profile?.role === "admin",
     loading,
     configured: isSupabaseConfigured,
-    signInWithEmail: (email) =>
-      supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } }),
-    signInWithGoogle: () =>
-      supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.href } }),
+    signInWithPassword: (email, password) =>
+      supabase.auth.signInWithPassword({ email, password }),
     signOut: () => supabase.auth.signOut(),
     refreshProfile: () => loadProfile(session?.user?.id),
   };

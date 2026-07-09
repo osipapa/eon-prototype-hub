@@ -1,60 +1,56 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { listProfiles, setProfileRole, listInvites, sendInvite, removeInvite } from "../lib/data";
-import { ArrowLeft, MailPlus, X } from "lucide-react";
+import { listProfiles, setProfileRole, createAccount, setAccountPassword, deleteAccount } from "../lib/data";
+import { ArrowLeft, UserPlus, KeyRound, Trash2 } from "lucide-react";
 
 export default function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
-  const [invites, setInvites] = useState([]);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("member");
-  const [inviteMsg, setInviteMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [form, setForm] = useState({ email: "", password: "", role: "member" });
 
   async function load() {
-    try {
-      const [profiles, inv] = await Promise.all([listProfiles(), listInvites()]);
-      setRows(profiles);
-      setInvites(inv);
-    } catch (e) { console.error(e); }
+    try { setRows(await listProfiles()); } catch (e) { console.error(e); }
   }
   useEffect(() => { load(); }, []);
 
-  async function changeRole(id, role) {
+  const run = async (fn, okMsg) => {
     setBusy(true);
-    try { await setProfileRole(id, role); await load(); } catch (e) { alert(e.message); }
+    setMsg("");
+    try { await fn(); setMsg(okMsg); await load(); } catch (e) { setMsg(`Error: ${e.message}`); }
     setBusy(false);
-  }
+  };
 
-  async function invite(e) {
+  const changeRole = (id, role) => run(() => setProfileRole(id, role), "Role updated.");
+
+  const addAccount = (e) => {
     e.preventDefault();
-    if (!inviteEmail) return;
-    setBusy(true);
-    setInviteMsg("");
-    try {
-      const res = await sendInvite(inviteEmail, inviteRole);
-      setInviteMsg(res?.emailSent
-        ? `Invite email sent to ${inviteEmail}.`
-        : `${inviteEmail} is approved to sign up${res?.mailError ? ` (email not sent: ${res.mailError})` : ""}.`);
-      setInviteEmail("");
-      await load();
-    } catch (err) { setInviteMsg(`Invite failed: ${err.message}`); }
-    setBusy(false);
-  }
+    run(async () => {
+      await createAccount(form.email, form.password, form.role);
+      setForm({ email: "", password: "", role: "member" });
+    }, `Account created for ${form.email}.`);
+  };
 
-  async function revoke(email) {
-    setBusy(true);
-    try { await removeInvite(email); await load(); } catch (e) { alert(e.message); }
-    setBusy(false);
-  }
+  const resetPassword = (r) => {
+    const pw = window.prompt(`New password for ${r.email} (min 8 characters):`);
+    if (!pw) return;
+    run(() => setAccountPassword(r.id, pw), `Password updated for ${r.email}.`);
+  };
+
+  const removeAccount = (r) => {
+    if (!window.confirm(`Delete the account ${r.email}? This can't be undone.`)) return;
+    run(() => deleteAccount(r.id), `Deleted ${r.email}.`);
+  };
 
   const bg = "#000", panel = "#121216", border = "#1E1E22", text = "#fff", muted = "#9094A5";
   const th = { textAlign: "left", padding: "10px 16px", fontSize: 12, fontWeight: 500, color: muted };
   const td = { padding: "12px 16px", fontSize: 14, borderTop: `1px solid ${border}` };
   const select = { background: bg, color: text, border: `1px solid ${border}`, borderRadius: 8, height: 32, padding: "0 8px" };
+  const input = { height: 36, background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: "0 12px", color: text, fontSize: 13 };
+  const iconBtn = { width: 30, height: 30, borderRadius: 8, border: `1px solid ${border}`, background: "transparent", color: muted, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" };
 
   return (
     <div style={{ minHeight: "100vh", background: bg, color: text, fontFamily: "'DM Sans',sans-serif" }}>
@@ -64,10 +60,10 @@ export default function Admin() {
         </button>
         <span style={{ fontSize: 15, fontWeight: 500 }}>Admin — Team members</span>
       </div>
-      <div style={{ padding: 24, maxWidth: 820, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ padding: 24, maxWidth: 860, display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ background: panel, border: `1px solid ${border}`, borderRadius: 16, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><th style={th}>Member</th><th style={th}>Email</th><th style={th}>Role</th></tr></thead>
+            <thead><tr><th style={th}>Member</th><th style={th}>Email</th><th style={th}>Role</th><th style={th}>Account</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
@@ -81,6 +77,20 @@ export default function Admin() {
                     </select>
                     {r.id === user?.id && <span style={{ fontSize: 11, color: muted, marginLeft: 8 }}>you</span>}
                   </td>
+                  <td style={td}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => resetPassword(r)} disabled={busy} title="Set password"
+                        aria-label={`Set password for ${r.email}`} style={iconBtn}>
+                        <KeyRound style={{ width: 14, height: 14 }} />
+                      </button>
+                      {r.id !== user?.id && (
+                        <button onClick={() => removeAccount(r)} disabled={busy} title="Delete account"
+                          aria-label={`Delete account ${r.email}`} style={iconBtn}>
+                          <Trash2 style={{ width: 14, height: 14 }} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -89,40 +99,30 @@ export default function Admin() {
 
         <div style={{ background: panel, border: `1px solid ${border}`, borderRadius: 16, padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 500, marginBottom: 12 }}>
-            <MailPlus style={{ width: 15, height: 15, color: muted }} /> Invite a teammate
+            <UserPlus style={{ width: 15, height: 15, color: muted }} /> Add account
           </div>
-          <form onSubmit={invite} style={{ display: "flex", gap: 8 }}>
-            <input type="email" required value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="teammate@company.com" aria-label="Invite email address"
-              style={{ flex: 1, height: 36, background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: "0 12px", color: text, fontSize: 13 }} />
-            <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} aria-label="Invite role" style={{ ...select, height: 36 }}>
+          <form onSubmit={addAccount} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input type="email" required value={form.email} placeholder="teammate@company.com"
+              aria-label="New account email" autoComplete="off"
+              onChange={(e) => setForm({ ...form, email: e.target.value })} style={{ ...input, flex: 2, minWidth: 220 }} />
+            <input type="text" required minLength={8} value={form.password} placeholder="Password (min 8 chars)"
+              aria-label="New account password" autoComplete="off"
+              onChange={(e) => setForm({ ...form, password: e.target.value })} style={{ ...input, flex: 1.4, minWidth: 180 }} />
+            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
+              aria-label="New account role" style={{ ...select, height: 36 }}>
               <option value="member">member</option>
               <option value="admin">admin</option>
             </select>
             <button type="submit" disabled={busy}
               style={{ height: 36, padding: "0 16px", borderRadius: 8, border: "none", background: "#EDD2F6", color: "#000", fontSize: 13, fontWeight: 500, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
-              Send invite
+              Create account
             </button>
           </form>
-          {inviteMsg && <p role="status" style={{ fontSize: 12, color: muted, marginTop: 10 }}>{inviteMsg}</p>}
-          {invites.length > 0 && (
-            <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ fontSize: 12, color: muted }}>Pending invites</div>
-              {invites.map((i) => (
-                <div key={i.email} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, border: `1px solid ${border}`, borderRadius: 8, padding: "6px 10px" }}>
-                  <span style={{ flex: 1 }}>{i.email}</span>
-                  <span style={{ color: muted, fontSize: 12 }}>{i.role}</span>
-                  <button onClick={() => revoke(i.email)} disabled={busy} aria-label={`Revoke invite for ${i.email}`}
-                    style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <X style={{ width: 13, height: 13 }} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          {msg && <p role="status" style={{ fontSize: 12, color: msg.startsWith("Error") ? "#FF508F" : muted, marginTop: 10 }}>{msg}</p>}
           <p style={{ fontSize: 12, color: muted, marginTop: 12 }}>
-            Sign-up is invite-only: accounts without an invite get no team and can't see any data.
-            Members can view and edit prototypes. Admins additionally manage roles, invites, and can delete content.
+            There is no self-signup: you create accounts here and hand teammates their password.
+            Use the key button to set a new password, the trash button to delete an account.
+            Members can view and edit prototypes; admins additionally manage accounts, roles, and can delete content.
           </p>
         </div>
       </div>

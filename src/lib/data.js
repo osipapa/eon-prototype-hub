@@ -72,30 +72,26 @@ export async function setProfileRole(id, role) {
   if (error) throw error;
 }
 
-/* Invites (admin) -------------------------------------------------------------
-   Signup is invite-gated: uninvited accounts get no team and see no data.
-   The `invite` edge function upserts the row and emails the invite, keeping
-   the service_role key server-side. */
-export async function listInvites() {
-  const { data, error } = await supabase
-    .from("invites").select("*").order("created_at", { ascending: true });
-  if (error) throw error;
-  return data;
-}
-
-export async function sendInvite(email, role = "member") {
-  const { data, error } = await supabase.functions.invoke("invite", {
-    body: { email, role, redirectTo: window.location.origin + window.location.pathname },
-  });
-  if (error) throw error;
+/* Account management (admin) --------------------------------------------------
+   Accounts are created and managed by admins only — there is no self-signup.
+   The admin-users edge function holds the service_role key server-side. */
+async function adminUsers(body) {
+  const { data, error } = await supabase.functions.invoke("admin-users", { body });
+  if (error) {
+    // FunctionsHttpError hides the response body; surface the real message.
+    const detail = await error.context?.json?.().catch(() => null);
+    throw new Error(detail?.error || error.message);
+  }
   if (data?.error) throw new Error(data.error);
   return data;
 }
 
-export async function removeInvite(email) {
-  const { error } = await supabase.from("invites").delete().eq("email", email);
-  if (error) throw error;
-}
+export const createAccount = (email, password, role = "member") =>
+  adminUsers({ action: "create", email, password, role });
+export const setAccountPassword = (userId, password) =>
+  adminUsers({ action: "set_password", userId, password });
+export const deleteAccount = (userId) =>
+  adminUsers({ action: "delete", userId });
 
 /* Linear ----------------------------------------------------------------------
    Server-side read via the linear-issue edge function (token stays in Supabase
