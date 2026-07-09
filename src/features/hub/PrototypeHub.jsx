@@ -72,11 +72,11 @@ export default function PrototypeHub({
   const story = projects.find((s) => s.id === activeId) || projects[0];
   const args = story ? currentArgs(story, liveArgs[story.id]) : {};
   const vp = VIEWPORTS[viewport];
-  const media = { eonLogo: assets.eonLogo, acmeLogo: assets.acmeLogo };
+  const media = assets; // full asset map: {{eonLogo}}, {{acmeLogo}}, and any saved key
 
   const html = useMemo(
     () => (story ? renderStory(story, protoTheme, media, args) : ""),
-    [story, args, protoTheme, media.eonLogo, media.acmeLogo]
+    [story, args, protoTheme, assets]
   );
   const scale = useMemo(() => Math.min(760 / vp.w, 460 / vp.h, 1), [viewport]);
 
@@ -504,6 +504,10 @@ function UploadPanel({ c, story, onSave, onClear, onCancel }) {
         <code style={{ color: c.text }}>window.__story</code>, and forces <code style={{ color: c.text }}>prefers-color-scheme</code> for JS.
         Style against those (or Tailwind <code style={{ color: c.text }}>dark:</code>) so the Theme toggle drives your prototype — hardcoded colors won't switch.
       </p>
+      <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5 }}>
+        Media tip: use <code style={{ color: c.text }}>{'{{eonLogo}}'}</code>, <code style={{ color: c.text }}>{'{{acmeLogo}}'}</code>, any saved media key, or{" "}
+        <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> as an image <code style={{ color: c.text }}>src</code> — they map to the Media library and update everywhere at once.
+      </p>
       {err && <div role="alert" style={{ fontSize: 12, color: "#FF508F" }}>{err}</div>}
       <div style={{ display: "flex", gap: 8 }}>
         <Button onClick={() => html.trim() && onSave(html)} disabled={!html.trim()}
@@ -528,16 +532,29 @@ function UploadPanel({ c, story, onSave, onClear, onCancel }) {
   );
 }
 
-/* ---- Media manager (assets persist via onSetAsset) ---- */
+/* ---- Media manager. Assets persist via onSetAsset(key,url) and map into every
+   prototype through {{key}} tokens (logos, placeholders). ---- */
 function MediaManager({ c, assets, onSetAsset }) {
-  const [ph, setPh] = useState({ w: 320, h: 180, label: "", bg: "#E5E7EB", fg: "#94A3B8" });
+  const [ph, setPh] = useState({ w: 320, h: 180, label: "", bg: "#E5E7EB", fg: "#94A3B8", name: "" });
+  const [copied, setCopied] = useState("");
   const field = { height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 };
   const panel = { background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 };
   const previewBox = { height: 96, borderRadius: 10, border: `1px solid ${c.border}`, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 };
+  const btn = { height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", fontSize: 12 };
+  const copy = async (text, id) => { try { await navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(""), 1200); } catch (e) { /* clipboard blocked */ } };
+  const Token = ({ name }) => (
+    <button onClick={() => copy(`{{${name}}}`, `tok-${name}`)} title="Copy token"
+      style={{ fontSize: 11, fontFamily: "ui-monospace, Menlo, monospace", color: c.text, background: c.raised, border: `1px solid ${c.border}`, padding: "2px 7px", borderRadius: 6, cursor: "pointer" }}>
+      {copied === `tok-${name}` ? "copied" : `{{${name}}}`}
+    </button>
+  );
 
   const LogoRow = ({ label, keyName, current }) => (
     <div style={panel}>
-      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 10 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 500 }}>{label}</div>
+        <Token name={keyName} />
+      </div>
       <div style={previewBox}>
         {assets[keyName]
           ? <img src={assets[keyName]} alt={label} style={{ maxHeight: 56, maxWidth: "80%", objectFit: "contain", borderRadius: 8 }} />
@@ -546,16 +563,26 @@ function MediaManager({ c, assets, onSetAsset }) {
       <div style={{ display: "flex", gap: 6 }}>
         <Input defaultValue={assets[keyName] || ""} placeholder="Paste image URL to replace"
           onBlur={(e) => onSetAsset(keyName, e.target.value)} style={field} />
-        <button onClick={() => onSetAsset(keyName, "")} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", fontSize: 12 }}>Reset</button>
+        <button onClick={() => copy(assets[keyName] || "", `link-${keyName}`)} disabled={!assets[keyName]} style={{ ...btn, opacity: assets[keyName] ? 1 : 0.5 }}>{copied === `link-${keyName}` ? "Copied" : "Copy link"}</button>
+        <button onClick={() => onSetAsset(keyName, "")} style={btn}>Reset</button>
       </div>
     </div>
   );
+
+  const phData = MEDIA.placeholder(ph.w, ph.h, ph.label, ph.bg, ph.fg);
+  const savePlaceholder = () => {
+    const key = ph.name.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/(^-|-$)/g, "");
+    if (!key) return;
+    onSetAsset(key, phData);
+    setPh({ ...ph, name: "" });
+  };
+  const customKeys = Object.keys(assets).filter((k) => !["eonLogo", "acmeLogo"].includes(k) && assets[k]);
 
   return (
     <div style={{ flex: 1 }}>
       <div style={{ height: 56, borderBottom: `1px solid ${c.border}`, background: c.nav, display: "flex", alignItems: "center", gap: 10, padding: "0 20px", position: "sticky", top: 0, zIndex: 5 }}>
         <span style={{ fontSize: 15, fontWeight: 500 }}>Media library</span>
-        <span style={{ fontSize: 12, color: c.muted }}>Shared assets used across every story</span>
+        <span style={{ fontSize: 12, color: c.muted }}>Shared assets — drop a token like {"{{acmeLogo}}"} into any prototype's HTML and it maps here</span>
       </div>
       <div style={{ padding: 20 }}>
         <Tabs defaultValue="logos">
@@ -568,6 +595,9 @@ function MediaManager({ c, assets, onSetAsset }) {
               <LogoRow label="Eon logo (hub)" keyName="eonLogo" current={MEDIA.logos.eon(c.text, c.brand)} />
               <LogoRow label="Acme logo (stories)" keyName="acmeLogo" current={MEDIA.logos.acme(40, 10, "#4F46E5")} />
             </div>
+            <p style={{ fontSize: 12, color: c.muted, marginTop: 12 }}>
+              Reference a logo in any uploaded prototype as <code style={{ color: c.text }}>{'<img src="{{acmeLogo}}">'}</code>. Replace it here and every prototype updates.
+            </p>
           </TabsContent>
           <TabsContent value="placeholders" style={{ margin: 0 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16 }}>
@@ -577,19 +607,46 @@ function MediaManager({ c, assets, onSetAsset }) {
                   <Input type="number" value={ph.w} onChange={(e) => setPh({ ...ph, w: +e.target.value || 0 })} style={field} />
                   <Input type="number" value={ph.h} onChange={(e) => setPh({ ...ph, h: +e.target.value || 0 })} style={field} />
                 </div>
-                <Input value={ph.label} onChange={(e) => setPh({ ...ph, label: e.target.value })} placeholder={`${ph.w}×${ph.h}`} style={{ ...field, marginBottom: 8 }} />
-                <div style={{ display: "flex", gap: 8 }}>
+                <Input value={ph.label} onChange={(e) => setPh({ ...ph, label: e.target.value })} placeholder={`Label (default ${ph.w}×${ph.h})`} style={{ ...field, marginBottom: 8 }} />
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                   <input type="color" value={ph.bg} onChange={(e) => setPh({ ...ph, bg: e.target.value })} style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
                   <input type="color" value={ph.fg} onChange={(e) => setPh({ ...ph, fg: e.target.value })} style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
                 </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <Input value={ph.name} onChange={(e) => setPh({ ...ph, name: e.target.value })} placeholder="Save as (e.g. heroImage)" style={field} />
+                  <button onClick={savePlaceholder} disabled={!ph.name.trim()} style={{ ...btn, background: c.primary, color: c.primaryText, border: "none", opacity: ph.name.trim() ? 1 : 0.5 }}>Save to media</button>
+                </div>
+                <button onClick={() => copy(phData, "ph-link")} style={{ ...btn, width: "100%", marginTop: 6 }}>{copied === "ph-link" ? "Copied image link" : "Copy image link"}</button>
+                <p style={{ fontSize: 11, color: c.muted, marginTop: 8 }}>
+                  Or drop <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> straight into a prototype — no saving needed.
+                </p>
               </div>
               <div style={panel}>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Preview</div>
                 <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: "hidden", display: "flex", justifyContent: "center", background: c.bg, padding: 12 }}>
-                  <img src={MEDIA.placeholder(ph.w, ph.h, ph.label, ph.bg, ph.fg)} alt="placeholder" style={{ maxWidth: "100%", maxHeight: 220, objectFit: "contain" }} />
+                  <img src={phData} alt="placeholder" style={{ maxWidth: "100%", maxHeight: 220, objectFit: "contain" }} />
                 </div>
               </div>
             </div>
+            {customKeys.length > 0 && (
+              <div style={{ ...panel, marginTop: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Saved media</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+                  {customKeys.map((k) => (
+                    <div key={k} style={{ border: `1px solid ${c.border}`, borderRadius: 10, padding: 10, background: c.bg }}>
+                      <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+                        <img src={assets[k]} alt={k} style={{ maxHeight: 60, maxWidth: "100%", objectFit: "contain" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Token name={k} />
+                        <button onClick={() => copy(assets[k], `link-${k}`)} style={{ ...btn, height: 26, padding: "0 8px" }}>{copied === `link-${k}` ? "Copied" : "Link"}</button>
+                        <button onClick={() => onSetAsset(k, "")} title="Remove" style={{ ...btn, height: 26, width: 26, padding: 0, marginLeft: "auto" }}>×</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

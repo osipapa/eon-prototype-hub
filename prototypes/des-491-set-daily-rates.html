@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DES-491 · Set Your Daily Rates</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Eon tokens - DARK (default) - from eon-design-system references */
+    --background-1:#000000;
+    --background-2:#121216;
+    --background-3:#1E1E22;
+    --text-primary:#FFFFFF;
+    --text-secondary:rgba(255,255,255,0.7);
+    --text-secondary-50:rgba(144,148,165,0.5);
+    --text-brand:#E15CF7;
+    --card-background-default:#121216;
+    --card-background-hover:#1E1E22;
+    --card-border-default:#1E1E22;
+    --card-border-hover:#3A3D4A;
+    --divider-background:#1E1E22;
+    --icon-fill-background:rgba(144,148,165,0.1);
+    --icon-fill-icon:#9094A5;
+    --navigation-controls-fill-background:#1E1E22;
+    --navigation-controls-fill-icon:#9094A5;
+    --navigation-controls-border:#1E1E22;
+    --progress-bar-background-active:#EDD2F6;
+    --progress-bar-background-inactive:#3A3D4A;
+    --button-fill-primary-default:#EDD2F6;
+    --button-fill-primary-hover:#E9C1F6;
+    --button-fill-primary-pressed:#DCA5EE;
+    --button-fill-primary-disabled:rgba(144,148,165,0.2);
+    --button-text-primary-default:#000000;
+    --button-text-primary-disabled:rgba(144,148,165,0.5);
+    --button-text-ghost-default:#FFFFFF;
+    --toggle-background-default:#1E1E22;
+    --toggle-background-active:rgba(237,210,246,0.3);
+    --toggle-border-default:#565B6C;
+    --toggle-border-active:rgba(237,210,246,0.3);
+    --toggle-handle-default:#FFFFFF;
+    --slider-background-histogram-default:#3A3D4A;
+    --slider-background-histogram-active:#E15CF7;
+    --slider-background-slider-default:#3A3D4A;
+    --slider-background-knob:#FFFFFF;
+    --font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-size-title-1:24px;
+    --font-size-title-2:20px;
+    --font-size-body:16px;
+    --font-size-caption-1:12px;
+    --font-weight-regular:400;
+    --font-weight-medium:500;
+    --radius-control:8px;
+    --radius-card:16px;
+    --radius-pill:100px;
+  }
+  [data-theme="light"]{
+    --background-1:#F9F9FD;
+    --background-2:#FFFFFF;
+    --background-3:#DDE0EA;
+    --text-primary:#1E1E22;
+    --text-secondary:rgba(18,18,22,0.75);
+    --text-secondary-50:rgba(144,148,165,0.5);
+    --text-brand:#D400F7;
+    --card-background-default:#FFFFFF;
+    --card-background-hover:#F9F9FD;
+    --card-border-default:#DDE0EA;
+    --card-border-hover:#DDE0EA;
+    --divider-background:#DDE0EA;
+    --icon-fill-background:rgba(144,148,165,0.1);
+    --icon-fill-icon:#9094A5;
+    --navigation-controls-fill-background:#FFFFFF;
+    --navigation-controls-fill-icon:#565B6C;
+    --navigation-controls-border:#DDE0EA;
+    --progress-bar-background-active:#000000;
+    --progress-bar-background-inactive:rgba(144,148,165,0.5);
+    --button-fill-primary-default:#000000;
+    --button-fill-primary-hover:#1E1E22;
+    --button-fill-primary-pressed:#3A3D4A;
+    --button-fill-primary-disabled:rgba(144,148,165,0.2);
+    --button-text-primary-default:#FFFFFF;
+    --button-text-primary-disabled:rgba(144,148,165,0.75);
+    --button-text-ghost-default:#000000;
+    --toggle-background-default:#9094A5;
+    --toggle-background-active:#D400F7;
+    --toggle-border-default:#DDE0EA;
+    --toggle-border-active:#E15CF7;
+    --toggle-handle-default:#FFFFFF;
+    --slider-background-histogram-default:#DDE0EA;
+    --slider-background-histogram-active:#D400F7;
+    --slider-background-slider-default:#DDE0EA;
+    --slider-background-knob:#FFFFFF;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-family)}
+  html,body{background:var(--background-1);color:var(--text-primary)}
+  body{min-height:100vh;font-size:var(--font-size-body);line-height:1.4;transition:background .2s,color .2s}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--text-brand);outline-offset:2px}
+  svg{display:block}
+
+  .app{display:flex;min-width:1080px}
+
+  /* ------- theme toggle (prototype chrome, hidden inside the hub) ------- */
+  .theme-toggle{position:fixed;top:16px;right:16px;z-index:50;padding:7px 15px;border-radius:var(--radius-pill);border:1px solid var(--card-border-hover);background:var(--background-2);font-size:var(--font-size-caption-1);color:var(--text-secondary)}
+
+  /* ------------------------------ sidebar ------------------------------ */
+  .sidebar{width:248px;flex-shrink:0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:var(--background-2);border-right:1px solid var(--card-border-default);padding:40px 0 0}
+  .sidebar-top{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+  .logo-row{display:flex;align-items:center;gap:8px;padding:0 24px}
+  .logo-mark{width:36px;height:36px;border-radius:50%;background:linear-gradient(180deg,#252525,#030303);border:.5px solid #464646;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  [data-theme="light"] .logo-mark{background:linear-gradient(180deg,#FFFFFF,#E9E9F1);border-color:#DDE0EA}
+  .logo-mark svg{color:#FFFFFF}
+  [data-theme="light"] .logo-mark svg{color:#1E1E22}
+  .logo-word{font-size:var(--font-size-body);font-weight:var(--font-weight-medium);letter-spacing:.14em;color:var(--text-primary)}
+  .divider{height:1px;background:var(--divider-background)}
+
+  .nav{display:flex;flex-direction:column;gap:4px;padding:0 16px}
+  .nav-item{display:flex;align-items:center;gap:4px;width:100%;padding:4px 16px 4px 4px;border-radius:var(--radius-control);font-size:var(--font-size-body);color:var(--text-secondary);text-align:left}
+  .nav-item svg{width:24px;height:24px;flex-shrink:0;color:var(--icon-fill-icon)}
+  .nav-item:hover{background:var(--card-background-hover);color:var(--text-primary)}
+  .nav-item.on{background:var(--card-background-hover);color:var(--text-primary)}
+  .nav-item.on svg{color:currentColor}
+
+  .side-group{display:flex;flex-direction:column;padding:0 16px}
+  .side-item{display:flex;align-items:center;gap:4px;width:100%;padding:8px 0;border-radius:var(--radius-card);font-size:var(--font-size-body);color:var(--text-secondary);text-align:left}
+  .side-item svg{width:24px;height:24px;flex-shrink:0;color:var(--icon-fill-icon)}
+  .side-item:hover{color:var(--text-primary)}
+  .side-item .grow{flex:1;min-width:0}
+  .side-item .chev{width:10px;height:6px;color:var(--icon-fill-icon);flex-shrink:0}
+  .side-item.primary{color:var(--text-primary)}
+  .side-sub{padding-left:28px}
+  .side-item.brand{color:var(--text-brand)}
+  .side-item.brand svg{color:var(--text-brand)}
+
+  .sidebar-bottom{flex-shrink:0;display:flex;flex-direction:column;gap:8px;padding:8px 16px}
+  .user-row{display:flex;align-items:center;gap:8px;padding:8px 8px 24px 0}
+  .avatar{width:36px;height:36px;border-radius:var(--radius-pill);background:var(--card-background-hover);border:1px solid var(--card-border-hover);display:flex;align-items:center;justify-content:center;font-size:var(--font-size-body);font-weight:var(--font-weight-medium);color:var(--icon-fill-icon);flex-shrink:0}
+  .user-name{font-size:var(--font-size-body);color:var(--text-primary)}
+  .user-role{font-size:var(--font-size-caption-1);line-height:16px;color:var(--text-secondary)}
+
+  /* ------------------------------- main -------------------------------- */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;padding:0 56px 56px}
+  .page-head{position:sticky;top:0;z-index:3;background:var(--background-1);display:flex;flex-direction:column;gap:24px;padding:56px 0 0}
+  .head-titles{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+  .back-pill{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 10px 0 8px;border-radius:var(--radius-pill);background:var(--navigation-controls-fill-background);border:1px solid var(--navigation-controls-border);color:var(--navigation-controls-fill-icon);font-size:var(--font-size-body)}
+  .back-pill svg{width:16px;height:16px}
+  .page-title{font-size:var(--font-size-title-1);font-weight:var(--font-weight-medium);line-height:1.2;text-transform:capitalize;color:var(--text-primary)}
+  .progress{display:flex;width:100%}
+  .progress span{flex:1;height:4px;background:var(--progress-bar-background-inactive)}
+  .progress span.on{background:var(--progress-bar-background-active)}
+
+  .content{width:780px;max-width:100%;display:flex;flex-direction:column;gap:24px;margin-top:24px}
+  .car-head h2{font-size:var(--font-size-title-2);font-weight:var(--font-weight-medium);line-height:1.2;text-transform:capitalize}
+  .car-head p{font-size:var(--font-size-body);color:var(--text-secondary)}
+
+  /* rate card */
+  .rate-card{background:var(--card-background-default);border:1px solid var(--card-border-default);border-radius:var(--radius-card);padding:16px;display:flex;flex-direction:column;gap:24px}
+  .rate-intro{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+  .rate-intro h3{font-size:var(--font-size-title-2);font-weight:var(--font-weight-medium);line-height:1.2;text-transform:capitalize}
+  .rate-intro p{font-size:var(--font-size-body);color:var(--text-secondary)}
+  .link-ghost{height:32px;display:inline-flex;align-items:center;font-size:17px;font-weight:var(--font-weight-medium);letter-spacing:-0.43px;line-height:22px;text-decoration:underline;text-transform:capitalize;color:var(--button-text-ghost-default)}
+
+  .stats-row{display:flex;gap:16px;align-items:stretch}
+  .stat-tile{flex:1;min-width:0;border:1px solid var(--card-border-default);border-radius:var(--radius-card);padding:16px;display:flex;flex-direction:column;gap:4px;justify-content:flex-start}
+  .stat-label{display:flex;align-items:center;gap:4px;font-size:var(--font-size-caption-1);line-height:16px;color:var(--text-primary)}
+  .stat-label .info{width:12px;height:12px;color:var(--icon-fill-icon);flex-shrink:0}
+  .stat-value{font-size:var(--font-size-title-1);font-weight:var(--font-weight-medium);line-height:1.2;text-transform:capitalize;color:var(--text-primary)}
+  .stat-sub{font-size:var(--font-size-caption-1);line-height:16px;color:var(--text-secondary)}
+
+  .fixed-row{background:var(--card-background-hover);border:1px solid var(--card-border-hover);border-radius:var(--radius-card);padding:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .fixed-copy .t{font-size:var(--font-size-body);color:var(--text-primary)}
+  .fixed-copy .s{font-size:var(--font-size-caption-1);line-height:16px;color:var(--text-secondary)}
+  .toggle{width:52px;height:32px;flex-shrink:0;border-radius:var(--radius-pill);background:var(--toggle-background-default);border:1px solid var(--toggle-border-default);padding:3px;display:flex;align-items:center;transition:background .15s,border-color .15s}
+  .toggle .knob{width:24px;height:24px;border-radius:50%;background:var(--toggle-handle-default);transition:transform .15s}
+  .toggle[aria-checked="true"]{background:var(--toggle-background-active);border-color:var(--toggle-border-active)}
+  .toggle[aria-checked="true"] .knob{transform:translateX(20px)}
+
+  .adjust-label{font-size:var(--font-size-body);color:var(--text-primary)}
+
+  /* slider */
+  .slider-wrap{padding:4px 0;display:flex;flex-direction:column;gap:16px;transition:opacity .2s}
+  .slider-wrap.off{opacity:.4;pointer-events:none}
+  .slider-top{position:relative;height:16px}
+  .slider-top .rec-label{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;font-size:var(--font-size-caption-1);line-height:16px;color:var(--text-secondary)}
+  .track{position:relative;height:6px;border-radius:3px;background:var(--slider-background-histogram-default);cursor:pointer}
+  .track .range{position:absolute;top:0;right:0;height:6px;border-radius:3px;background:var(--slider-background-histogram-active)}
+  .track .rec-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:var(--radius-pill);background:var(--slider-background-slider-default);border:1px solid var(--text-brand)}
+  .track .handle{position:absolute;top:50%;transform:translate(-50%,-50%);width:48px;height:24px;border-radius:var(--radius-pill);background:var(--slider-background-knob);box-shadow:0 2px 6px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;gap:2px;cursor:grab;touch-action:none}
+  .track .handle:active{cursor:grabbing}
+  .track .handle svg{width:8px;height:12px;color:#121216}
+  .slider-bottom{position:relative;height:22px}
+  .slider-bottom .min-label{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;display:flex;gap:4px;font-size:var(--font-size-body)}
+  .slider-bottom .min-label .k{color:var(--text-secondary)}
+  .slider-bottom .min-label .v{color:var(--text-primary)}
+
+  /* features */
+  .features{display:flex;flex-direction:column;gap:16px}
+  .features h3{font-size:var(--font-size-title-2);font-weight:var(--font-weight-medium);line-height:1.2;text-transform:capitalize}
+  .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .feature{display:flex;gap:8px;align-items:flex-start;padding:4px 0}
+  .feature .icon-tile{width:36px;height:36px;border-radius:var(--radius-control);background:var(--icon-fill-background);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .feature .icon-tile svg{width:24px;height:24px;color:var(--icon-fill-icon)}
+  .feature .t{font-size:var(--font-size-body);color:var(--text-primary)}
+  .feature .s{font-size:var(--font-size-caption-1);line-height:16px;color:var(--text-secondary)}
+
+  /* footer cta */
+  .footer-cta{display:flex;justify-content:flex-end;padding:0 16px;margin-top:24px}
+  .btn-next{min-width:150px;height:50px;padding:8px 16px;border-radius:var(--radius-control);display:inline-flex;align-items:center;justify-content:center;font-size:17px;font-weight:var(--font-weight-medium);letter-spacing:-0.43px;line-height:22px;text-transform:capitalize;background:var(--button-fill-primary-default);color:var(--button-text-primary-default)}
+  .btn-next:hover:not(:disabled){background:var(--button-fill-primary-hover)}
+  .btn-next:active:not(:disabled){background:var(--button-fill-primary-pressed)}
+  .btn-next:disabled{background:var(--button-fill-primary-disabled);color:var(--button-text-primary-disabled);cursor:default}
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" aria-label="Switch color theme">Light mode</button>
+
+<div class="app">
+  <!-- ============================ sidebar ============================ -->
+  <aside class="sidebar" aria-label="Main navigation">
+    <div class="sidebar-top">
+      <div class="logo-row">
+        <span class="logo-mark" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M20 12a8 8 0 1 0-3.2 6.4" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="18.6" cy="17" r="1.8" fill="currentColor"/></svg>
+        </span>
+        <span class="logo-word">EON</span>
+      </div>
+      <div class="divider"></div>
+      <nav class="nav" aria-label="Primary">
+        <button class="nav-item on" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6.5 19v-6M12 19V5.5M17.5 19v-9"/></svg>
+          Dashboard
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 13.5 6.8 9.6A2 2 0 0 1 8.7 8.2h6.6a2 2 0 0 1 1.9 1.4l1.3 3.9M5.5 13.5h13a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1Z"/><circle cx="8" cy="16" r=".6" fill="currentColor"/><circle cx="16" cy="16" r=".6" fill="currentColor"/></svg>
+          Cars
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="5.5" cy="6.5" r=".8" fill="currentColor" stroke="none"/><circle cx="5.5" cy="12" r=".8" fill="currentColor" stroke="none"/><circle cx="5.5" cy="17.5" r=".8" fill="currentColor" stroke="none"/><path d="M9.5 6.5h9M9.5 12h9M9.5 17.5h9"/></svg>
+          Reservations
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="4.5" y="5.5" width="15" height="14" rx="2"/><path d="M4.5 10h15M8.5 3.5v3M15.5 3.5v3"/></svg>
+          Calendar
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-3.4-3.1-6-6.2-6-9.4a6 6 0 1 1 12 0c0 3.2-2.6 6.3-6 9.4Z"/><circle cx="12" cy="11.3" r="2.2"/></svg>
+          Locations
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 4v16M16 7.3c-.8-1.2-2.2-1.9-3.9-1.9-2.2 0-4 1.2-4 3s1.6 2.5 4 3.1c2.4.6 4 1.4 4 3.2s-1.8 3-4 3c-1.9 0-3.4-.8-4.1-2"/></svg>
+          Payouts
+        </button>
+      </nav>
+      <div class="divider"></div>
+      <div class="side-group">
+        <button class="side-item" aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8.2" r="3.4"/><path d="M5.5 20a6.7 6.7 0 0 1 13 0"/></svg>
+          <span class="grow">Account</span>
+          <svg class="chev" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <button class="side-item side-sub">Profile</button>
+        <button class="side-item" aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h6.5L18 8v11a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V5A1.5 1.5 0 0 1 7 3.5Z"/><path d="M13.5 3.5V8H18M9 12.5h6M9 16h6"/></svg>
+          <span class="grow" style="color:var(--text-primary)">Cars</span>
+          <svg class="chev" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <button class="side-item side-sub">Mobile app</button>
+        <button class="side-item side-sub">Owner guide &amp; terms</button>
+        <button class="side-item side-sub">Support</button>
+        <button class="side-item" aria-expanded="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg>
+          <span class="grow">More</span>
+          <svg class="chev" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <button class="side-item side-sub">Refer a friend</button>
+        <button class="side-item side-sub">Submit a feedback</button>
+      </div>
+      <div class="divider"></div>
+    </div>
+    <div class="sidebar-bottom">
+      <button class="side-item brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8.5h12l-2.8-2.8M19.5 15.5h-12l2.8 2.8"/></svg>
+        Switch to guest
+      </button>
+      <button class="side-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4.5H7A1.5 1.5 0 0 0 5.5 6v12A1.5 1.5 0 0 0 7 19.5h6.5M16.5 8.5 20 12l-3.5 3.5M20 12h-9"/></svg>
+        <span style="color:var(--text-primary)">Log out</span>
+      </button>
+      <div class="user-row">
+        <span class="avatar">MC</span>
+        <span>
+          <span class="user-name" style="display:block">Miguel Cabanog</span>
+          <span class="user-role" style="display:block">Owner</span>
+        </span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================== main ============================== -->
+  <main class="main">
+    <div class="page-head">
+      <div class="head-titles">
+        <button class="back-pill">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.8 3.5 5.3 8l4.5 4.5"/></svg>
+          Back
+        </button>
+        <h1 class="page-title">Set your daily rates</h1>
+      </div>
+      <div class="progress" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="12" aria-label="Onboarding progress: step 10 of 12">
+        <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="car-head">
+        <h2>Tesla Model 3</h2>
+        <p>Booking frequency by daily rate</p>
+      </div>
+
+      <section class="rate-card" aria-labelledby="rateTitle">
+        <div class="rate-intro">
+          <h3 id="rateTitle">Set your daily rates</h3>
+          <p>Set your minimum and maximum daily rates. Our pricing AI adjusts prices within this range to help maximize revenue. The chart shows how often Model 3 vehicles are booked at different price points in the market, based on historical data. Your real world earnings will vary based on availability, your cars trim, year, demand, and seasonality.</p>
+          <button class="link-ghost">How Does pricing works?</button>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-tile">
+            <div class="stat-label">
+              Projected monthly income
+              <svg class="info" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.4" stroke="currentColor" stroke-width="1"/><circle cx="6" cy="3.6" r=".7" fill="currentColor"/><path d="M6 5.4v3.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+            </div>
+            <div class="stat-value" id="statIncome">$2,400</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-label">Your take-home earnings</div>
+            <div class="stat-value" id="statTakeHome">$59.5-$210/day</div>
+            <div class="stat-sub">70% of daily rate</div>
+          </div>
+        </div>
+
+        <div class="fixed-row">
+          <div class="fixed-copy">
+            <div class="t">Fixed daily rate</div>
+            <div class="s">Lock in your price; it will remain static</div>
+          </div>
+          <button class="toggle" id="fixedToggle" role="switch" aria-checked="false" aria-label="Fixed daily rate">
+            <span class="knob"></span>
+          </button>
+        </div>
+
+        <p class="adjust-label">Adjust your minimum daily rate</p>
+
+        <div class="slider-wrap" id="sliderWrap">
+          <div class="slider-top">
+            <span class="rec-label" id="recLabel">Recommended minimum</span>
+          </div>
+          <div class="track" id="track">
+            <div class="range" id="range"></div>
+            <div class="rec-dot" id="recDot"></div>
+            <div class="handle" id="handle" role="slider" tabindex="0" aria-label="Minimum daily rate" aria-valuemin="30" aria-valuemax="170" aria-valuenow="82" aria-valuetext="$82 per day">
+              <svg viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1 2 6l4 5"/></svg>
+              <svg viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 1l4 5-4 5"/></svg>
+            </div>
+          </div>
+          <div class="slider-bottom">
+            <span class="min-label" id="minLabel"><span class="k">Min</span><span class="v" id="minValue">$82/day</span></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="features" aria-labelledby="featTitle">
+        <h3 id="featTitle">What's included with every rental</h3>
+        <div class="features-grid">
+          <div class="feature">
+            <span class="icon-tile" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 18.5 6v4.8c0 4.3-2.7 7.4-6.5 9.2-3.8-1.8-6.5-4.9-6.5-9.2V6L12 3.5Z"/><path d="m9.2 11.6 2 2 3.6-3.7"/></svg>
+            </span>
+            <div>
+              <div class="t">Full Insurance Coverage</div>
+              <div class="s">Comprehensive protection with collision and up to the full value of your car and up to $1,000,000 in liability coverage included</div>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="icon-tile" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 13.5 6.8 9.6A2 2 0 0 1 8.7 8.2h6.6a2 2 0 0 1 1.9 1.4l1.3 3.9M5.5 13.5h13a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1Z"/><circle cx="8" cy="16" r=".6" fill="currentColor"/><circle cx="16" cy="16" r=".6" fill="currentColor"/></svg>
+            </span>
+            <div>
+              <div class="t">No Contract, No Lock-In</div>
+              <div class="s">Eon fills in the gaps between your existing listings so your cars can earn more without impacting your other revenue streams</div>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="icon-tile" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="16" height="15" rx="2.5"/><circle cx="12" cy="10.2" r="2.3"/><path d="M7.5 19.5c.6-2.8 2.4-4.1 4.5-4.1s3.9 1.3 4.5 4.1"/></svg>
+            </span>
+            <div>
+              <div class="t">Guest Vetting &amp; Onboarding</div>
+              <div class="s">We thoroughly screen and educate guests about the car and the entire process with Eon so pickups and drop offs happen automatically</div>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="icon-tile" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 4v16M16 7.3c-.8-1.2-2.2-1.9-3.9-1.9-2.2 0-4 1.2-4 3s1.6 2.5 4 3.1c2.4.6 4 1.4 4 3.2s-1.8 3-4 3c-1.9 0-3.4-.8-4.1-2"/></svg>
+            </span>
+            <div>
+              <div class="t">Automated Reimbursements</div>
+              <div class="s">Your additional miles, tolls and supercharging are automatically reimbursed with every rental</div>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="icon-tile" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13.5v-1a7 7 0 0 1 14 0v1"/><path d="M5 13.5h1.8a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H6a1.5 1.5 0 0 1-1.5-1.5v-2A1.5 1.5 0 0 1 5 13.5ZM19 13.5h-1.8a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1H18a1.5 1.5 0 0 0 1.5-1.5v-2a1.5 1.5 0 0 0-.5-1.5Z"/><path d="M19.5 17.5v.5a2.5 2.5 0 0 1-2.5 2.5h-3"/></svg>
+            </span>
+            <div>
+              <div class="t">24/7 Customer Support</div>
+              <div class="s">Help available anytime, day or night for you and your guests</div>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="icon-tile" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5"/><circle cx="12" cy="15" r="1.2"/></svg>
+            </span>
+            <div>
+              <div class="t">Chargeback &amp; Tickets Protection</div>
+              <div class="s">Get fully reimbursed and paid out even if guests get a parking ticket or disputes a rental charge</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="footer-cta">
+      <button class="btn-next" id="nextBtn" disabled>Next</button>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  // ---- theme toggle (prototype chrome; the hub drives data-theme itself) ----
+  var toggleBtn = document.getElementById('themeToggle');
+  if (window.__story) toggleBtn.style.display = 'none';
+  toggleBtn.addEventListener('click', function(){
+    var root = document.documentElement;
+    if (root.dataset.theme === 'light') { delete root.dataset.theme; toggleBtn.textContent = 'Light mode'; }
+    else { root.dataset.theme = 'light'; toggleBtn.textContent = 'Dark mode'; }
+  });
+
+  var nextBtn = document.getElementById('nextBtn');
+  function enableNext(){ nextBtn.disabled = false; }
+
+  // ---- fixed daily rate switch: locks the slider when on ----
+  var fixedToggle = document.getElementById('fixedToggle');
+  var sliderWrap = document.getElementById('sliderWrap');
+  fixedToggle.addEventListener('click', function(){
+    var on = fixedToggle.getAttribute('aria-checked') === 'true';
+    fixedToggle.setAttribute('aria-checked', String(!on));
+    sliderWrap.classList.toggle('off', !on);
+    enableNext();
+  });
+
+  // ---- minimum daily rate slider ----
+  // Track maps linearly to $30-$170/day; recommended minimum $82 sits at 37%.
+  var PRICE_MIN = 30, PRICE_MAX = 170, REC_PCT = 9.4, DEFAULT_PCT = 37;
+  var track = document.getElementById('track');
+  var range = document.getElementById('range');
+  var handle = document.getElementById('handle');
+  var recDot = document.getElementById('recDot');
+  var recLabel = document.getElementById('recLabel');
+  var minLabel = document.getElementById('minLabel');
+  var minValue = document.getElementById('minValue');
+  var statTakeHome = document.getElementById('statTakeHome');
+  var statIncome = document.getElementById('statIncome');
+  var pct = DEFAULT_PCT, touched = false;
+
+  function price(){ return Math.round(PRICE_MIN + (pct/100)*(PRICE_MAX-PRICE_MIN)); }
+  function fmtHalf(n){ return (Math.round(n*2)/2).toLocaleString('en-US'); }
+
+  function render(){
+    range.style.left = pct + '%';
+    handle.style.left = pct + '%';
+    recDot.style.left = REC_PCT + '%';
+    recLabel.style.left = REC_PCT + '%';
+    minLabel.style.left = Math.min(Math.max(pct, 7), 93) + '%';
+    if (!touched) return; // keep the design's seed values until first interaction
+    var p = price();
+    minValue.textContent = '$' + p + '/day';
+    statTakeHome.textContent = '$' + fmtHalf(p*0.7) + '-$210/day';
+    var income = 2400 - Math.max(0, p - 82) * 12;
+    statIncome.textContent = '$' + (Math.round(income/50)*50).toLocaleString('en-US');
+    handle.setAttribute('aria-valuenow', p);
+    handle.setAttribute('aria-valuetext', '$' + p + ' per day');
+  }
+
+  function setFromEvent(e){
+    var r = track.getBoundingClientRect();
+    var x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    pct = Math.min(Math.max((x/r.width)*100, 4), 92);
+    touched = true; enableNext(); render();
+  }
+
+  var dragging = false;
+  handle.addEventListener('pointerdown', function(e){ dragging = true; handle.setPointerCapture(e.pointerId); e.preventDefault(); });
+  handle.addEventListener('pointermove', function(e){ if (dragging) setFromEvent(e); });
+  handle.addEventListener('pointerup', function(){ dragging = false; });
+  track.addEventListener('pointerdown', function(e){ if (e.target === handle || handle.contains(e.target)) return; setFromEvent(e); });
+  handle.addEventListener('keydown', function(e){
+    var step = (e.key === 'ArrowLeft') ? -1 : (e.key === 'ArrowRight') ? 1 : 0;
+    if (!step) return;
+    pct = Math.min(Math.max(pct + step, 4), 92);
+    touched = true; enableNext(); render(); e.preventDefault();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

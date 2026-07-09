@@ -157,7 +157,7 @@ const BUILDERS = {
 // friendly placeholder. `args` overrides the stored defaults (live controls).
 export function renderStory(project, theme, media = {}, args) {
   const a = args || currentArgs(project);
-  if (project?.prototype_html) return decorateUploadedHtml(project.prototype_html, theme, a);
+  if (project?.prototype_html) return decorateUploadedHtml(project.prototype_html, theme, a, media);
   const builder = BUILDERS[project?.slug];
   if (builder) return builder(a, theme, media);
   const p = proto(theme);
@@ -173,7 +173,8 @@ export function renderStory(project, theme, media = {}, args) {
 // the document: `.dark`/`.light` class, data-theme / data-color-mode, CSS
 // color-scheme, a forced prefers-color-scheme via matchMedia, and each control
 // value as data-<key> plus window.__story = { theme, args }.
-export function decorateUploadedHtml(html, theme, args = {}) {
+export function decorateUploadedHtml(html, theme, args = {}, media = {}) {
+  html = replaceMediaTokens(html, media);
   const s = JSON.stringify({ theme, args });
   const script = `<script>(function(){var s=${s};
 function apply(){[document.documentElement,document.body].forEach(function(el){if(!el)return;el.classList.remove('light','dark');el.classList.add(s.theme);el.setAttribute('data-theme',s.theme);el.setAttribute('data-color-mode',s.theme);});
@@ -183,6 +184,21 @@ window.__story=s;apply();document.addEventListener('DOMContentLoaded',apply);})(
   if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => m + script);
   if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (m) => m + script);
   return script + html;
+}
+
+// Map media tokens in uploaded HTML to the shared library so logos/images stay
+// in sync. Supported tokens (use in src="…", CSS url(), or anywhere):
+//   {{eonLogo}} {{acmeLogo}} {{anyAssetKey}}  -> that asset's URL
+//   {{placeholder:320x180}} {{placeholder:320x180:Label}} -> a generated image
+// Unknown tokens are left untouched.
+export function replaceMediaTokens(html, media = {}) {
+  return String(html).replace(/\{\{\s*([^}]+?)\s*\}\}/g, (m, raw) => {
+    const token = raw.trim();
+    const ph = token.match(/^placeholder:(\d+)x(\d+)(?::(.*))?$/i);
+    if (ph) return MEDIA.placeholder(+ph[1], +ph[2], (ph[3] || "").trim());
+    if (media[token]) return media[token];
+    return m;
+  });
 }
 
 // All combinations of a story's controls, e.g. plan×state -> [{plan,state},...].

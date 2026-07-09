@@ -46,7 +46,12 @@ Deno.serve(async (req: Request) => {
       .from("profiles").select("team_id").eq("id", user.id).single();
     if (!profile?.team_id) return json({ error: "no team" }, 403);
 
-    const token = Deno.env.get("LINEAR_API_KEY");
+    // Prefer an env secret; otherwise read the key from Supabase Vault.
+    let token = Deno.env.get("LINEAR_API_KEY");
+    if (!token) {
+      const { data: vaultKey } = await admin.rpc("get_app_secret", { secret_name: "LINEAR_API_KEY" });
+      token = vaultKey ?? undefined;
+    }
     if (!token) return json({ error: "LINEAR_API_KEY not configured" }, 501);
 
     const res = await fetch("https://api.linear.app/graphql", {
