@@ -134,9 +134,14 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 create or replace function public.touch_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = public as $$
 begin new.updated_at = now(); return new; end;
 $$;
+
+-- Trigger functions never need to be client-callable via PostgREST RPC.
+revoke execute on function public.handle_new_user() from anon, authenticated;
+revoke execute on function public.guard_profile_privileges() from anon, authenticated;
+revoke execute on function public.touch_updated_at() from anon, authenticated;
 
 drop trigger if exists projects_touch on public.projects;
 create trigger projects_touch before update on public.projects
@@ -228,8 +233,10 @@ insert into storage.buckets (id, name, public)
 values ('media', 'media', true)
 on conflict (id) do nothing;
 
-create policy "public read media" on storage.objects for select
-  using (bucket_id = 'media');
+-- Objects in a public bucket are reachable by URL without a SELECT policy;
+-- limiting SELECT keeps anonymous clients from listing the bucket.
+create policy "auth read media" on storage.objects for select
+  using (bucket_id = 'media' and auth.role() = 'authenticated');
 create policy "auth upload media" on storage.objects for insert
   with check (bucket_id = 'media' and auth.role() = 'authenticated');
 create policy "auth update media" on storage.objects for update
