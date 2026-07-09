@@ -32,6 +32,8 @@ export default function PrototypeHub({
   const [dragId, setDragId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
+  const [editFigma, setEditFigma] = useState(false);
+  const [editLinear, setEditLinear] = useState(false);
 
   const commitRename = (id, value) => {
     const title = value.trim();
@@ -358,19 +360,20 @@ export default function PrototypeHub({
               <div ref={linksRowRef} style={{ display: "flex", alignItems: "stretch" }}>
                 {/* figma */}
                 <div style={{ flexBasis: `${linksSplit * 100}%`, minWidth: 200, display: "flex", flexDirection: "column" }}>
-                  <div style={{ fontSize: 12, color: c.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}><Figma style={{ width: 13, height: 13, color: c.brand }} /> Figma frame</div>
-                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                    <Input value={story.figma_url || ""} onChange={(e) => patch("figma_url", e.target.value)} placeholder="Paste a Figma URL"
-                      style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
-                    <button onClick={() => story.figma_url && window.open(story.figma_url, "_blank")} aria-label="Open Figma link in a new tab" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
+                  <div style={{ fontSize: 12, color: c.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <Figma style={{ width: 13, height: 13, color: c.brand }} /> Figma frame
+                    {story.figma_url && !editFigma && <button onClick={() => setEditFigma(true)} style={{ marginLeft: "auto", fontSize: 11, color: c.muted, background: "transparent", border: "none", cursor: "pointer" }}>Edit link</button>}
                   </div>
-                  <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px solid ${c.border}`, background: c.bg }}>
-                    {isFigma
-                      ? <FigmaEmbed url={story.figma_url} />
-                      : story.figma_url
-                        ? <a href={story.figma_url} target="_blank" rel="noreferrer" style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20, color: c.text, textDecoration: "none" }}><Figma style={{ width: 22, height: 22, color: c.brand }} /><div style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>Open in Figma <ExternalLink style={{ width: 12, height: 12 }} /></div><div style={{ fontSize: 12, color: c.muted, wordBreak: "break-all" }}>{story.figma_url}</div></a>
-                        : <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20 }}><Figma style={{ width: 22, height: 22, color: c.muted }} /><div style={{ fontSize: 13, color: c.text }}>No Figma frame linked</div><div style={{ fontSize: 12, color: c.muted }}>Paste a share URL to embed a live preview.</div></div>}
-                  </div>
+                  {(!story.figma_url || editFigma) && (
+                    <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                      <Input value={story.figma_url || ""} onChange={(e) => patch("figma_url", e.target.value)} placeholder="Paste a Figma URL"
+                        style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
+                      {editFigma && <button onClick={() => setEditFigma(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
+                    </div>
+                  )}
+                  {story.figma_url
+                    ? <FigmaCard c={c} url={story.figma_url} />
+                    : <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px dashed ${c.border}`, background: c.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20 }}><Figma style={{ width: 22, height: 22, color: c.muted }} /><div style={{ fontSize: 13, color: c.text }}>No Figma frame linked</div><div style={{ fontSize: 12, color: c.muted }}>Paste a share URL to embed a live preview.</div></div>}
                 </div>
                 {/* resizer */}
                 <div onMouseDown={startLinksResize} title="Drag to resize" role="separator" aria-orientation="vertical"
@@ -379,11 +382,16 @@ export default function PrototypeHub({
                 </div>
                 {/* linear */}
                 <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column" }}>
-                  <div style={{ fontSize: 12, color: c.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}><CircleDot style={{ width: 13, height: 13, color: "#5E6AD2" }} /> Linear issue</div>
-                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                    <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/…/issue/DES-418/…" style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
-                    <button onClick={() => story.issue_url && window.open(story.issue_url, "_blank")} aria-label="Open Linear issue in a new tab" style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ExternalLink style={{ width: 14, height: 14 }} /></button>
+                  <div style={{ fontSize: 12, color: c.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <CircleDot style={{ width: 13, height: 13, color: "#5E6AD2" }} /> Linear issue
+                    {story.issue_url && !editLinear && <button onClick={() => setEditLinear(true)} style={{ marginLeft: "auto", fontSize: 11, color: c.muted, background: "transparent", border: "none", cursor: "pointer" }}>Edit link</button>}
                   </div>
+                  {(!story.issue_url || editLinear) && (
+                    <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                      <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/…/issue/DES-418/…" style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
+                      {editLinear && <button onClick={() => setEditLinear(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
+                    </div>
+                  )}
                   <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} identifier={linearId} issueUrl={story.issue_url} />
                 </div>
               </div>
@@ -439,6 +447,44 @@ const FigmaEmbed = memo(function FigmaEmbed({ url }) {
   const src = `https://www.figma.com/embed?embed_host=eon-hub&url=${encodeURIComponent(url)}`;
   return <iframe title="Figma preview" src={src} allowFullScreen style={{ width: "100%", height: "100%", border: "none", display: "block" }} />;
 });
+
+// Parse file name + node from a Figma URL, e.g. .../design/KEY/Orion---Core-App?node-id=14010-9626
+function figmaMeta(url = "") {
+  const valid = /figma\.com/i.test(url) && !/REPLACE/i.test(url);
+  let title = "Figma file", node = null;
+  const m = url.match(/figma\.com\/(?:file|design|proto|board)\/[^/]+\/([^/?#]+)/i);
+  if (m) title = decodeURIComponent(m[1]).replace(/-+/g, " ").trim() || title;
+  const n = url.match(/node-id=([^&]+)/i);
+  if (n) node = decodeURIComponent(n[1]);
+  return { valid, title, node };
+}
+
+const FIGMA_MARK = `<svg width="15" height="15" viewBox="0 0 38 57" xmlns="http://www.w3.org/2000/svg"><path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#A259FF"/></svg>`;
+
+/* ---- Figma unfurl card: icon + file name + Open in Figma, over a live preview.
+   Mirrors how Linear renders an embedded link. ---- */
+function FigmaCard({ c, url }) {
+  const meta = figmaMeta(url);
+  return (
+    <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px solid ${c.border}`, background: c.bg, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderBottom: `1px solid ${c.border}`, flexShrink: 0 }}>
+        <span style={{ display: "inline-flex", flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: FIGMA_MARK }} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta.title}</div>
+          {meta.node && <div style={{ fontSize: 11, color: c.muted }}>Node {meta.node}</div>}
+        </div>
+        <a href={url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, fontSize: 12, color: c.text, background: c.raised, border: `1px solid ${c.border}`, borderRadius: 8, padding: "5px 10px", textDecoration: "none" }}>
+          <ExternalLink style={{ width: 13, height: 13 }} /> Open in Figma
+        </a>
+      </div>
+      <div style={{ flex: 1, minHeight: 0, background: "#1e1e1e" }}>
+        {meta.valid
+          ? <FigmaEmbed url={url} />
+          : <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: c.muted, fontSize: 12, padding: 16, textAlign: "center" }}>That link isn't an embeddable Figma URL — “Open in Figma” still works.</div>}
+      </div>
+    </div>
+  );
+}
 
 /* ---- Linear issue card: live via edge function, static preview fallback.
    The whole card links to the issue. ---- */
@@ -572,6 +618,7 @@ function UploadPanel({ c, story, onSave, onClear, onCancel }) {
    prototype through {{key}} tokens (logos, placeholders). ---- */
 function MediaManager({ c, assets, onSetAsset }) {
   const [ph, setPh] = useState({ w: 320, h: 180, label: "", bg: "#E5E7EB", fg: "#94A3B8", name: "" });
+  const [img, setImg] = useState({ name: "", url: "" });
   const [copied, setCopied] = useState("");
   const field = { height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 };
   const panel = { background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 };
@@ -605,12 +652,19 @@ function MediaManager({ c, assets, onSetAsset }) {
     </div>
   );
 
+  const cleanKey = (s) => s.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/(^-|-$)/g, "");
   const phData = MEDIA.placeholder(ph.w, ph.h, ph.label, ph.bg, ph.fg);
   const savePlaceholder = () => {
-    const key = ph.name.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/(^-|-$)/g, "");
+    const key = cleanKey(ph.name);
     if (!key) return;
     onSetAsset(key, phData);
     setPh({ ...ph, name: "" });
+  };
+  const addImage = () => {
+    const key = cleanKey(img.name);
+    if (!key || !img.url.trim()) return;
+    onSetAsset(key, img.url.trim());
+    setImg({ name: "", url: "" });
   };
   const customKeys = Object.keys(assets).filter((k) => !["eonLogo", "acmeLogo"].includes(k) && assets[k]);
 
@@ -618,13 +672,13 @@ function MediaManager({ c, assets, onSetAsset }) {
     <div style={{ flex: 1 }}>
       <div style={{ height: 56, borderBottom: `1px solid ${c.border}`, background: c.nav, display: "flex", alignItems: "center", gap: 10, padding: "0 20px", position: "sticky", top: 0, zIndex: 5 }}>
         <span style={{ fontSize: 15, fontWeight: 500 }}>Media library</span>
-        <span style={{ fontSize: 12, color: c.muted }}>Shared assets — drop a token like {"{{acmeLogo}}"} into any prototype's HTML and it maps here</span>
+        <span style={{ fontSize: 12, color: c.muted }}>Shared logos & images (paste a CDN URL) — reference them in any prototype as {"{{name}}"} and they map everywhere</span>
       </div>
       <div style={{ padding: 20 }}>
         <Tabs defaultValue="logos">
           <TabsList style={{ background: c.raised, borderRadius: 100, marginBottom: 18 }}>
             <TabsTrigger value="logos">Logos</TabsTrigger>
-            <TabsTrigger value="placeholders">Placeholders</TabsTrigger>
+            <TabsTrigger value="placeholders">Images</TabsTrigger>
           </TabsList>
           <TabsContent value="logos" style={{ margin: 0 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -638,32 +692,50 @@ function MediaManager({ c, assets, onSetAsset }) {
           <TabsContent value="placeholders" style={{ margin: 0 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16 }}>
               <div style={panel}>
-                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Generate placeholder</div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <Input type="number" value={ph.w} onChange={(e) => setPh({ ...ph, w: +e.target.value || 0 })} style={field} />
-                  <Input type="number" value={ph.h} onChange={(e) => setPh({ ...ph, h: +e.target.value || 0 })} style={field} />
-                </div>
-                <Input value={ph.label} onChange={(e) => setPh({ ...ph, label: e.target.value })} placeholder={`Label (default ${ph.w}×${ph.h})`} style={{ ...field, marginBottom: 8 }} />
-                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                  <input type="color" value={ph.bg} onChange={(e) => setPh({ ...ph, bg: e.target.value })} style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
-                  <input type="color" value={ph.fg} onChange={(e) => setPh({ ...ph, fg: e.target.value })} style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
-                </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <Input value={ph.name} onChange={(e) => setPh({ ...ph, name: e.target.value })} placeholder="Save as (e.g. heroImage)" style={field} />
-                  <button onClick={savePlaceholder} disabled={!ph.name.trim()} style={{ ...btn, background: c.primary, color: c.primaryText, border: "none", opacity: ph.name.trim() ? 1 : 0.5 }}>Save to media</button>
-                </div>
-                <button onClick={() => copy(phData, "ph-link")} style={{ ...btn, width: "100%", marginTop: 6 }}>{copied === "ph-link" ? "Copied image link" : "Copy image link"}</button>
-                <p style={{ fontSize: 11, color: c.muted, marginTop: 8 }}>
-                  Or drop <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> straight into a prototype — no saving needed.
+                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>Add an image</div>
+                <p style={{ fontSize: 12, color: c.muted, marginBottom: 12, lineHeight: 1.5 }}>
+                  Paste an image/CDN URL and name it. Use it in any prototype as <code style={{ color: c.text }}>{'{{name}}'}</code> — replace it here and every prototype that uses it updates.
                 </p>
+                <Input value={img.name} onChange={(e) => setImg({ ...img, name: e.target.value })} placeholder="Name (e.g. heroImage)" style={{ ...field, marginBottom: 8 }} />
+                <Input value={img.url} onChange={(e) => setImg({ ...img, url: e.target.value })} placeholder="https://cdn.example.com/image.png" style={{ ...field, marginBottom: 10 }} />
+                <button onClick={addImage} disabled={!img.name.trim() || !img.url.trim()} style={{ ...btn, width: "100%", background: c.primary, color: c.primaryText, border: "none", opacity: img.name.trim() && img.url.trim() ? 1 : 0.5 }}>Add to media</button>
+                {img.name.trim() && <p style={{ fontSize: 11, color: c.muted, marginTop: 8 }}>Will be available as <code style={{ color: c.text }}>{`{{${cleanKey(img.name)}}}`}</code></p>}
               </div>
               <div style={panel}>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Preview</div>
-                <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: "hidden", display: "flex", justifyContent: "center", background: c.bg, padding: 12 }}>
-                  <img src={phData} alt="placeholder" style={{ maxWidth: "100%", maxHeight: 220, objectFit: "contain" }} />
+                <div style={{ height: 200, border: `1px solid ${c.border}`, borderRadius: 10, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: c.bg, padding: 12 }}>
+                  {img.url
+                    ? <img src={img.url} alt="preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} onError={(e) => { e.currentTarget.style.display = "none"; }} onLoad={(e) => { e.currentTarget.style.display = "block"; }} />
+                    : <span style={{ fontSize: 12, color: c.muted }}>Paste an image URL to preview</span>}
                 </div>
               </div>
             </div>
+
+            <details style={{ ...panel, marginTop: 16 }}>
+              <summary style={{ fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Generate a blank placeholder (optional)</summary>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16, marginTop: 14 }}>
+                <div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <Input type="number" value={ph.w} onChange={(e) => setPh({ ...ph, w: +e.target.value || 0 })} style={field} />
+                    <Input type="number" value={ph.h} onChange={(e) => setPh({ ...ph, h: +e.target.value || 0 })} style={field} />
+                  </div>
+                  <Input value={ph.label} onChange={(e) => setPh({ ...ph, label: e.target.value })} placeholder={`Label (default ${ph.w}×${ph.h})`} style={{ ...field, marginBottom: 8 }} />
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    <input type="color" value={ph.bg} onChange={(e) => setPh({ ...ph, bg: e.target.value })} style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
+                    <input type="color" value={ph.fg} onChange={(e) => setPh({ ...ph, fg: e.target.value })} style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <Input value={ph.name} onChange={(e) => setPh({ ...ph, name: e.target.value })} placeholder="Save as (e.g. blankHero)" style={field} />
+                    <button onClick={savePlaceholder} disabled={!ph.name.trim()} style={{ ...btn, opacity: ph.name.trim() ? 1 : 0.5 }}>Save</button>
+                  </div>
+                  <p style={{ fontSize: 11, color: c.muted, marginTop: 8 }}>Or drop <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> straight into a prototype.</p>
+                </div>
+                <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: "hidden", display: "flex", justifyContent: "center", background: c.bg, padding: 12 }}>
+                  <img src={phData} alt="placeholder" style={{ maxWidth: "100%", maxHeight: 180, objectFit: "contain" }} />
+                </div>
+              </div>
+            </details>
+
             {customKeys.length > 0 && (
               <div style={{ ...panel, marginTop: 16 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Saved media</div>
