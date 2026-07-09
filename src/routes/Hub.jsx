@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import PrototypeHub from "../features/hub/PrototypeHub";
 import {
-  listProjects, patchProject as dbPatch, createProject, subscribeProjects,
+  listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset,
 } from "../lib/data";
 
@@ -59,6 +59,24 @@ export default function Hub() {
     } catch (e) { alert(e.message); }
   }
 
+  async function onDeleteProject(id) {
+    const p = projects.find((x) => x.id === id);
+    if (!window.confirm(`Delete "${p?.title}"? This can't be undone.`)) return;
+    try { await deleteProject(id); await load(); } catch (e) { alert(e.message); }
+  }
+
+  // Persist a new sidebar order; a story dropped into another group adopts it.
+  async function onReorder(orderedIds, groupById = {}) {
+    setProjects((ps) => orderedIds.map((id, i) => {
+      const p = ps.find((x) => x.id === id);
+      return { ...p, sort_order: i, group_name: groupById[id] ?? p.group_name };
+    }));
+    try {
+      await Promise.all(orderedIds.map((id, i) =>
+        dbPatch(id, { sort_order: i, ...(groupById[id] ? { group_name: groupById[id] } : {}) })));
+    } catch (e) { console.error(e); load().catch(console.error); }
+  }
+
   if (!projects) {
     return (
       <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#000", color: "#9094A5", fontFamily: "'DM Sans',sans-serif" }}>
@@ -76,6 +94,8 @@ export default function Hub() {
       onPatchProject={onPatchProject}
       onSetAsset={onSetAsset}
       onNewProject={onNewProject}
+      onDeleteProject={onDeleteProject}
+      onReorder={onReorder}
       onOpenAdmin={() => navigate("/admin")}
       onSignOut={signOut}
     />

@@ -14,7 +14,7 @@ const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smar
 
 export default function PrototypeHub({
   projects, assets = {}, isAdmin, userEmail,
-  onPatchProject, onSetAsset, onNewProject, onOpenAdmin, onSignOut,
+  onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder, onOpenAdmin, onSignOut,
 }) {
   const [hubTheme, setHubTheme] = useState("dark");
   const [protoTheme, setProtoTheme] = useState("dark");
@@ -25,6 +25,19 @@ export default function PrototypeHub({
   const [canvasBg, setCanvasBg] = useState("#808080");
   const [liveArgs, setLiveArgs] = useState({}); // {projectId: {key:val}} ephemeral
   const [showUpload, setShowUpload] = useState(false);
+  const [dragId, setDragId] = useState(null);
+  const [dropTargetId, setDropTargetId] = useState(null);
+
+  // Drop the dragged story in front of the target, adopting the target's group.
+  const handleDrop = (targetId) => {
+    setDropTargetId(null);
+    if (!dragId || dragId === targetId || !onReorder) return;
+    const ordered = projects.map((p) => p.id).filter((id) => id !== dragId);
+    ordered.splice(ordered.indexOf(targetId), 0, dragId);
+    const targetGroup = projects.find((p) => p.id === targetId)?.group_name;
+    onReorder(ordered, targetGroup ? { [dragId]: targetGroup } : {});
+    setDragId(null);
+  };
 
   const c = HUB[hubTheme];
   const story = projects.find((s) => s.id === activeId) || projects[0];
@@ -119,12 +132,29 @@ export default function PrototypeHub({
                 <ChevronDown style={{ width: 12, height: 12 }} /> {group}
               </div>
               {items.map((s) => (
-                <button key={s.id} onClick={() => { setActiveId(s.id); setView("stories"); }}
-                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", padding: "8px 10px 8px 22px", borderRadius: 8, border: "none", cursor: "pointer",
-                    fontSize: 14, marginBottom: 1, color: activeId === s.id ? c.text : c.secondary, background: activeId === s.id ? c.active : "transparent", fontWeight: activeId === s.id ? 500 : 400 }}>
-                  <CircleDot style={{ width: 13, height: 13, color: activeId === s.id ? c.brand : c.muted }} />
-                  {s.title}
-                </button>
+                <div key={s.id} draggable={isAdmin}
+                  onDragStart={() => setDragId(s.id)}
+                  onDragEnd={() => { setDragId(null); setDropTargetId(null); }}
+                  onDragOver={(e) => { if (dragId) { e.preventDefault(); setDropTargetId(s.id); } }}
+                  onDragLeave={() => setDropTargetId((t) => (t === s.id ? null : t))}
+                  onDrop={() => handleDrop(s.id)}
+                  style={{ display: "flex", alignItems: "center", borderRadius: 8, marginBottom: 1,
+                    background: activeId === s.id ? c.active : "transparent",
+                    borderTop: dropTargetId === s.id && dragId !== s.id ? `2px solid ${c.brand}` : "2px solid transparent",
+                    opacity: dragId === s.id ? 0.4 : 1, cursor: isAdmin ? "grab" : "pointer" }}>
+                  <button onClick={() => { setActiveId(s.id); setView("stories"); }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, textAlign: "left", padding: "8px 10px 8px 22px", borderRadius: 8, border: "none", cursor: "inherit",
+                      fontSize: 14, color: activeId === s.id ? c.text : c.secondary, background: "transparent", fontWeight: activeId === s.id ? 500 : 400 }}>
+                    <CircleDot style={{ width: 13, height: 13, flexShrink: 0, color: activeId === s.id ? c.brand : c.muted }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
+                  </button>
+                  {isAdmin && (
+                    <button onClick={() => onDeleteProject?.(s.id)} aria-label={`Delete ${s.title}`} title="Delete"
+                      style={{ width: 24, height: 24, marginRight: 4, flexShrink: 0, borderRadius: 6, border: "none", background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Trash2 style={{ width: 12, height: 12 }} />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           ))}
