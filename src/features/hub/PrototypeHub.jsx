@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Search, Monitor, Laptop, Tablet, Smartphone, Sun, Moon, Maximize2, ExternalLink,
-  Figma, CircleDot, ChevronDown, Link2, FileText, Plus, Shield, LogOut,
+  Figma, CircleDot, ChevronDown, Link2, FileText, Plus, Shield, LogOut, Upload, Trash2,
 } from "lucide-react";
 import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, renderStory, currentArgs } from "./prototypes";
 
@@ -24,6 +24,7 @@ export default function PrototypeHub({
   const [query, setQuery] = useState("");
   const [canvasBg, setCanvasBg] = useState("#808080");
   const [liveArgs, setLiveArgs] = useState({}); // {projectId: {key:val}} ephemeral
+  const [showUpload, setShowUpload] = useState(false);
 
   const c = HUB[hubTheme];
   const story = projects.find((s) => s.id === activeId) || projects[0];
@@ -165,10 +166,21 @@ export default function PrototypeHub({
               style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${c.border}`, background: c.panel, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               {hubTheme === "dark" ? <Sun style={{ width: 15, height: 15 }} /> : <Moon style={{ width: 15, height: 15 }} />}
             </button>
+            <button onClick={() => setShowUpload((v) => !v)} aria-expanded={showUpload}
+              style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, border: `1px solid ${showUpload ? c.brand : c.border}`, background: c.panel, color: showUpload ? c.brand : c.muted, cursor: "pointer", fontSize: 13 }}>
+              <Upload style={{ width: 14, height: 14 }} /> Upload HTML
+            </button>
             <Button onClick={openFull} style={{ height: 32, background: c.primary, color: c.primaryText, gap: 6, fontSize: 13, borderRadius: 8 }}>
               <Maximize2 style={{ width: 14, height: 14 }} /> Open full view
             </Button>
           </div>
+
+          {showUpload && (
+            <UploadPanel key={story.id} c={c} story={story}
+              onSave={(html) => { patch("prototype_html", html); setShowUpload(false); }}
+              onClear={() => { patch("prototype_html", null); setShowUpload(false); }}
+              onCancel={() => setShowUpload(false)} />
+          )}
 
           {/* canvas + floating controls */}
           <div style={{ position: "relative", background: canvasBg, minHeight: 540, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 24px 88px" }}>
@@ -252,6 +264,72 @@ export default function PrototypeHub({
             </div>
           </div>
         </>)}
+      </div>
+    </div>
+  );
+}
+
+/* ---- Upload prototype HTML (persists via projects.prototype_html) ---- */
+function UploadPanel({ c, story, onSave, onClear, onCancel }) {
+  const [html, setHtml] = useState(story.prototype_html || "");
+  const [dragOver, setDragOver] = useState(false);
+  const [err, setErr] = useState("");
+
+  const readFile = (file) => {
+    if (!file) return;
+    if (!/\.html?$/i.test(file.name) && file.type !== "text/html") {
+      setErr("Drop a .html file — other formats aren't supported.");
+      return;
+    }
+    setErr("");
+    const reader = new FileReader();
+    reader.onload = () => setHtml(String(reader.result));
+    reader.readAsText(file);
+  };
+
+  return (
+    <div style={{ borderBottom: `1px solid ${c.border}`, background: c.nav, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 500 }}>
+        <Upload style={{ width: 14, height: 14, color: c.muted }} /> Upload prototype HTML for “{story.title}”
+        <span style={{ fontSize: 12, fontWeight: 400, color: c.muted }}>
+          {story.prototype_html ? "This story renders uploaded HTML." : "This story renders a built-in builder or placeholder until HTML is uploaded."}
+        </span>
+      </div>
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); readFile(e.dataTransfer.files?.[0]); }}
+        style={{ border: `1.5px dashed ${dragOver ? c.brand : c.border}`, borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, background: dragOver ? c.active : "transparent" }}>
+        <span style={{ fontSize: 13, color: c.secondary, flex: 1 }}>Drag & drop a .html file here, or</span>
+        <label style={{ fontSize: 13, color: c.brand, cursor: "pointer", textDecoration: "underline" }}>
+          browse
+          <input type="file" accept=".html,.htm,text/html" aria-label="Choose an HTML file"
+            onChange={(e) => readFile(e.target.files?.[0])} style={{ display: "none" }} />
+        </label>
+      </div>
+      <Textarea value={html} onChange={(e) => setHtml(e.target.value)} spellCheck={false}
+        placeholder="…or paste a self-contained HTML document here"
+        aria-label="Prototype HTML source"
+        style={{ minHeight: 160, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 8 }} />
+      {err && <div role="alert" style={{ fontSize: 12, color: "#FF508F" }}>{err}</div>}
+      <div style={{ display: "flex", gap: 8 }}>
+        <Button onClick={() => html.trim() && onSave(html)} disabled={!html.trim()}
+          style={{ height: 32, background: c.primary, color: c.primaryText, fontSize: 13, borderRadius: 8, opacity: html.trim() ? 1 : 0.5 }}>
+          Save to story
+        </Button>
+        {story.prototype_html && (
+          <button onClick={onClear}
+            style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.muted, cursor: "pointer", fontSize: 13 }}>
+            <Trash2 style={{ width: 13, height: 13 }} /> Remove uploaded HTML
+          </button>
+        )}
+        <button onClick={onCancel}
+          style={{ height: 32, padding: "0 12px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.muted, cursor: "pointer", fontSize: 13 }}>
+          Cancel
+        </button>
+        <span style={{ fontSize: 12, color: c.muted, alignSelf: "center", marginLeft: "auto" }}>
+          Saved to Supabase and shared with your team.
+        </span>
       </div>
     </div>
   );
