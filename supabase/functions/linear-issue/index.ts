@@ -1,8 +1,7 @@
 // Reads a Linear issue server-side so the Linear API token never reaches the
-// client. Callers must be signed-in team members. Configure with:
-//   Supabase dashboard → Edge Functions → Secrets → LINEAR_API_KEY = lin_api_...
-// Until then this returns 501 and the app falls back to its static card.
-// Looks up by human identifier (e.g. "DES-418") via team key + issue number.
+// client. Callers must be signed-in team members. The key lives in Supabase
+// Vault (or a LINEAR_API_KEY env secret). Looks up by human identifier (e.g.
+// "DES-418") via team key + issue number.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
@@ -60,7 +59,12 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         query: `query Issue($team: String!, $number: Float!) {
           issues(filter: { team: { key: { eq: $team } }, number: { eq: $number } }, first: 1) {
-            nodes { identifier title url updatedAt state { name color type } assignee { name displayName } }
+            nodes {
+              identifier title description url updatedAt priorityLabel
+              state { name color type }
+              assignee { name displayName avatarUrl }
+              labels { nodes { name color } }
+            }
           }
         }`,
         variables: { team: teamKey, number },
@@ -69,6 +73,8 @@ Deno.serve(async (req: Request) => {
     const payload = await res.json();
     const issue = payload?.data?.issues?.nodes?.[0];
     if (!issue) return json({ error: payload?.errors?.[0]?.message ?? "issue not found" }, 404);
+    // Flatten labels for the client.
+    issue.labels = (issue.labels?.nodes ?? []).map((l: { name: string; color: string }) => ({ name: l.name, color: l.color }));
     return json({ issue });
   } catch (e) {
     return json({ error: String((e as Error)?.message ?? e) }, 500);

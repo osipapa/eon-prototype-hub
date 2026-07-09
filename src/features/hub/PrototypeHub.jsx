@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Search, Monitor, Laptop, Tablet, Smartphone, Sun, Moon, Maximize2, ExternalLink,
-  Figma, CircleDot, ChevronDown, Link2, FileText, Plus, Shield, LogOut, Upload, Trash2,
+  Figma, CircleDot, Circle, ChevronDown, Link2, FileText, Plus, Shield, LogOut, Upload, Trash2,
   Square, LayoutGrid,
 } from "lucide-react";
 import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, renderStory, currentArgs, stateCombos } from "./prototypes";
@@ -31,6 +31,14 @@ export default function PrototypeHub({
   const [showUpload, setShowUpload] = useState(false);
   const [dragId, setDragId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
+  const [renamingId, setRenamingId] = useState(null);
+
+  const commitRename = (id, value) => {
+    const title = value.trim();
+    const prev = projects.find((p) => p.id === id)?.title;
+    if (title && title !== prev) onPatchProject(id, { title });
+    setRenamingId(null);
+  };
 
   // Resizable layout, persisted per browser.
   const [canvasH, setCanvasH] = useState(() => Number(localStorage.getItem("eon.canvasH")) || 560);
@@ -175,13 +183,30 @@ export default function PrototypeHub({
                     background: activeId === s.id ? c.active : "transparent",
                     borderTop: dropTargetId === s.id && dragId !== s.id ? `2px solid ${c.brand}` : "2px solid transparent",
                     opacity: dragId === s.id ? 0.4 : 1, cursor: isAdmin ? "grab" : "pointer" }}>
-                  <button onClick={() => { setActiveId(s.id); setView("stories"); }}
-                    style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, textAlign: "left", padding: "8px 10px 8px 22px", borderRadius: 8, border: "none", cursor: "inherit",
-                      fontSize: 14, color: activeId === s.id ? c.text : c.secondary, background: "transparent", fontWeight: activeId === s.id ? 500 : 400 }}>
-                    <CircleDot style={{ width: 13, height: 13, flexShrink: 0, color: activeId === s.id ? c.brand : c.muted }} />
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
-                  </button>
-                  {isAdmin && (
+                  {renamingId === s.id ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, padding: "8px 10px 8px 22px" }}>
+                      <Circle style={{ width: 13, height: 13, flexShrink: 0, color: c.brand }} />
+                      <input autoFocus defaultValue={s.title}
+                        onBlur={(e) => commitRename(s.id, e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); else if (e.key === "Escape") setRenamingId(null); }}
+                        aria-label={`Rename ${s.title}`}
+                        style={{ flex: 1, minWidth: 0, background: c.bg, border: `1px solid ${c.brand}`, borderRadius: 6, color: c.text, fontSize: 14, padding: "2px 6px", outline: "none" }} />
+                    </div>
+                  ) : (
+                    <button onClick={() => { setActiveId(s.id); setView("stories"); }} onDoubleClick={() => setRenamingId(s.id)} title="Double-click to rename"
+                      style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, textAlign: "left", padding: "8px 10px 8px 22px", borderRadius: 8, border: "none", cursor: "inherit",
+                        fontSize: 14, color: activeId === s.id ? c.text : c.secondary, background: "transparent", fontWeight: activeId === s.id ? 500 : 400 }}>
+                      <Circle style={{ width: 13, height: 13, flexShrink: 0, color: activeId === s.id ? c.brand : c.muted }} />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
+                    </button>
+                  )}
+                  {isAdmin && renamingId !== s.id && (
+                    <button onClick={() => setRenamingId(s.id)} aria-label={`Rename ${s.title}`} title="Rename"
+                      style={{ width: 24, height: 24, flexShrink: 0, borderRadius: 6, border: "none", background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <FileText style={{ width: 12, height: 12 }} />
+                    </button>
+                  )}
+                  {isAdmin && renamingId !== s.id && (
                     <button onClick={() => onDeleteProject?.(s.id)} aria-label={`Delete ${s.title}`} title="Delete"
                       style={{ width: 24, height: 24, marginRight: 4, flexShrink: 0, borderRadius: 6, border: "none", background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <Trash2 style={{ width: 12, height: 12 }} />
@@ -258,8 +283,9 @@ export default function PrototypeHub({
               onCancel={() => setShowUpload(false)} />
           )}
 
-          {/* canvas (single) or all-states grid + shared floating controls */}
-          <div style={{ position: "relative" }}>
+          {/* canvas + notes side panel */}
+          <div style={{ display: "flex", alignItems: "stretch", borderBottom: `1px solid ${c.border}` }}>
+            <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
             <div style={{ height: canvasH, overflow: "auto", background: canvasBg, display: "flex", alignItems: layout === "single" ? "center" : "flex-start", justifyContent: "center", padding: "32px 24px 88px" }}>
             {layout === "single" ? (
               <div style={{ width: vp.w * scale, height: vp.h * scale, flexShrink: 0 }}>
@@ -315,9 +341,17 @@ export default function PrototypeHub({
               style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 16, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 6 }}>
               <div style={{ width: 46, height: 5, borderRadius: 3, background: resizeHover ? c.brand : "transparent", transition: "background .15s" }} />
             </div>
+            </div>
+            {/* notes side panel — matches the canvas height */}
+            <div style={{ width: 320, flexShrink: 0, borderLeft: `1px solid ${c.border}`, background: c.nav, display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 500, borderBottom: `1px solid ${c.border}`, flexShrink: 0 }}><FileText style={{ width: 15, height: 15, color: c.muted }} /> Notes</div>
+              <Textarea value={story.notes || ""} onChange={(e) => patch("notes", e.target.value)} placeholder="Notes, goals, open questions…"
+                style={{ flex: 1, minHeight: 160, resize: "none", border: "none", background: "transparent", color: c.text, fontSize: 13, borderRadius: 0, padding: "12px 16px", outline: "none" }} />
+              <div style={{ fontSize: 11, color: c.muted, padding: "0 16px 12px", flexShrink: 0 }}>Saved to Supabase and shared with your team.</div>
+            </div>
           </div>
 
-          {/* links + docs */}
+          {/* links */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: 20 }}>
             <div style={{ background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, fontSize: 14, fontWeight: 500 }}><Link2 style={{ width: 15, height: 15, color: c.muted }} /> Links</div>
@@ -353,12 +387,6 @@ export default function PrototypeHub({
                   <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} identifier={linearId} issueUrl={story.issue_url} />
                 </div>
               </div>
-            </div>
-            <div style={{ background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 14, fontWeight: 500 }}><FileText style={{ width: 15, height: 15, color: c.muted }} /> Docs</div>
-              <Textarea value={story.notes || ""} onChange={(e) => patch("notes", e.target.value)} placeholder="Describe the project, goals, open questions..."
-                style={{ minHeight: 120, background: c.bg, borderColor: c.border, color: c.text, fontSize: 13, resize: "vertical", borderRadius: 8 }} />
-              <p style={{ fontSize: 11, color: c.muted, marginTop: 8 }}>Saved to Supabase and shared with your team.</p>
             </div>
           </div>
         </>)}
@@ -430,26 +458,34 @@ function LinearCard({ c, story, sc0, sc1, identifier, issueUrl }) {
   const clickable = Boolean(issueUrl);
   return (
     <a href={issueUrl || undefined} target={clickable ? "_blank" : undefined} rel="noreferrer"
-      style={{ height: 360, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column", textDecoration: "none", color: c.text, cursor: clickable ? "pointer" : "default" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      style={{ height: 360, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column", textDecoration: "none", color: c.text, cursor: clickable ? "pointer" : "default", overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{live?.identifier || identifier || "ISSUE"}</span>
         {live?.state
           ? <Badge style={{ background: stateColor ? `${stateColor}26` : c.raised, color: stateColor || c.text, border: "none", fontWeight: 500, fontSize: 11 }}>{live.state.name}</Badge>
           : <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500, fontSize: 11 }}>{story.status}</Badge>}
+        {live?.priorityLabel && live.priorityLabel !== "No priority" && (
+          <span style={{ fontSize: 11, color: c.muted }}>{live.priorityLabel}</span>
+        )}
         {clickable && <ExternalLink style={{ width: 13, height: 13, color: c.muted, marginLeft: "auto" }} />}
       </div>
-      <div style={{ fontSize: 15, fontWeight: 500, marginTop: 12 }}>
+      <div style={{ fontSize: 15, fontWeight: 500, marginTop: 12, flexShrink: 0 }}>
         {live ? live.title : `${story.title} — design + build`}
       </div>
-      {live?.assignee && (
-        <div style={{ fontSize: 12, color: c.muted, marginTop: 6 }}>Assigned to {live.assignee.displayName || live.assignee.name}</div>
-      )}
-      <div style={{ fontSize: 13, color: c.secondary, marginTop: 6, lineHeight: 1.5, flex: 1 }}>{(story.notes || "").slice(0, 200)}{(story.notes || "").length > 200 ? "…" : ""}</div>
-      <div style={{ fontSize: 11, color: c.muted, paddingTop: 12, borderTop: `1px solid ${c.border}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, flexShrink: 0, flexWrap: "wrap" }}>
+        {live?.assignee && <span style={{ fontSize: 12, color: c.muted }}>Assigned to {live.assignee.displayName || live.assignee.name}</span>}
+        {(live?.labels || []).map((l) => (
+          <span key={l.name} style={{ fontSize: 11, color: l.color || c.muted, background: `${l.color || "#888"}22`, borderRadius: 100, padding: "2px 8px" }}>{l.name}</span>
+        ))}
+      </div>
+      {live?.description
+        ? <div style={{ fontSize: 13, color: c.secondary, marginTop: 10, lineHeight: 1.55, flex: 1, overflow: "auto", whiteSpace: "pre-wrap" }}>{live.description}</div>
+        : <div style={{ fontSize: 13, color: c.muted, marginTop: 10, flex: 1 }}>{live ? "No description in Linear." : ""}</div>}
+      <div style={{ fontSize: 11, color: c.muted, paddingTop: 12, marginTop: 8, borderTop: `1px solid ${c.border}`, flexShrink: 0 }}>
         {live
           ? `Live from Linear — updated ${new Date(live.updatedAt).toLocaleDateString()}`
           : identifier
-            ? "Live title/status/assignee appear here once LINEAR_API_KEY is set in Supabase secrets."
+            ? "Loading from Linear…"
             : "Paste a Linear issue URL to link it."}
       </div>
     </a>

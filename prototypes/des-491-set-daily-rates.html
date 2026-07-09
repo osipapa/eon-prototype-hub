@@ -13,7 +13,6 @@
     --background-3:#1E1E22;
     --text-primary:#FFFFFF;
     --text-secondary:rgba(255,255,255,0.7);
-    --text-secondary-50:rgba(144,148,165,0.5);
     --text-brand:#E15CF7;
     --card-background-default:#121216;
     --card-background-hover:#1E1E22;
@@ -43,6 +42,7 @@
     --slider-background-histogram-active:#E15CF7;
     --slider-background-slider-default:#3A3D4A;
     --slider-background-knob:#FFFFFF;
+    --slider-knob-icon:#121216; /* proposed token: slider/icon-knob, aliases grey-80 both modes */
     --font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
     --font-size-title-1:24px;
     --font-size-title-2:20px;
@@ -60,7 +60,6 @@
     --background-3:#DDE0EA;
     --text-primary:#1E1E22;
     --text-secondary:rgba(18,18,22,0.75);
-    --text-secondary-50:rgba(144,148,165,0.5);
     --text-brand:#D400F7;
     --card-background-default:#FFFFFF;
     --card-background-hover:#F9F9FD;
@@ -90,6 +89,7 @@
     --slider-background-histogram-active:#D400F7;
     --slider-background-slider-default:#DDE0EA;
     --slider-background-knob:#FFFFFF;
+    --slider-knob-icon:#121216;
   }
 
   *{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-family)}
@@ -109,9 +109,7 @@
   .sidebar-top{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
   .logo-row{display:flex;align-items:center;gap:8px;padding:0 24px}
   .logo-mark{width:36px;height:36px;border-radius:50%;background:linear-gradient(180deg,#252525,#030303);border:.5px solid #464646;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  [data-theme="light"] .logo-mark{background:linear-gradient(180deg,#FFFFFF,#E9E9F1);border-color:#DDE0EA}
-  .logo-mark svg{color:#FFFFFF}
-  [data-theme="light"] .logo-mark svg{color:#1E1E22}
+  .logo-mark svg{color:#FFFFFF} /* app-icon artwork from Figma; stays dark in both themes */
   .logo-word{font-size:var(--font-size-body);font-weight:var(--font-weight-medium);letter-spacing:.14em;color:var(--text-primary)}
   .divider{height:1px;background:var(--divider-background)}
 
@@ -141,7 +139,7 @@
 
   /* ------------------------------- main -------------------------------- */
   .main{flex:1;min-width:0;display:flex;flex-direction:column;padding:0 56px 56px}
-  .page-head{position:sticky;top:0;z-index:3;background:var(--background-1);display:flex;flex-direction:column;gap:24px;padding:56px 0 0}
+  .page-head{position:sticky;top:0;z-index:3;background:var(--background-1);display:flex;flex-direction:column;gap:24px;padding:56px 0 24px}
   .head-titles{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
   .back-pill{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 10px 0 8px;border-radius:var(--radius-pill);background:var(--navigation-controls-fill-background);border:1px solid var(--navigation-controls-border);color:var(--navigation-controls-fill-icon);font-size:var(--font-size-body)}
   .back-pill svg{width:16px;height:16px}
@@ -150,7 +148,7 @@
   .progress span{flex:1;height:4px;background:var(--progress-bar-background-inactive)}
   .progress span.on{background:var(--progress-bar-background-active)}
 
-  .content{width:780px;max-width:100%;display:flex;flex-direction:column;gap:24px;margin-top:24px}
+  .content{width:780px;max-width:100%;display:flex;flex-direction:column;gap:24px}
   .car-head h2{font-size:var(--font-size-title-2);font-weight:var(--font-weight-medium);line-height:1.2;text-transform:capitalize}
   .car-head p{font-size:var(--font-size-body);color:var(--text-secondary)}
 
@@ -188,7 +186,7 @@
   .track .rec-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:var(--radius-pill);background:var(--slider-background-slider-default);border:1px solid var(--text-brand)}
   .track .handle{position:absolute;top:50%;transform:translate(-50%,-50%);width:48px;height:24px;border-radius:var(--radius-pill);background:var(--slider-background-knob);box-shadow:0 2px 6px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;gap:2px;cursor:grab;touch-action:none}
   .track .handle:active{cursor:grabbing}
-  .track .handle svg{width:8px;height:12px;color:#121216}
+  .track .handle svg{width:8px;height:12px;color:var(--slider-knob-icon)}
   .slider-bottom{position:relative;height:22px}
   .slider-bottom .min-label{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;display:flex;gap:4px;font-size:var(--font-size-body)}
   .slider-bottom .min-label .k{color:var(--text-secondary)}
@@ -274,7 +272,7 @@
           <svg class="chev" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>
         </button>
         <button class="side-item side-sub">Refer a friend</button>
-        <button class="side-item side-sub">Submit a feedback</button>
+        <button class="side-item side-sub">Submit feedback</button>
       </div>
       <div class="divider"></div>
     </div>
@@ -321,21 +319,21 @@
       <section class="rate-card" aria-labelledby="rateTitle">
         <div class="rate-intro">
           <h3 id="rateTitle">Set your daily rates</h3>
-          <p>Set your minimum and maximum daily rates. Our pricing AI adjusts prices within this range to help maximize revenue. The chart shows how often Model 3 vehicles are booked at different price points in the market, based on historical data. Your real world earnings will vary based on availability, your cars trim, year, demand, and seasonality.</p>
-          <button class="link-ghost">How Does pricing works?</button>
+          <p>Set your minimum and maximum daily rates. Our pricing AI adjusts prices within this range to maximize revenue, based on how often Model 3 vehicles are booked at different price points. Your real earnings will vary with availability, your car's trim and year, demand, and seasonality.</p>
+          <button class="link-ghost">How Pricing Works</button>
         </div>
 
         <div class="stats-row">
           <div class="stat-tile">
             <div class="stat-label">
               Projected monthly income
-              <svg class="info" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.4" stroke="currentColor" stroke-width="1"/><circle cx="6" cy="3.6" r=".7" fill="currentColor"/><path d="M6 5.4v3.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+              <svg class="info" viewBox="0 0 12 12" fill="none" role="img" aria-label="About projected income" tabindex="0"><title>Our pricing AI finds the best price that keeps your car booked, to maximize monthly earnings</title><circle cx="6" cy="6" r="5.4" stroke="currentColor" stroke-width="1"/><circle cx="6" cy="3.6" r=".7" fill="currentColor"/><path d="M6 5.4v3.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
             </div>
             <div class="stat-value" id="statIncome">$2,400</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-label">Your take-home earnings</div>
-            <div class="stat-value" id="statTakeHome">$59.5-$210/day</div>
+            <div class="stat-label">Take-home earnings</div>
+            <div class="stat-value" id="statTakeHome">$59.50-$210/day</div>
             <div class="stat-sub">70% of daily rate</div>
           </div>
         </div>
@@ -343,7 +341,7 @@
         <div class="fixed-row">
           <div class="fixed-copy">
             <div class="t">Fixed daily rate</div>
-            <div class="s">Lock in your price; it will remain static</div>
+            <div class="s">Your price won't change automatically</div>
           </div>
           <button class="toggle" id="fixedToggle" role="switch" aria-checked="false" aria-label="Fixed daily rate">
             <span class="knob"></span>
@@ -388,7 +386,7 @@
             </span>
             <div>
               <div class="t">No Contract, No Lock-In</div>
-              <div class="s">Eon fills in the gaps between your existing listings so your cars can earn more without impacting your other revenue streams</div>
+              <div class="s">Eon fills the gaps between your existing listings, so your cars earn more without affecting your other revenue</div>
             </div>
           </div>
           <div class="feature">
@@ -397,7 +395,7 @@
             </span>
             <div>
               <div class="t">Guest Vetting &amp; Onboarding</div>
-              <div class="s">We thoroughly screen and educate guests about the car and the entire process with Eon so pickups and drop offs happen automatically</div>
+              <div class="s">Every guest is screened and walked through the process, so pickups and drop-offs run without you</div>
             </div>
           </div>
           <div class="feature">
@@ -406,7 +404,7 @@
             </span>
             <div>
               <div class="t">Automated Reimbursements</div>
-              <div class="s">Your additional miles, tolls and supercharging are automatically reimbursed with every rental</div>
+              <div class="s">Extra miles, tolls, and supercharging are reimbursed automatically with every rental</div>
             </div>
           </div>
           <div class="feature">
@@ -415,7 +413,7 @@
             </span>
             <div>
               <div class="t">24/7 Customer Support</div>
-              <div class="s">Help available anytime, day or night for you and your guests</div>
+              <div class="s">Help for you and your guests, day or night</div>
             </div>
           </div>
           <div class="feature">
@@ -423,8 +421,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5"/><circle cx="12" cy="15" r="1.2"/></svg>
             </span>
             <div>
-              <div class="t">Chargeback &amp; Tickets Protection</div>
-              <div class="s">Get fully reimbursed and paid out even if guests get a parking ticket or disputes a rental charge</div>
+              <div class="t">Chargeback &amp; Ticket Protection</div>
+              <div class="s">You're paid in full even if a guest gets a parking ticket or disputes a charge</div>
             </div>
           </div>
         </div>
@@ -476,7 +474,7 @@
   var pct = DEFAULT_PCT, touched = false;
 
   function price(){ return Math.round(PRICE_MIN + (pct/100)*(PRICE_MAX-PRICE_MIN)); }
-  function fmtHalf(n){ return (Math.round(n*2)/2).toLocaleString('en-US'); }
+  function fmtHalf(n){ var v = Math.round(n*2)/2; return v % 1 === 0 ? v.toLocaleString('en-US') : v.toFixed(2); }
 
   function render(){
     range.style.left = pct + '%';
