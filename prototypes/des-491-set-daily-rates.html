@@ -43,6 +43,9 @@
     --slider-background-slider-default:#3A3D4A;
     --slider-background-knob:#FFFFFF;
     --slider-knob-icon:#121216; /* proposed token: slider/icon-knob, aliases grey-80 both modes */
+    --dialog-fill:#121216;
+    --dialog-border:#1E1E22;
+    --dialog-scrim:rgba(0,0,0,0.6); /* proposed token: dialog/scrim */
     --font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
     --font-size-title-1:24px;
     --font-size-title-2:20px;
@@ -90,6 +93,9 @@
     --slider-background-slider-default:#DDE0EA;
     --slider-background-knob:#FFFFFF;
     --slider-knob-icon:#121216;
+    --dialog-fill:#FFFFFF;
+    --dialog-border:#DDE0EA;
+    --dialog-scrim:rgba(18,18,22,0.4);
   }
 
   *{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-family)}
@@ -201,6 +207,20 @@
   .feature .icon-tile svg{width:24px;height:24px;color:var(--icon-fill-icon)}
   .feature .t{font-size:var(--font-size-body);color:var(--text-primary)}
   .feature .s{font-size:var(--font-size-caption-1);line-height:16px;color:var(--text-secondary)}
+
+  /* tolls modal */
+  .modal-overlay{position:fixed;inset:0;z-index:100;background:var(--dialog-scrim);display:none;align-items:center;justify-content:center;padding:24px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--dialog-fill);border:1px solid var(--dialog-border);border-radius:var(--radius-card);padding:24px;width:480px;max-width:100%;display:flex;flex-direction:column;gap:16px}
+  .modal:focus{outline:none}
+  .modal-head{display:flex;align-items:center;gap:8px}
+  .modal-head h2{flex:1;text-align:center;font-size:var(--font-size-title-2);font-weight:var(--font-weight-medium);line-height:1.2;padding-left:32px}
+  .modal-close{width:32px;height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-control);background:var(--icon-fill-background);color:var(--icon-fill-icon)}
+  .modal-close svg{width:16px;height:16px}
+  .modal-rows{display:flex;flex-direction:column;gap:8px}
+  .modal-cta{width:100%;height:50px;border-radius:var(--radius-control);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:var(--font-weight-medium);letter-spacing:-0.43px;line-height:22px;background:var(--button-fill-primary-default);color:var(--button-text-primary-default)}
+  .modal-cta:hover{background:var(--button-fill-primary-hover)}
+  .modal-cta:active{background:var(--button-fill-primary-pressed)}
 
   /* footer cta */
   .footer-cta{display:flex;justify-content:flex-end;padding:0 16px;margin-top:24px}
@@ -321,6 +341,7 @@
           <h3 id="rateTitle">Set your daily rates</h3>
           <p>Set your minimum and maximum daily rates. Our pricing AI adjusts prices within this range to maximize revenue, based on how often Model 3 vehicles are booked at different price points. Your real earnings will vary with availability, your car's trim and year, demand, and seasonality.</p>
           <button class="link-ghost">How Pricing Works</button>
+          <button class="link-ghost" id="tollsLink" aria-haspopup="dialog">How Tolls Work</button>
         </div>
 
         <div class="stats-row">
@@ -435,6 +456,56 @@
   </main>
 </div>
 
+<div class="modal-overlay" id="tollsOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tollsTitle" tabindex="-1" id="tollsModal">
+    <div class="modal-head">
+      <h2 id="tollsTitle">How Tolls Work</h2>
+      <button class="modal-close" id="tollsClose" aria-label="Close">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="modal-rows">
+      <div class="feature">
+        <span class="icon-tile" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-3.4-3.1-6-6.2-6-9.4a6 6 0 1 1 12 0c0 3.2-2.6 6.3-6 9.4Z"/><circle cx="12" cy="11.3" r="2.2"/></svg>
+        </span>
+        <div>
+          <div class="t">Tracked Automatically</div>
+          <div class="s">GPS captures every toll, including toll-by-plate charges that can show up weeks after a trip. Nothing to enter by hand</div>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="icon-tile" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 4v16M16 7.3c-.8-1.2-2.2-1.9-3.9-1.9-2.2 0-4 1.2-4 3s1.6 2.5 4 3.1c2.4.6 4 1.4 4 3.2s-1.8 3-4 3c-1.9 0-3.4-.8-4.1-2"/></svg>
+        </span>
+        <div>
+          <div class="t">Reimbursed in Full</div>
+          <div class="s">Every toll is added directly to the reservation and paid back to you</div>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="icon-tile" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>
+        </span>
+        <div>
+          <div class="t">Adjustable for 72 Hours</div>
+          <div class="s">Correct any toll charge up to 72 hours after the trip ends</div>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="icon-tile" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12.5" rx="2"/><path d="M3.5 10h17M7 15h4"/></svg>
+        </span>
+        <div>
+          <div class="t">Paid at E-ZPass Rates</div>
+          <div class="s">Payouts are based on E-ZPass rates, so it pays to have one on your account</div>
+        </div>
+      </div>
+    </div>
+    <button class="modal-cta" id="tollsGotIt">Got It</button>
+  </div>
+</div>
+
 <script>
 (function(){
   // ---- theme toggle (prototype chrome; the hub drives data-theme itself) ----
@@ -448,6 +519,18 @@
 
   var nextBtn = document.getElementById('nextBtn');
   function enableNext(){ nextBtn.disabled = false; }
+
+  // ---- tolls explainer modal (DES-491) ----
+  var tollsLink = document.getElementById('tollsLink');
+  var tollsOverlay = document.getElementById('tollsOverlay');
+  var tollsModal = document.getElementById('tollsModal');
+  function openTolls(){ tollsOverlay.classList.add('open'); tollsModal.focus(); }
+  function closeTolls(){ tollsOverlay.classList.remove('open'); tollsLink.focus(); }
+  tollsLink.addEventListener('click', openTolls);
+  document.getElementById('tollsClose').addEventListener('click', closeTolls);
+  document.getElementById('tollsGotIt').addEventListener('click', closeTolls);
+  tollsOverlay.addEventListener('click', function(e){ if (e.target === tollsOverlay) closeTolls(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && tollsOverlay.classList.contains('open')) closeTolls(); });
 
   // ---- fixed daily rate switch: locks the slider when on ----
   var fixedToggle = document.getElementById('fixedToggle');

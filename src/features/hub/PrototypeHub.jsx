@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Search, Monitor, Laptop, Tablet, Smartphone, Sun, Moon, Maximize2, ExternalLink,
-  Figma, CircleDot, Circle, ChevronDown, Link2, FileText, Plus, Shield, LogOut, Upload, Trash2,
+  Figma, CircleDot, Circle, ChevronDown, Link2, FileText, Plus, Minus, Shield, LogOut, Upload, Trash2,
   Square, LayoutGrid,
 } from "lucide-react";
 import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, renderStory, currentArgs, stateCombos } from "./prototypes";
@@ -34,6 +34,8 @@ export default function PrototypeHub({
   const [renamingId, setRenamingId] = useState(null);
   const [editFigma, setEditFigma] = useState(false);
   const [editLinear, setEditLinear] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [liveLinear, setLiveLinear] = useState(null);
 
   const commitRename = (id, value) => {
     const title = value.trim();
@@ -98,6 +100,18 @@ export default function PrototypeHub({
       .forEach((s) => { (g[s.group_name || "General"] ||= []).push(s); });
     return g;
   }, [projects, query]);
+
+  // Fetch the linked Linear issue once, here, so both the navbar status badge and
+  // the Linear card stay in sync (single source of truth).
+  useEffect(() => {
+    const url = story?.issue_url || "";
+    const id = url.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story?.issue_id || null;
+    setLiveLinear(null);
+    if (!id) return;
+    let stale = false;
+    fetchLinearIssue(id).then((issue) => { if (!stale) setLiveLinear(issue); });
+    return () => { stale = true; };
+  }, [story?.id, story?.issue_url, story?.issue_id]);
 
   if (!story) {
     return (
@@ -239,7 +253,9 @@ export default function PrototypeHub({
           {/* toolbar */}
           <div className="eon-toolbar" style={{ minHeight: 56, borderBottom: `1px solid ${c.border}`, background: c.nav, display: "flex", alignItems: "center", gap: 12, padding: "0 16px", flexShrink: 0, position: "sticky", top: 0, zIndex: 5 }}>
             <span style={{ fontSize: 15, fontWeight: 500 }}>{story.title}</span>
-            <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500 }}>{story.status}</Badge>
+            {liveLinear?.state
+              ? <Badge title="Live from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: "none", fontWeight: 500 }}>{liveLinear.state.name}</Badge>
+              : <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500 }}>{story.status}</Badge>}
             <div style={{ flex: 1 }} />
             <div style={{ display: "flex", gap: 2, background: c.raised, borderRadius: 8, padding: 3, border: `1px solid ${c.border}` }}>
               {Object.keys(VIEWPORTS).map((k) => {
@@ -290,9 +306,9 @@ export default function PrototypeHub({
             <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
             <div style={{ height: canvasH, overflow: "auto", background: canvasBg, display: "flex", alignItems: layout === "single" ? "center" : "flex-start", justifyContent: "center", padding: "32px 24px 88px" }}>
             {layout === "single" ? (
-              <div style={{ width: vp.w * scale, height: vp.h * scale, flexShrink: 0 }}>
+              <div style={{ width: vp.w * scale * zoom, height: vp.h * scale * zoom, flexShrink: 0 }}>
                 <iframe key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`} title={story.title} srcDoc={html}
-                  style={{ width: vp.w, height: vp.h, border: "none", borderRadius: 10, background: "#fff", colorScheme: protoTheme, transform: `scale(${scale})`, transformOrigin: "top left", boxShadow: "0 12px 48px rgba(0,0,0,.28)" }} />
+                  style={{ width: vp.w, height: vp.h, border: "none", borderRadius: 10, background: "#fff", colorScheme: protoTheme, transform: `scale(${scale * zoom})`, transformOrigin: "top left", boxShadow: "0 12px 48px rgba(0,0,0,.28)" }} />
               </div>
             ) : (
               <StateGrid c={c} story={story} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
@@ -338,6 +354,16 @@ export default function PrototypeHub({
                 </div>
               </div>
             </div>
+            {layout === "single" && (
+              <div style={{ position: "absolute", right: 16, bottom: 26, display: "flex", alignItems: "center", gap: 2, background: c.panel, border: `1px solid ${c.border}`, borderRadius: 8, padding: 3, zIndex: 6, boxShadow: "0 4px 16px rgba(0,0,0,.3)" }}>
+                <button onClick={() => setZoom((z) => Math.max(0.25, +(z - 0.1).toFixed(2)))} aria-label="Zoom out"
+                  style={{ width: 26, height: 26, borderRadius: 6, border: "none", background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Minus style={{ width: 14, height: 14 }} /></button>
+                <button onClick={() => setZoom(1)} title="Reset zoom"
+                  style={{ minWidth: 46, height: 26, borderRadius: 6, border: "none", background: "transparent", color: c.text, cursor: "pointer", fontSize: 12, fontVariantNumeric: "tabular-nums" }}>{Math.round(scale * zoom * 100)}%</button>
+                <button onClick={() => setZoom((z) => Math.min(4, +(z + 0.1).toFixed(2)))} aria-label="Zoom in"
+                  style={{ width: 26, height: 26, borderRadius: 6, border: "none", background: "transparent", color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Plus style={{ width: 14, height: 14 }} /></button>
+              </div>
+            )}
             <div onMouseDown={startCanvasResize} onMouseEnter={() => setResizeHover(true)} onMouseLeave={() => setResizeHover(false)}
               title="Drag to resize canvas" role="separator" aria-orientation="horizontal"
               style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 16, cursor: "ns-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 6 }}>
@@ -392,7 +418,7 @@ export default function PrototypeHub({
                       {editLinear && <button onClick={() => setEditLinear(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
                     </div>
                   )}
-                  <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} identifier={linearId} issueUrl={story.issue_url} />
+                  <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
                 </div>
               </div>
             </div>
@@ -445,7 +471,13 @@ function StateGrid({ c, story, media, theme, viewport, by }) {
    re-render (typing notes, toggling theme, realtime updates). ---- */
 const FigmaEmbed = memo(function FigmaEmbed({ url }) {
   const src = `https://www.figma.com/embed?embed_host=eon-hub&url=${encodeURIComponent(url)}`;
-  return <iframe title="Figma preview" src={src} allowFullScreen style={{ width: "100%", height: "100%", border: "none", display: "block" }} />;
+  // Overflow-hidden wrapper + a taller iframe pushes Figma's bottom info bar
+  // (file name / "edited …" / lock) out of view.
+  return (
+    <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
+      <iframe title="Figma preview" src={src} allowFullScreen style={{ width: "100%", height: "calc(100% + 44px)", border: "none", display: "block" }} />
+    </div>
+  );
 });
 
 // Parse file name + node from a Figma URL, e.g. .../design/KEY/Orion---Core-App?node-id=14010-9626
@@ -488,18 +520,7 @@ function FigmaCard({ c, url }) {
 
 /* ---- Linear issue card: live via edge function, static preview fallback.
    The whole card links to the issue. ---- */
-function LinearCard({ c, story, sc0, sc1, identifier, issueUrl }) {
-  const [live, setLive] = useState(null);
-
-  useEffect(() => {
-    let stale = false;
-    setLive(null);
-    if (identifier) {
-      fetchLinearIssue(identifier).then((issue) => { if (!stale) setLive(issue); });
-    }
-    return () => { stale = true; };
-  }, [story.id, identifier]);
-
+function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
   const stateColor = live?.state?.color;
   const clickable = Boolean(issueUrl);
   return (
