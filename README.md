@@ -2,7 +2,7 @@
 
 A shared, Storybook-style hub for interactive HTML prototypes. Sign in, browse
 prototypes by group, preview them across device sizes with independent hub and
-prototype themes, attach Figma frames and Linear issues, keep notes, and manage a
+prototype themes, attach Figma frames and Linear issues, discuss work in shared comments, and manage a
 shared media library. Team state lives in Supabase; the site is hosted on GitHub Pages.
 
 ## Quick start
@@ -26,7 +26,7 @@ Storage + Realtime) · GitHub Pages.
 
 ## Roles
 
-- **Member**: view and edit prototypes, links, notes, and media.
+- **Member**: view and edit prototypes, links, comments, and media.
 - **Admin**: everything a member can do, plus manage roles (`/admin`) and delete content.
 
 ## Structure

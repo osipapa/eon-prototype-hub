@@ -35,6 +35,34 @@ export function subscribeProjects(cb) {
   return () => supabase.removeChannel(ch);
 }
 
+/* Comments ---------------------------------------------------------------*/
+export async function listComments() {
+  const { data, error } = await supabase
+    .from("comments")
+    .select("*, author:profiles!comments_author_id_fkey(id,email,full_name)")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function createComment(comment) {
+  const { data, error } = await supabase
+    .from("comments")
+    .insert(comment)
+    .select("*, author:profiles!comments_author_id_fkey(id,email,full_name)")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export function subscribeComments(cb) {
+  const ch = supabase
+    .channel("comments-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, cb)
+    .subscribe();
+  return () => supabase.removeChannel(ch);
+}
+
 /* Assets (media library) ----------------------------------------------------*/
 export async function listAssets() {
   const { data, error } = await supabase.from("assets").select("*");

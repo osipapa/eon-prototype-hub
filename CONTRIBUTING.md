@@ -46,7 +46,7 @@ npm run dev      # → http://localhost:5173/eon-prototype-hub/
 ```
 
 Sign in with the email + password your admin created. You'll see the same
-prototypes as everyone else; edits you make (notes, links, uploaded HTML, media)
+prototypes as everyone else; edits you make (comments, links, uploaded HTML, media)
 save to Supabase and appear live for teammates via realtime.
 
 ## 5. Make a change and push it
