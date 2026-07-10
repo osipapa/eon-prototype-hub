@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DES-706 · Rate Your Trip</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/json" id="eon-config">
+{ "controls": [
+    { "key": "state",   "label": "State",   "options": ["default", "rated-5", "rated-2", "submitted-5", "submitted-2"] },
+    { "key": "payload", "label": "Payload", "options": ["hidden", "visible"] }
+  ],
+  "defaults": { "state": "default", "payload": "hidden" } }
+</script>
+<style>
+  :root{
+    /* Eon tokens - DARK (default) - from eon-design-system references */
+    --background-1:#000000; --background-2:#121216; --background-3:#1E1E22;
+    --text-primary:#FFFFFF; --text-secondary:rgba(255,255,255,0.7);
+    --text-secondary-50:rgba(144,148,165,0.5); --text-brand:#E15CF7;
+    --text-success:#6FEC7B; --text-pending:#85B5FF; --text-error:#FF508F;
+    --icon-brand:#E15CF7; --icon-success:#6FEC7B;
+    --button-fill-primary-default:#EDD2F6; --button-fill-primary-hover:#E9C1F6;
+    --button-fill-primary-pressed:#DCA5EE; --button-text-primary-default:#000000;
+    --button-fill-primary-disabled:rgba(144,148,165,0.2);
+    --button-text-primary-disabled:rgba(144,148,165,0.5);
+    --button-fill-secondary-default:rgba(144,148,165,0.1);
+    --button-fill-secondary-hover:rgba(144,148,165,0.2);
+    --button-border-secondary:rgba(144,148,165,0.2); --button-text-secondary-default:#FFFFFF;
+    --card-background-default:#121216; --card-border-default:#1E1E22;
+    --chip-background-neutral:rgba(144,148,165,0.1); --chip-border-neutral:rgba(144,148,165,0.1);
+    --chip-background-brand:rgba(225,92,247,0.1); --chip-border-active:#E15CF7;
+    --banner-background-pending:rgba(133,181,255,0.15); --banner-border-inprogress:rgba(133,181,255,0.15);
+    --alert-background-success:rgba(111,236,123,0.15);
+    --input-border-default:#3A3D4A; --input-border-active:#EDD2F6;
+    --input-placeholder-primary:rgba(144,148,165,0.5);
+    --star-empty:#3A3D4A;
+    --divider:#1E1E22;
+    --tabbar-text-active:#FFFFFF; --tabbar-fill-icon:#9094A5;
+    --navigation-bar-background:#000000; --navigation-bar-border:#1E1E22;
+    --icon-fill-background:rgba(144,148,165,0.1); --icon-fill-icon:#9094A5;
+    --font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-size-title-1:24px; --font-size-title-2:20px; --font-size-body:16px;
+    --font-size-caption-1:12px; --font-size-caption-2:11px;
+    --radius-control:8px; --radius-modal:16px; --radius-card:24px; --radius-pill:100px;
+  }
+  [data-theme="light"], html.light{
+    --background-1:#F9F9FD; --background-2:#FFFFFF; --background-3:#DDE0EA;
+    --text-primary:#1E1E22; --text-secondary:rgba(18,18,22,0.75);
+    --text-secondary-50:rgba(144,148,165,0.5); --text-brand:#D400F7;
+    --text-success:#00AC10; --text-pending:#267AFF; --text-error:#FF005C;
+    --icon-brand:#D400F7; --icon-success:#00AC10;
+    --button-fill-primary-default:#000000; --button-fill-primary-hover:#1E1E22;
+    --button-fill-primary-pressed:#3A3D4A; --button-text-primary-default:#FFFFFF;
+    --button-fill-primary-disabled:rgba(144,148,165,0.2);
+    --button-text-primary-disabled:rgba(144,148,165,0.75);
+    --button-fill-secondary-default:rgba(144,148,165,0.1);
+    --button-fill-secondary-hover:rgba(144,148,165,0.2);
+    --button-border-secondary:rgba(144,148,165,0.2); --button-text-secondary-default:#000000;
+    --card-background-default:#FFFFFF; --card-border-default:#DDE0EA;
+    --chip-background-neutral:rgba(144,148,165,0.1); --chip-border-neutral:rgba(144,148,165,0.1);
+    --chip-background-brand:rgba(212,0,247,0.1); --chip-border-active:#D400F7;
+    --banner-background-pending:rgba(38,122,255,0.15); --banner-border-inprogress:rgba(38,122,255,0.15);
+    --alert-background-success:rgba(0,172,16,0.15);
+    --input-border-default:#9094A5; --input-border-active:#000000;
+    --input-placeholder-primary:rgba(144,148,165,0.5);
+    --star-empty:#DDE0EA;
+    --divider:#DDE0EA;
+    --tabbar-text-active:#121216; --tabbar-fill-icon:#565B6C;
+    --navigation-bar-background:#FFFFFF; --navigation-bar-border:#DDE0EA;
+    --icon-fill-background:rgba(144,148,165,0.1); --icon-fill-icon:#9094A5;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-family)}
+  html,body{min-height:100vh}
+  body{background:var(--background-1);color:var(--text-primary);transition:background .2s,color .2s}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  .hidden{display:none !important}
+
+  /* app scaffold */
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 4px;font-size:14px;font-weight:500}
+  .nav-head{display:flex;align-items:center;padding:8px 16px 12px;gap:8px}
+  .nav-back{width:32px;height:32px;border-radius:50%;background:var(--icon-fill-background);color:var(--text-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .nav-head .title{flex:1;text-align:center;font-size:var(--font-size-title-2);font-weight:500;margin-right:40px}
+  .page{max-width:600px;margin:0 auto;padding:4px 16px 170px}
+
+  .greeting h1{font-size:var(--font-size-title-1);font-weight:500;line-height:1.25}
+  .greeting p{font-size:var(--font-size-body);color:var(--text-secondary);margin-top:4px}
+
+  /* review card */
+  .card{background:var(--card-background-default);border:1px solid var(--card-border-default);border-radius:var(--radius-card);overflow:hidden;margin-top:24px}
+  .card-head{background:var(--background-1);padding:16px;border-bottom:1px solid var(--card-border-default)}
+  .card-head h2{font-size:var(--font-size-title-2);font-weight:500}
+  .card-head p{font-size:14px;color:var(--text-secondary);margin-top:4px;line-height:1.4}
+  .card-head .trip-ref{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);margin-top:8px}
+  .card-body{padding:24px 16px 16px}
+
+  /* overall stars */
+  .q-label{font-size:var(--font-size-body);font-weight:500;text-align:center}
+  .stars{display:flex;justify-content:center;gap:4px;margin-top:16px}
+  .star-btn{width:52px;height:44px;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+  .star-btn:active{transform:scale(1.15)}
+  .star-btn svg{width:38px;height:38px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
+  .star-btn.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
+  .rating-word{text-align:center;font-size:14px;color:var(--text-secondary);margin-top:8px;min-height:20px}
+  .rating-word.set{color:var(--text-primary);font-weight:500}
+
+  /* progressive sections */
+  .after-rating{max-height:0;overflow:hidden;opacity:0;transition:max-height .35s ease,opacity .3s ease}
+  .after-rating.open{max-height:1200px;opacity:1}
+  .divider{height:1px;background:var(--divider);margin:24px 0 16px}
+  .sec-label{font-size:var(--font-size-body);font-weight:500}
+  .sec-hint{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);margin-top:2px}
+
+  /* category rows */
+  .cat-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+  .cat-row + .cat-row{border-top:1px solid var(--divider)}
+  .cat-name{font-size:var(--font-size-body);color:var(--text-secondary)}
+  .cat-stars{display:flex;gap:2px}
+  .cat-star{width:30px;height:30px;display:flex;align-items:center;justify-content:center}
+  .cat-star svg{width:21px;height:21px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
+  .cat-star.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
+
+  /* tag chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .chip{padding:8px 12px;border-radius:var(--radius-control);font-size:14px;color:var(--text-secondary);background:var(--chip-background-neutral);border:1px solid var(--chip-border-neutral);transition:background .12s,border-color .12s,color .12s}
+  .chip.on{background:var(--chip-background-brand);border-color:var(--chip-border-active);color:var(--text-primary)}
+
+  /* comment */
+  textarea{width:100%;min-height:88px;margin-top:12px;padding:12px;border-radius:var(--radius-control);background:transparent;border:1px solid var(--input-border-default);color:var(--text-primary);font-size:14px;line-height:1.45;resize:none;outline:none}
+  textarea:focus{border-color:var(--input-border-active)}
+  textarea::placeholder{color:var(--input-placeholder-primary)}
+
+  .btn-primary{display:block;width:100%;height:50px;margin-top:16px;border-radius:var(--radius-control);background:var(--button-fill-primary-default);color:var(--button-text-primary-default);font-size:var(--font-size-body);font-weight:500}
+  .btn-primary:hover{background:var(--button-fill-primary-hover)}
+  .btn-primary:active{background:var(--button-fill-primary-pressed)}
+  .btn-primary:disabled{background:var(--button-fill-primary-disabled);color:var(--button-text-primary-disabled);cursor:default}
+  .btn-secondary{display:block;width:100%;height:50px;margin-top:8px;border-radius:var(--radius-control);background:var(--button-fill-secondary-default);border:1px solid var(--button-border-secondary);color:var(--button-text-secondary-default);font-size:var(--font-size-body);font-weight:500}
+  .btn-secondary:hover{background:var(--button-fill-secondary-hover)}
+  .btn-ghost{display:block;width:100%;height:44px;margin-top:4px;color:var(--text-secondary);font-size:var(--font-size-body)}
+  .privacy{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);text-align:center;margin-top:12px;line-height:1.4}
+
+  /* end states */
+  .end-state{padding:32px 16px 16px;text-align:center}
+  .end-icon{width:56px;height:56px;border-radius:50%;background:var(--alert-background-success);color:var(--icon-success);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .end-state h3{font-size:var(--font-size-title-2);font-weight:500}
+  .end-state .end-sub{font-size:var(--font-size-body);color:var(--text-secondary);margin-top:8px;line-height:1.45}
+  .credit-chip{display:inline-flex;align-items:center;gap:6px;height:31px;padding:0 8px;border-radius:var(--radius-control);background:var(--alert-background-success);color:var(--text-success);font-size:var(--font-size-caption-1);margin-top:16px}
+  .followup{margin-top:24px;padding:16px;border-radius:var(--radius-modal);background:var(--banner-background-pending);border:1px solid var(--banner-border-inprogress);text-align:left}
+  .followup p{font-size:14px;color:var(--text-primary);line-height:1.45}
+  .followup p span{color:var(--text-pending);font-weight:500}
+  .d5{margin-top:24px;text-align:left}
+  .d5 p{font-size:14px;color:var(--text-secondary);line-height:1.45;text-align:center}
+
+  /* rows below the card (context from Trip Summary) */
+  .row{display:flex;align-items:center;justify-content:space-between;padding:20px 4px;border-bottom:1px solid var(--divider)}
+  .row .r-title{font-size:var(--font-size-body);font-weight:500}
+  .row .r-sub{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);margin-top:3px}
+  .row svg{color:var(--text-secondary-50);flex-shrink:0}
+
+  /* tab bar */
+  .tabbar{position:fixed;bottom:0;left:0;right:0;background:var(--navigation-bar-background);border-top:1px solid var(--navigation-bar-border);display:flex;justify-content:space-around;padding:10px 8px 24px;z-index:5}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--tabbar-fill-icon);font-size:10px;font-weight:500;width:64px}
+  .tab.on{color:var(--tabbar-text-active)}
+  .tab svg{width:24px;height:24px}
+
+  /* mixpanel payload overlay (dev aid, toggled via hub control) */
+  .payload{position:fixed;left:12px;right:12px;bottom:86px;z-index:6;max-width:576px;margin:0 auto;background:var(--background-1);border:1px solid var(--chip-border-active);border-radius:var(--radius-modal);padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  .payload .p-head{display:flex;justify-content:space-between;align-items:center;font-size:var(--font-size-caption-1)}
+  .payload .p-head b{color:var(--text-brand);font-weight:500}
+  .payload .p-head span{color:var(--text-secondary-50)}
+  .payload pre{margin-top:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.55;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word}
+  .payload .p-route{margin-top:8px;padding-top:8px;border-top:1px solid var(--divider);font-size:var(--font-size-caption-2);color:var(--text-secondary-50);line-height:1.5}
+  .payload .p-route b{color:var(--text-primary);font-weight:500}
+
+  /* standalone theme toggle (hidden inside the hub) */
+  .proto-toggle{position:fixed;right:16px;top:16px;z-index:7;padding:7px 15px;border-radius:var(--radius-pill);border:1px solid var(--card-border-default);background:var(--card-background-default);font-size:var(--font-size-caption-1);color:var(--text-secondary)}
+</style>
+</head>
+<body>
+
+  <div class="statusbar"><span>10:28</span><span>100%</span></div>
+  <div class="nav-head">
+    <button class="nav-back" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="title">Trip Summary</div>
+  </div>
+
+  <div class="page">
+    <div class="greeting">
+      <h1>Hope You Enjoyed Your Trip, Miguel!</h1>
+      <p>You can find your receipt and trip details here.</p>
+    </div>
+
+    <!-- ============ RATE YOUR TRIP (refactored) ============ -->
+    <section class="card" aria-label="Rate your trip">
+      <div class="card-head">
+        <h2>Rate Your Trip</h2>
+        <p>Takes about a minute and earns you $30 in Eon credit on your next booking.</p>
+        <div class="trip-ref">Tesla Model 3 · Jun 28 to Jul 5</div>
+      </div>
+
+      <!-- form -->
+      <div class="card-body" id="review-form">
+        <div class="q-label">How was your trip overall?</div>
+        <div class="stars" id="stars" role="radiogroup" aria-label="Overall rating, 1 to 5 stars"></div>
+        <div class="rating-word" id="rating-word">Tap a star to rate</div>
+
+        <div class="after-rating" id="after-rating">
+          <div class="divider"></div>
+          <div class="sec-label">Rate the details</div>
+          <div class="sec-hint">Optional. Shared with the owner to help them improve.</div>
+          <div id="cats" style="margin-top:8px"></div>
+
+          <div class="divider"></div>
+          <div class="sec-label" id="tags-label">What stood out?</div>
+          <div class="chips" id="chips"></div>
+
+          <textarea id="comment" placeholder="Anything else? (optional)" aria-label="Trip feedback"></textarea>
+
+          <button class="btn-primary" id="submit-btn" disabled onclick="submitReview()">Submit Rating</button>
+          <div class="privacy">Your rating and category scores are shared with the owner anonymously.</div>
+        </div>
+      </div>
+
+      <!-- end state: 4 to 5 stars -->
+      <div class="end-state hidden" id="end-high">
+        <div class="end-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h3>Thanks, Miguel!</h3>
+        <p class="end-sub">Your rating helps owners keep their cars in great shape.</p>
+        <div class="credit-chip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          $30 in Eon credit added
+        </div>
+        <div class="d5 hidden" id="d5-ask">
+          <div class="divider"></div>
+          <p>Enjoying Eon? A public review helps a lot.</p>
+          <button class="btn-primary" style="margin-top:12px">Rate Eon on the App Store</button>
+          <button class="btn-ghost">Maybe Later</button>
+        </div>
+      </div>
+
+      <!-- end state: 1 to 3 stars -->
+      <div class="end-state hidden" id="end-low">
+        <div class="end-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h3>Thanks for Your Honesty</h3>
+        <p class="end-sub">We're sorry this trip missed the mark.</p>
+        <div class="credit-chip">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          $30 in Eon credit added
+        </div>
+        <div class="followup">
+          <p><span>We're on it.</span> Our support team is reviewing what happened and will follow up within 24 hours.</p>
+        </div>
+        <button class="btn-secondary" style="margin-top:16px">Contact Support</button>
+      </div>
+    </section>
+    <!-- ============ /RATE YOUR TRIP ============ -->
+
+    <div style="margin-top:24px">
+      <div class="row">
+        <div><div class="r-title">Receipt</div><div class="r-sub">View your trip's charges and breakdown.</div></div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="row">
+        <div><div class="r-title">Rental Agreement</div><div class="r-sub">Terms &amp; Conditions</div></div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- mixpanel event preview (dev aid) -->
+  <div class="payload hidden" id="payload">
+    <div class="p-head"><b>Mixpanel · Trip Reviewed</b><span id="payload-status">building</span></div>
+    <pre id="payload-json"></pre>
+    <div class="p-route"><b>Routing:</b> rating 5 fires D5 public review ask · rating 1 to 3 opens support triage · category scores roll up to the owner scorecard</div>
+  </div>
+
+  <nav class="tabbar">
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Search</button>
+    <button class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Trips</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5h-5"/></svg>Subscription</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>Account</button>
+  </nav>
+
+  <button class="proto-toggle hidden" id="proto-toggle" onclick="toggleTheme()">Light Mode</button>
+
+  <script>
+    // ---- hub integration: the hub injects window.__story = { theme, args } ----
+    var args = (window.__story && window.__story.args) || {};
+    var initialState = args.state || 'default';
+    var showPayload = (args.payload || 'hidden') === 'visible';
+
+    var STAR = '<svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M12 2.6l2.8 6 6.6.7-4.9 4.4 1.4 6.5L12 16.9l-5.9 3.3 1.4-6.5-4.9-4.4 6.6-.7z"/></svg>';
+    var WORDS = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
+    var CATS = [
+      { key: 'cleanliness',       name: 'Cleanliness' },
+      { key: 'vehicle_condition', name: 'Vehicle condition' },
+      { key: 'charging_range',    name: 'Charging & range' },
+      { key: 'pickup_return',     name: 'Pickup & return' }
+    ];
+    var TAGS_POS = [
+      { key: 'spotless_car',    label: 'Spotless car',        cat: 'cleanliness' },
+      { key: 'fully_charged',   label: 'Fully charged',       cat: 'charging_range' },
+      { key: 'easy_pickup',     label: 'Easy pickup',         cat: 'pickup_return' },
+      { key: 'great_to_drive',  label: 'Great to drive',      cat: 'vehicle_condition' },
+      { key: 'smooth_app',      label: 'Smooth app',          cat: null },
+      { key: 'responsive_owner',label: 'Responsive owner',    cat: null }
+    ];
+    var TAGS_NEG = [
+      { key: 'not_clean',       label: "Car wasn't clean",    cat: 'cleanliness' },
+      { key: 'low_battery',     label: 'Low battery at pickup', cat: 'charging_range' },
+      { key: 'mechanical_issue',label: 'Mechanical issue',    cat: 'vehicle_condition' },
+      { key: 'pickup_delay',    label: 'Pickup took too long', cat: 'pickup_return' },
+      { key: 'app_problems',    label: 'App problems',        cat: null },
+      { key: 'slow_response',   label: 'Slow to respond',     cat: null }
+    ];
+
+    var state = { rating: 0, cats: {}, tags: [], submitted: false };
+
+    // ---- build overall stars ----
+    var starsEl = document.getElementById('stars');
+    for (var i = 1; i <= 5; i++) {
+      (function (n) {
+        var b = document.createElement('button');
+        b.className = 'star-btn'; b.innerHTML = STAR;
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-label', n + (n === 1 ? ' star' : ' stars'));
+        b.onclick = function () { setRating(n); };
+        starsEl.appendChild(b);
+      })(i);
+    }
+
+    // ---- build category rows ----
+    var catsEl = document.getElementById('cats');
+    CATS.forEach(function (c) {
+      var row = document.createElement('div'); row.className = 'cat-row';
+      var name = document.createElement('div'); name.className = 'cat-name'; name.textContent = c.name;
+      var wrap = document.createElement('div'); wrap.className = 'cat-stars'; wrap.setAttribute('role', 'radiogroup'); wrap.setAttribute('aria-label', c.name + ' rating');
+      for (var i = 1; i <= 5; i++) {
+        (function (n) {
+          var b = document.createElement('button');
+          b.className = 'cat-star'; b.innerHTML = STAR; b.dataset.cat = c.key;
+          b.setAttribute('role', 'radio');
+          b.setAttribute('aria-label', c.name + ', ' + n + (n === 1 ? ' star' : ' stars'));
+          b.onclick = function () { state.cats[c.key] = n; render(); };
+          wrap.appendChild(b);
+        })(i);
+      }
+      row.appendChild(name); row.appendChild(wrap); catsEl.appendChild(row);
+    });
+
+    function setRating(n) {
+      var wasPositive = state.rating >= 4, isPositive = n >= 4;
+      if (state.rating > 0 && wasPositive !== isPositive) state.tags = []; // sentiment flipped: tag sets differ
+      state.rating = n;
+      render();
+    }
+
+    function toggleTag(key) {
+      var i = state.tags.indexOf(key);
+      if (i === -1) state.tags.push(key); else state.tags.splice(i, 1);
+      render();
+    }
+
+    function submitReview() {
+      if (!state.rating) return;
+      state.submitted = true;
+      console.log('Mixpanel track: Trip Reviewed', payload());
+      render();
+    }
+
+    function payload() {
+      return {
+        event: 'Trip Reviewed',
+        rating: state.rating || null,
+        cleanliness_rating: state.cats.cleanliness || null,
+        vehicle_condition_rating: state.cats.vehicle_condition || null,
+        charging_range_rating: state.cats.charging_range || null,
+        pickup_return_rating: state.cats.pickup_return || null,
+        tags: state.tags,
+        has_comment: document.getElementById('comment').value.trim().length > 0,
+        trip_id: 'trp_8Xk2m', vehicle_id: 'veh_M3LR21', owner_id: 'own_4Fq9'
+      };
+    }
+
+    function render() {
+      var r = state.rating, positive = r >= 4;
+
+      // overall stars + word
+      var starBtns = starsEl.children;
+      for (var i = 0; i < 5; i++) {
+        starBtns[i].classList.toggle('on', i < r);
+        starBtns[i].setAttribute('aria-checked', i + 1 === r ? 'true' : 'false');
+      }
+      var word = document.getElementById('rating-word');
+      word.textContent = r ? WORDS[r] : 'Tap a star to rate';
+      word.classList.toggle('set', r > 0);
+
+      // progressive reveal
+      document.getElementById('after-rating').classList.toggle('open', r > 0);
+
+      // category stars
+      var catBtns = catsEl.querySelectorAll('.cat-star');
+      catBtns.forEach(function (b) {
+        var val = state.cats[b.dataset.cat] || 0;
+        var idx = Array.prototype.indexOf.call(b.parentNode.children, b);
+        b.classList.toggle('on', idx < val);
+        b.setAttribute('aria-checked', idx + 1 === val ? 'true' : 'false');
+      });
+
+      // adaptive tags
+      document.getElementById('tags-label').textContent = positive ? 'What stood out?' : 'What went wrong?';
+      var chipsEl = document.getElementById('chips');
+      chipsEl.innerHTML = '';
+      (positive ? TAGS_POS : TAGS_NEG).forEach(function (t) {
+        var b = document.createElement('button');
+        b.className = 'chip' + (state.tags.indexOf(t.key) !== -1 ? ' on' : '');
+        b.textContent = t.label;
+        b.setAttribute('aria-pressed', state.tags.indexOf(t.key) !== -1 ? 'true' : 'false');
+        b.onclick = function () { toggleTag(t.key); };
+        chipsEl.appendChild(b);
+      });
+      document.getElementById('comment').placeholder = positive
+        ? 'Anything else? (optional)'
+        : 'Tell us what happened. We read every one. (optional)';
+
+      document.getElementById('submit-btn').disabled = !r;
+
+      // end states
+      document.getElementById('review-form').classList.toggle('hidden', state.submitted);
+      document.getElementById('end-high').classList.toggle('hidden', !(state.submitted && r >= 4));
+      document.getElementById('end-low').classList.toggle('hidden', !(state.submitted && r <= 3));
+      document.getElementById('d5-ask').classList.toggle('hidden', r !== 5); // D5 fires on 5 stars only
+
+      // payload overlay
+      var p = document.getElementById('payload');
+      p.classList.toggle('hidden', !showPayload);
+      if (showPayload) {
+        var data = payload();
+        document.getElementById('payload-status').textContent = state.submitted ? 'fired ✓' : (r ? 'building' : 'waiting for rating');
+        document.getElementById('payload-json').textContent = JSON.stringify(data, null, 2).replace(/"([^"]+)":/g, '$1:');
+      }
+    }
+
+    // ---- presets for the hub's state control ----
+    var PRESETS = {
+      'default':     function () {},
+      'rated-5':     function () { state.rating = 5; state.cats = { cleanliness: 5, vehicle_condition: 5, charging_range: 4, pickup_return: 5 }; state.tags = ['spotless_car', 'easy_pickup']; },
+      'rated-2':     function () { state.rating = 2; state.cats = { cleanliness: 1, vehicle_condition: 3, charging_range: 2 }; state.tags = ['not_clean', 'low_battery']; },
+      'submitted-5': function () { state.rating = 5; state.cats = { cleanliness: 5, vehicle_condition: 5, charging_range: 4, pickup_return: 5 }; state.tags = ['spotless_car', 'easy_pickup']; state.submitted = true; },
+      'submitted-2': function () { state.rating = 2; state.cats = { cleanliness: 1, vehicle_condition: 3, charging_range: 2 }; state.tags = ['not_clean', 'low_battery']; state.submitted = true; }
+    };
+    (PRESETS[initialState] || PRESETS['default'])();
+    render();
+
+    // ---- standalone only: the hub drives theme via window.__story ----
+    if (!window.__story) document.getElementById('proto-toggle').classList.remove('hidden');
+    function toggleTheme() {
+      var btn = document.getElementById('proto-toggle');
+      if (document.documentElement.dataset.theme === 'light') { delete document.documentElement.dataset.theme; btn.textContent = 'Light Mode'; }
+      else { document.documentElement.dataset.theme = 'light'; btn.textContent = 'Dark Mode'; }
+    }
+  </script>
+</body>
+</html>
