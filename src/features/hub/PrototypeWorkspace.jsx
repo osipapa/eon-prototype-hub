@@ -297,7 +297,7 @@ export default function PrototypeWorkspace({
       {view === "stories" && inspectorOpen && (
         <ReviewInspector
           c={c} story={story} comments={storyComments} profile={profile}
-          tab={inspectorTab} setTab={setInspectorTab} onClose={() => setInspectorOpen(false)}
+          tab={inspectorTab} setTab={setInspectorTab}
           onCreateComment={onCreateComment} patch={patch}
           editLinear={editLinear} setEditLinear={setEditLinear}
           sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
@@ -488,7 +488,7 @@ function WorkspaceToolbar({
             </div>
           </ToolGroup>
           <div className="eon-tool-compare" title={hasFigma ? undefined : "Link a Figma frame first"}>
-            <ToolGroup label="Compare" c={c}>
+            <ToolGroup label="Compare with Figma" c={c}>
               <div className="eon-icon-segment" style={{ background: c.raised, opacity: hasFigma ? 1 : 0.45 }}>
                 <button className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)} disabled={!hasFigma}
                   title="Compare with the linked Figma frame" aria-label="Compare with Figma" aria-pressed={compare}
@@ -548,14 +548,13 @@ function ToolGroup({ label, c, children }) {
 }
 
 function ReviewInspector({
-  c, story, comments, profile, tab, setTab, onClose, onCreateComment, patch,
+  c, story, comments, profile, tab, setTab, onCreateComment, patch,
   editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
 }) {
   return (
     <aside className="eon-inspector" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-inspector-head" style={{ borderColor: c.border }}>
         <div><strong>Review</strong></div>
-        <button className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review panel" style={{ color: c.muted }}><PanelRightClose size={16} /></button>
       </div>
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
         <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
