@@ -25,13 +25,13 @@ const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smar
 
 export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], isAdmin, profile, userEmail,
+  activeId, onSelectStory,
   onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder,
   onCreateComment, onOpenAdmin, onSignOut,
 }) {
   const [hubTheme, setHubTheme] = useState("dark");
   const [protoTheme, setProtoTheme] = useState("dark");
   const [view, setView] = useState("stories");
-  const [activeId, setActiveId] = useState(projects[0]?.id);
   const [viewport, setViewport] = useState("laptop");
   const [layout, setLayout] = useState("single");
   const [gridBy, setGridBy] = useState("states");
@@ -225,7 +225,7 @@ export default function PrototypeWorkspace({
       {navOpen && (
         <WorkspaceSidebar
           c={c} media={media} view={view} setView={setView} query={query} setQuery={setQuery}
-          groups={groups} activeId={story.id} setActiveId={setActiveId} isAdmin={isAdmin}
+          groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin}
           onNewProject={onNewProject} dragId={dragId} setDragId={setDragId}
           dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop}
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
@@ -307,7 +307,7 @@ export default function PrototypeWorkspace({
 }
 
 function WorkspaceSidebar({
-  c, media, view, setView, query, setQuery, groups, activeId, setActiveId, isAdmin,
+  c, media, view, setView, query, setQuery, groups, activeId, onSelect, isAdmin,
   onNewProject, dragId, setDragId, dropTargetId, setDropTargetId, handleDrop,
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
@@ -390,7 +390,7 @@ function WorkspaceSidebar({
                         style={{ background: c.bg, borderColor: c.brand, color: c.text }} />
                     </div>
                   ) : (
-                    <button className="eon-buttonish eon-story-select" onClick={() => { setActiveId(item.id); setView("stories"); setStoryMenuId(null); }}
+                    <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); }}
                       onDoubleClick={() => isAdmin && setRenamingId(item.id)} title={isAdmin ? "Double-click to rename" : undefined}
                       aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
                       <Circle size={13} color={active ? c.brand : c.muted} />

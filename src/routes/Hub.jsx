@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import PrototypeHub from "../features/hub/PrototypeWorkspace";
 import {
@@ -10,6 +10,7 @@ import {
 export default function Hub() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const { slug } = useParams();
   const [projects, setProjects] = useState(null);
   const [assets, setAssets] = useState({});
   const [comments, setComments] = useState([]);
@@ -62,14 +63,15 @@ export default function Hub() {
     const title = window.prompt("Prototype title");
     if (!title) return;
     const group = window.prompt("Group (e.g. Onboarding)", "General") || "General";
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const newSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     try {
       await createProject({
-        team_id: profile.team_id, slug, title, group_name: group,
+        team_id: profile.team_id, slug: newSlug, title, group_name: group,
         status: "Exploration", controls: [], defaults: {},
         sort_order: (projects?.length || 0),
       });
       await load();
+      navigate(`/p/${newSlug}`);
     } catch (e) { alert(e.message); }
   }
 
@@ -105,7 +107,11 @@ export default function Hub() {
   async function onDeleteProject(id) {
     const p = projects.find((x) => x.id === id);
     if (!window.confirm(`Delete "${p?.title}"? This can't be undone.`)) return;
-    try { await deleteProject(id); await load(); } catch (e) { alert(e.message); }
+    try {
+      await deleteProject(id);
+      await load();
+      if (p?.slug === slug) navigate("/", { replace: true });
+    } catch (e) { alert(e.message); }
   }
 
   // Persist a new sidebar order; a story dropped into another group adopts it.
@@ -128,6 +134,8 @@ export default function Hub() {
     );
   }
 
+  const active = projects.find((p) => p.slug === slug);
+
   return (
     <PrototypeHub
       projects={projects}
@@ -136,6 +144,8 @@ export default function Hub() {
       isAdmin={isAdmin}
       profile={profile}
       userEmail={user?.email}
+      activeId={active?.id}
+      onSelectStory={(p) => navigate(p?.slug ? `/p/${p.slug}` : "/")}
       onPatchProject={onPatchProject}
       onSetAsset={onSetAsset}
       onNewProject={onNewProject}

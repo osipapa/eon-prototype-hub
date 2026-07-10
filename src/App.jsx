@@ -27,6 +27,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<RequireAuth><Hub /></RequireAuth>} />
+        <Route path="/p/:slug" element={<RequireAuth><Hub /></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
