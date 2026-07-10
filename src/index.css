@@ -175,7 +175,9 @@
 
 .eon-canvas-zone { position: relative; display: flex; min-width: 0; min-height: 0; flex: 1; }
 .eon-canvas { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
-.eon-ctlbar-float { position: absolute; bottom: 14px; left: 50%; z-index: 12; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; max-width: calc(100% - 24px); border-radius: 100px; transform: translateX(-50%); }
+/* left+right anchors give the shrink-to-fit width the whole canvas to work
+   with (left:50% alone caps it at half and wraps early); auto margins center. */
+.eon-ctlbar-float { position: absolute; bottom: 14px; left: 12px; right: 12px; z-index: 12; display: flex; width: fit-content; max-width: 100%; margin: 0 auto; align-items: center; justify-content: center; flex-wrap: wrap; border-radius: 100px; }
 .eon-canvas-stage { display: flex; align-items: center; justify-content: center; padding: 32px; box-sizing: border-box; }
 .eon-grid-stage { min-width: 100%; min-height: 100%; padding: 28px; box-sizing: border-box; }
 .eon-prototype-frame { display: block; border: 0; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 18px 60px rgba(0,0,0,.32); }
