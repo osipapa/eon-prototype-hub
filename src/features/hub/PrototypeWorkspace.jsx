@@ -130,8 +130,7 @@ export default function PrototypeWorkspace({
   // States always leads; StateGrid explains itself when none are declared.
   const gridOptions = ["states", "themes", "screens"];
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
-  const hasFigma = Boolean(story.figma_url);
-  const effCompare = hasFigma && compare;
+  const effCompare = compare;
   const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR.Exploration;
   const linearId = story.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story.issue_id || null;
   const storyComments = comments.filter((comment) => comment.project_id === story.id);
@@ -244,7 +243,7 @@ export default function PrototypeWorkspace({
           setInspectorOpen={setInspectorOpen} hubTheme={hubTheme} setHubTheme={setHubTheme}
           showUpload={showUpload} setShowUpload={setShowUpload} openFull={openFull}
           viewport={viewport} setViewport={setViewport} layout={layout} setLayout={setLayout}
-          compare={effCompare} setCompare={setCompare} hasFigma={hasFigma}
+          compare={effCompare} setCompare={setCompare}
         />
 
         {showUpload && view === "stories" && (
@@ -431,7 +430,7 @@ function WorkspaceSidebar({
 function WorkspaceToolbar({
   c, view, story, liveLinear, sc0, sc1, navOpen, setNavOpen, inspectorOpen,
   setInspectorOpen, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
-  viewport, setViewport, layout, setLayout, compare, setCompare, hasFigma,
+  viewport, setViewport, layout, setLayout, compare, setCompare,
 }) {
   return (
     <header className="eon-toolbar" style={{ background: c.nav, borderColor: c.border }}>
@@ -487,10 +486,10 @@ function WorkspaceToolbar({
               })}
             </div>
           </ToolGroup>
-          <div className="eon-tool-compare" title={hasFigma ? undefined : "Link a Figma frame first"}>
+          <div className="eon-tool-compare">
             <ToolGroup label="Compare with Figma" c={c}>
-              <div className="eon-icon-segment" style={{ background: c.raised, opacity: hasFigma ? 1 : 0.45 }}>
-                <button className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)} disabled={!hasFigma}
+              <div className="eon-icon-segment" style={{ background: c.raised }}>
+                <button className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)}
                   title="Compare with the linked Figma frame" aria-label="Compare with Figma" aria-pressed={compare}
                   style={{ color: compare ? c.selectedText : c.muted, background: compare ? c.selected : "transparent" }}>
                   <Columns2 size={16} />
@@ -584,7 +583,7 @@ function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
   );
   return (
     <div className="eon-compare-pane" style={{ flex: `${1 - ratio} 1 0%`, background: c.nav, borderColor: c.border }}>
-      {story.figma_url ? (
+      {meta.valid ? (
         <>
           <div className="eon-compare-head" style={{ borderColor: c.border }}>
             <Figma size={15} color={c.brand} aria-hidden="true" />
