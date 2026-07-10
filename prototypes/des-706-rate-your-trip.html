@@ -195,9 +195,6 @@
   .ref-field .link{font-size:14px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
   .ref-field .copy-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary-50)}
 
-  /* ---------- contact ---------- */
-  .contact-note{font-size:var(--font-size-body);color:var(--text-primary);margin-top:32px;line-height:1.5}
-
   /* ---------- tab bar (mobile only) ---------- */
   .tabbar{position:fixed;bottom:0;left:0;right:0;background:var(--navigation-bar-background);border-top:1px solid var(--navigation-bar-border);display:flex;justify-content:space-around;padding:10px 8px 24px;z-index:5}
   .tab{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--tabbar-fill-icon);font-size:10px;font-weight:500;width:64px}
@@ -258,16 +255,15 @@
   <div class="page">
     <div class="greeting">
       <h1>Hope You Enjoyed Your Trip, Miguel!</h1>
-      <p>You can find your receipt and trip details here.</p>
     </div>
 
     <div class="rows">
       <div class="row">
-        <div><div class="r-title">Receipt</div><div class="r-sub">View your trip's charges and breakdown.</div></div>
+        <div><div class="r-title">Receipt</div></div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
       </div>
       <div class="row">
-        <div><div class="r-title">Rental Agreement</div><div class="r-sub">Terms &amp; Conditions</div></div>
+        <div><div class="r-title">Rental Agreement</div></div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
       </div>
     </div>
@@ -276,10 +272,9 @@
     <section class="card" aria-label="Trip photos">
       <div class="card-head">
         <h2>Trip Photos</h2>
-        <p>Access your pre and post trip photos here</p>
         <div class="photo-tabs">
-          <button class="photo-tab on" id="tab-pre" onclick="setPhotoTab('pre')">Pre-trip Photos</button>
-          <button class="photo-tab" id="tab-post" onclick="setPhotoTab('post')">Post-trip Photos</button>
+          <button class="photo-tab on" id="tab-pre" onclick="setPhotoTab('pre')">Pre-trip</button>
+          <button class="photo-tab" id="tab-post" onclick="setPhotoTab('post')">Post-trip</button>
         </div>
       </div>
       <div class="photo-grid" id="photo-grid"></div>
@@ -289,7 +284,6 @@
     <section class="card" aria-label="Incidentals">
       <div class="card-head" style="padding-bottom:16px">
         <h2>Incidentals</h2>
-        <p>Access your incidental documents here</p>
       </div>
       <div class="file-row"><span>Ticket_2024.pdf</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
       <div class="file-row"><span>Legal_notice_2024.pdf</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
@@ -309,7 +303,7 @@
       <div class="rate-body" id="review-form">
         <div class="q-label">How was your trip overall?</div>
         <div class="stars" id="stars" role="radiogroup" aria-label="Overall rating, 1 to 5 stars"></div>
-        <div class="rating-word" id="rating-word">Tap a star to rate</div>
+        <div class="rating-word" id="rating-word"></div>
         <div class="saved-chip hidden" id="saved-chip">
           <span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -320,18 +314,17 @@
         <div class="after-rating" id="after-rating">
           <div class="divider"></div>
           <div class="sec-label" id="tags-label">What stood out?</div>
-          <div class="sec-hint">Optional. One tap is plenty.</div>
           <div class="chips" id="chips"></div>
 
           <div class="divider"></div>
           <div class="sec-label">Rate the details</div>
-          <div class="sec-hint">Optional. Shared with the owner to help them improve.</div>
+          <div class="sec-hint">Optional. Helps the owner improve.</div>
           <div id="cats" style="margin-top:8px"></div>
 
           <textarea id="comment" placeholder="Anything else? (optional)" aria-label="Trip feedback"></textarea>
 
           <button class="btn-primary" id="done-btn" onclick="finishReview()">Done</button>
-          <div class="privacy">Your rating and category scores are shared with the owner anonymously.</div>
+          <div class="privacy">Your ratings are shared with the owner anonymously.</div>
         </div>
       </div>
 
@@ -366,7 +359,7 @@
           $30 in Eon credit added
         </div>
         <div class="followup">
-          <p><span>We're on it.</span> Our support team is reviewing what happened and will follow up within 24 hours.</p>
+          <p><span>We're on it.</span> Our support team will follow up within 24 hours.</p>
         </div>
         <button class="btn-secondary" style="margin-top:16px">Contact Support</button>
       </div>
@@ -376,8 +369,8 @@
     <!-- ============ REFER A FRIEND ============ -->
     <section class="card" aria-label="Refer a friend">
       <div class="card-pad">
-        <h2 style="font-size:var(--font-size-title-2);font-weight:500">Refer A Friend</h2>
-        <p class="ref-copy">Invite a friend and earn $35 in Eon credit once they complete their first trip. Plus, they get $35 off their first booking!</p>
+        <h2 style="font-size:var(--font-size-title-2);font-weight:500">Refer a Friend</h2>
+        <p class="ref-copy">Earn $35 in Eon credit when a friend completes their first trip. They get $35 off their first booking.</p>
         <div class="ref-field">
           <label>Referral link</label>
           <span class="link">https://eon.rent/owner/signup?ref=MIGUEL30</span>
@@ -389,9 +382,8 @@
       </div>
     </section>
 
-    <p class="contact-note">Is something incorrect? Please reach out to Customer Support.</p>
-    <div class="row" style="border-bottom:none">
-      <div class="r-title">Contact support</div>
+    <div class="row" style="border-bottom:none;margin-top:16px">
+      <div class="r-title">Contact Support</div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
     </div>
   </div>
@@ -562,7 +554,7 @@
         starBtns[i].setAttribute('aria-checked', i + 1 === r ? 'true' : 'false');
       }
       var word = document.getElementById('rating-word');
-      word.textContent = r ? WORDS[r] : 'Tap a star to rate';
+      word.textContent = r ? WORDS[r] : '';
       word.classList.toggle('set', r > 0);
 
       // instant-save confirmation + progressive reveal
