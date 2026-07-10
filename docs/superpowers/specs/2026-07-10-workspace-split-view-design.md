@@ -4,30 +4,27 @@ Approved 2026-07-10. Applies to the prototype workspace (`src/features/hub/Proto
 shared pieces in `src/features/hub/PrototypeHub.jsx`, styles in `src/index.css`). No schema or
 data changes; all new state is session-local UI state.
 
-## 1. Review panel — one scrolling stack, no tabs
+> **Revision (same day):** after seeing it live, Mate chose side-by-side as the only split
+> mode and asked for the review panel to return to its original tabbed style, now with just
+> **Comments | Linear**. Figma lives exclusively in the split pane, including link editing.
+> Sections 1–2 below are updated accordingly; the stacked panel and "below" mode were removed.
 
-Replace the Comments / Linear / Figma tabs in `ReviewInspector` with one column:
+## 1. Review panel — tabs, Comments | Linear
 
-1. **Linear** — section header ("Linear issue · Shared with the team", inline "Edit link"),
-   URL input when empty or editing, then `LinearCard`.
-2. **Figma** — same header pattern, URL input when empty or editing, then `FigmaCard`
-   (or the existing empty state).
-3. **Comments** — section header with count, then the existing `CommentThread`
-   (internal scroll + composer). Fills remaining height, min-height ~280px.
+`ReviewInspector` keeps its original tabbed layout with two tabs: **Comments** (thread +
+composer, count badge) and **Linear** (header with inline "Edit link", URL input when empty
+or editing, `LinearCard`). The Figma tab is gone — the split pane owns Figma entirely.
 
-The stack scrolls as a whole on short windows. Panel width stays 360px. The `inspectorTab`
-state and the shadcn `Tabs` usage in the workspace go away.
+## 2. Compare — optional side-by-side Figma split
 
-## 2. Compare — optional Figma split, off / side / below
+New toolbar toggle **Compare** (columns icon) next to the View control, always visible in
+the tools row. Disabled with a "Link a Figma frame first" tooltip when the prototype has no
+`figma_url`. Default off.
 
-New toolbar control **Compare** (segmented: off · side · below) next to the View control,
-always visible in the tools row. Disabled with a "Link a Figma frame first" tooltip when the
-prototype has no `figma_url`. Default off.
-
-- **side**: canvas left, Figma pane right (vertical draggable divider, default ~50/50).
-- **below**: canvas top full-width, Figma pane underneath (horizontal draggable divider).
-- The Figma pane = slim header (file name, node, "Open in Figma" link) over the large
-  `FigmaEmbed`.
+- Canvas left, Figma pane right, vertical draggable divider, default ~50/50.
+- The Figma pane = slim header (file name, node, "Edit link", "Open in Figma") over the
+  large `FigmaEmbed`. Editing toggles a URL input row; when no link is set the pane shows
+  the empty state with the input.
 - Works in both single view and the states grid — it wraps the canvas `<section>`, so the
   existing `ResizeObserver` rescales the prototype automatically.
 - While dragging the divider, pointer events on both panes' iframes are disabled so the

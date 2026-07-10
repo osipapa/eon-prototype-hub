@@ -188,19 +188,17 @@
 .eon-media-scroll { min-height: 0; flex: 1; overflow: auto; }
 
 .eon-compare { display: flex; min-width: 0; min-height: 0; flex: 1; }
-.eon-compare.is-below { flex-direction: column; }
 .eon-compare.is-dragging { user-select: none; }
 .eon-compare.is-dragging iframe { pointer-events: none; }
 .eon-compare-divider { position: relative; z-index: 5; flex: 0 0 9px; cursor: col-resize; }
-.eon-compare.is-below > .eon-compare-divider { cursor: row-resize; }
 .eon-compare-divider::after { content: ""; position: absolute; inset: 0; margin: auto; width: 3px; height: 44px; border-radius: 3px; background: currentColor; }
-.eon-compare.is-below > .eon-compare-divider::after { width: 44px; height: 3px; }
 .eon-compare-pane { display: flex; min-width: 0; min-height: 0; flex-direction: column; border-left: 1px solid; }
-.eon-compare.is-below > .eon-compare-pane { border-left: 0; border-top: 1px solid; }
 .eon-compare-head { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid; }
 .eon-compare-meta { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 1px; }
 .eon-compare-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .eon-compare-meta span { font-size: 11px; }
+.eon-compare-edit { flex: 0 0 auto; padding: 10px 14px 0; }
+.eon-compare-empty { display: flex; flex: 1; min-height: 0; flex-direction: column; justify-content: center; gap: 12px; padding: 20px; }
 .eon-compare-embed { flex: 1; min-height: 0; }
 
 .eon-inspector { position: relative; z-index: 25; display: flex; width: 360px; flex: 0 0 360px; flex-direction: column; border-left: 1px solid; box-shadow: -8px 0 24px rgba(0,0,0,.08); }
@@ -208,11 +206,13 @@
 .eon-inspector-head > div:first-child { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
 .eon-inspector-head strong { font-size: 14px; }
 .eon-inspector-head span { font-size: 12px; }
-.eon-inspector-stack { display: flex; min-height: 0; flex: 1; flex-direction: column; overflow-y: auto; }
-.eon-panel-section { display: flex; flex: 0 0 auto; flex-direction: column; gap: 12px; padding: 16px 12px; border-bottom: 1px solid; }
-.eon-panel-comments { display: flex; min-height: 0; flex: 1 0 340px; flex-direction: column; }
-.eon-comments-head { padding: 14px 16px 0; }
-.eon-panel-comments .eon-comments { height: auto; flex: 1; min-height: 0; }
+.eon-inspector-tabs { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+.eon-review-tabs { display: grid; height: auto; margin: 10px 12px 0; padding: 3px; grid-template-columns: 1.35fr 1fr; border-radius: 11px; }
+.eon-review-tabs [role="tab"] { display: flex; min-width: 0; min-height: 36px; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; border-radius: 8px; font-size: 12px; }
+.eon-count { display: inline-flex; min-width: 18px; height: 18px; align-items: center; justify-content: center; padding: 0 5px; border-radius: 9px; font-size: 10px; font-variant-numeric: tabular-nums; }
+.eon-inspector-content { min-height: 0; flex: 1; margin: 0; overflow: hidden; }
+.eon-inspector-content[data-state="inactive"] { display: none; }
+.eon-reference-content { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding: 16px 12px 20px; }
 .eon-reference-head { display: flex; align-items: center; gap: 10px; }
 .eon-reference-head > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
 .eon-reference-head strong { font-size: 14px; }

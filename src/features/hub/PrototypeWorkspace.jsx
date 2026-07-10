@@ -4,18 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Check, ChevronDown, Circle, Copy, ExternalLink, Figma, LayoutGrid, LogOut,
-  Maximize2, MessageSquare, Minus, Monitor, Laptop, MoreHorizontal, Moon,
-  PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil,
-  Plus, Search, Send, Shield, Smartphone, Square, Sun, Tablet, Trash2, Upload,
+  Check, ChevronDown, Circle, CircleDot, Columns2, Copy, ExternalLink, Figma,
+  LayoutGrid, LogOut, Maximize2, MessageSquare, Minus, Monitor, Laptop,
+  MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
+  PanelRightOpen, Pencil, Plus, Search, Send, Shield, Smartphone, Square, Sun,
+  Tablet, Trash2, Upload,
 } from "lucide-react";
 import {
   CANVAS_PRESETS, HUB, MEDIA, STATUS_COLOR, VIEWPORTS, currentArgs,
   parsePrototypeConfig, renderStory,
 } from "./prototypes";
 import {
-  FigmaCard, FigmaEmbed, LinearCard, MediaManager, SETUP_PROMPT, StateGrid,
+  FigmaEmbed, LinearCard, MediaManager, SETUP_PROMPT, StateGrid,
   UploadPanel, figmaMeta,
 } from "./PrototypeHub";
 
@@ -49,9 +51,10 @@ export default function PrototypeWorkspace({
   const [navOpen, setNavOpen] = useState(() => window.innerWidth >= 900);
   const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth >= 1120);
   const [compactTools, setCompactTools] = useState(() => window.innerWidth < 1500);
-  const [compare, setCompare] = useState("off");
+  const [compare, setCompare] = useState(false);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [splitDragging, setSplitDragging] = useState(false);
+  const [inspectorTab, setInspectorTab] = useState("comments");
   const compareRef = useRef(null);
   const canvasRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 960, height: 640 });
@@ -134,7 +137,7 @@ export default function PrototypeWorkspace({
   const gridOptions = ["states", "themes", "screens"];
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
   const hasFigma = Boolean(story.figma_url);
-  const effCompare = hasFigma ? compare : "off";
+  const effCompare = hasFigma && compare;
   const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR.Exploration;
   const linearId = story.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story.issue_id || null;
   const storyComments = comments.filter((comment) => comment.project_id === story.id);
@@ -183,9 +186,7 @@ export default function PrototypeWorkspace({
     if (!rect) return;
     setSplitDragging(true);
     const move = (pointer) => {
-      const ratio = effCompare === "side"
-        ? (pointer.clientX - rect.left) / rect.width
-        : (pointer.clientY - rect.top) / rect.height;
+      const ratio = (pointer.clientX - rect.left) / rect.width;
       setSplitRatio(Math.min(0.75, Math.max(0.25, ratio)));
     };
     const up = () => {
@@ -197,11 +198,9 @@ export default function PrototypeWorkspace({
     window.addEventListener("pointerup", up);
   };
   const nudgeSplit = (event) => {
-    const grow = ["ArrowRight", "ArrowDown"].includes(event.key);
-    const shrink = ["ArrowLeft", "ArrowUp"].includes(event.key);
-    if (!grow && !shrink) return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
-    setSplitRatio((value) => Math.min(0.75, Math.max(0.25, value + (grow ? 0.05 : -0.05))));
+    setSplitRatio((value) => Math.min(0.75, Math.max(0.25, value + (event.key === "ArrowRight" ? 0.05 : -0.05))));
   };
 
   const segmented = (options, value, onPick, disabled = false) => (
@@ -257,9 +256,9 @@ export default function PrototypeWorkspace({
         {view === "media" ? (
           <div className="eon-media-scroll"><MediaManager c={c} assets={assets} onSetAsset={onSetAsset} /></div>
         ) : (
-          <div ref={compareRef} className={`eon-compare${effCompare !== "off" ? ` is-${effCompare}` : ""}${splitDragging ? " is-dragging" : ""}`}>
+          <div ref={compareRef} className={`eon-compare${splitDragging ? " is-dragging" : ""}`}>
             <section ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`}
-              style={{ background: canvasBg, flex: effCompare === "off" ? undefined : `${splitRatio} 1 0%` }}>
+              style={{ background: canvasBg, flex: effCompare ? `${splitRatio} 1 0%` : undefined }}>
               {layout === "single" ? (
                 <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + 64), height: Math.max(canvasSize.height, frameHeight + 64) }}>
                   <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0 }}>
@@ -274,12 +273,12 @@ export default function PrototypeWorkspace({
                 </div>
               )}
             </section>
-            {effCompare !== "off" && (
+            {effCompare && (
               <>
                 <div className="eon-compare-divider" role="separator" tabIndex={0} onPointerDown={startSplitDrag} onKeyDown={nudgeSplit}
-                  aria-orientation={effCompare === "side" ? "vertical" : "horizontal"} aria-label="Resize the Figma comparison"
+                  aria-orientation="vertical" aria-label="Resize the Figma comparison"
                   style={{ color: c.border }} />
-                <FigmaPane c={c} story={story} ratio={splitRatio} />
+                <FigmaPane c={c} story={story} ratio={splitRatio} patch={patch} editing={editFigma} setEditing={setEditFigma} />
               </>
             )}
           </div>
@@ -289,9 +288,9 @@ export default function PrototypeWorkspace({
       {view === "stories" && inspectorOpen && (
         <ReviewInspector
           c={c} story={story} comments={storyComments} profile={profile}
-          onClose={() => setInspectorOpen(false)}
-          onCreateComment={onCreateComment} patch={patch} editFigma={editFigma}
-          setEditFigma={setEditFigma} editLinear={editLinear} setEditLinear={setEditLinear}
+          tab={inspectorTab} setTab={setInspectorTab} onClose={() => setInspectorOpen(false)}
+          onCreateComment={onCreateComment} patch={patch}
+          editLinear={editLinear} setEditLinear={setEditLinear}
           sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
         />
       )}
@@ -495,7 +494,13 @@ function WorkspaceToolbar({
           </ToolGroup>
           <div className="eon-tool-compare" title={hasFigma ? undefined : "Link a Figma frame first"}>
             <ToolGroup label="Compare" c={c}>
-              {segmented(["off", "side", "below"], compare, setCompare, !hasFigma)}
+              <div className="eon-icon-segment" style={{ background: c.raised, opacity: hasFigma ? 1 : 0.45 }}>
+                <button className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)} disabled={!hasFigma}
+                  title="Compare with the linked Figma frame" aria-label="Compare with Figma" aria-pressed={compare}
+                  style={{ color: compare ? c.brand : c.muted, background: compare ? c.panel : "transparent" }}>
+                  <Columns2 size={16} />
+                </button>
+              </div>
             </ToolGroup>
           </div>
           {compactTools ? (
@@ -514,11 +519,9 @@ function ToolGroup({ label, c, children }) {
   return <div className="eon-tool-group"><span style={{ color: c.muted }}>{label}</span>{children}</div>;
 }
 
-/* ---- Everything in one scrolling column — Linear, Figma, then comments —
-   so nothing hides behind a tab. Comments claim the remaining height. ---- */
 function ReviewInspector({
-  c, story, comments, profile, onClose, onCreateComment, patch,
-  editFigma, setEditFigma, editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
+  c, story, comments, profile, tab, setTab, onClose, onCreateComment, patch,
+  editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
 }) {
   return (
     <aside className="eon-inspector" style={{ background: c.nav, borderColor: c.border }}>
@@ -526,36 +529,32 @@ function ReviewInspector({
         <div><strong>Review</strong><span style={{ color: c.muted }}>Discuss and compare</span></div>
         <button className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review panel" style={{ color: c.muted }}><PanelRightClose size={16} /></button>
       </div>
-      <div className="eon-inspector-stack">
-        <section className="eon-panel-section" style={{ borderColor: c.border }} aria-label="Linear issue">
+      <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
+        <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
+          <TabsTrigger value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
+          <TabsTrigger value="linear"><CircleDot size={14} /> Linear</TabsTrigger>
+        </TabsList>
+        <TabsContent value="comments" className="eon-inspector-content">
+          <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
+        </TabsContent>
+        <TabsContent value="linear" className="eon-inspector-content eon-reference-content">
           <ReferenceHeader c={c} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
           {(!story.issue_url || editLinear) && <Input value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
           <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
-        </section>
-        <section className="eon-panel-section" style={{ borderColor: c.border }} aria-label="Figma frame">
-          <ReferenceHeader c={c} label="Figma frame" hasValue={Boolean(story.figma_url)} editing={editFigma} setEditing={setEditFigma} />
-          {(!story.figma_url || editFigma) && <Input value={story.figma_url || ""} onChange={(event) => patch("figma_url", event.target.value)} placeholder="Paste a Figma share URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
-          {story.figma_url ? <FigmaCard c={c} url={story.figma_url} /> : <ReferenceEmpty c={c} icon={Figma} title="No Figma frame linked" body="Paste a share URL to compare the source design here." />}
-        </section>
-        <section className="eon-panel-comments" aria-label="Comments">
-          <div className="eon-reference-head eon-comments-head">
-            <div>
-              <strong>Comments</strong>
-              <span style={{ color: c.muted }}>{comments.length === 0 ? "Team discussion" : `${comments.length} so far`}</span>
-            </div>
-            <MessageSquare size={15} color={c.muted} aria-hidden="true" />
-          </div>
-          <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
-        </section>
-      </div>
+        </TabsContent>
+      </Tabs>
     </aside>
   );
 }
 
-/* ---- Large Figma pane for the compare split: slim unfurl header over the
-   full-bleed embed. Falls back to the empty card if the link is removed. ---- */
-function FigmaPane({ c, story, ratio }) {
+/* ---- Large Figma pane for the side-by-side compare: slim unfurl header over
+   the full-bleed embed. The Figma link is edited here, not in the panel. ---- */
+function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
   const meta = figmaMeta(story.figma_url || "");
+  const linkInput = (
+    <Input value={story.figma_url || ""} onChange={(event) => patch("figma_url", event.target.value)} placeholder="Paste a Figma share URL"
+      style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />
+  );
   return (
     <div className="eon-compare-pane" style={{ flex: `${1 - ratio} 1 0%`, background: c.nav, borderColor: c.border }}>
       {story.figma_url ? (
@@ -566,16 +565,21 @@ function FigmaPane({ c, story, ratio }) {
               <strong>{meta.title}</strong>
               {meta.node && <span style={{ color: c.muted }}>Node {meta.node}</span>}
             </div>
+            <button className="eon-buttonish eon-text-button" onClick={() => setEditing((value) => !value)} style={{ color: editing ? c.brand : c.secondary }}>
+              {editing ? "Done" : "Edit link"}
+            </button>
             <a className="eon-buttonish eon-secondary-button" href={story.figma_url} target="_blank" rel="noreferrer"
               style={{ borderColor: c.border, background: c.raised, color: c.secondary, textDecoration: "none" }}>
               <ExternalLink size={13} aria-hidden="true" /> Open in Figma
             </a>
           </div>
+          {editing && <div className="eon-compare-edit">{linkInput}</div>}
           <div className="eon-compare-embed"><FigmaEmbed url={story.figma_url} /></div>
         </>
       ) : (
-        <div style={{ flex: 1, display: "grid", placeItems: "center", padding: 20 }}>
-          <ReferenceEmpty c={c} icon={Figma} title="No Figma frame linked" body="Paste a share URL in the review panel to compare it here." />
+        <div className="eon-compare-empty">
+          <ReferenceEmpty c={c} icon={Figma} title="No Figma frame linked" body="Paste a share URL to compare the source design here." />
+          {linkInput}
         </div>
       )}
     </div>
