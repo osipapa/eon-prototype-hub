@@ -35,6 +35,20 @@ export const STATUS_COLOR = {
 
 export const CANVAS_PRESETS = ["#FFFFFF", "#000000"];
 
+// Preset placeholder photos available in every prototype as {{token}} without
+// any setup. Seeded picsum URLs so each token always resolves to the same
+// image. A saved asset with the same key (Media library) overrides the preset.
+export const PRESET_MEDIA = {
+  heroImage: "https://picsum.photos/seed/eon-hero/1600/900",
+  bannerImage: "https://picsum.photos/seed/eon-banner/1600/500",
+  cardImage: "https://picsum.photos/seed/eon-card/800/600",
+  portraitImage: "https://picsum.photos/seed/eon-portrait/900/1200",
+  squareImage: "https://picsum.photos/seed/eon-square/800/800",
+  thumbnailImage: "https://picsum.photos/seed/eon-thumb/480/320",
+  avatarImage: "https://picsum.photos/seed/eon-avatar/320/320",
+  productImage: "https://picsum.photos/seed/eon-product/1000/1000",
+};
+
 export const MEDIA = {
   logos: {
     eon: (stroke = "#FFFFFF", brand = "#E15CF7", img) =>
@@ -194,6 +208,7 @@ window.__story=s;apply();document.addEventListener('DOMContentLoaded',apply);})(
 // Map media tokens in uploaded HTML to the shared library so logos/images stay
 // in sync. Supported tokens (use in src="…", CSS url(), or anywhere):
 //   {{eonLogo}} {{acmeLogo}} {{anyAssetKey}}  -> that asset's URL
+//   {{heroImage}} {{cardImage}} … (PRESET_MEDIA) -> preset photo, overridable
 //   {{placeholder:320x180}} {{placeholder:320x180:Label}} -> a generated image
 // Unknown tokens are left untouched.
 export function replaceMediaTokens(html, media = {}) {
@@ -202,6 +217,7 @@ export function replaceMediaTokens(html, media = {}) {
     const ph = token.match(/^placeholder:(\d+)x(\d+)(?::(.*))?$/i);
     if (ph) return MEDIA.placeholder(+ph[1], +ph[2], (ph[3] || "").trim());
     if (media[token]) return media[token];
+    if (PRESET_MEDIA[token]) return PRESET_MEDIA[token];
     return m;
   });
 }

@@ -59,20 +59,19 @@ export default function Hub() {
     try { await upsertAsset(profile.team_id, { key, name: key, url }); } catch (e) { console.error(e); }
   }
 
-  async function onNewProject() {
-    const title = window.prompt("Prototype title");
-    if (!title) return;
-    const group = window.prompt("Group (e.g. Onboarding)", "General") || "General";
-    const newSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    try {
-      await createProject({
-        team_id: profile.team_id, slug: newSlug, title, group_name: group,
-        status: "Exploration", controls: [], defaults: {},
-        sort_order: (projects?.length || 0),
-      });
-      await load();
-      navigate(`/p/${newSlug}`);
-    } catch (e) { alert(e.message); }
+  // Called by the workspace's new-prototype dialog; errors propagate back to
+  // it so they show inline instead of an alert.
+  async function onNewProject({ title, group, html }) {
+    const newSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+      || `prototype-${Date.now().toString(36)}`;
+    await createProject({
+      team_id: profile.team_id, slug: newSlug, title, group_name: group || "General",
+      status: "Exploration", controls: [], defaults: {},
+      prototype_html: html || null,
+      sort_order: (projects?.length || 0),
+    });
+    await load();
+    navigate(`/p/${newSlug}`);
   }
 
   async function onCreateComment(projectId, body) {

@@ -10,7 +10,7 @@ import {
   LayoutGrid, LogOut, Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
   PanelRightOpen, Pencil, Plus, Search, Send, Shield, Smartphone, Square, Sun,
-  Tablet, Trash2, Upload,
+  Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
   CANVAS_PRESETS, HUB, MEDIA, STATUS_COLOR, VIEWPORTS, currentArgs,
@@ -49,6 +49,7 @@ export default function PrototypeWorkspace({
   const [zoom, setZoom] = useState(1);
   const [liveLinear, setLiveLinear] = useState(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [showNewDialog, setShowNewDialog] = useState(false);
   const [navOpen, setNavOpen] = useState(() => window.innerWidth >= 900);
   const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth >= 1120);
   const [compare, setCompare] = useState(false);
@@ -121,8 +122,11 @@ export default function PrototypeWorkspace({
       <div className={hubTheme === "dark" ? "" : "light"} style={{ height: "100vh", display: "grid", placeItems: "center", background: c.bg, color: c.text }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 600 }}>No prototypes yet</div>
-          <Button className="eon-buttonish" onClick={onNewProject} style={{ marginTop: 12, minHeight: 40, background: c.primary, color: c.primaryText }}>New prototype</Button>
+          <Button className="eon-buttonish" onClick={() => setShowNewDialog(true)} style={{ marginTop: 12, minHeight: 40, background: c.primary, color: c.primaryText }}>New prototype</Button>
         </div>
+        {showNewDialog && (
+          <NewPrototypeDialog c={c} groups={[]} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
+        )}
       </div>
     );
   }
@@ -226,7 +230,7 @@ export default function PrototypeWorkspace({
         <WorkspaceSidebar
           c={c} media={media} view={view} setView={setView} query={query} setQuery={setQuery}
           groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin}
-          onNewProject={onNewProject} dragId={dragId} setDragId={setDragId}
+          onNewProject={() => setShowNewDialog(true)} dragId={dragId} setDragId={setDragId}
           dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop}
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
           renamingGroup={renamingGroup} setRenamingGroup={setRenamingGroup} commitGroupRename={commitGroupRename}
@@ -277,9 +281,15 @@ export default function PrototypeWorkspace({
                 c={c} layout={layout} effStory={effStory} args={args} setArg={setArg}
                 gridOptions={gridOptions} effGridBy={effGridBy} setGridBy={setGridBy}
                 protoTheme={protoTheme} setProtoTheme={setProtoTheme} canvasBg={canvasBg}
-                setCanvasBg={setCanvasBg} zoom={zoom} setZoom={setZoom} scale={scale}
-                segmented={segmented}
+                setCanvasBg={setCanvasBg} segmented={segmented}
               />
+              {layout === "single" && (
+                <div className="eon-zoom eon-zoom-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+                  <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out" style={{ color: c.muted }}><Minus size={15} /></button>
+                  <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" style={{ color: c.text }}>{Math.round(scale * zoom * 100)}%</button>
+                  <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in" style={{ color: c.muted }}><Plus size={15} /></button>
+                </div>
+              )}
             </div>
             {effCompare && (
               <>
@@ -301,6 +311,10 @@ export default function PrototypeWorkspace({
           editLinear={editLinear} setEditLinear={setEditLinear}
           sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
         />
+      )}
+
+      {showNewDialog && (
+        <NewPrototypeDialog c={c} groups={Object.keys(groups)} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
       )}
     </div>
   );
@@ -346,7 +360,7 @@ function WorkspaceSidebar({
 
       <div className="eon-story-list">
         <button className="eon-buttonish eon-new-story" onClick={onNewProject} style={{ borderColor: c.border, color: c.secondary }}>
-          <Plus size={15} /> New prototype
+          <Plus size={17} /> New prototype
         </button>
         {Object.entries(groups).map(([group, items]) => (
           <div key={group} style={{ marginBottom: 10 }}>
@@ -504,10 +518,10 @@ function WorkspaceToolbar({
 }
 
 /* ---- Floating pill bar over the canvas: prototype state pills, grid fan-out,
-   prototype theme, canvas background, zoom. Frees the toolbar for navigation. ---- */
+   prototype theme, canvas background. Zoom floats separately, bottom-right. ---- */
 function CanvasControlBar({
   c, layout, effStory, args, setArg, gridOptions, effGridBy, setGridBy,
-  protoTheme, setProtoTheme, canvasBg, setCanvasBg, zoom, setZoom, scale, segmented,
+  protoTheme, setProtoTheme, canvasBg, setCanvasBg, segmented,
 }) {
   return (
     <div className="eon-ctlbar eon-ctlbar-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
@@ -529,15 +543,6 @@ function CanvasControlBar({
           </label>
         </div>
       </ToolGroup>
-      {layout === "single" && (
-        <ToolGroup label="Zoom" c={c}>
-          <div className="eon-zoom" style={{ background: c.raised }}>
-            <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out"><Minus size={15} /></button>
-            <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas">{Math.round(scale * zoom * 100)}%</button>
-            <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in"><Plus size={15} /></button>
-          </div>
-        </ToolGroup>
-      )}
     </div>
   );
 }
@@ -698,6 +703,118 @@ function CommentBubble({ c, comment, currentUserId }) {
         <p style={{ color: c.secondary }}>{comment.body}</p>
       </div>
     </article>
+  );
+}
+
+/* ---- New-prototype dialog: replaces the old window.prompt flow with proper
+   setup steps — name, group, and optional prototype HTML (drop / browse /
+   paste). Creation is delegated to onCreate({title, group, html}); errors
+   surface inline. ---- */
+function NewPrototypeDialog({ c, groups, onClose, onCreate }) {
+  const [title, setTitle] = useState("");
+  const [group, setGroup] = useState("General");
+  const [html, setHtml] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+  useEffect(() => {
+    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const readFile = (file) => {
+    if (!file) return;
+    if (!/\.html?$/i.test(file.name) && file.type !== "text/html") {
+      setError("Drop a .html file — other formats aren't supported.");
+      return;
+    }
+    setError("");
+    const reader = new FileReader();
+    reader.onload = () => { setHtml(String(reader.result)); setFileName(file.name); };
+    reader.readAsText(file);
+  };
+
+  const submit = async () => {
+    if (!title.trim() || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await onCreate({ title: title.trim(), group: group.trim() || "General", html: html.trim() || null });
+      onClose();
+    } catch (err) {
+      setError(err.message || "Couldn't create the prototype.");
+      setBusy(false);
+    }
+  };
+
+  const fieldStyle = { minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10, fontSize: 13 };
+  const stepBadge = { display: "grid", width: 22, height: 22, flexShrink: 0, placeItems: "center", borderRadius: 100, background: c.active, color: c.brand, fontSize: 11, fontWeight: 700 };
+  const stepHead = { display: "flex", alignItems: "center", gap: 9, fontSize: 13, fontWeight: 600 };
+
+  return (
+    <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div className="eon-modal" role="dialog" aria-modal="true" aria-label="New prototype" style={{ background: c.panel, borderColor: c.border }}>
+        <div className="eon-modal-head" style={{ borderColor: c.border }}>
+          <strong>New prototype</strong>
+          <button className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close dialog" style={{ color: c.muted }}><X size={16} /></button>
+        </div>
+        <div className="eon-modal-body">
+          <div className="eon-modal-step">
+            <div style={stepHead}><span style={stepBadge}>1</span> Name it</div>
+            <Input autoFocus value={title} onChange={(event) => setTitle(event.target.value)}
+              onKeyDown={(event) => { if (event.key === "Enter") submit(); }}
+              placeholder="e.g. Trips checkout" aria-label="Prototype name" style={fieldStyle} />
+            {slug && <span style={{ fontSize: 11, color: c.muted }}>Will live at <code style={{ color: c.text }}>#/p/{slug}</code></span>}
+          </div>
+          <div className="eon-modal-step">
+            <div style={stepHead}><span style={stepBadge}>2</span> Pick a group</div>
+            <Input value={group} onChange={(event) => setGroup(event.target.value)} list="eon-group-options"
+              placeholder="General" aria-label="Prototype group" style={fieldStyle} />
+            <datalist id="eon-group-options">
+              {groups.map((name) => <option key={name} value={name} />)}
+            </datalist>
+          </div>
+          <div className="eon-modal-step">
+            <div style={stepHead}><span style={stepBadge}>3</span> Add the prototype HTML <span style={{ fontSize: 11, fontWeight: 400, color: c.muted }}>optional — you can upload it later</span></div>
+            <div className="eon-dropzone"
+              onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(event) => { event.preventDefault(); setDragOver(false); readFile(event.dataTransfer.files?.[0]); }}
+              style={{ borderColor: dragOver ? c.brand : c.border, background: dragOver ? c.active : "transparent" }}>
+              <Upload size={15} color={c.muted} aria-hidden="true" />
+              <span style={{ fontSize: 13, color: c.secondary, flex: 1 }}>
+                {fileName ? <>Loaded <code style={{ color: c.text }}>{fileName}</code></> : "Drag & drop a .html file here, or"}
+              </span>
+              <label style={{ fontSize: 13, color: c.brand, cursor: "pointer", textDecoration: "underline" }}>
+                browse
+                <input type="file" accept=".html,.htm,text/html" aria-label="Choose an HTML file"
+                  onChange={(event) => readFile(event.target.files?.[0])} style={{ display: "none" }} />
+              </label>
+            </div>
+            <Textarea value={html} onChange={(event) => { setHtml(event.target.value); setFileName(""); }} spellCheck={false}
+              placeholder="…or paste a self-contained HTML document here"
+              aria-label="Prototype HTML source"
+              style={{ minHeight: 96, maxHeight: 220, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 10 }} />
+            <span style={{ fontSize: 11, color: c.muted, lineHeight: 1.5 }}>
+              Tip: “Copy setup prompt” in the sidebar gives an AI the full contract — theming, states, and media tokens like <code style={{ color: c.text }}>{"{{heroImage}}"}</code>.
+            </span>
+          </div>
+        </div>
+        <div className="eon-modal-foot" style={{ borderColor: c.border }}>
+          <span role="alert" style={{ flex: 1, fontSize: 12, color: "#FF6B8A" }}>{error}</span>
+          <button className="eon-buttonish eon-secondary-button" onClick={onClose} style={{ borderColor: c.border, background: "transparent", color: c.secondary }}>Cancel</button>
+          <Button className="eon-buttonish" onClick={submit} disabled={!title.trim() || busy}
+            style={{ minHeight: 40, padding: "0 16px", borderRadius: 10, background: c.primary, color: c.primaryText, fontSize: 13, fontWeight: 600, opacity: !title.trim() || busy ? 0.5 : 1 }}>
+            {busy ? "Creating…" : "Create prototype"}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
