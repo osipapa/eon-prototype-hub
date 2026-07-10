@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DES-692 · Trips Empty State</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/json" id="eon-config">
+{ "controls": [
+    { "key": "tab",   "label": "Tab",   "options": ["active", "past"] },
+    { "key": "state", "label": "State", "options": ["empty", "booked"] }
+  ],
+  "defaults": { "tab": "active", "state": "empty" } }
+</script>
+<style>
+  :root{
+    /* Eon tokens - DARK (default) - from eon-design-system references */
+    --background-1:#000000; --background-2:#121216; --background-3:#1E1E22;
+    --text-primary:#FFFFFF; --text-secondary:rgba(255,255,255,0.7);
+    --text-secondary-50:rgba(144,148,165,0.5); --text-brand:#E15CF7;
+    --text-success:#6FEC7B;
+    --button-fill-primary-default:#EDD2F6; --button-fill-primary-hover:#E9C1F6;
+    --button-fill-primary-pressed:#DCA5EE; --button-text-primary-default:#000000;
+    --button-fill-secondary-default:rgba(144,148,165,0.1);
+    --button-fill-secondary-hover:rgba(144,148,165,0.2);
+    --button-border-secondary:rgba(144,148,165,0.2); --button-text-secondary-default:#FFFFFF;
+    --card-background-default:#121216; --card-border-default:#1E1E22;
+    --card-background-hover:#1E1E22; --card-border-hover:#3A3D4A;
+    --chip-background-success:rgba(111,236,123,0.15); --chip-border-success:rgba(111,236,123,0.15);
+    --chip-background-neutral:rgba(144,148,165,0.1); --chip-border-neutral:rgba(144,148,165,0.1);
+    --segmented-control-fill-button-default:#121216;
+    --segmented-control-fill-button-active:#EDD2F6;
+    --segmented-text-active:#000000; --segmented-text-inactive:#FFFFFF;
+    --navigation-bar-background:#000000; --navigation-bar-border:#1E1E22;
+    --icon-fill-background:rgba(144,148,165,0.1); --icon-fill-icon:#9094A5;
+    --avatar-border:#3A3D4A; --avatar-text:#9094A5;
+    --font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-size-large-title:36px; --font-size-title-1:24px; --font-size-title-2:20px;
+    --font-size-body:16px; --font-size-caption-1:12px;
+    --radius-control:8px; --radius-card:24px; --radius-pill:100px;
+  }
+  [data-theme="light"], html.light{
+    --background-1:#F9F9FD; --background-2:#FFFFFF; --background-3:#DDE0EA;
+    --text-primary:#1E1E22; --text-secondary:rgba(18,18,22,0.75);
+    --text-secondary-50:rgba(144,148,165,0.5); --text-brand:#D400F7;
+    --text-success:#00AC10;
+    --button-fill-primary-default:#000000; --button-fill-primary-hover:#1E1E22;
+    --button-fill-primary-pressed:#3A3D4A; --button-text-primary-default:#FFFFFF;
+    --button-fill-secondary-default:rgba(144,148,165,0.1);
+    --button-fill-secondary-hover:rgba(144,148,165,0.2);
+    --button-border-secondary:rgba(144,148,165,0.2); --button-text-secondary-default:#000000;
+    --card-background-default:#FFFFFF; --card-border-default:#DDE0EA;
+    --card-background-hover:#F9F9FD; --card-border-hover:#DDE0EA;
+    --chip-background-success:rgba(0,172,16,0.15); --chip-border-success:rgba(0,172,16,0.15);
+    --chip-background-neutral:rgba(144,148,165,0.1); --chip-border-neutral:rgba(144,148,165,0.1);
+    --segmented-control-fill-button-default:#FFFFFF;
+    --segmented-control-fill-button-active:#000000;
+    --segmented-text-active:#FFFFFF; --segmented-text-inactive:#1E1E22;
+    --navigation-bar-background:#FFFFFF; --navigation-bar-border:#DDE0EA;
+    --icon-fill-background:rgba(144,148,165,0.1); --icon-fill-icon:#9094A5;
+    --avatar-border:#DDE0EA; --avatar-text:#565B6C;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-family)}
+  html,body{min-height:100vh}
+  body{background:var(--background-1);color:var(--text-primary);transition:background .2s,color .2s}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+  /* top nav */
+  .nav{height:60px;background:var(--navigation-bar-background);border-bottom:1px solid var(--navigation-bar-border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0}
+  .nav-left{display:flex;align-items:center;gap:10px}
+  .nav-left img{width:28px;height:28px;border-radius:50%;object-fit:contain}
+  .wordmark{font-size:var(--font-size-title-2);font-weight:500;letter-spacing:.06em}
+  .nav-right{display:flex;align-items:center;gap:12px}
+  .btn-nav{height:40px;padding:0 16px;border-radius:var(--radius-pill);border:1px solid var(--button-border-secondary);background:var(--button-fill-secondary-default);color:var(--button-text-secondary-default);font-size:14px;font-weight:500}
+  .btn-nav:hover{background:var(--button-fill-secondary-hover)}
+  .avatar{width:40px;height:40px;border-radius:50%;background:var(--background-3);border:1px solid var(--avatar-border);display:flex;align-items:center;justify-content:center;font-size:var(--font-size-body);font-weight:500;color:var(--avatar-text)}
+  .chev{color:var(--avatar-text);display:flex}
+
+  /* page */
+  .page{max-width:1120px;margin:0 auto;padding:64px 40px 80px}
+  .page h1{font-size:var(--font-size-large-title);font-weight:400;margin-bottom:24px}
+  .segmented{display:flex;gap:8px}
+  .seg{height:40px;padding:0 20px;border-radius:var(--radius-pill);font-size:var(--font-size-body);border:1px solid transparent}
+  .seg.on{background:var(--segmented-control-fill-button-active);color:var(--segmented-text-active);font-weight:500}
+  .seg:not(.on){background:var(--segmented-control-fill-button-default);color:var(--segmented-text-inactive);border-color:var(--card-border-default)}
+  .seg:not(.on):hover{border-color:var(--card-border-hover)}
+
+  /* empty state */
+  .empty{max-width:400px;margin:104px auto 0;text-align:center;display:flex;flex-direction:column;align-items:center}
+  .empty-icon{width:72px;height:72px;border-radius:16px;background:var(--icon-fill-background);color:var(--icon-fill-icon);display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+  .empty h2{font-size:var(--font-size-title-1);font-weight:500;margin-bottom:8px}
+  .empty p{font-size:var(--font-size-body);color:var(--text-secondary);line-height:1.5;margin-bottom:32px}
+  .empty p:last-child{margin-bottom:0}
+  .btn-cta{height:50px;padding:0 24px;border-radius:var(--radius-control);background:var(--button-fill-primary-default);color:var(--button-text-primary-default);font-size:var(--font-size-body);font-weight:500}
+  .btn-cta:hover{background:var(--button-fill-primary-hover)}
+  .btn-cta:active{background:var(--button-fill-primary-pressed)}
+
+  /* trip cards (booked state, for context) */
+  .trips{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-top:32px}
+  .trip{background:var(--card-background-default);border:1px solid var(--card-border-default);border-radius:var(--radius-card);overflow:hidden}
+  .trip:hover{background:var(--card-background-hover);border-color:var(--card-border-hover)}
+  .trip-photo{height:180px;background:var(--background-3) center/cover no-repeat}
+  .trip-body{padding:16px}
+  .chip{display:inline-flex;align-items:center;height:31px;padding:0 8px;border-radius:var(--radius-control);font-size:var(--font-size-caption-1);border:1px solid var(--chip-border-neutral);background:var(--chip-background-neutral);color:var(--text-secondary);margin-bottom:12px}
+  .chip.success{background:var(--chip-background-success);border-color:var(--chip-border-success);color:var(--text-success)}
+  .trip h3{font-size:var(--font-size-title-2);font-weight:500;margin-bottom:4px}
+  .trip-meta{font-size:14px;color:var(--text-secondary)}
+  .trip-price{font-size:var(--font-size-body);font-weight:500;margin-top:12px}
+  .trip-price span{font-size:var(--font-size-caption-1);font-weight:400;color:var(--text-secondary)}
+
+  .hidden{display:none !important}
+
+  /* standalone theme toggle (hidden inside the hub) */
+  .proto-toggle{position:fixed;right:16px;bottom:16px;padding:7px 15px;border-radius:var(--radius-pill);border:1px solid var(--card-border-default);background:var(--card-background-default);font-size:var(--font-size-caption-1);color:var(--text-secondary)}
+
+  @media (max-width:640px){
+    .btn-nav{display:none}
+    .page{padding:40px 24px 64px}
+    .empty{margin-top:64px}
+  }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-left">
+      <img src="{{eonLogo}}" alt="" onerror="this.style.display='none'">
+      <span class="wordmark">EON</span>
+    </div>
+    <div class="nav-right">
+      <button class="btn-nav">Become a Partner</button>
+      <button class="avatar" aria-label="Account menu">MC</button>
+      <span class="chev" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </div>
+  </nav>
+
+  <main class="page">
+    <h1>Trips</h1>
+    <div class="segmented" role="tablist" aria-label="Trip filters">
+      <button class="seg" id="seg-active" role="tab" onclick="setTab('active')">Active Trips</button>
+      <button class="seg" id="seg-past" role="tab" onclick="setTab('past')">Past Trips</button>
+    </div>
+
+    <!-- empty · active -->
+    <section class="empty" id="empty-active">
+      <div class="empty-icon" aria-hidden="true">
+        <!-- car.fill -->
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+      </div>
+      <h2>No trips yet</h2>
+      <p>Book your first car and your upcoming trips will show up here.</p>
+      <button class="btn-cta">Book Your First Car</button>
+    </section>
+
+    <!-- empty · past -->
+    <section class="empty hidden" id="empty-past">
+      <div class="empty-icon" aria-hidden="true">
+        <!-- clock.arrow.circlepath -->
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 7v5l3 3"/></svg>
+      </div>
+      <h2>No past trips</h2>
+      <p>Trips you complete will show up here.</p>
+    </section>
+
+    <!-- booked · active -->
+    <section class="trips hidden" id="trips-active">
+      <article class="trip">
+        <div class="trip-photo" style="background-image:url({{placeholder:640x360:Tesla Model 3}})"></div>
+        <div class="trip-body">
+          <span class="chip success">Active</span>
+          <h3>Tesla Model 3</h3>
+          <div class="trip-meta">Jul 12 to Jul 26 · San Francisco, CA</div>
+          <div class="trip-price">$1,860.00 <span>total</span></div>
+        </div>
+      </article>
+    </section>
+
+    <!-- booked · past -->
+    <section class="trips hidden" id="trips-past">
+      <article class="trip">
+        <div class="trip-photo" style="background-image:url({{placeholder:640x360:Polestar 2}})"></div>
+        <div class="trip-body">
+          <span class="chip">Completed</span>
+          <h3>Polestar 2</h3>
+          <div class="trip-meta">Jun 2 to Jun 9 · Los Angeles, CA</div>
+          <div class="trip-price">$980.00 <span>total</span></div>
+        </div>
+      </article>
+      <article class="trip">
+        <div class="trip-photo" style="background-image:url({{placeholder:640x360:Tesla Model Y}})"></div>
+        <div class="trip-body">
+          <span class="chip">Completed</span>
+          <h3>Tesla Model Y</h3>
+          <div class="trip-meta">May 16 to May 18 · San Francisco, CA</div>
+          <div class="trip-price">$420.00 <span>total</span></div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <button class="proto-toggle hidden" id="proto-toggle" onclick="toggleTheme()">Light Mode</button>
+
+  <script>
+    var root = document.documentElement;
+    var args = (window.__story && window.__story.args) || {};
+    var tab = args.tab || root.dataset.tab || 'active';
+    var state = args.state || root.dataset.state || 'empty';
+
+    function show(id, on){ document.getElementById(id).classList.toggle('hidden', !on); }
+    function render(){
+      document.getElementById('seg-active').classList.toggle('on', tab === 'active');
+      document.getElementById('seg-past').classList.toggle('on', tab === 'past');
+      show('empty-active', state === 'empty' && tab === 'active');
+      show('empty-past',   state === 'empty' && tab === 'past');
+      show('trips-active', state === 'booked' && tab === 'active');
+      show('trips-past',   state === 'booked' && tab === 'past');
+    }
+    function setTab(next){ tab = next; render(); }
+    render();
+
+    // Standalone only: the hub drives theme via window.__story, so hide the toggle there.
+    if (!window.__story) document.getElementById('proto-toggle').classList.remove('hidden');
+    function toggleTheme(){
+      var btn = document.getElementById('proto-toggle');
+      if (root.dataset.theme === 'light'){ delete root.dataset.theme; btn.textContent = 'Light Mode'; }
+      else { root.dataset.theme = 'light'; btn.textContent = 'Dark Mode'; }
+    }
+  </script>
+</body>
+</html>

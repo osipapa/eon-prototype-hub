@@ -537,8 +537,7 @@ function StatesNotice({ c }) {
       <LayoutGrid size={22} color={c.brand} aria-hidden="true" />
       <strong style={{ color: c.text, fontSize: 14, marginTop: 4 }}>This prototype doesn't declare states</strong>
       <span style={{ fontSize: 13, lineHeight: 1.55 }}>
-        The hub lays out the states a prototype declares in its HTML — popups, errors, empty views.
-        Copy the setup prompt and regenerate the prototype with states included, or lay out by themes or screens instead.
+        Copy the setup prompt and regenerate this prototype with its states declared, like popups, errors, and empty views.
       </span>
       <button className="eon-buttonish eon-secondary-button" onClick={copy}
         style={{ marginTop: 10, borderColor: c.border, background: c.raised, color: copied ? c.brand : c.secondary }}>

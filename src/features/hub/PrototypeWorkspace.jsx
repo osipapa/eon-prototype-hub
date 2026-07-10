@@ -42,6 +42,7 @@ export default function PrototypeWorkspace({
   const [dragId, setDragId] = useState(null);
   const [dropTargetId, setDropTargetId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
+  const [renamingGroup, setRenamingGroup] = useState(null);
   const [storyMenuId, setStoryMenuId] = useState(null);
   const [editFigma, setEditFigma] = useState(false);
   const [editLinear, setEditLinear] = useState(false);
@@ -50,7 +51,6 @@ export default function PrototypeWorkspace({
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [navOpen, setNavOpen] = useState(() => window.innerWidth >= 900);
   const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth >= 1120);
-  const [compactTools, setCompactTools] = useState(() => window.innerWidth < 1500);
   const [compare, setCompare] = useState(false);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [splitDragging, setSplitDragging] = useState(false);
@@ -72,12 +72,6 @@ export default function PrototypeWorkspace({
     observer.observe(node);
     return () => observer.disconnect();
   }, [view, navOpen, inspectorOpen]);
-
-  useEffect(() => {
-    const onResize = () => setCompactTools(window.innerWidth < 1500);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
   const cfg = useMemo(() => parsePrototypeConfig(story?.prototype_html), [story?.prototype_html]);
   const effStory = useMemo(() => {
@@ -161,6 +155,16 @@ export default function PrototypeWorkspace({
     if (title && title !== previous) onPatchProject(id, { title });
     setRenamingId(null);
   };
+  // Renaming a group moves every prototype in it to the new group name.
+  const commitGroupRename = (group, value) => {
+    const name = value.trim();
+    if (name && name !== group) {
+      projects
+        .filter((item) => (item.group_name || "General") === group)
+        .forEach((item) => onPatchProject(item.id, { group_name: name }));
+    }
+    setRenamingGroup(null);
+  };
   const copySetupPrompt = async () => {
     try {
       await navigator.clipboard.writeText(SETUP_PROMPT);
@@ -226,6 +230,7 @@ export default function PrototypeWorkspace({
           onNewProject={onNewProject} dragId={dragId} setDragId={setDragId}
           dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop}
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
+          renamingGroup={renamingGroup} setRenamingGroup={setRenamingGroup} commitGroupRename={commitGroupRename}
           storyMenuId={storyMenuId} setStoryMenuId={setStoryMenuId} onDeleteProject={onDeleteProject}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
           onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
@@ -239,11 +244,7 @@ export default function PrototypeWorkspace({
           setInspectorOpen={setInspectorOpen} hubTheme={hubTheme} setHubTheme={setHubTheme}
           showUpload={showUpload} setShowUpload={setShowUpload} openFull={openFull}
           viewport={viewport} setViewport={setViewport} layout={layout} setLayout={setLayout}
-          effStory={effStory} args={args} setArg={setArg} gridOptions={gridOptions}
-          effGridBy={effGridBy} setGridBy={setGridBy} protoTheme={protoTheme}
-          setProtoTheme={setProtoTheme} canvasBg={canvasBg} setCanvasBg={setCanvasBg}
-          zoom={zoom} setZoom={setZoom} scale={scale} segmented={segmented}
-          compactTools={compactTools} compare={effCompare} setCompare={setCompare} hasFigma={hasFigma}
+          compare={effCompare} setCompare={setCompare} hasFigma={hasFigma}
         />
 
         {showUpload && view === "stories" && (
@@ -257,22 +258,30 @@ export default function PrototypeWorkspace({
           <div className="eon-media-scroll"><MediaManager c={c} assets={assets} onSetAsset={onSetAsset} /></div>
         ) : (
           <div ref={compareRef} className={`eon-compare${splitDragging ? " is-dragging" : ""}`}>
-            <section ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`}
-              style={{ background: canvasBg, flex: effCompare ? `${splitRatio} 1 0%` : undefined }}>
-              {layout === "single" ? (
-                <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + 64), height: Math.max(canvasSize.height, frameHeight + 64) }}>
-                  <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0 }}>
-                    <iframe className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
-                      title={story.title} srcDoc={html}
-                      style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
+            <div className="eon-canvas-zone" style={{ flex: effCompare ? `${splitRatio} 1 0%` : undefined }}>
+              <section ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`} style={{ background: canvasBg }}>
+                {layout === "single" ? (
+                  <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + 64), height: Math.max(canvasSize.height, frameHeight + 64) }}>
+                    <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0 }}>
+                      <iframe className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
+                        title={story.title} srcDoc={html}
+                        style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="eon-grid-stage">
-                  <StateGrid c={c} story={effStory} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
-                </div>
-              )}
-            </section>
+                ) : (
+                  <div className="eon-grid-stage">
+                    <StateGrid c={c} story={effStory} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
+                  </div>
+                )}
+              </section>
+              <CanvasControlBar
+                c={c} layout={layout} effStory={effStory} args={args} setArg={setArg}
+                gridOptions={gridOptions} effGridBy={effGridBy} setGridBy={setGridBy}
+                protoTheme={protoTheme} setProtoTheme={setProtoTheme} canvasBg={canvasBg}
+                setCanvasBg={setCanvasBg} zoom={zoom} setZoom={setZoom} scale={scale}
+                segmented={segmented}
+              />
+            </div>
             {effCompare && (
               <>
                 <div className="eon-compare-divider" role="separator" tabIndex={0} onPointerDown={startSplitDrag} onKeyDown={nudgeSplit}
@@ -301,7 +310,9 @@ export default function PrototypeWorkspace({
 function WorkspaceSidebar({
   c, media, view, setView, query, setQuery, groups, activeId, setActiveId, isAdmin,
   onNewProject, dragId, setDragId, dropTargetId, setDropTargetId, handleDrop,
-  renamingId, setRenamingId, commitRename, storyMenuId, setStoryMenuId,
+  renamingId, setRenamingId, commitRename,
+  renamingGroup, setRenamingGroup, commitGroupRename,
+  storyMenuId, setStoryMenuId,
   onDeleteProject, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
 }) {
   return (
@@ -340,7 +351,24 @@ function WorkspaceSidebar({
         </button>
         {Object.entries(groups).map(([group, items]) => (
           <div key={group} style={{ marginBottom: 10 }}>
-            <div className="eon-group-label" style={{ color: c.muted }}><ChevronDown size={13} /> {group}</div>
+            {renamingGroup === group ? (
+              <div className="eon-group-label">
+                <ChevronDown size={13} color={c.muted} />
+                <input autoFocus defaultValue={group} aria-label={`Rename group ${group}`} className="eon-group-rename"
+                  onBlur={(event) => commitGroupRename(group, event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") event.currentTarget.blur();
+                    if (event.key === "Escape") setRenamingGroup(null);
+                  }}
+                  style={{ background: c.bg, borderColor: c.brand, color: c.text }} />
+              </div>
+            ) : (
+              <div className="eon-group-label" style={{ color: c.muted }}
+                onDoubleClick={() => isAdmin && setRenamingGroup(group)}
+                title={isAdmin ? "Double-click to rename" : undefined}>
+                <ChevronDown size={13} /> {group}
+              </div>
+            )}
             {items.map((item) => {
               const active = activeId === item.id;
               return (
@@ -364,6 +392,7 @@ function WorkspaceSidebar({
                     </div>
                   ) : (
                     <button className="eon-buttonish eon-story-select" onClick={() => { setActiveId(item.id); setView("stories"); setStoryMenuId(null); }}
+                      onDoubleClick={() => isAdmin && setRenamingId(item.id)} title={isAdmin ? "Double-click to rename" : undefined}
                       aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
                       <Circle size={13} color={active ? c.brand : c.muted} />
                       <span>{item.title}</span>
@@ -402,42 +431,8 @@ function WorkspaceSidebar({
 function WorkspaceToolbar({
   c, view, story, liveLinear, sc0, sc1, navOpen, setNavOpen, inspectorOpen,
   setInspectorOpen, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
-  viewport, setViewport, layout, setLayout, effStory, args, setArg, gridOptions,
-  effGridBy, setGridBy, protoTheme, setProtoTheme, canvasBg, setCanvasBg,
-  zoom, setZoom, scale, segmented, compactTools, compare, setCompare, hasFigma,
+  viewport, setViewport, layout, setLayout, compare, setCompare, hasFigma,
 }) {
-  const secondaryTools = (
-    <>
-      {layout === "single" && (effStory.controls || []).map((control) => (
-        <ToolGroup key={control.key} label={control.label} c={c}>{segmented(control.options, args[control.key], (value) => setArg(control.key, value))}</ToolGroup>
-      ))}
-      {layout === "grid" && <ToolGroup label="Lay out by" c={c}>{segmented(gridOptions, effGridBy, setGridBy)}</ToolGroup>}
-      {!(layout === "grid" && effGridBy === "themes") && <ToolGroup label="Prototype" c={c}>{segmented(["light", "dark"], protoTheme, setProtoTheme)}</ToolGroup>}
-      <ToolGroup label="Canvas" c={c}>
-        <div className="eon-swatches">
-          {CANVAS_PRESETS.map((background) => (
-            <button className="eon-buttonish eon-swatch-hit" key={background} onClick={() => setCanvasBg(background)} title={background === "#FFFFFF" ? "White canvas" : "Black canvas"} aria-label={`Canvas background ${background}`} aria-pressed={canvasBg === background}>
-              <span style={{ background, boxShadow: canvasBg === background ? `0 0 0 2px ${c.brand}` : `0 0 0 1px ${c.border}` }} />
-            </button>
-          ))}
-          <label className="eon-swatch-hit" title="Custom canvas color">
-            <span className="eon-color-swatch" />
-            <input type="color" value={canvasBg} onChange={(event) => setCanvasBg(event.target.value)} aria-label="Custom canvas background color" />
-          </label>
-        </div>
-      </ToolGroup>
-      {layout === "single" && (
-        <ToolGroup label="Zoom" c={c}>
-          <div className="eon-zoom" style={{ background: c.raised }}>
-            <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out"><Minus size={15} /></button>
-            <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas">{Math.round(scale * zoom * 100)}%</button>
-            <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in"><Plus size={15} /></button>
-          </div>
-        </ToolGroup>
-      )}
-    </>
-  );
-
   return (
     <header className="eon-toolbar" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-toolbar-primary">
@@ -474,7 +469,7 @@ function WorkspaceToolbar({
       </div>
 
       {view === "stories" && (
-        <div className={`eon-toolbar-tools ${compactTools ? "is-compact" : ""}`}>
+        <div className="eon-toolbar-tools">
           <ToolGroup label="Viewport" c={c}>
             <div className="eon-icon-segment" style={{ background: c.raised }}>
               {Object.keys(VIEWPORTS).map((key) => {
@@ -503,15 +498,48 @@ function WorkspaceToolbar({
               </div>
             </ToolGroup>
           </div>
-          {compactTools ? (
-            <details className="eon-toolbar-more">
-              <summary className="eon-buttonish eon-icon-button" aria-label="More prototype controls" style={{ color: c.muted, background: c.raised }}><MoreHorizontal size={17} /></summary>
-              <div className="eon-toolbar-popover" style={{ background: c.panel, boxShadow: hubShadow(c) }}>{secondaryTools}</div>
-            </details>
-          ) : secondaryTools}
         </div>
       )}
     </header>
+  );
+}
+
+/* ---- Floating pill bar over the canvas: prototype state pills, grid fan-out,
+   prototype theme, canvas background, zoom. Frees the toolbar for navigation. ---- */
+function CanvasControlBar({
+  c, layout, effStory, args, setArg, gridOptions, effGridBy, setGridBy,
+  protoTheme, setProtoTheme, canvasBg, setCanvasBg, zoom, setZoom, scale, segmented,
+}) {
+  return (
+    <div className="eon-ctlbar eon-ctlbar-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+      {layout === "single" && (effStory.controls || []).map((control) => (
+        <ToolGroup key={control.key} label={control.label} c={c}>{segmented(control.options, args[control.key], (value) => setArg(control.key, value))}</ToolGroup>
+      ))}
+      {layout === "grid" && <ToolGroup label="Lay out by" c={c}>{segmented(gridOptions, effGridBy, setGridBy)}</ToolGroup>}
+      {!(layout === "grid" && effGridBy === "themes") && <ToolGroup label="Prototype" c={c}>{segmented(["light", "dark"], protoTheme, setProtoTheme)}</ToolGroup>}
+      <ToolGroup label="Canvas" c={c}>
+        <div className="eon-swatches">
+          {CANVAS_PRESETS.map((background) => (
+            <button className="eon-buttonish eon-swatch-hit" key={background} onClick={() => setCanvasBg(background)} title={background === "#FFFFFF" ? "White canvas" : "Black canvas"} aria-label={`Canvas background ${background}`} aria-pressed={canvasBg === background}>
+              <span style={{ background, boxShadow: canvasBg === background ? `0 0 0 2px ${c.brand}` : `0 0 0 1px ${c.border}` }} />
+            </button>
+          ))}
+          <label className="eon-swatch-hit" title="Custom canvas color">
+            <span className="eon-color-swatch" />
+            <input type="color" value={canvasBg} onChange={(event) => setCanvasBg(event.target.value)} aria-label="Custom canvas background color" />
+          </label>
+        </div>
+      </ToolGroup>
+      {layout === "single" && (
+        <ToolGroup label="Zoom" c={c}>
+          <div className="eon-zoom" style={{ background: c.raised }}>
+            <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out"><Minus size={15} /></button>
+            <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas">{Math.round(scale * zoom * 100)}%</button>
+            <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in"><Plus size={15} /></button>
+          </div>
+        </ToolGroup>
+      )}
+    </div>
   );
 }
 
@@ -526,7 +554,7 @@ function ReviewInspector({
   return (
     <aside className="eon-inspector" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-inspector-head" style={{ borderColor: c.border }}>
-        <div><strong>Review</strong><span style={{ color: c.muted }}>Discuss and compare</span></div>
+        <div><strong>Review</strong></div>
         <button className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review panel" style={{ color: c.muted }}><PanelRightClose size={16} /></button>
       </div>
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
@@ -589,7 +617,7 @@ function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
 function ReferenceHeader({ c, label, hasValue, editing, setEditing }) {
   return (
     <div className="eon-reference-head">
-      <div><strong>{label}</strong><span style={{ color: c.muted }}>Shared with the team</span></div>
+      <div><strong>{label}</strong></div>
       {hasValue && <button className="eon-buttonish eon-text-button" onClick={() => setEditing((value) => !value)} style={{ color: editing ? c.brand : c.secondary }}>{editing ? "Done" : "Edit link"}</button>}
     </div>
   );
@@ -639,7 +667,6 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
           <div className="eon-comment-empty" style={{ color: c.muted }}>
             <span className="eon-comment-empty-icon" style={{ background: c.raised, color: c.brand }}><MessageSquare size={20} /></span>
             <strong style={{ color: c.text }}>Start the conversation</strong>
-            <span>Share feedback, decisions, and open questions with your team.</span>
           </div>
         ) : comments.map((comment) => <CommentBubble key={comment.id} c={c} comment={comment} currentUserId={profile?.id} />)}
       </div>
@@ -649,7 +676,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
           placeholder="Write a comment…" aria-label="Write a comment"
           style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.bg, borderColor: error ? "#FF6B8A" : c.border, color: c.text, borderRadius: 12, fontSize: 14, lineHeight: 1.5 }} />
         <div className="eon-composer-meta">
-          <span style={{ color: error ? "#FF6B8A" : c.muted }}>{error || "Enter to send · Shift+Enter for a new line"}</span>
+          <span style={{ color: "#FF6B8A" }}>{error}</span>
           <Button className="eon-buttonish" onClick={submit} disabled={!draft.trim() || sending}
             style={{ minWidth: 40, minHeight: 40, padding: 0, borderRadius: 10, background: c.primary, color: c.primaryText, opacity: !draft.trim() || sending ? 0.5 : 1 }} aria-label="Send comment">
             <Send size={15} />
