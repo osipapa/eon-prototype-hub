@@ -4,9 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Check, ChevronDown, Circle, CircleDot, Copy, Figma, LayoutGrid, LogOut,
+  Check, ChevronDown, Circle, Copy, ExternalLink, Figma, LayoutGrid, LogOut,
   Maximize2, MessageSquare, Minus, Monitor, Laptop, MoreHorizontal, Moon,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Pencil,
   Plus, Search, Send, Shield, Smartphone, Square, Sun, Tablet, Trash2, Upload,
@@ -16,7 +15,8 @@ import {
   parsePrototypeConfig, renderStory,
 } from "./prototypes";
 import {
-  FigmaCard, LinearCard, MediaManager, SETUP_PROMPT, StateGrid, UploadPanel,
+  FigmaCard, FigmaEmbed, LinearCard, MediaManager, SETUP_PROMPT, StateGrid,
+  UploadPanel, figmaMeta,
 } from "./PrototypeHub";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
@@ -49,7 +49,10 @@ export default function PrototypeWorkspace({
   const [navOpen, setNavOpen] = useState(() => window.innerWidth >= 900);
   const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth >= 1120);
   const [compactTools, setCompactTools] = useState(() => window.innerWidth < 1500);
-  const [inspectorTab, setInspectorTab] = useState("comments");
+  const [compare, setCompare] = useState("off");
+  const [splitRatio, setSplitRatio] = useState(0.5);
+  const [splitDragging, setSplitDragging] = useState(false);
+  const compareRef = useRef(null);
   const canvasRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 960, height: 640 });
 
@@ -127,8 +130,11 @@ export default function PrototypeWorkspace({
     );
   }
 
-  const gridOptions = (effStory.controls || []).length ? ["states", "themes", "screens"] : ["themes", "screens"];
+  // States always leads; StateGrid explains itself when none are declared.
+  const gridOptions = ["states", "themes", "screens"];
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
+  const hasFigma = Boolean(story.figma_url);
+  const effCompare = hasFigma ? compare : "off";
   const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR.Exploration;
   const linearId = story.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story.issue_id || null;
   const storyComments = comments.filter((comment) => comment.project_id === story.id);
@@ -169,13 +175,42 @@ export default function PrototypeWorkspace({
     setDragId(null);
   };
 
-  const segmented = (options, value, onPick) => (
-    <div className="eon-segmented" style={{ display: "flex", gap: 3, padding: 3, borderRadius: 10, background: c.raised }}>
+  // Divider drag for the compare split; iframes get pointer-events:none while
+  // dragging (via .is-dragging) so the drag survives crossing them.
+  const startSplitDrag = (event) => {
+    event.preventDefault();
+    const rect = compareRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setSplitDragging(true);
+    const move = (pointer) => {
+      const ratio = effCompare === "side"
+        ? (pointer.clientX - rect.left) / rect.width
+        : (pointer.clientY - rect.top) / rect.height;
+      setSplitRatio(Math.min(0.75, Math.max(0.25, ratio)));
+    };
+    const up = () => {
+      setSplitDragging(false);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const nudgeSplit = (event) => {
+    const grow = ["ArrowRight", "ArrowDown"].includes(event.key);
+    const shrink = ["ArrowLeft", "ArrowUp"].includes(event.key);
+    if (!grow && !shrink) return;
+    event.preventDefault();
+    setSplitRatio((value) => Math.min(0.75, Math.max(0.25, value + (grow ? 0.05 : -0.05))));
+  };
+
+  const segmented = (options, value, onPick, disabled = false) => (
+    <div className="eon-segmented" style={{ display: "flex", gap: 3, padding: 3, borderRadius: 10, background: c.raised, opacity: disabled ? 0.45 : 1 }}>
       {options.map((option) => {
         const selected = value === option;
         return (
-          <button className="eon-buttonish" key={option} onClick={() => onPick(option)} aria-pressed={selected}
-            style={{ minHeight: 32, padding: "5px 10px", border: 0, borderRadius: 7, background: selected ? c.primary : "transparent", color: selected ? c.primaryText : c.secondary, cursor: "pointer", fontSize: 12, fontWeight: selected ? 600 : 400, textTransform: "capitalize" }}>
+          <button className="eon-buttonish" key={option} onClick={() => onPick(option)} aria-pressed={selected} disabled={disabled}
+            style={{ minHeight: 32, padding: "5px 10px", border: 0, borderRadius: 7, background: selected ? c.primary : "transparent", color: selected ? c.primaryText : c.secondary, cursor: disabled ? "not-allowed" : "pointer", fontSize: 12, fontWeight: selected ? 600 : 400, textTransform: "capitalize" }}>
             {option}
           </button>
         );
@@ -209,7 +244,7 @@ export default function PrototypeWorkspace({
           effGridBy={effGridBy} setGridBy={setGridBy} protoTheme={protoTheme}
           setProtoTheme={setProtoTheme} canvasBg={canvasBg} setCanvasBg={setCanvasBg}
           zoom={zoom} setZoom={setZoom} scale={scale} segmented={segmented}
-          compactTools={compactTools}
+          compactTools={compactTools} compare={effCompare} setCompare={setCompare} hasFigma={hasFigma}
         />
 
         {showUpload && view === "stories" && (
@@ -222,28 +257,39 @@ export default function PrototypeWorkspace({
         {view === "media" ? (
           <div className="eon-media-scroll"><MediaManager c={c} assets={assets} onSetAsset={onSetAsset} /></div>
         ) : (
-          <section ref={canvasRef} className="eon-canvas" style={{ background: canvasBg }} aria-label={`${story.title} prototype canvas`}>
-            {layout === "single" ? (
-              <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + 64), height: Math.max(canvasSize.height, frameHeight + 64) }}>
-                <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0 }}>
-                  <iframe className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
-                    title={story.title} srcDoc={html}
-                    style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
+          <div ref={compareRef} className={`eon-compare${effCompare !== "off" ? ` is-${effCompare}` : ""}${splitDragging ? " is-dragging" : ""}`}>
+            <section ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`}
+              style={{ background: canvasBg, flex: effCompare === "off" ? undefined : `${splitRatio} 1 0%` }}>
+              {layout === "single" ? (
+                <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + 64), height: Math.max(canvasSize.height, frameHeight + 64) }}>
+                  <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0 }}>
+                    <iframe className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
+                      title={story.title} srcDoc={html}
+                      style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="eon-grid-stage">
-                <StateGrid c={c} story={effStory} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
-              </div>
+              ) : (
+                <div className="eon-grid-stage">
+                  <StateGrid c={c} story={effStory} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
+                </div>
+              )}
+            </section>
+            {effCompare !== "off" && (
+              <>
+                <div className="eon-compare-divider" role="separator" tabIndex={0} onPointerDown={startSplitDrag} onKeyDown={nudgeSplit}
+                  aria-orientation={effCompare === "side" ? "vertical" : "horizontal"} aria-label="Resize the Figma comparison"
+                  style={{ color: c.border }} />
+                <FigmaPane c={c} story={story} ratio={splitRatio} />
+              </>
             )}
-          </section>
+          </div>
         )}
       </main>
 
       {view === "stories" && inspectorOpen && (
         <ReviewInspector
           c={c} story={story} comments={storyComments} profile={profile}
-          tab={inspectorTab} setTab={setInspectorTab} onClose={() => setInspectorOpen(false)}
+          onClose={() => setInspectorOpen(false)}
           onCreateComment={onCreateComment} patch={patch} editFigma={editFigma}
           setEditFigma={setEditFigma} editLinear={editLinear} setEditLinear={setEditLinear}
           sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
@@ -359,7 +405,7 @@ function WorkspaceToolbar({
   setInspectorOpen, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
   viewport, setViewport, layout, setLayout, effStory, args, setArg, gridOptions,
   effGridBy, setGridBy, protoTheme, setProtoTheme, canvasBg, setCanvasBg,
-  zoom, setZoom, scale, segmented, compactTools,
+  zoom, setZoom, scale, segmented, compactTools, compare, setCompare, hasFigma,
 }) {
   const secondaryTools = (
     <>
@@ -447,6 +493,11 @@ function WorkspaceToolbar({
               })}
             </div>
           </ToolGroup>
+          <div className="eon-tool-compare" title={hasFigma ? undefined : "Link a Figma frame first"}>
+            <ToolGroup label="Compare" c={c}>
+              {segmented(["off", "side", "below"], compare, setCompare, !hasFigma)}
+            </ToolGroup>
+          </div>
           {compactTools ? (
             <details className="eon-toolbar-more">
               <summary className="eon-buttonish eon-icon-button" aria-label="More prototype controls" style={{ color: c.muted, background: c.raised }}><MoreHorizontal size={17} /></summary>
@@ -463,8 +514,10 @@ function ToolGroup({ label, c, children }) {
   return <div className="eon-tool-group"><span style={{ color: c.muted }}>{label}</span>{children}</div>;
 }
 
+/* ---- Everything in one scrolling column — Linear, Figma, then comments —
+   so nothing hides behind a tab. Comments claim the remaining height. ---- */
 function ReviewInspector({
-  c, story, comments, profile, tab, setTab, onClose, onCreateComment, patch,
+  c, story, comments, profile, onClose, onCreateComment, patch,
   editFigma, setEditFigma, editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
 }) {
   return (
@@ -473,27 +526,59 @@ function ReviewInspector({
         <div><strong>Review</strong><span style={{ color: c.muted }}>Discuss and compare</span></div>
         <button className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review panel" style={{ color: c.muted }}><PanelRightClose size={16} /></button>
       </div>
-      <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
-        <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
-          <TabsTrigger value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
-          <TabsTrigger value="linear"><CircleDot size={14} /> Linear</TabsTrigger>
-          <TabsTrigger value="figma"><Figma size={14} /> Figma</TabsTrigger>
-        </TabsList>
-        <TabsContent value="comments" className="eon-inspector-content">
-          <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
-        </TabsContent>
-        <TabsContent value="linear" className="eon-inspector-content eon-reference-content">
+      <div className="eon-inspector-stack">
+        <section className="eon-panel-section" style={{ borderColor: c.border }} aria-label="Linear issue">
           <ReferenceHeader c={c} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
           {(!story.issue_url || editLinear) && <Input value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
           <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
-        </TabsContent>
-        <TabsContent value="figma" className="eon-inspector-content eon-reference-content">
+        </section>
+        <section className="eon-panel-section" style={{ borderColor: c.border }} aria-label="Figma frame">
           <ReferenceHeader c={c} label="Figma frame" hasValue={Boolean(story.figma_url)} editing={editFigma} setEditing={setEditFigma} />
           {(!story.figma_url || editFigma) && <Input value={story.figma_url || ""} onChange={(event) => patch("figma_url", event.target.value)} placeholder="Paste a Figma share URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
           {story.figma_url ? <FigmaCard c={c} url={story.figma_url} /> : <ReferenceEmpty c={c} icon={Figma} title="No Figma frame linked" body="Paste a share URL to compare the source design here." />}
-        </TabsContent>
-      </Tabs>
+        </section>
+        <section className="eon-panel-comments" aria-label="Comments">
+          <div className="eon-reference-head eon-comments-head">
+            <div>
+              <strong>Comments</strong>
+              <span style={{ color: c.muted }}>{comments.length === 0 ? "Team discussion" : `${comments.length} so far`}</span>
+            </div>
+            <MessageSquare size={15} color={c.muted} aria-hidden="true" />
+          </div>
+          <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
+        </section>
+      </div>
     </aside>
+  );
+}
+
+/* ---- Large Figma pane for the compare split: slim unfurl header over the
+   full-bleed embed. Falls back to the empty card if the link is removed. ---- */
+function FigmaPane({ c, story, ratio }) {
+  const meta = figmaMeta(story.figma_url || "");
+  return (
+    <div className="eon-compare-pane" style={{ flex: `${1 - ratio} 1 0%`, background: c.nav, borderColor: c.border }}>
+      {story.figma_url ? (
+        <>
+          <div className="eon-compare-head" style={{ borderColor: c.border }}>
+            <Figma size={15} color={c.brand} aria-hidden="true" />
+            <div className="eon-compare-meta">
+              <strong>{meta.title}</strong>
+              {meta.node && <span style={{ color: c.muted }}>Node {meta.node}</span>}
+            </div>
+            <a className="eon-buttonish eon-secondary-button" href={story.figma_url} target="_blank" rel="noreferrer"
+              style={{ borderColor: c.border, background: c.raised, color: c.secondary, textDecoration: "none" }}>
+              <ExternalLink size={13} aria-hidden="true" /> Open in Figma
+            </a>
+          </div>
+          <div className="eon-compare-embed"><FigmaEmbed url={story.figma_url} /></div>
+        </>
+      ) : (
+        <div style={{ flex: 1, display: "grid", placeItems: "center", padding: 20 }}>
+          <ReferenceEmpty c={c} icon={Figma} title="No Figma frame linked" body="Paste a share URL in the review panel to compare it here." />
+        </div>
+      )}
+    </div>
   );
 }
 

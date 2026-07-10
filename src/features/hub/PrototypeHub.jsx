@@ -492,7 +492,8 @@ export function StateGrid({ c, story, media, theme, viewport, by }) {
   } else if (by === "screens") {
     tiles = Object.keys(VIEWPORTS).map((v) => ({ key: `v-${v}`, label: VIEWPORTS[v].label, sub: `${VIEWPORTS[v].w}×${VIEWPORTS[v].h}`, theme, viewport: v, args: base }));
   } else {
-    const combos = stateCombos(story) || [{}];
+    const combos = stateCombos(story);
+    if (!combos) return <StatesNotice c={c} />;
     tiles = combos.map((combo) => ({ key: JSON.stringify(combo), label: Object.values(combo).join(" · ") || "Default", sub: theme, theme, viewport, args: { ...base, ...combo } }));
   }
 
@@ -520,9 +521,37 @@ export function StateGrid({ c, story, media, theme, viewport, by }) {
   );
 }
 
+/* ---- Shown by the states grid when a prototype declares no states: the hub
+   can only fan out what the HTML declares via its eon-config block. ---- */
+function StatesNotice({ c }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(SETUP_PROMPT);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch { /* Clipboard may be blocked by the browser. */ }
+  };
+  return (
+    <div style={{ maxWidth: 460, margin: "48px auto", padding: "28px 26px", borderRadius: 14, background: c.panel, border: `1px solid ${c.border}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center", color: c.muted }}>
+      <LayoutGrid size={22} color={c.brand} aria-hidden="true" />
+      <strong style={{ color: c.text, fontSize: 14, marginTop: 4 }}>This prototype doesn't declare states</strong>
+      <span style={{ fontSize: 13, lineHeight: 1.55 }}>
+        The hub lays out the states a prototype declares in its HTML — popups, errors, empty views.
+        Copy the setup prompt and regenerate the prototype with states included, or lay out by themes or screens instead.
+      </span>
+      <button className="eon-buttonish eon-secondary-button" onClick={copy}
+        style={{ marginTop: 10, borderColor: c.border, background: c.raised, color: copied ? c.brand : c.secondary }}>
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+        {copied ? "Copied setup prompt" : "Copy setup prompt"}
+      </button>
+    </div>
+  );
+}
+
 /* ---- Figma embed, memoized on the URL so it doesn't reload on every parent
    re-render (typing notes, toggling theme, realtime updates). ---- */
-const FigmaEmbed = memo(function FigmaEmbed({ url }) {
+export const FigmaEmbed = memo(function FigmaEmbed({ url }) {
   const src = `https://www.figma.com/embed?embed_host=eon-hub&url=${encodeURIComponent(url)}`;
   // Overflow-hidden wrapper + a taller iframe pushes Figma's bottom info bar
   // (file name / "edited …" / lock) out of view.
@@ -534,7 +563,7 @@ const FigmaEmbed = memo(function FigmaEmbed({ url }) {
 });
 
 // Parse file name + node from a Figma URL, e.g. .../design/KEY/Orion---Core-App?node-id=14010-9626
-function figmaMeta(url = "") {
+export function figmaMeta(url = "") {
   const valid = /figma\.com/i.test(url) && !/REPLACE/i.test(url);
   let title = "Figma file", node = null;
   const m = url.match(/figma\.com\/(?:file|design|proto|board)\/[^/]+\/([^/?#]+)/i);
