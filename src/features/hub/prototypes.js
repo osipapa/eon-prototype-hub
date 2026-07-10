@@ -201,6 +201,23 @@ export function replaceMediaTokens(html, media = {}) {
   });
 }
 
+// Optional in-HTML config: a prototype can declare its own controls + defaults via
+//   <script type="application/json" id="eon-config">{ "controls":[…], "defaults":{…} }</script>
+// so its states show up in the hub's control bar + grid without touching the DB.
+export function parsePrototypeConfig(html) {
+  if (!html) return {};
+  const m = html.match(/<script[^>]*id=["']eon-config["'][^>]*>([\s\S]*?)<\/script>/i);
+  if (!m) return {};
+  try {
+    const cfg = JSON.parse(m[1].trim());
+    const controls = Array.isArray(cfg.controls)
+      ? cfg.controls.filter((c) => c && c.key && Array.isArray(c.options))
+      : undefined;
+    const defaults = cfg.defaults && typeof cfg.defaults === "object" ? cfg.defaults : undefined;
+    return { controls, defaults };
+  } catch { return {}; }
+}
+
 // All combinations of a story's controls, e.g. plan×state -> [{plan,state},...].
 // Returns null when the story has no controls.
 export function stateCombos(project, cap = 16) {

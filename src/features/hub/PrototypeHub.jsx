@@ -8,11 +8,45 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Search, Monitor, Laptop, Tablet, Smartphone, Sun, Moon, Maximize2, ExternalLink,
   Figma, CircleDot, Circle, ChevronDown, Link2, FileText, Plus, Minus, Shield, LogOut, Upload, Trash2,
-  Square, LayoutGrid,
+  Square, LayoutGrid, Copy, Check,
 } from "lucide-react";
-import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, renderStory, currentArgs, stateCombos } from "./prototypes";
+import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, renderStory, currentArgs, stateCombos, parsePrototypeConfig } from "./prototypes";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
+
+// Paste-into-Claude spec for authoring a prototype that plugs into the hub's
+// theme switch, state controls, and shared media. Copied by the sidebar button.
+const SETUP_PROMPT = `Build a single, self-contained HTML file — an interactive UI prototype for the Eon Prototype Hub. It renders inside a sandboxed iframe. Follow this contract so it plugs into the hub's theme switch, state controls, and shared media.
+
+1) SELF-CONTAINED
+- One .html file. Inline all CSS and JS. External CDN links (images, fonts, Tailwind CDN) are fine; never reference local files.
+
+2) LIGHT / DARK THEMING (driven by the hub's Theme switch)
+- The hub sets, on the root <html>: class "dark" or "light", data-theme="dark|light", data-color-mode, the CSS color-scheme, forces prefers-color-scheme for JS, and exposes window.__story = { theme, args }.
+- Do NOT hardcode one theme. Support both via a class/attribute strategy, e.g.:
+    :root { --bg:#ffffff; --fg:#111827; --card:#f8fafc; --border:#e5e7eb }
+    html.dark, html[data-theme="dark"] { --bg:#0b1120; --fg:#f1f5f9; --card:#111827; --border:#1f2937 }
+    body { background:var(--bg); color:var(--fg) }
+  (Tailwind dark: variants also work.) If you add your own theme toggle, hide it when window.__story exists so the hub drives it.
+
+3) MULTIPLE STATES (appear as pills in the canvas control bar and as tiles in grid view)
+- Declare the states the hub should offer with an embedded config block:
+    <script type="application/json" id="eon-config">
+    { "controls": [
+        { "key": "state", "label": "State", "options": ["default", "loading", "error", "empty"] },
+        { "key": "plan",  "label": "Plan",  "options": ["free", "pro"] }
+      ],
+      "defaults": { "state": "default", "plan": "pro" } }
+    </script>
+- Render the current selection from window.__story.args (or the data-<key> attributes on <html>), e.g. read window.__story.args.state and show that state. The hub reloads the frame when a control changes, so reading it once on load is enough.
+
+4) SHARED MEDIA (logos / images / placeholders)
+- Reference shared assets by token so they map to the hub's Media library and update everywhere at once:
+    {{eonLogo}}  {{acmeLogo}}  {{yourSavedImageName}}   -> the asset's URL
+    {{placeholder:320x180}}  or  {{placeholder:320x180:Label}}  -> a generated placeholder image
+- Use them as <img src="{{acmeLogo}}"> or in CSS background:url({{heroImage}}).
+
+Output only the finished HTML file, nothing else.`;
 
 export default function PrototypeHub({
   projects, assets = {}, isAdmin, userEmail,
@@ -36,6 +70,11 @@ export default function PrototypeHub({
   const [editLinear, setEditLinear] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [liveLinear, setLiveLinear] = useState(null);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+  const copySetupPrompt = async () => {
+    try { await navigator.clipboard.writeText(SETUP_PROMPT); setCopiedPrompt(true); setTimeout(() => setCopiedPrompt(false), 1600); } catch (e) { /* clipboard blocked */ }
+  };
 
   const commitRename = (id, value) => {
     const title = value.trim();
@@ -82,13 +121,22 @@ export default function PrototypeHub({
 
   const c = HUB[hubTheme];
   const story = projects.find((s) => s.id === activeId) || projects[0];
-  const args = story ? currentArgs(story, liveArgs[story.id]) : {};
+  // A prototype can declare its own controls/defaults via an embedded
+  // <script id="eon-config"> block; use them when the DB row has none, so
+  // declared states drive the control bar + grid automatically.
+  const cfg = useMemo(() => parsePrototypeConfig(story?.prototype_html), [story?.prototype_html]);
+  const effStory = useMemo(() => {
+    if (!story) return story;
+    const controls = story.controls?.length ? story.controls : (cfg.controls || []);
+    return { ...story, controls, defaults: { ...(cfg.defaults || {}), ...(story.defaults || {}) } };
+  }, [story, cfg]);
+  const args = effStory ? currentArgs(effStory, liveArgs[effStory.id]) : {};
   const vp = VIEWPORTS[viewport];
   const media = assets; // full asset map: {{eonLogo}}, {{acmeLogo}}, and any saved key
 
   const html = useMemo(
-    () => (story ? renderStory(story, protoTheme, media, args) : ""),
-    [story, args, protoTheme, assets]
+    () => (effStory ? renderStory(effStory, protoTheme, media, args) : ""),
+    [effStory, args, protoTheme, assets]
   );
   const scale = useMemo(() => Math.min(760 / vp.w, 460 / vp.h, 1), [viewport]);
 
@@ -124,7 +172,7 @@ export default function PrototypeHub({
     );
   }
 
-  const gridOptions = (story.controls || []).length ? ["states", "themes", "screens"] : ["themes", "screens"];
+  const gridOptions = (effStory.controls || []).length ? ["states", "themes", "screens"] : ["themes", "screens"];
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
 
   const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR["Exploration"];
@@ -161,7 +209,7 @@ export default function PrototypeHub({
           </div>
           <div style={{ position: "relative" }}>
             <Search style={{ position: "absolute", left: 10, top: 10, width: 15, height: 15, color: c.muted }} />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search stories" aria-label="Search stories"
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search prototypes" aria-label="Search prototypes"
               style={{ paddingLeft: 30, height: 34, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 8 }} />
           </div>
           <div style={{ display: "flex", gap: 3, marginTop: 12, background: c.raised, border: `1px solid ${c.border}`, borderRadius: 8, padding: 3 }}>
@@ -171,11 +219,16 @@ export default function PrototypeHub({
                 <button key={v} onClick={() => setView(v)}
                   style={{ flex: 1, height: 28, borderRadius: 6, fontSize: 12, cursor: "pointer", border: "none",
                     background: on ? c.panel : "transparent", color: on ? c.text : c.muted, fontWeight: on ? 500 : 400 }}>
-                  {v === "stories" ? "Stories" : "Media"}
+                  {v === "stories" ? "Prototypes" : "Media"}
                 </button>
               );
             })}
           </div>
+          <button onClick={copySetupPrompt} title="Copy a prompt that tells an AI exactly how to build a prototype for this hub (theming, states, media)"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", height: 30, marginTop: 8, borderRadius: 8, border: `1px solid ${c.border}`, background: c.raised, color: copiedPrompt ? c.brand : c.secondary, cursor: "pointer", fontSize: 12 }}>
+            {copiedPrompt ? <Check style={{ width: 13, height: 13 }} /> : <Copy style={{ width: 13, height: 13 }} />}
+            {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
+          </button>
         </div>
         <div style={{ overflowY: "auto", padding: 8, flex: 1 }}>
           <button onClick={onNewProject}
@@ -311,18 +364,18 @@ export default function PrototypeHub({
                   style={{ width: vp.w, height: vp.h, border: "none", borderRadius: 10, background: "#fff", colorScheme: protoTheme, transform: `scale(${scale * zoom})`, transformOrigin: "top left", boxShadow: "0 12px 48px rgba(0,0,0,.28)" }} />
               </div>
             ) : (
-              <StateGrid c={c} story={story} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
+              <StateGrid c={c} story={effStory} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
             )}
             </div>
             <div className="eon-ctlbar" style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", background: c.panel, border: `1px solid ${c.border}`, borderRadius: 100, boxShadow: "0 8px 30px rgba(0,0,0,.35)", maxWidth: "94%", flexWrap: "wrap", justifyContent: "center" }}>
-              {layout === "single" && (story.controls || []).map((ctrl, i) => (
+              {layout === "single" && (effStory.controls || []).map((ctrl, i) => (
                 <div key={ctrl.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {i > 0 && <span style={{ width: 1, height: 20, background: c.border }} />}
                   <span className="eon-ctl-label" style={{ fontSize: 12, color: c.muted }}>{ctrl.label}</span>
                   {seg(ctrl.options, args[ctrl.key], (o) => setArg(ctrl.key, o))}
                 </div>
               ))}
-              {layout === "single" && (story.controls || []).length > 0 && <span style={{ width: 1, height: 20, background: c.border }} />}
+              {layout === "single" && (effStory.controls || []).length > 0 && <span style={{ width: 1, height: 20, background: c.border }} />}
               {layout === "grid" && (
                 <>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
