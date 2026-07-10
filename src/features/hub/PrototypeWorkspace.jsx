@@ -209,7 +209,7 @@ export default function PrototypeWorkspace({
         const selected = value === option;
         return (
           <button className="eon-buttonish" key={option} onClick={() => onPick(option)} aria-pressed={selected} disabled={disabled}
-            style={{ minHeight: 32, padding: "5px 10px", border: 0, borderRadius: 7, background: selected ? c.primary : "transparent", color: selected ? c.primaryText : c.secondary, cursor: disabled ? "not-allowed" : "pointer", fontSize: 12, fontWeight: selected ? 600 : 400, textTransform: "capitalize" }}>
+            style={{ minHeight: 32, padding: "5px 10px", border: 0, borderRadius: 7, background: selected ? c.selected : "transparent", color: selected ? c.selectedText : c.secondary, cursor: disabled ? "not-allowed" : "pointer", fontSize: 12, fontWeight: selected ? 600 : 400, textTransform: "capitalize" }}>
             {option}
           </button>
         );
@@ -480,7 +480,7 @@ function WorkspaceToolbar({
               {Object.keys(VIEWPORTS).map((key) => {
                 const Icon = VP_ICON[key];
                 const selected = viewport === key;
-                return <button className="eon-buttonish eon-icon-button" key={key} onClick={() => setViewport(key)} title={VIEWPORTS[key].label} aria-label={`${VIEWPORTS[key].label} viewport`} aria-pressed={selected} style={{ color: selected ? c.brand : c.muted, background: selected ? c.panel : "transparent" }}><Icon size={16} /></button>;
+                return <button className="eon-buttonish eon-icon-button" key={key} onClick={() => setViewport(key)} title={VIEWPORTS[key].label} aria-label={`${VIEWPORTS[key].label} viewport`} aria-pressed={selected} style={{ color: selected ? c.selectedText : c.muted, background: selected ? c.selected : "transparent" }}><Icon size={16} /></button>;
               })}
             </div>
           </ToolGroup>
@@ -488,7 +488,7 @@ function WorkspaceToolbar({
             <div className="eon-icon-segment" style={{ background: c.raised }}>
               {[["single", Square, "Single view"], ["grid", LayoutGrid, "All states"]].map(([key, Icon, label]) => {
                 const selected = layout === key;
-                return <button className="eon-buttonish eon-icon-button" key={key} onClick={() => setLayout(key)} title={label} aria-label={label} aria-pressed={selected} style={{ color: selected ? c.brand : c.muted, background: selected ? c.panel : "transparent" }}><Icon size={16} /></button>;
+                return <button className="eon-buttonish eon-icon-button" key={key} onClick={() => setLayout(key)} title={label} aria-label={label} aria-pressed={selected} style={{ color: selected ? c.selectedText : c.muted, background: selected ? c.selected : "transparent" }}><Icon size={16} /></button>;
               })}
             </div>
           </ToolGroup>
@@ -497,7 +497,7 @@ function WorkspaceToolbar({
               <div className="eon-icon-segment" style={{ background: c.raised, opacity: hasFigma ? 1 : 0.45 }}>
                 <button className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)} disabled={!hasFigma}
                   title="Compare with the linked Figma frame" aria-label="Compare with Figma" aria-pressed={compare}
-                  style={{ color: compare ? c.brand : c.muted, background: compare ? c.panel : "transparent" }}>
+                  style={{ color: compare ? c.selectedText : c.muted, background: compare ? c.selected : "transparent" }}>
                   <Columns2 size={16} />
                 </button>
               </div>

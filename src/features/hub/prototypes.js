@@ -4,14 +4,18 @@
    seed works before any HTML is uploaded. */
 
 export const HUB = {
+  // `primary` is for CTAs only (Open full view, Send). Control selection uses
+  // the neutral `selected` pair so pink doesn't repeat across the toolbar.
   dark: { bg: "#000000", nav: "#000000", panel: "#121216", raised: "#1E1E22", border: "#1E1E22",
     text: "#FFFFFF", muted: "#9094A5", secondary: "rgba(255,255,255,0.7)",
     hover: "#1E1E22", active: "rgba(225,92,247,0.1)", brand: "#E15CF7",
-    primary: "#EDD2F6", primaryText: "#000000" },
+    primary: "#EDD2F6", primaryText: "#000000",
+    selected: "#FFFFFF", selectedText: "#000000" },
   light: { bg: "#F9F9FD", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F9F9FD", border: "#DDE0EA",
     text: "#1E1E22", muted: "#565B6C", secondary: "rgba(18,18,22,0.75)",
     hover: "#F9F9FD", active: "rgba(212,0,247,0.1)", brand: "#D400F7",
-    primary: "#000000", primaryText: "#FFFFFF" },
+    primary: "#000000", primaryText: "#FFFFFF",
+    selected: "#000000", selectedText: "#FFFFFF" },
 };
 
 export const VIEWPORTS = {
