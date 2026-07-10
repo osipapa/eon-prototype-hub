@@ -64,6 +64,21 @@ create table if not exists public.assets (
   unique (team_id, key)
 );
 
+-- Threaded-by-project team comments. Messages are immutable in the first
+-- version; authors (or admins) may remove their own messages.
+create table if not exists public.comments (
+  id uuid primary key default gen_random_uuid(),
+  team_id uuid not null references public.teams(id) on delete cascade,
+  project_id uuid not null references public.projects(id) on delete cascade,
+  author_id uuid not null references public.profiles(id) on delete cascade,
+  body text not null check (char_length(trim(body)) between 1 and 4000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists comments_project_created_idx
+  on public.comments (project_id, created_at);
+
 -- ---------------------------------------------------------------------------
 -- Helpers
 -- ---------------------------------------------------------------------------
@@ -147,6 +162,10 @@ drop trigger if exists projects_touch on public.projects;
 create trigger projects_touch before update on public.projects
   for each row execute function public.touch_updated_at();
 
+drop trigger if exists comments_touch on public.comments;
+create trigger comments_touch before update on public.comments
+  for each row execute function public.touch_updated_at();
+
 -- Members may edit their own profile, but only admins may change role/team.
 -- Without this, the "update own profile" policy lets a member set their own
 -- role to admin. auth.uid() is null for server-side access, which stays allowed.
@@ -174,6 +193,7 @@ alter table public.teams    enable row level security;
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
 alter table public.assets   enable row level security;
+alter table public.comments enable row level security;
 alter table public.invites  enable row level security;
 
 -- invites: team members read; admins manage.
@@ -220,11 +240,30 @@ create policy "team update assets" on public.assets for update
 create policy "admin delete assets" on public.assets for delete
   using (public.is_admin() and team_id = public.current_team_id());
 
+-- comments: teammates read and participate; authors or admins may clean up.
+create policy "team read comments" on public.comments for select
+  using (team_id = public.current_team_id());
+create policy "team insert comments" on public.comments for insert
+  with check (
+    team_id = public.current_team_id()
+    and author_id = auth.uid()
+    and exists (
+      select 1 from public.projects p
+      where p.id = project_id and p.team_id = public.current_team_id()
+    )
+  );
+create policy "author update comments" on public.comments for update
+  using (author_id = auth.uid() and team_id = public.current_team_id())
+  with check (author_id = auth.uid() and team_id = public.current_team_id());
+create policy "author delete comments" on public.comments for delete
+  using ((author_id = auth.uid() or public.is_admin()) and team_id = public.current_team_id());
+
 -- ---------------------------------------------------------------------------
 -- Realtime: postgres_changes only fires for tables in this publication.
 -- ---------------------------------------------------------------------------
 alter publication supabase_realtime add table public.projects;
 alter publication supabase_realtime add table public.assets;
+alter publication supabase_realtime add table public.comments;
 
 -- ---------------------------------------------------------------------------
 -- Storage bucket for media (public read, authenticated write)

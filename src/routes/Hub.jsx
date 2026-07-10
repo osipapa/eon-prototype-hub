@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import PrototypeHub from "../features/hub/PrototypeHub";
+import PrototypeHub from "../features/hub/PrototypeWorkspace";
 import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
-  listAssets, upsertAsset,
+  listAssets, upsertAsset, listComments, createComment, subscribeComments,
 } from "../lib/data";
 
 export default function Hub() {
@@ -12,19 +12,33 @@ export default function Hub() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState(null);
   const [assets, setAssets] = useState({});
+  const [comments, setComments] = useState([]);
   const timers = useRef({});
   const pending = useRef({});
 
   async function load() {
-    const [p, a] = await Promise.all([listProjects(), listAssets()]);
+    const [p, a, c] = await Promise.all([
+      listProjects(),
+      listAssets(),
+      listComments().catch((error) => {
+        console.warn("Comments are unavailable until the comments migration is applied.", error);
+        return [];
+      }),
+    ]);
     setProjects(p);
     setAssets(Object.fromEntries(a.map((x) => [x.key, x.url])));
+    setComments(c);
+  }
+
+  async function loadComments() {
+    setComments(await listComments());
   }
 
   useEffect(() => {
     load().catch(console.error);
     const unsub = subscribeProjects(() => load().catch(console.error));
-    return unsub;
+    const unsubComments = subscribeComments(() => loadComments().catch(console.error));
+    return () => { unsub(); unsubComments(); };
   }, []);
 
   // Optimistic local update + debounced write to Supabase.
@@ -52,11 +66,40 @@ export default function Hub() {
     try {
       await createProject({
         team_id: profile.team_id, slug, title, group_name: group,
-        status: "Exploration", controls: [], defaults: {}, notes: "",
+        status: "Exploration", controls: [], defaults: {},
         sort_order: (projects?.length || 0),
       });
       await load();
     } catch (e) { alert(e.message); }
+  }
+
+  async function onCreateComment(projectId, body) {
+    const text = body.trim();
+    if (!text) return;
+    const optimisticId = `pending-${crypto.randomUUID()}`;
+    const optimistic = {
+      id: optimisticId,
+      project_id: projectId,
+      team_id: profile.team_id,
+      author_id: user.id,
+      body: text,
+      created_at: new Date().toISOString(),
+      pending: true,
+      author: { id: user.id, email: user.email, full_name: profile.full_name },
+    };
+    setComments((items) => [...items, optimistic]);
+    try {
+      const saved = await createComment({
+        project_id: projectId,
+        team_id: profile.team_id,
+        author_id: user.id,
+        body: text,
+      });
+      setComments((items) => items.map((item) => item.id === optimisticId ? saved : item));
+    } catch (error) {
+      setComments((items) => items.filter((item) => item.id !== optimisticId));
+      throw error;
+    }
   }
 
   async function onDeleteProject(id) {
@@ -89,13 +132,16 @@ export default function Hub() {
     <PrototypeHub
       projects={projects}
       assets={assets}
+      comments={comments}
       isAdmin={isAdmin}
+      profile={profile}
       userEmail={user?.email}
       onPatchProject={onPatchProject}
       onSetAsset={onSetAsset}
       onNewProject={onNewProject}
       onDeleteProject={onDeleteProject}
       onReorder={onReorder}
+      onCreateComment={onCreateComment}
       onOpenAdmin={() => navigate("/admin")}
       onSignOut={signOut}
     />

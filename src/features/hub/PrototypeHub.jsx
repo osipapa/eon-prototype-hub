@@ -16,7 +16,7 @@ const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smar
 
 // Paste-into-Claude spec for authoring a prototype that plugs into the hub's
 // theme switch, state controls, and shared media. Copied by the sidebar button.
-const SETUP_PROMPT = `Build a single, self-contained HTML file — an interactive UI prototype for the Eon Prototype Hub. It renders inside a sandboxed iframe. Follow this contract so it plugs into the hub's theme switch, state controls, and shared media.
+export const SETUP_PROMPT = `Build a single, self-contained HTML file — an interactive UI prototype for the Eon Prototype Hub. It renders inside a sandboxed iframe. Follow this contract so it plugs into the hub's theme switch, state controls, and shared media.
 
 1) SELF-CONTAINED
 - One .html file. Inline all CSS and JS. External CDN links (images, fonts, Tailwind CDN) are fine; never reference local files.
@@ -484,7 +484,7 @@ export default function PrototypeHub({
 
 /* ---- All-states grid. `by` fans out over control states, light/dark themes,
    or every viewport — each combination rendered in its own labeled tile. ---- */
-function StateGrid({ c, story, media, theme, viewport, by }) {
+export function StateGrid({ c, story, media, theme, viewport, by }) {
   const base = currentArgs(story);
   let tiles;
   if (by === "themes") {
@@ -548,7 +548,7 @@ const FIGMA_MARK = `<svg width="15" height="15" viewBox="0 0 38 57" xmlns="http:
 
 /* ---- Figma unfurl card: icon + file name + Open in Figma, over a live preview.
    Mirrors how Linear renders an embedded link. ---- */
-function FigmaCard({ c, url }) {
+export function FigmaCard({ c, url }) {
   const meta = figmaMeta(url);
   return (
     <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px solid ${c.border}`, background: c.bg, display: "flex", flexDirection: "column" }}>
@@ -573,7 +573,7 @@ function FigmaCard({ c, url }) {
 
 /* ---- Linear issue card: live via edge function, static preview fallback.
    The whole card links to the issue. ---- */
-function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
+export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
   const stateColor = live?.state?.color;
   const clickable = Boolean(issueUrl);
   return (
@@ -613,7 +613,7 @@ function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
 }
 
 /* ---- Upload prototype HTML (persists via projects.prototype_html) ---- */
-function UploadPanel({ c, story, onSave, onClear, onCancel }) {
+export function UploadPanel({ c, story, onSave, onClear, onCancel }) {
   const [html, setHtml] = useState(story.prototype_html || "");
   const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState("");
@@ -690,7 +690,7 @@ function UploadPanel({ c, story, onSave, onClear, onCancel }) {
 
 /* ---- Media manager. Assets persist via onSetAsset(key,url) and map into every
    prototype through {{key}} tokens (logos, placeholders). ---- */
-function MediaManager({ c, assets, onSetAsset }) {
+export function MediaManager({ c, assets, onSetAsset }) {
   const [ph, setPh] = useState({ w: 320, h: 180, label: "", bg: "#E5E7EB", fg: "#94A3B8", name: "" });
   const [img, setImg] = useState({ name: "", url: "" });
   const [copied, setCopied] = useState("");

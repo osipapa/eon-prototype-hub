@@ -26,6 +26,9 @@
     --input: 240 6% 18%;
     --ring: 289 89% 66%;
     --radius: 0.5rem;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   }
   .light {
     --background: 240 40% 98%;
@@ -52,7 +55,15 @@
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; font-family: "DM Sans", sans-serif; }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html, body, #root { width: 100%; height: 100%; }
+  body { @apply bg-background text-foreground; margin: 0; font-family: "DM Sans", sans-serif; }
+  button, input, textarea { font: inherit; }
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
 
   /* Visible keyboard focus everywhere (mouse clicks stay ring-free). */
   :focus-visible {
@@ -60,6 +71,194 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+}
+
+/* Canvas-first prototype workspace. */
+.eon-workspace {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  min-width: 0;
+  overflow: hidden;
+  font-family: "DM Sans", sans-serif;
+}
+
+.eon-buttonish {
+  transition-property: transform;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+}
+.eon-buttonish:active:not(:disabled) { transform: scale(.97); }
+.eon-buttonish:disabled { cursor: not-allowed; }
+
+.eon-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.eon-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.eon-sidebar {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  width: 240px;
+  flex: 0 0 240px;
+  flex-direction: column;
+  border-right: 1px solid;
+  box-shadow: 8px 0 24px rgba(0, 0, 0, .08);
+}
+.eon-sidebar-head { padding: 16px 14px 12px; border-bottom: 1px solid; }
+.eon-brand { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.eon-sidebar-switcher { display: flex; gap: 3px; margin-top: 10px; padding: 3px; border-radius: 10px; }
+.eon-sidebar-head > .eon-secondary-button { width: 100%; margin-top: 8px; }
+.eon-story-list { flex: 1; overflow-y: auto; padding: 10px 8px 18px; }
+.eon-new-story { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; margin-bottom: 10px; padding: 0 12px; border: 1px dashed; border-radius: 10px; background: transparent; cursor: pointer; font-size: 13px; }
+.eon-group-label { display: flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .045em; text-transform: uppercase; }
+.eon-story-row { position: relative; display: flex; align-items: center; min-height: 42px; margin-bottom: 2px; border-top: 2px solid transparent; border-radius: 10px; }
+.eon-story-select { display: flex; min-width: 0; min-height: 40px; flex: 1; align-items: center; gap: 9px; padding: 0 8px 0 12px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; text-align: left; font-size: 13px; }
+.eon-story-select span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eon-story-rename { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; padding: 0 8px 0 12px; }
+.eon-story-rename input { min-width: 0; width: 100%; height: 32px; padding: 0 8px; border: 1px solid; border-radius: 8px; outline: 0; font-size: 13px; }
+.eon-story-menu { position: absolute; top: 42px; right: 0; z-index: 50; width: 148px; padding: 4px; border-radius: 12px; opacity: 1; transform: scale(1); transform-origin: top right; transition: transform 160ms var(--ease-out), opacity 120ms var(--ease-out); }
+.eon-story-menu button { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 9px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 13px; text-align: left; }
+.eon-sidebar-foot { display: flex; align-items: center; gap: 6px; min-height: 60px; padding: 10px; border-top: 1px solid; }
+.eon-sidebar-foot > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
+.eon-workspace-main { display: flex; min-width: 0; flex: 1; flex-direction: column; overflow: hidden; }
+.eon-toolbar { position: relative; z-index: 20; flex: 0 0 auto; border-bottom: 1px solid; }
+.eon-toolbar-primary { display: flex; min-height: 56px; align-items: center; gap: 10px; padding: 8px 12px; }
+.eon-toolbar-title { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.eon-toolbar-title > span { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.eon-toolbar-tools { display: flex; min-height: 58px; align-items: center; gap: 16px; overflow-x: auto; padding: 8px 12px 10px; border-top: 1px solid rgba(144, 148, 165, .12); scrollbar-width: thin; }
+.eon-toolbar-tools.is-compact { overflow: visible; }
+.eon-tool-group { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+.eon-tool-group > span { font-size: 11px; font-weight: 600; letter-spacing: .025em; text-transform: uppercase; white-space: nowrap; }
+.eon-icon-segment { display: flex; gap: 2px; padding: 3px; border-radius: 11px; }
+.eon-icon-segment .eon-icon-button { width: 36px; height: 34px; flex-basis: 36px; border-radius: 8px; }
+.eon-segmented { box-shadow: inset 0 0 0 1px rgba(144, 148, 165, .08); }
+.eon-swatches { display: flex; align-items: center; gap: 2px; }
+.eon-swatch-hit { position: relative; display: grid; width: 40px; height: 40px; place-items: center; overflow: hidden; border: 0; border-radius: 10px; background: transparent; cursor: pointer; }
+.eon-swatch-hit > span { display: block; width: 18px; height: 18px; border-radius: 6px; }
+.eon-color-swatch { background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); box-shadow: 0 0 0 1px rgba(255,255,255,.14); }
+.eon-swatch-hit input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.eon-zoom { display: flex; align-items: center; gap: 1px; padding: 2px; border-radius: 11px; color: inherit; }
+.eon-zoom .eon-icon-button { width: 36px; height: 36px; flex-basis: 36px; }
+.eon-zoom-value { min-width: 48px; height: 36px; padding: 0 4px; border: 0; border-radius: 8px; background: transparent; color: inherit; cursor: pointer; font-size: 12px; font-variant-numeric: tabular-nums; }
+.eon-toolbar-more { position: relative; margin-left: auto; }
+.eon-toolbar-more > summary { list-style: none; }
+.eon-toolbar-more > summary::-webkit-details-marker { display: none; }
+.eon-toolbar-popover { position: absolute; top: 46px; right: 0; z-index: 60; display: flex; width: min(340px, calc(100vw - 24px)); align-items: stretch; flex-direction: column; gap: 14px; padding: 14px; border-radius: 16px; opacity: 1; transform: scale(1); transform-origin: top right; transition: transform 160ms var(--ease-out), opacity 120ms var(--ease-out); }
+.eon-toolbar-popover .eon-tool-group { justify-content: space-between; }
+
+@starting-style {
+  .eon-story-menu,
+  .eon-toolbar-more[open] .eon-toolbar-popover {
+    opacity: 0;
+    transform: scale(.97);
+  }
+}
+
+.eon-canvas { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
+.eon-canvas-stage { display: flex; align-items: center; justify-content: center; padding: 32px; box-sizing: border-box; }
+.eon-grid-stage { min-width: 100%; min-height: 100%; padding: 28px; box-sizing: border-box; }
+.eon-prototype-frame { display: block; border: 0; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 18px 60px rgba(0,0,0,.32); }
+.light .eon-prototype-frame { box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 18px 60px rgba(0,0,0,.18); }
+.eon-media-scroll { min-height: 0; flex: 1; overflow: auto; }
+
+.eon-inspector { position: relative; z-index: 25; display: flex; width: 360px; flex: 0 0 360px; flex-direction: column; border-left: 1px solid; box-shadow: -8px 0 24px rgba(0,0,0,.08); }
+.eon-inspector-head { display: flex; min-height: 64px; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-bottom: 1px solid; }
+.eon-inspector-head > div:first-child { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.eon-inspector-head strong { font-size: 14px; }
+.eon-inspector-head span { font-size: 12px; }
+.eon-inspector-tabs { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+.eon-review-tabs { display: grid; height: auto; margin: 10px 12px 0; padding: 3px; grid-template-columns: 1.35fr 1fr 1fr; border-radius: 11px; }
+.eon-review-tabs [role="tab"] { display: flex; min-width: 0; min-height: 36px; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; border-radius: 8px; font-size: 12px; }
+.eon-count { display: inline-flex; min-width: 18px; height: 18px; align-items: center; justify-content: center; padding: 0 5px; border-radius: 9px; font-size: 10px; font-variant-numeric: tabular-nums; }
+.eon-inspector-content { min-height: 0; flex: 1; margin: 0; overflow: hidden; }
+.eon-inspector-content[data-state="inactive"] { display: none; }
+.eon-reference-content { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding: 16px 12px 20px; }
+.eon-reference-head { display: flex; align-items: center; gap: 10px; }
+.eon-reference-head > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.eon-reference-head strong { font-size: 14px; }
+.eon-reference-head span { font-size: 12px; }
+.eon-text-button { min-height: 40px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; }
+.eon-reference-empty { display: flex; min-height: 260px; align-items: center; justify-content: center; flex-direction: column; gap: 8px; padding: 24px; border-radius: 14px; text-align: center; }
+.eon-reference-empty strong { margin-top: 4px; font-size: 14px; }
+.eon-reference-empty span { max-width: 240px; font-size: 13px; line-height: 1.5; }
+
+.eon-comments { display: flex; height: 100%; min-height: 0; flex-direction: column; }
+.eon-comment-list { min-height: 0; flex: 1; overflow-y: auto; padding: 18px 16px 24px; }
+.eon-comment-empty { display: flex; height: 100%; min-height: 260px; align-items: center; justify-content: center; flex-direction: column; gap: 8px; text-align: center; }
+.eon-comment-empty-icon { display: grid; width: 44px; height: 44px; margin-bottom: 4px; place-items: center; border-radius: 13px; }
+.eon-comment-empty strong { font-size: 14px; }
+.eon-comment-empty > span:last-child { max-width: 250px; font-size: 13px; line-height: 1.5; }
+.eon-comment { display: flex; gap: 10px; padding: 10px 0; transition: opacity 150ms var(--ease-out); }
+.eon-comment-avatar { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.eon-comment-body { min-width: 0; flex: 1; }
+.eon-comment-meta { display: flex; align-items: baseline; gap: 7px; }
+.eon-comment-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.eon-comment-meta time { font-size: 11px; font-variant-numeric: tabular-nums; }
+.eon-comment-body p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.eon-comment-composer { flex: 0 0 auto; padding: 12px; border-top: 1px solid; }
+.eon-composer-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.eon-composer-meta > span { min-width: 0; flex: 1; font-size: 11px; line-height: 1.35; }
+
+@media (max-width: 1180px) {
+  .eon-inspector { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 92vw); transform: translateX(0); transition: transform 240ms var(--ease-drawer); }
+  @starting-style { .eon-inspector { transform: translateX(100%); } }
+}
+
+@media (max-width: 900px) {
+  .eon-sidebar { position: fixed; top: 0; bottom: 0; left: 0; width: min(280px, 88vw); transform: translateX(0); transition: transform 240ms var(--ease-drawer); }
+  @starting-style { .eon-sidebar { transform: translateX(-100%); } }
+  .eon-toolbar-title > span { max-width: 180px; }
+}
+
+@media (max-width: 680px) {
+  .eon-toolbar-primary { gap: 6px; padding-inline: 8px; }
+  .eon-toolbar-title { min-width: 0; }
+  .eon-toolbar-title > span { max-width: 120px; }
+  .eon-upload-button span, .eon-full-button span { display: none; }
+  .eon-upload-button, .eon-full-button { width: 40px; padding: 0 !important; justify-content: center; }
+  .eon-toolbar-tools { gap: 12px; padding-inline: 8px; }
+  .eon-tool-group > span { display: none; }
+  .eon-canvas-stage { padding: 20px; }
+}
+
+@media (max-width: 480px) {
+  .eon-story-status { display: none; }
+  .eon-toolbar-title > span { max-width: 84px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eon-buttonish, .eon-comment, .eon-story-menu, .eon-toolbar-popover, .eon-inspector, .eon-sidebar { transition-duration: 0ms; }
+  .eon-story-menu, .eon-toolbar-popover, .eon-inspector, .eon-sidebar { transform: none; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .eon-story-menu button:hover { background: rgba(144, 148, 165, .12); }
 }
 
 /* Floating canvas control bar + top toolbar: stay usable as the canvas narrows. */
