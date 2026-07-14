@@ -6,10 +6,11 @@ export function tutorialStorageKey(userId) {
 }
 
 export function firstNameFor(profile, user) {
-  const candidate = profile?.full_name
+  const candidate = user?.email?.split("@")[0]
+    || profile?.email?.split("@")[0]
+    || profile?.full_name
     || user?.user_metadata?.full_name
     || user?.user_metadata?.name
-    || user?.email?.split("@")[0]
     || "there";
   const first = candidate.trim().split(/[\s._-]+/)[0] || "there";
   if (first.toLowerCase() === "there") return "there";
@@ -18,75 +19,58 @@ export function firstNameFor(profile, user) {
     : first;
 }
 
-// Keep tutorial content here so Product can tune the walkthrough without
-// touching its behavior, motion, or first-login persistence.
+// Keep the coach-mark copy and target map here so Product can tune the tour
+// without touching its geometry, accessibility, or persistence.
 export function createTutorialSteps(firstName) {
   return [
     {
       key: "welcome",
-      eyebrow: "Welcome to Eon",
-      title: `Hey ${firstName}, let’s make this workspace yours.`,
-      body: "Eon keeps interactive prototypes, review context, and team feedback in one shared place. Here’s the two-minute version.",
+      eyebrow: "Your workspace",
+      title: `Hey ${firstName} — this is your live workspace.`,
+      body: "I’ll point out the five things you’ll use most.",
       icon: "sparkles",
-      visual: "welcome",
-      callout: "You can move at your own pace — nothing in this tour changes your work.",
+      targets: ['[data-tutorial="prototype-title"]'],
+      placement: "bottom",
     },
     {
-      key: "find",
-      eyebrow: "01 · Find the work",
-      title: "Start with the prototype library.",
-      body: "Browse by product group, search by name, or filter to work that has unread feedback. Everyone sees the same live workspace.",
-      icon: "search",
-      visual: "library",
-      tips: [
-        "Use Needs attention to surface prototypes with new comments.",
-        "Open Media when you need to update shared image or brand variables.",
-      ],
+      key: "prototype",
+      eyebrow: "Live prototype",
+      title: "Click it. It’s real.",
+      body: "Test the flow directly—not through screenshots.",
+      icon: "prototype",
+      targets: ['[data-tutorial="prototype-frame"]'],
+      placement: "right",
+      interactive: true,
     },
     {
-      key: "shape",
-      eyebrow: "02 · Shape the exact state",
-      title: "Test the experience, not just a screenshot.",
-      body: "Switch viewport, theme, and prototype variables from the canvas controls. All states lays variants out together for fast QA.",
+      key: "controls",
+      eyebrow: "States & themes",
+      title: "Change the experience here.",
+      body: "Try a state, theme, device, or canvas color.",
       icon: "sliders",
-      visual: "controls",
-      tips: [
-        "Every variable change updates the live prototype immediately.",
-        "Use single view for focus, then All states to catch edge cases.",
-      ],
+      targets: ['[data-tutorial="canvas-controls"]'],
+      placement: "top",
+      interactive: true,
+    },
+    {
+      key: "library",
+      eyebrow: "Prototype library",
+      title: "Everything starts here.",
+      body: "Find prototypes, shared media, and the dynamic setup prompt.",
+      icon: "library",
+      targets: ['[data-tutorial="prototype-library"]', '[data-tutorial="nav-toggle"]'],
+      placement: "right",
+      interactive: true,
     },
     {
       key: "review",
-      eyebrow: "03 · Review together",
-      title: "Keep decisions beside the prototype.",
-      body: "Open the review panel to comment, check readiness, and connect Figma or Linear. A review link restores the exact prototype state for your teammate.",
-      icon: "message",
-      visual: "review",
-      tips: [
-        "Comments update live, so feedback stays visible to the whole team.",
-        "Copy review link includes the current viewport, theme, and variables.",
-      ],
-    },
-    {
-      key: "build",
-      eyebrow: "04 · Build and share",
-      title: "Turn a new idea into a team-ready prototype.",
-      body: "Create or upload an HTML prototype, define its variables, then copy the setup prompt for your coding agent. The prompt is generated from the latest project and media variables.",
-      icon: "upload",
-      visual: "build",
-      tips: [
-        "Use the shared media tokens instead of hardcoding asset URLs.",
-        "Set a review stage so the team knows what kind of feedback you need.",
-      ],
-    },
-    {
-      key: "ready",
-      eyebrow: "You’re ready",
-      title: `That’s it, ${firstName}. Your first prototype is waiting.`,
-      body: "Pick a prototype, explore its states, and leave the next useful piece of context for your team.",
-      icon: "check",
-      visual: "ready",
-      callout: "Admins can replay this walkthrough from Workspace admin whenever QA needs another pass.",
+      eyebrow: "Team review",
+      title: "Feedback stays beside the work.",
+      body: "Open comments, readiness, Figma, and Linear here.",
+      icon: "review",
+      targets: ['[data-tutorial="review-panel"]', '[data-tutorial="review-toggle"]'],
+      placement: "left",
+      interactive: true,
     },
   ];
 }

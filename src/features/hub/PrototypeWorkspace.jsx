@@ -392,7 +392,7 @@ export default function PrototypeWorkspace({
   );
 
   return (
-    <div className={`${hubTheme === "dark" ? "" : "light"} eon-workspace`} style={{ background: c.bg, color: c.text }}>
+    <div data-tutorial="workspace" className={`${hubTheme === "dark" ? "" : "light"} eon-workspace`} style={{ background: c.bg, color: c.text }}>
       {((breakpoints.navDrawer && navOpen) || (breakpoints.inspectorDrawer && inspectorOpen)) && (
         <button className="eon-drawer-scrim" aria-label="Close open panel" onClick={() => {
           if (breakpoints.inspectorDrawer && inspectorOpen) setInspectorOpen(false);
@@ -461,11 +461,11 @@ export default function PrototypeWorkspace({
         ) : (
           <div ref={compareRef} className={`eon-compare${splitDragging ? " is-dragging" : ""}`}>
             <div className="eon-canvas-zone" style={{ flex: effCompare ? `${splitRatio} 1 0%` : undefined }}>
-              <section ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`} style={{ background: canvasBg }}>
+              <section data-tutorial="prototype-canvas" ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`} style={{ background: canvasBg }}>
                 {layout === "single" ? (
                   <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + 64), height: Math.max(canvasSize.height, frameHeight + 64) }}>
                     <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0 }}>
-                      <iframe className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
+                      <iframe data-tutorial="prototype-frame" className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
                         title={story.title} srcDoc={html}
                         sandbox={PROTOTYPE_SANDBOX}
                         referrerPolicy="no-referrer"
@@ -548,7 +548,7 @@ function WorkspaceSidebar({
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
-    <aside ref={drawerRef} className="eon-sidebar" role={isDrawer ? "dialog" : "navigation"} aria-modal={isDrawer || undefined} aria-label="Prototype navigation" style={{ background: c.nav, borderColor: c.border }}>
+    <aside data-tutorial="prototype-library" ref={drawerRef} className="eon-sidebar" role={isDrawer ? "dialog" : "navigation"} aria-modal={isDrawer || undefined} aria-label="Prototype navigation" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-sidebar-head" style={{ borderColor: c.border }}>
         <div className="eon-brand-row">
           <div className="eon-brand">
@@ -712,11 +712,11 @@ function WorkspaceToolbar({
   return (
     <header className="eon-toolbar" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-toolbar-primary">
-        <button className="eon-buttonish eon-icon-button" onClick={onToggleNav}
+        <button data-tutorial="nav-toggle" className="eon-buttonish eon-icon-button" onClick={onToggleNav}
           aria-label={navOpen ? "Collapse prototype navigation" : "Open prototype navigation"} aria-pressed={navOpen} style={{ color: c.muted, boxShadow: hubShadow(c) }}>
           {navOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
         </button>
-        <div className="eon-toolbar-title">
+        <div data-tutorial="prototype-title" className="eon-toolbar-title">
           <span>{view === "media" ? "Media library" : story.title}</span>
           {view === "stories" && (liveLinear?.state
             ? <Badge className="eon-story-status" title="Synced from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: 0, fontWeight: 600 }}>{liveLinear.state.name} · Linear</Badge>
@@ -740,7 +740,7 @@ function WorkspaceToolbar({
             <Button className="eon-buttonish eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view" style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 10, gap: 7, fontSize: 13, fontWeight: 600 }}>
               <Maximize2 size={15} /> <span>Open full view</span>
             </Button>
-            <button className="eon-buttonish eon-icon-button" onClick={onToggleInspector}
+            <button data-tutorial="review-toggle" className="eon-buttonish eon-icon-button" onClick={onToggleInspector}
               aria-label={inspectorOpen ? "Close review panel" : "Open review panel"} aria-pressed={inspectorOpen} title="Review panel" style={{ color: inspectorOpen ? c.brand : c.muted, boxShadow: hubShadow(c) }}>
               {inspectorOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
             </button>
@@ -791,7 +791,7 @@ function CanvasControlBar({
   protoTheme, setProtoTheme, canvasBg, setCanvasBg, segmented,
 }) {
   return (
-    <div className="eon-ctlbar eon-ctlbar-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+    <div data-tutorial="canvas-controls" className="eon-ctlbar eon-ctlbar-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
       {layout === "single" && (effStory.controls || []).map((control) => (
         <ToolGroup key={control.key} label={control.label} c={c}>{segmented(control.options, args[control.key], (value) => setArg(control.key, value))}</ToolGroup>
       ))}
@@ -825,7 +825,7 @@ function ReviewInspector({
 }) {
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
-    <aside ref={drawerRef} className="eon-inspector" role={isDrawer ? "dialog" : undefined} aria-modal={isDrawer || undefined} aria-label="Review panel" style={{ background: c.nav, borderColor: c.border }}>
+    <aside data-tutorial="review-panel" ref={drawerRef} className="eon-inspector" role={isDrawer ? "dialog" : undefined} aria-modal={isDrawer || undefined} aria-label="Review panel" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-inspector-head" style={{ borderColor: c.border }}>
         <div>
           <strong>Review workspace</strong>
