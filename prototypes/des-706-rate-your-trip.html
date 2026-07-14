@@ -140,6 +140,11 @@
   .star-btn.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
   .rating-word{text-align:center;font-size:var(--font-size-body);line-height:1.4;min-height:22px;margin-top:-8px}
 
+  /* first state is collapsed: only header + subtitle + stars show until a star is tapped */
+  .after-rating{display:none}
+  .after-rating.open{display:flex;flex-direction:column;gap:24px;animation:reveal .3s ease}
+  @keyframes reveal{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
   .divider{height:1px;background:var(--divider);border-radius:16px}
 
   .cat-list{display:flex;flex-direction:column}
@@ -301,6 +306,8 @@
         <div class="stars" id="stars" role="radiogroup" aria-label="Overall rating, 1 to 5 stars"></div>
         <div class="rating-word" id="rating-word"></div>
 
+        <!-- everything below reveals after the first star tap -->
+        <div class="after-rating" id="after-rating">
         <div class="divider"></div>
 
         <div class="cat-list" id="cats"></div>
@@ -369,6 +376,7 @@
 
         <button class="btn-primary inactive" id="submit-btn" aria-disabled="true" onclick="submitReview()">Submit Rating</button>
         <div class="privacy">Your ratings are shared with the owner anonymously.</div>
+        </div>
       </div>
 
       <!-- end state: 4 to 5 stars -->
@@ -624,6 +632,9 @@
         starBtns[i].setAttribute('aria-checked', i + 1 === r ? 'true' : 'false');
       }
       document.getElementById('rating-word').textContent = r ? WORDS[r] : '';
+
+      // collapsed first state: the rest reveals only after a star is tapped
+      document.getElementById('after-rating').classList.toggle('open', r > 0);
 
       // category stars
       var catBtns = catsEl.querySelectorAll('.cat-star');
