@@ -6,14 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Check, ChevronDown, Circle, CircleDot, Columns2, Copy, ExternalLink, Figma,
-  LayoutGrid, LogOut, Maximize2, MessageSquare, Minus, Monitor, Laptop,
+  AlertCircle, ArrowDown, ArrowUp, Bell, Check, ChevronDown, Circle, CircleDot, Columns2, Copy,
+  ExternalLink, Figma, FileText, LayoutGrid, Link2, Loader2, LogOut,
+  Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
   PanelRightOpen, Pencil, Plus, Search, Send, Shield, Smartphone, Square, Sun,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
-  CANVAS_PRESETS, HUB, MEDIA, STATUS_COLOR, VIEWPORTS, currentArgs,
+  CANVAS_PRESETS, HUB, STATUS_COLOR, VIEWPORTS, currentArgs,
   parsePrototypeConfig, renderStory,
 } from "./prototypes";
 import {
@@ -22,21 +23,24 @@ import {
 } from "./PrototypeHub";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
+const REVIEW_STAGES = ["Exploration", "In review", "Handoff", "Shipped"];
+const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
 
 export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], isAdmin, profile, userEmail,
   activeId, onSelectStory,
   onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder,
   onCreateComment, onOpenAdmin, onSignOut,
+  saveState = "idle", onRetrySave, loadError, onRetryLoad,
 }) {
-  const [hubTheme, setHubTheme] = useState("dark");
-  const [protoTheme, setProtoTheme] = useState("dark");
+  const [hubTheme, setHubTheme] = useStoredState("eon-hub-theme", "dark");
+  const [protoTheme, setProtoTheme] = useStoredState("eon-prototype-theme", "dark");
   const [view, setView] = useState("stories");
-  const [viewport, setViewport] = useState("laptop");
-  const [layout, setLayout] = useState("single");
+  const [viewport, setViewport] = useStoredState("eon-viewport", "laptop");
+  const [layout, setLayout] = useStoredState("eon-layout", "single");
   const [gridBy, setGridBy] = useState("states");
   const [query, setQuery] = useState("");
-  const [canvasBg, setCanvasBg] = useState("#808080");
+  const [canvasBg, setCanvasBg] = useStoredState("eon-canvas-background", "#808080");
   const [liveArgs, setLiveArgs] = useState({});
   const [showUpload, setShowUpload] = useState(false);
   const [dragId, setDragId] = useState(null);
@@ -50,19 +54,39 @@ export default function PrototypeWorkspace({
   const [liveLinear, setLiveLinear] = useState(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
-  const [navOpen, setNavOpen] = useState(() => window.innerWidth >= 900);
-  const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth >= 1120);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [navOpen, setNavOpen] = useState(() => window.innerWidth > 900);
+  const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth > 1180);
   const [compare, setCompare] = useState(false);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [splitDragging, setSplitDragging] = useState(false);
   const [inspectorTab, setInspectorTab] = useState("comments");
+  const [attentionOnly, setAttentionOnly] = useState(false);
+  const [copiedReviewLink, setCopiedReviewLink] = useState(false);
+  const [reviewLinkCopyError, setReviewLinkCopyError] = useState("");
+  const [reviewLocationKey, setReviewLocationKey] = useState(() => window.location.hash);
+  const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false });
+  const seenStorageKey = `eon-review-seen:${profile?.id || "anonymous"}`;
+  const [seenComments, setSeenComments] = useState(() => readStoredJson(seenStorageKey));
   const compareRef = useRef(null);
   const canvasRef = useRef(null);
+  const newDialogReturnFocusRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 960, height: 640 });
 
   const c = HUB[hubTheme];
   const story = projects.find((item) => item.id === activeId) || projects[0];
   const media = assets;
+
+  useEffect(() => {
+    const update = () => setBreakpoints({
+      navDrawer: window.matchMedia("(max-width: 900px)").matches,
+      inspectorDrawer: window.matchMedia("(max-width: 1180px)").matches,
+      noCompare: window.matchMedia("(max-width: 899px)").matches,
+    });
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
   useEffect(() => {
     const node = canvasRef.current;
@@ -80,7 +104,10 @@ export default function PrototypeWorkspace({
     const controls = story.controls?.length ? story.controls : (cfg.controls || []);
     return { ...story, controls, defaults: { ...(cfg.defaults || {}), ...(story.defaults || {}) } };
   }, [story, cfg]);
-  const args = effStory ? currentArgs(effStory, liveArgs[effStory.id]) : {};
+  const args = useMemo(
+    () => (effStory ? currentArgs(effStory, liveArgs[effStory.id]) : {}),
+    [effStory, liveArgs],
+  );
   const vp = VIEWPORTS[viewport];
   const html = useMemo(
     () => (effStory ? renderStory(effStory, protoTheme, media, args) : ""),
@@ -92,14 +119,108 @@ export default function PrototypeWorkspace({
     1,
   ), [canvasSize, vp]);
 
+  const unreadByProject = useMemo(() => {
+    const counts = {};
+    comments.forEach((comment) => {
+      if (comment.author_id === profile?.id) return;
+      if (new Date(comment.created_at).getTime() > Number(seenComments[comment.project_id] || 0)) {
+        counts[comment.project_id] = (counts[comment.project_id] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [comments, profile?.id, seenComments]);
+
+  const commentCountByProject = useMemo(() => comments.reduce((counts, comment) => {
+    counts[comment.project_id] = (counts[comment.project_id] || 0) + 1;
+    return counts;
+  }, {}), [comments]);
+
   const groups = useMemo(() => {
     const q = query.toLowerCase();
     const grouped = {};
     projects
       .filter((item) => item.title.toLowerCase().includes(q) || (item.group_name || "").toLowerCase().includes(q))
+      .filter((item) => !attentionOnly || unreadByProject[item.id] > 0 || item.status === "In review")
       .forEach((item) => { (grouped[item.group_name || "General"] ||= []).push(item); });
     return grouped;
-  }, [projects, query]);
+  }, [projects, query, attentionOnly, unreadByProject]);
+
+  const storyComments = useMemo(
+    () => comments.filter((comment) => comment.project_id === story?.id),
+    [comments, story?.id],
+  );
+
+  useEffect(() => {
+    if (!story?.id || !inspectorOpen || inspectorTab !== "comments" || storyComments.length === 0) return;
+    const latest = Math.max(...storyComments.map((comment) => new Date(comment.created_at).getTime()));
+    setSeenComments((current) => {
+      if (Number(current[story.id] || 0) >= latest) return current;
+      const next = { ...current, [story.id]: latest };
+      window.localStorage.setItem(seenStorageKey, JSON.stringify(next));
+      return next;
+    });
+  }, [story?.id, storyComments, inspectorOpen, inspectorTab, seenStorageKey]);
+
+  useEffect(() => {
+    if (!storyMenuId) return undefined;
+    const dismiss = (event) => {
+      if (event.key === "Escape") setStoryMenuId(null);
+      if (event.type === "pointerdown" && !event.target.closest(`[data-story-menu="${storyMenuId}"]`)) setStoryMenuId(null);
+    };
+    document.addEventListener("keydown", dismiss);
+    document.addEventListener("pointerdown", dismiss);
+    return () => {
+      document.removeEventListener("keydown", dismiss);
+      document.removeEventListener("pointerdown", dismiss);
+    };
+  }, [storyMenuId]);
+
+  useEffect(() => {
+    if (!(breakpoints.navDrawer || breakpoints.inspectorDrawer)) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      if (breakpoints.inspectorDrawer && inspectorOpen) setInspectorOpen(false);
+      else if (breakpoints.navDrawer && navOpen) setNavOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [breakpoints, inspectorOpen, navOpen]);
+
+  useEffect(() => {
+    const syncLocation = () => setReviewLocationKey(window.location.hash);
+    window.addEventListener("hashchange", syncLocation);
+    return () => window.removeEventListener("hashchange", syncLocation);
+  }, []);
+
+  useEffect(() => {
+    if (!story?.id) return;
+    const raw = window.location.hash.split("?")[1];
+    if (!raw) return;
+    const params = new URLSearchParams(raw);
+    const nextViewport = params.get("viewport");
+    const nextTheme = params.get("theme");
+    const nextLayout = params.get("layout");
+    const nextGrid = params.get("grid");
+    const nextCanvas = params.get("canvas");
+    const nextZoom = Number(params.get("zoom"));
+    const nextTab = params.get("inspect");
+    if (VIEWPORTS[nextViewport]) setViewport(nextViewport);
+    if (["light", "dark"].includes(nextTheme)) setProtoTheme(nextTheme);
+    if (["single", "grid"].includes(nextLayout)) setLayout(nextLayout);
+    if (["states", "themes", "screens"].includes(nextGrid)) setGridBy(nextGrid);
+    if (/^#[0-9a-f]{6}$/i.test(nextCanvas || "")) setCanvasBg(nextCanvas);
+    if (Number.isFinite(nextZoom) && nextZoom >= 0.25 && nextZoom <= 4) setZoom(nextZoom);
+    if (["comments", "details", "linear"].includes(nextTab)) setInspectorTab(nextTab);
+    const linkedArgs = {};
+    params.forEach((value, key) => {
+      if (!key.startsWith("arg.")) return;
+      try { linkedArgs[key.slice(4)] = JSON.parse(value); }
+      catch { linkedArgs[key.slice(4)] = value; }
+    });
+    if (Object.keys(linkedArgs).length) {
+      setLiveArgs((current) => ({ ...current, [story.id]: { ...current[story.id], ...linkedArgs } }));
+    }
+  }, [story?.id, reviewLocationKey]);
 
   useEffect(() => {
     const url = story?.issue_url || "";
@@ -119,13 +240,15 @@ export default function PrototypeWorkspace({
 
   if (!story) {
     return (
-      <div className={hubTheme === "dark" ? "" : "light"} style={{ height: "100vh", display: "grid", placeItems: "center", background: c.bg, color: c.text }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 16, fontWeight: 600 }}>No prototypes yet</div>
-          <Button className="eon-buttonish" onClick={() => setShowNewDialog(true)} style={{ marginTop: 12, minHeight: 40, background: c.primary, color: c.primaryText }}>New prototype</Button>
+      <div className={`${hubTheme === "dark" ? "" : "light"} eon-empty-workspace`} style={{ background: c.bg, color: c.text }}>
+        <div className="eon-empty-workspace-card" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
+          <span className="eon-empty-workspace-icon" style={{ background: c.active, color: c.brand }}><Plus size={20} /></span>
+          <h1>No prototypes yet</h1>
+          <p style={{ color: c.muted }}>Create the first shared review space for your team.</p>
+          <Button className="eon-buttonish" onClick={(event) => { newDialogReturnFocusRef.current = event.currentTarget; setShowNewDialog(true); }} style={{ minHeight: 40, background: c.primary, color: c.primaryText }}>New prototype</Button>
         </div>
         {showNewDialog && (
-          <NewPrototypeDialog c={c} groups={[]} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
+          <NewPrototypeDialog c={c} groups={[]} restoreFocus={newDialogReturnFocusRef.current} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
         )}
       </div>
     );
@@ -134,10 +257,9 @@ export default function PrototypeWorkspace({
   // States always leads; StateGrid explains itself when none are declared.
   const gridOptions = ["states", "themes", "screens"];
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
-  const effCompare = compare;
+  const effCompare = compare && !breakpoints.noCompare;
   const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR.Exploration;
   const linearId = story.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story.issue_id || null;
-  const storyComments = comments.filter((comment) => comment.project_id === story.id);
   const frameScale = scale * zoom;
   const frameWidth = vp.w * frameScale;
   const frameHeight = vp.h * frameScale;
@@ -148,9 +270,33 @@ export default function PrototypeWorkspace({
   }));
   const patch = (field, value) => onPatchProject(story.id, { [field]: value });
   const openFull = () => {
-    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const wrapper = sandboxedFullView(html, story.title);
+    const url = URL.createObjectURL(new Blob([wrapper], { type: "text/html" }));
     window.open(url, "_blank", "noopener,noreferrer");
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
+  const copyReviewLink = async () => {
+    const params = new URLSearchParams({
+      viewport,
+      theme: protoTheme,
+      layout,
+      grid: effGridBy,
+      canvas: canvasBg,
+      zoom: String(zoom),
+      inspect: inspectorTab,
+    });
+    Object.entries(args).forEach(([key, value]) => params.set(`arg.${key}`, JSON.stringify(value)));
+    const route = story.slug ? `#/p/${story.slug}` : (window.location.hash.split("?")[0] || "#/");
+    const url = `${window.location.origin}${window.location.pathname}${route}?${params.toString()}`;
+    setReviewLinkCopyError("");
+    try {
+      await copyText(url);
+      setCopiedReviewLink(true);
+      window.setTimeout(() => setCopiedReviewLink(false), 1600);
+    } catch {
+      setReviewLinkCopyError("Couldn't copy automatically. Check your browser's clipboard permission.");
+    }
   };
   const commitRename = (id, value) => {
     const title = value.trim();
@@ -183,6 +329,14 @@ export default function PrototypeWorkspace({
     const targetGroup = projects.find((item) => item.id === targetId)?.group_name;
     onReorder(ordered, targetGroup ? { [dragId]: targetGroup } : {});
     setDragId(null);
+  };
+  const moveStory = (id, direction) => {
+    const ordered = projects.map((item) => item.id);
+    const from = ordered.indexOf(id);
+    const to = Math.min(ordered.length - 1, Math.max(0, from + direction));
+    if (from < 0 || from === to || !onReorder) return;
+    [ordered[from], ordered[to]] = [ordered[to], ordered[from]];
+    onReorder(ordered);
   };
 
   // Divider drag for the compare split; iframes get pointer-events:none while
@@ -226,29 +380,61 @@ export default function PrototypeWorkspace({
 
   return (
     <div className={`${hubTheme === "dark" ? "" : "light"} eon-workspace`} style={{ background: c.bg, color: c.text }}>
+      {((breakpoints.navDrawer && navOpen) || (breakpoints.inspectorDrawer && inspectorOpen)) && (
+        <button className="eon-drawer-scrim" aria-label="Close open panel" onClick={() => {
+          if (breakpoints.inspectorDrawer && inspectorOpen) setInspectorOpen(false);
+          else setNavOpen(false);
+        }} />
+      )}
+
       {navOpen && (
         <WorkspaceSidebar
           c={c} media={media} view={view} setView={setView} query={query} setQuery={setQuery}
           groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin}
-          onNewProject={() => setShowNewDialog(true)} dragId={dragId} setDragId={setDragId}
+          onNewProject={(event) => { newDialogReturnFocusRef.current = event.currentTarget; setShowNewDialog(true); }} dragId={dragId} setDragId={setDragId}
           dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop}
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
           renamingGroup={renamingGroup} setRenamingGroup={setRenamingGroup} commitGroupRename={commitGroupRename}
-          storyMenuId={storyMenuId} setStoryMenuId={setStoryMenuId} onDeleteProject={onDeleteProject}
+          storyMenuId={storyMenuId} setStoryMenuId={setStoryMenuId}
+          onDeleteProject={(id, restoreFocus) => {
+            const project = projects.find((item) => item.id === id);
+            if (project) setDeleteCandidate({ project, restoreFocus });
+          }}
+          moveStory={moveStory} projectOrder={projects.map((item) => item.id)}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
           onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
+          attentionOnly={attentionOnly} setAttentionOnly={setAttentionOnly}
+          unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
+          isDrawer={breakpoints.navDrawer} onClose={() => setNavOpen(false)}
         />
       )}
 
       <main className="eon-workspace-main">
         <WorkspaceToolbar
           c={c} view={view} story={story} liveLinear={liveLinear} sc0={sc0} sc1={sc1}
-          navOpen={navOpen} setNavOpen={setNavOpen} inspectorOpen={inspectorOpen}
-          setInspectorOpen={setInspectorOpen} hubTheme={hubTheme} setHubTheme={setHubTheme}
+          navOpen={navOpen} onToggleNav={() => {
+            const opening = !navOpen;
+            setNavOpen(opening);
+            if (opening && breakpoints.navDrawer) setInspectorOpen(false);
+          }} inspectorOpen={inspectorOpen}
+          onToggleInspector={() => {
+            const opening = !inspectorOpen;
+            setInspectorOpen(opening);
+            if (opening && breakpoints.inspectorDrawer) setNavOpen(false);
+          }} hubTheme={hubTheme} setHubTheme={setHubTheme}
           showUpload={showUpload} setShowUpload={setShowUpload} openFull={openFull}
           viewport={viewport} setViewport={setViewport} layout={layout} setLayout={setLayout}
-          compare={effCompare} setCompare={setCompare}
+          compare={effCompare} setCompare={setCompare} saveState={saveState} onRetrySave={onRetrySave}
+          onOpenReviewDetails={() => { setInspectorTab("details"); setInspectorOpen(true); }}
         />
+
+        {loadError && (
+          <div className="eon-inline-alert" role="alert" style={{ background: c.panel, color: c.secondary, borderColor: c.border }}>
+            <AlertCircle size={15} />
+            <span>{loadError}</span>
+            {onRetryLoad && <button className="eon-buttonish eon-text-button" onClick={onRetryLoad} style={{ color: c.brand }}>Retry</button>}
+          </div>
+        )}
 
         {showUpload && view === "stories" && (
           <UploadPanel key={story.id} c={c} story={story}
@@ -268,6 +454,9 @@ export default function PrototypeWorkspace({
                     <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0 }}>
                       <iframe className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
                         title={story.title} srcDoc={html}
+                        sandbox={PROTOTYPE_SANDBOX}
+                        referrerPolicy="no-referrer"
+                        allow="clipboard-read; clipboard-write"
                         style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
                     </div>
                   </div>
@@ -310,11 +499,22 @@ export default function PrototypeWorkspace({
           onCreateComment={onCreateComment} patch={patch}
           editLinear={editLinear} setEditLinear={setEditLinear}
           sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
+          saveState={saveState} onRetrySave={onRetrySave}
+          copyReviewLink={copyReviewLink} copiedReviewLink={copiedReviewLink}
+          reviewLinkCopyError={reviewLinkCopyError}
+          isDrawer={breakpoints.inspectorDrawer} onClose={() => setInspectorOpen(false)}
         />
       )}
 
       {showNewDialog && (
-        <NewPrototypeDialog c={c} groups={Object.keys(groups)} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
+        <NewPrototypeDialog c={c} groups={Object.keys(groups)} restoreFocus={newDialogReturnFocusRef.current} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
+      )}
+      {deleteCandidate && (
+        <DeletePrototypeDialog c={c} project={deleteCandidate.project} restoreFocus={deleteCandidate.restoreFocus} onClose={() => setDeleteCandidate(null)}
+          onConfirm={async () => {
+            await onDeleteProject?.(deleteCandidate.project.id);
+            setDeleteCandidate(null);
+          }} />
       )}
     </div>
   );
@@ -326,43 +526,70 @@ function WorkspaceSidebar({
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
-  onDeleteProject, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
+  onDeleteProject, moveStory, projectOrder, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
+  attentionOnly, setAttentionOnly, unreadByProject, commentCountByProject,
+  isDrawer, onClose,
 }) {
+  const hasResults = Object.keys(groups).length > 0;
+  const [collapsedGroups, setCollapsedGroups] = useState({});
+  const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
-    <aside className="eon-sidebar" style={{ background: c.nav, borderColor: c.border }}>
+    <aside ref={drawerRef} className="eon-sidebar" role={isDrawer ? "dialog" : "navigation"} aria-modal={isDrawer || undefined} aria-label="Prototype navigation" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-sidebar-head" style={{ borderColor: c.border }}>
-        <div className="eon-brand">
-          <span style={{ display: "inline-flex" }} dangerouslySetInnerHTML={{ __html: MEDIA.logos.eon(c.text, c.brand, media.eonLogo) }} />
-          <span>Eon Prototypes</span>
-        </div>
-        <div style={{ position: "relative" }}>
-          <Search aria-hidden="true" style={{ position: "absolute", left: 12, top: 12, width: 15, height: 15, color: c.muted, pointerEvents: "none" }} />
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" aria-label="Search prototypes"
-            style={{ minHeight: 40, paddingLeft: 34, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 10 }} />
+        <div className="eon-brand-row">
+          <div className="eon-brand">
+            <BrandMark c={c} src={media.eonLogo} />
+            <span>Eon Prototypes</span>
+          </div>
+          {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close prototype navigation" style={{ color: c.muted }}><X size={17} /></button>}
         </div>
         <div className="eon-sidebar-switcher" style={{ background: c.raised }}>
           {["stories", "media"].map((item) => {
             const selected = view === item;
             return (
-              <button className="eon-buttonish" key={item} onClick={() => setView(item)} aria-pressed={selected}
+              <button className="eon-buttonish" key={item} onClick={() => { setView(item); if (isDrawer) onClose(); }} aria-pressed={selected}
                 style={{ flex: 1, minHeight: 34, border: 0, borderRadius: 7, background: selected ? c.panel : "transparent", color: selected ? c.text : c.muted, cursor: "pointer", fontSize: 13, fontWeight: selected ? 600 : 400 }}>
                 {item === "stories" ? "Prototypes" : "Media"}
               </button>
             );
           })}
         </div>
-        <button className="eon-buttonish eon-secondary-button" onClick={copySetupPrompt}
-          title="Copy the prototype authoring prompt" style={{ borderColor: c.border, background: c.raised, color: copiedPrompt ? c.brand : c.secondary }}>
-          {copiedPrompt ? <Check size={14} /> : <Copy size={14} />}
-          {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
-        </button>
+        {view === "stories" && (
+          <>
+            <div className="eon-sidebar-search-row">
+              <div className="eon-sidebar-search">
+                <Search aria-hidden="true" />
+                <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" aria-label="Search prototypes"
+                  style={{ minHeight: 40, paddingLeft: 34, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 10 }} />
+              </div>
+              <button className="eon-buttonish eon-icon-button" onClick={() => setAttentionOnly((value) => !value)}
+                aria-label="Show prototypes needing attention" aria-pressed={attentionOnly} title="Needs attention"
+                style={{ color: attentionOnly ? c.brand : c.muted, background: attentionOnly ? c.active : c.raised }}>
+                <Bell size={15} />
+              </button>
+            </div>
+            <button className="eon-buttonish eon-secondary-button" onClick={copySetupPrompt}
+              title="Copy the prototype authoring prompt" style={{ borderColor: c.border, background: c.raised, color: copiedPrompt ? c.brand : c.secondary }}>
+              {copiedPrompt ? <Check size={14} /> : <Copy size={14} />}
+              {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
+            </button>
+          </>
+        )}
       </div>
 
       <div className="eon-story-list">
-        <button className="eon-buttonish eon-new-story" onClick={onNewProject} style={{ borderColor: c.border, color: c.secondary }}>
-          <Plus size={17} /> New prototype
-        </button>
-        {Object.entries(groups).map(([group, items]) => (
+        {view === "stories" ? <>
+          <button className="eon-buttonish eon-new-story" onClick={onNewProject} style={{ borderColor: c.border, color: c.secondary }}>
+            <Plus size={17} /> New prototype
+          </button>
+          {!hasResults && (
+            <div className="eon-sidebar-empty" style={{ color: c.muted }}>
+              <Search size={18} />
+              <strong style={{ color: c.text }}>{attentionOnly ? "Nothing needs attention" : "No prototypes found"}</strong>
+              <span>{attentionOnly ? "You're caught up on reviews." : "Try a different name or group."}</span>
+            </div>
+          )}
+          {Object.entries(groups).map(([group, items]) => (
           <div key={group} style={{ marginBottom: 10 }}>
             {renamingGroup === group ? (
               <div className="eon-group-label">
@@ -376,16 +603,22 @@ function WorkspaceSidebar({
                   style={{ background: c.bg, borderColor: c.brand, color: c.text }} />
               </div>
             ) : (
-              <div className="eon-group-label" style={{ color: c.muted }}
-                onDoubleClick={() => isAdmin && setRenamingGroup(group)}
-                title={isAdmin ? "Double-click to rename" : undefined}>
-                <ChevronDown size={13} /> {group}
+              <div className="eon-group-label-row">
+                <button className="eon-buttonish eon-group-toggle" onClick={() => setCollapsedGroups((current) => ({ ...current, [group]: !current[group] }))}
+                  aria-expanded={!collapsedGroups[group]} style={{ color: c.muted }}>
+                  <ChevronDown size={13} className={collapsedGroups[group] ? "is-collapsed" : ""} /> {group}
+                </button>
+                {isAdmin && (
+                  <button className="eon-buttonish eon-group-edit" onClick={() => setRenamingGroup(group)} aria-label={`Rename group ${group}`} title="Rename group" style={{ color: c.muted }}>
+                    <Pencil size={12} />
+                  </button>
+                )}
               </div>
             )}
-            {items.map((item) => {
+            {!collapsedGroups[group] && items.map((item) => {
               const active = activeId === item.id;
               return (
-                <div className="eon-story-row" key={item.id} draggable={isAdmin}
+                <div className="eon-story-row" key={item.id} draggable={isAdmin} data-story-menu={item.id}
                   onDragStart={() => setDragId(item.id)}
                   onDragEnd={() => { setDragId(null); setDropTargetId(null); }}
                   onDragOver={(event) => { if (dragId) { event.preventDefault(); setDropTargetId(item.id); } }}
@@ -404,11 +637,13 @@ function WorkspaceSidebar({
                         style={{ background: c.bg, borderColor: c.brand, color: c.text }} />
                     </div>
                   ) : (
-                    <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); }}
+                    <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose(); }}
                       onDoubleClick={() => isAdmin && setRenamingId(item.id)} title={isAdmin ? "Double-click to rename" : undefined}
                       aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
-                      <Circle size={13} color={active ? c.brand : c.muted} />
+                      <span className="eon-status-dot" style={{ background: (STATUS_COLOR[item.status] || STATUS_COLOR.Exploration)[1] }} />
                       <span>{item.title}</span>
+                      {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}
+                      {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && <span className="eon-comment-count" style={{ color: c.muted }}>{commentCountByProject[item.id]}</span>}
                     </button>
                   )}
                   {isAdmin && renamingId !== item.id && (
@@ -418,9 +653,15 @@ function WorkspaceSidebar({
                         <MoreHorizontal size={16} />
                       </button>
                       {storyMenuId === item.id && (
-                        <div className="eon-story-menu" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
-                          <button className="eon-buttonish" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>
-                          <button className="eon-buttonish" onClick={() => { setStoryMenuId(null); onDeleteProject?.(item.id); }} style={{ color: "#FF6B8A" }}><Trash2 size={14} /> Delete</button>
+                        <div className="eon-story-menu" role="menu" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
+                          <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>
+                          <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>
+                          <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
+                          <button className="eon-buttonish" role="menuitem" onClick={(event) => {
+                            const restoreFocus = event.currentTarget.closest("[data-story-menu]")?.querySelector('button[aria-label^="Actions for"]');
+                            setStoryMenuId(null);
+                            onDeleteProject?.(item.id, restoreFocus);
+                          }} style={{ color: "#FF6B8A" }}><Trash2 size={14} /> Delete</button>
                         </div>
                       )}
                     </div>
@@ -429,7 +670,14 @@ function WorkspaceSidebar({
               );
             })}
           </div>
-        ))}
+          ))}
+        </> : (
+          <div className="eon-sidebar-mode-info" style={{ color: c.muted }}>
+            <span className="eon-sidebar-mode-icon" style={{ background: c.active, color: c.brand }}><Upload size={18} /></span>
+            <strong style={{ color: c.text }}>Shared media</strong>
+            <span>Logos, images, and tokens stay in sync across every prototype.</span>
+          </div>
+        )}
       </div>
 
       <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
@@ -442,38 +690,43 @@ function WorkspaceSidebar({
 }
 
 function WorkspaceToolbar({
-  c, view, story, liveLinear, sc0, sc1, navOpen, setNavOpen, inspectorOpen,
-  setInspectorOpen, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
+  c, view, story, liveLinear, sc0, sc1, navOpen, onToggleNav, inspectorOpen,
+  onToggleInspector, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
   viewport, setViewport, layout, setLayout, compare, setCompare,
+  saveState, onRetrySave, onOpenReviewDetails,
 }) {
   return (
     <header className="eon-toolbar" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-toolbar-primary">
-        <button className="eon-buttonish eon-icon-button" onClick={() => setNavOpen((open) => !open)}
+        <button className="eon-buttonish eon-icon-button" onClick={onToggleNav}
           aria-label={navOpen ? "Collapse prototype navigation" : "Open prototype navigation"} aria-pressed={navOpen} style={{ color: c.muted, boxShadow: hubShadow(c) }}>
           {navOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
         </button>
         <div className="eon-toolbar-title">
           <span>{view === "media" ? "Media library" : story.title}</span>
           {view === "stories" && (liveLinear?.state
-            ? <Badge className="eon-story-status" title="Live from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: 0, fontWeight: 600 }}>{liveLinear.state.name}</Badge>
-            : <Badge className="eon-story-status" style={{ background: sc0, color: sc1, border: 0, fontWeight: 600 }}>{story.status}</Badge>)}
+            ? <Badge className="eon-story-status" title="Synced from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: 0, fontWeight: 600 }}>{liveLinear.state.name} · Linear</Badge>
+            : <button className="eon-buttonish eon-status-button" onClick={onOpenReviewDetails} aria-label={`Review status: ${story.status}. Open project details`}>
+                <Badge className="eon-story-status" style={{ background: sc0, color: sc1, border: 0, fontWeight: 600 }}>{story.status}</Badge>
+                <ChevronDown size={12} style={{ color: c.muted }} />
+              </button>)}
         </div>
         <div style={{ flex: 1 }} />
+        {view === "stories" && <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} />}
         <button className="eon-buttonish eon-icon-button" onClick={() => setHubTheme(hubTheme === "dark" ? "light" : "dark")}
           aria-label={`Switch hub interface to ${hubTheme === "dark" ? "light" : "dark"} theme`} title="Hub interface theme" style={{ color: c.muted, boxShadow: hubShadow(c) }}>
           {hubTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
         {view === "stories" && (
           <>
-            <button className="eon-buttonish eon-secondary-button eon-upload-button" onClick={() => setShowUpload((open) => !open)} aria-expanded={showUpload}
+            <button className="eon-buttonish eon-secondary-button eon-upload-button" onClick={() => setShowUpload((open) => !open)} aria-expanded={showUpload} aria-label="Upload prototype HTML" title="Upload prototype HTML"
               style={{ borderColor: showUpload ? c.brand : c.border, background: c.panel, color: showUpload ? c.brand : c.secondary }}>
               <Upload size={15} /> <span>Upload HTML</span>
             </button>
-            <Button className="eon-buttonish eon-full-button" onClick={openFull} style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 10, gap: 7, fontSize: 13, fontWeight: 600 }}>
+            <Button className="eon-buttonish eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view" style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 10, gap: 7, fontSize: 13, fontWeight: 600 }}>
               <Maximize2 size={15} /> <span>Open full view</span>
             </Button>
-            <button className="eon-buttonish eon-icon-button" onClick={() => setInspectorOpen((open) => !open)}
+            <button className="eon-buttonish eon-icon-button" onClick={onToggleInspector}
               aria-label={inspectorOpen ? "Close review panel" : "Open review panel"} aria-pressed={inspectorOpen} title="Review panel" style={{ color: inspectorOpen ? c.brand : c.muted, boxShadow: hubShadow(c) }}>
               {inspectorOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
             </button>
@@ -554,27 +807,119 @@ function ToolGroup({ label, c, children }) {
 function ReviewInspector({
   c, story, comments, profile, tab, setTab, onCreateComment, patch,
   editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
+  saveState, onRetrySave, copyReviewLink, copiedReviewLink, reviewLinkCopyError, isDrawer, onClose,
 }) {
+  const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
-    <aside className="eon-inspector" style={{ background: c.nav, borderColor: c.border }}>
+    <aside ref={drawerRef} className="eon-inspector" role={isDrawer ? "dialog" : undefined} aria-modal={isDrawer || undefined} aria-label="Review panel" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-inspector-head" style={{ borderColor: c.border }}>
-        <div><strong>Review</strong></div>
+        <div>
+          <strong>Review workspace</strong>
+          <span style={{ color: c.muted }}>Feedback, context, and handoff</span>
+        </div>
+        {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review panel" style={{ color: c.muted }}><X size={17} /></button>}
       </div>
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
         <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
           <TabsTrigger value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
+          <TabsTrigger value="details"><FileText size={14} /> Details</TabsTrigger>
           <TabsTrigger value="linear"><CircleDot size={14} /> Linear</TabsTrigger>
         </TabsList>
         <TabsContent value="comments" className="eon-inspector-content">
           <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
         </TabsContent>
+        <TabsContent value="details" className="eon-inspector-content eon-details-content">
+          <ProjectDetails
+            c={c} story={story} comments={comments} patch={patch}
+            saveState={saveState} onRetrySave={onRetrySave}
+            copyReviewLink={copyReviewLink} copiedReviewLink={copiedReviewLink} reviewLinkCopyError={reviewLinkCopyError}
+          />
+        </TabsContent>
         <TabsContent value="linear" className="eon-inspector-content eon-reference-content">
           <ReferenceHeader c={c} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
-          {(!story.issue_url || editLinear) && <Input value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
+          {(!story.issue_url || editLinear) && <Input aria-label="Linear issue URL" value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
           <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
         </TabsContent>
       </Tabs>
     </aside>
+  );
+}
+
+function ProjectDetails({
+  c, story, comments, patch, saveState, onRetrySave, copyReviewLink, copiedReviewLink, reviewLinkCopyError,
+}) {
+  const currentIndex = Math.max(0, REVIEW_STAGES.indexOf(story.status));
+  const nextStage = REVIEW_STAGES[currentIndex + 1];
+  const checklist = [
+    { label: "Prototype uploaded", done: Boolean(story.prototype_html || ["signin", "dashboard"].includes(story.slug)) },
+    { label: "Figma source linked", done: Boolean(story.figma_url) },
+    { label: "Linear issue linked", done: Boolean(story.issue_url || story.issue_id) },
+    { label: "Team feedback started", done: comments.length > 0 },
+  ];
+
+  return (
+    <div className="eon-details" style={{ color: c.secondary }}>
+      <section className="eon-details-section">
+        <div className="eon-details-heading">
+          <div><strong style={{ color: c.text }}>Review stage</strong><span style={{ color: c.muted }}>Keep the team aligned on what happens next.</span></div>
+          <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} compact />
+        </div>
+        <div className="eon-stage-list">
+          {REVIEW_STAGES.map((stage, index) => {
+            const selected = story.status === stage;
+            const [background, color] = STATUS_COLOR[stage];
+            return (
+              <button key={stage} className="eon-buttonish eon-stage-button" onClick={() => patch("status", stage)} aria-pressed={selected}
+                style={{ background: selected ? background : c.raised, color: selected ? color : c.secondary, boxShadow: selected ? `inset 0 0 0 1px ${color}55` : "none" }}>
+                <span className="eon-stage-index" style={{ background: selected ? color : c.panel, color: selected ? c.bg : c.muted }}>{index + 1}</span>
+                {stage}
+                {selected && <Check size={14} />}
+              </button>
+            );
+          })}
+        </div>
+        {nextStage && (
+          <Button className="eon-buttonish eon-advance-button" onClick={() => patch("status", nextStage)} style={{ background: c.primary, color: c.primaryText }}>
+            Move to {nextStage}
+          </Button>
+        )}
+      </section>
+
+      <section className="eon-details-section">
+        <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Review brief</strong><span style={{ color: c.muted }}>Goal, focus areas, decisions, and acceptance criteria.</span></div></div>
+        <Textarea value={story.notes || ""} onChange={(event) => patch("notes", event.target.value)}
+          placeholder={"Goal\nWhat should reviewers focus on?\nOpen questions\nAcceptance criteria"}
+          aria-label="Prototype review brief"
+          style={{ minHeight: 150, resize: "vertical", background: c.bg, borderColor: c.border, color: c.text, borderRadius: 12, lineHeight: 1.55 }} />
+      </section>
+
+      <section className="eon-details-section">
+        <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Review readiness</strong><span style={{ color: c.muted }}>{checklist.filter((item) => item.done).length} of {checklist.length} signals ready</span></div></div>
+        <div className="eon-readiness-list">
+          {checklist.map((item) => (
+            <div key={item.label} className="eon-readiness-item" style={{ color: item.done ? c.secondary : c.muted }}>
+              <span style={{ background: item.done ? c.active : c.raised, color: item.done ? c.brand : c.muted }}>{item.done ? <Check size={12} /> : <Circle size={10} />}</span>
+              {item.label}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="eon-details-section eon-share-review" style={{ background: c.raised }}>
+        <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Share this exact view</strong><span style={{ color: c.muted }}>Includes viewport, theme, state, canvas, and review tab.</span></div></div>
+        <button className="eon-buttonish eon-secondary-button" onClick={copyReviewLink}
+          style={{ borderColor: c.border, background: c.panel, color: copiedReviewLink ? c.brand : c.secondary }}>
+          {copiedReviewLink ? <Check size={14} /> : <Link2 size={14} />}
+          {copiedReviewLink ? "Review link copied" : "Copy review link"}
+        </button>
+        {reviewLinkCopyError && <span role="alert" className="eon-copy-error">{reviewLinkCopyError}</span>}
+      </section>
+
+      <div className="eon-project-meta" style={{ color: c.muted }}>
+        <span>/{story.slug}</span>
+        {story.updated_at && <span>{updatedTimeLabel(story.updated_at)}</span>}
+      </div>
+    </div>
   );
 }
 
@@ -583,7 +928,7 @@ function ReviewInspector({
 function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
   const meta = figmaMeta(story.figma_url || "");
   const linkInput = (
-    <Input value={story.figma_url || ""} onChange={(event) => patch("figma_url", event.target.value)} placeholder="Paste a Figma share URL"
+    <Input aria-label="Figma share URL" value={story.figma_url || ""} onChange={(event) => patch("figma_url", event.target.value)} placeholder="Paste a Figma share URL"
       style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />
   );
   return (
@@ -641,10 +986,15 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const scrollRef = useRef(null);
+  const initialScroll = useRef(true);
 
   useEffect(() => {
     const node = scrollRef.current;
-    if (node) node.scrollTop = node.scrollHeight;
+    if (!node) return;
+    const nearBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 160;
+    const newestIsMine = comments.at(-1)?.author_id === profile?.id;
+    if (initialScroll.current || nearBottom || newestIsMine) node.scrollTop = node.scrollHeight;
+    initialScroll.current = false;
   }, [comments.length]);
 
   const submit = async () => {
@@ -675,11 +1025,11 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
       </div>
       <div className="eon-comment-composer" style={{ borderColor: c.border }}>
         <Textarea value={draft} maxLength={4000} onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(); } }}
+          onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }}
           placeholder="Write a comment…" aria-label="Write a comment"
           style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.bg, borderColor: error ? "#FF6B8A" : c.border, color: c.text, borderRadius: 12, fontSize: 14, lineHeight: 1.5 }} />
         <div className="eon-composer-meta">
-          <span style={{ color: "#FF6B8A" }}>{error}</span>
+          <span role={error ? "alert" : "status"} style={{ color: error ? "#FF6B8A" : c.muted }}>{error || (sending ? "Sending comment…" : "Enter to send · Shift+Enter for a new line")}</span>
           <Button className="eon-buttonish" onClick={submit} disabled={!draft.trim() || sending}
             style={{ minWidth: 40, minHeight: 40, padding: 0, borderRadius: 10, background: c.primary, color: c.primaryText, opacity: !draft.trim() || sending ? 0.5 : 1 }} aria-label="Send comment">
             <Send size={15} />
@@ -699,10 +1049,61 @@ function CommentBubble({ c, comment, currentUserId }) {
     <article className="eon-comment" style={{ opacity: comment.pending ? 0.6 : 1 }}>
       <div className="eon-comment-avatar" style={{ background: mine ? c.active : c.raised, color: mine ? c.brand : c.secondary }}>{initials || "T"}</div>
       <div className="eon-comment-body">
-        <div className="eon-comment-meta"><strong>{mine ? "You" : name}</strong><time style={{ color: c.muted }} dateTime={comment.created_at}>{relativeTime(comment.created_at)}</time></div>
+        <div className="eon-comment-meta"><strong>{mine ? "You" : name}</strong><time style={{ color: c.muted }} dateTime={comment.created_at}>{relativeTime(comment.created_at)}</time>{comment.pending && <span className="eon-pending-label" style={{ color: c.muted }}>Sending…</span>}</div>
         <p style={{ color: c.secondary }}>{comment.body}</p>
       </div>
     </article>
+  );
+}
+
+function DeletePrototypeDialog({ c, project, restoreFocus, onClose, onConfirm }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const dialogRef = useRef(null);
+  const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
+  busyRef.current = busy;
+  closeRef.current = onClose;
+
+  useEffect(() => {
+    const previousFocus = restoreFocus || document.activeElement;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
+      if (event.key !== "Tab") return;
+      const controls = [...(dialogRef.current?.querySelectorAll("button:not(:disabled)") || [])];
+      if (!controls.length) return;
+      if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
+      else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previousFocus?.focus?.();
+    };
+  }, []);
+
+  const remove = async () => {
+    setBusy(true);
+    setError("");
+    try { await onConfirm(); }
+    catch (err) { setError(err.message || "Couldn't delete this prototype."); setBusy(false); }
+  };
+
+  return (
+    <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+      <div ref={dialogRef} className="eon-modal eon-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="eon-delete-title" aria-describedby="eon-delete-body" style={{ background: c.panel, borderColor: c.border }}>
+        <div className="eon-confirm-icon" style={{ background: "rgba(255,107,138,.12)", color: "#FF6B8A" }}><Trash2 size={18} /></div>
+        <h2 id="eon-delete-title">Delete “{project.title}”?</h2>
+        <p id="eon-delete-body" style={{ color: c.muted }}>This removes the prototype, its shared feedback, and linked review context for everyone. This can't be undone.</p>
+        {error && <p role="alert" className="eon-copy-error">{error}</p>}
+        <div className="eon-confirm-actions">
+          <button autoFocus className="eon-buttonish eon-secondary-button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, color: c.secondary }}>Cancel</button>
+          <Button className="eon-buttonish" onClick={remove} disabled={busy} style={{ minHeight: 40, background: "#FF6B8A", color: "#180107", borderRadius: 10, fontWeight: 650 }}>
+            {busy ? "Deleting…" : "Delete prototype"}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -710,7 +1111,7 @@ function CommentBubble({ c, comment, currentUserId }) {
    setup steps — name, group, and optional prototype HTML (drop / browse /
    paste). Creation is delegated to onCreate({title, group, html}); errors
    surface inline. ---- */
-function NewPrototypeDialog({ c, groups, onClose, onCreate }) {
+function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   const [title, setTitle] = useState("");
   const [group, setGroup] = useState("General");
   const [html, setHtml] = useState("");
@@ -718,13 +1119,30 @@ function NewPrototypeDialog({ c, groups, onClose, onCreate }) {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const dialogRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
 
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
   useEffect(() => {
-    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    const returnFocusTo = restoreFocus || document.activeElement;
+    const onKey = (event) => {
+      if (event.key === "Escape" && !busyRef.current) onClose();
+      if (event.key !== "Tab") return;
+      const focusable = dialogRef.current?.querySelectorAll('button:not(:disabled), input:not(:disabled):not([tabindex="-1"]), textarea:not(:disabled), [tabindex="0"]');
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      returnFocusTo?.focus?.();
+    };
   }, [onClose]);
 
   const readFile = (file) => {
@@ -757,11 +1175,11 @@ function NewPrototypeDialog({ c, groups, onClose, onCreate }) {
   const stepHead = { display: "flex", alignItems: "center", gap: 9, fontSize: 13, fontWeight: 600 };
 
   return (
-    <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div className="eon-modal" role="dialog" aria-modal="true" aria-label="New prototype" style={{ background: c.panel, borderColor: c.border }}>
+    <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+      <div ref={dialogRef} className="eon-modal" role="dialog" aria-modal="true" aria-labelledby="eon-new-prototype-title" style={{ background: c.panel, borderColor: c.border }}>
         <div className="eon-modal-head" style={{ borderColor: c.border }}>
-          <strong>New prototype</strong>
-          <button className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close dialog" style={{ color: c.muted }}><X size={16} /></button>
+          <strong id="eon-new-prototype-title">New prototype</strong>
+          <button className="eon-buttonish eon-icon-button" onClick={onClose} disabled={busy} aria-label="Close dialog" style={{ color: c.muted }}><X size={16} /></button>
         </div>
         <div className="eon-modal-body">
           <div className="eon-modal-step">
@@ -790,10 +1208,11 @@ function NewPrototypeDialog({ c, groups, onClose, onCreate }) {
               <span style={{ fontSize: 13, color: c.secondary, flex: 1 }}>
                 {fileName ? <>Loaded <code style={{ color: c.text }}>{fileName}</code></> : "Drag & drop a .html file here, or"}
               </span>
-              <label style={{ fontSize: 13, color: c.brand, cursor: "pointer", textDecoration: "underline" }}>
+              <label tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }}
+                style={{ fontSize: 13, color: c.brand, cursor: "pointer", textDecoration: "underline" }}>
                 browse
-                <input type="file" accept=".html,.htm,text/html" aria-label="Choose an HTML file"
-                  onChange={(event) => readFile(event.target.files?.[0])} style={{ display: "none" }} />
+                <input ref={fileInputRef} type="file" accept=".html,.htm,text/html" aria-label="Choose an HTML file"
+                  onChange={(event) => readFile(event.target.files?.[0])} className="eon-visually-hidden" tabIndex={-1} />
               </label>
             </div>
             <Textarea value={html} onChange={(event) => { setHtml(event.target.value); setFileName(""); }} spellCheck={false}
@@ -807,7 +1226,7 @@ function NewPrototypeDialog({ c, groups, onClose, onCreate }) {
         </div>
         <div className="eon-modal-foot" style={{ borderColor: c.border }}>
           <span role="alert" style={{ flex: 1, fontSize: 12, color: "#FF6B8A" }}>{error}</span>
-          <button className="eon-buttonish eon-secondary-button" onClick={onClose} style={{ borderColor: c.border, background: "transparent", color: c.secondary }}>Cancel</button>
+          <button className="eon-buttonish eon-secondary-button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, background: "transparent", color: c.secondary }}>Cancel</button>
           <Button className="eon-buttonish" onClick={submit} disabled={!title.trim() || busy}
             style={{ minHeight: 40, padding: "0 16px", borderRadius: 10, background: c.primary, color: c.primaryText, fontSize: 13, fontWeight: 600, opacity: !title.trim() || busy ? 0.5 : 1 }}>
             {busy ? "Creating…" : "Create prototype"}
@@ -816,6 +1235,125 @@ function NewPrototypeDialog({ c, groups, onClose, onCreate }) {
       </div>
     </div>
   );
+}
+
+function useDrawerFocus(active, onClose) {
+  const panelRef = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  useEffect(() => {
+    if (!active || !panelRef.current) return undefined;
+    const previousFocus = document.activeElement;
+    const panel = panelRef.current;
+    const selector = 'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]';
+    panel.querySelector("[data-drawer-close]")?.focus();
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeRef.current?.();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const controls = [...panel.querySelectorAll(selector)].filter((element) => element.offsetParent !== null);
+      if (!controls.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previousFocus?.focus?.();
+    };
+  }, [active]);
+
+  return panelRef;
+}
+
+function SaveIndicator({ c, state, onRetry, compact = false }) {
+  if (!state || state === "idle") return null;
+  const content = {
+    saving: { icon: <Loader2 size={13} className="eon-spin" />, label: "Saving…", color: c.muted },
+    saved: { icon: <Check size={13} />, label: "Saved", color: c.muted },
+    error: { icon: <AlertCircle size={13} />, label: "Save failed", color: "#FF6B8A" },
+  }[state];
+  if (!content) return null;
+  const Tag = state === "error" && onRetry ? "button" : "span";
+  return (
+    <Tag className={`eon-save-state${compact ? " is-compact" : ""}`} onClick={state === "error" ? onRetry : undefined}
+      role={state === "saving" ? "status" : undefined} aria-live="polite"
+      title={state === "error" && onRetry ? "Retry saving" : undefined}
+      style={{ color: content.color, background: c.raised }}>
+      {content.icon}<span>{content.label}</span>{state === "error" && onRetry && !compact ? <span>· Retry</span> : null}
+    </Tag>
+  );
+}
+
+function BrandMark({ c, src }) {
+  const safeSrc = safeAssetUrl(src);
+  if (safeSrc) {
+    return <img className="eon-brand-logo" src={safeSrc} alt="Eon" />;
+  }
+  return (
+    <svg className="eon-brand-logo" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-label="Eon">
+      <circle cx="12" cy="12" r="10" stroke={c.text} strokeWidth="2" />
+      <path d="M12 4 A8 8 0 0 1 12 20" stroke={c.brand} strokeWidth="2" />
+    </svg>
+  );
+}
+
+function safeAssetUrl(value) {
+  if (!value) return "";
+  if (/^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);/i.test(value)) return value;
+  try {
+    const url = new URL(value, window.location.origin);
+    return ["http:", "https:", "blob:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function sandboxedFullView(source, title) {
+  const escapedSource = String(source).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const escapedTitle = String(title || "Prototype").replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]);
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapedTitle}</title><style>*{box-sizing:border-box}html,body,iframe{width:100%;height:100%;margin:0}iframe{display:block;border:0}</style></head><body><iframe title="${escapedTitle}" sandbox="${PROTOTYPE_SANDBOX}" referrerpolicy="no-referrer" allow="clipboard-read; clipboard-write" srcdoc="${escapedSource}"></iframe></body></html>`;
+}
+
+async function copyText(value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    return;
+  } catch { /* Fall back for embedded or permission-restricted browsers. */ }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Clipboard unavailable");
+}
+
+function readStoredJson(key) {
+  try { return JSON.parse(window.localStorage.getItem(key) || "{}"); }
+  catch { return {}; }
+}
+
+function useStoredState(key, initialValue) {
+  const [value, setValue] = useState(() => {
+    try { return window.localStorage.getItem(key) || initialValue; }
+    catch { return initialValue; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(key, value); }
+    catch { /* Storage can be unavailable in hardened browsers. */ }
+  }, [key, value]);
+  return [value, setValue];
 }
 
 function relativeTime(value) {
@@ -829,6 +1367,11 @@ function relativeTime(value) {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
   return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function updatedTimeLabel(value) {
+  const relative = relativeTime(value);
+  return relative === "now" ? "Updated just now" : `Updated ${relative} ago`;
 }
 
 function hubShadow(c) {

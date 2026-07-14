@@ -1,56 +1,137 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
+import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import "./routes.css";
+
+function EonMark() {
+  return (
+    <svg className="route-brand-mark" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 4 A8 8 0 0 1 12 20" stroke="#E15CF7" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function PasswordVisibilityIcon({ visible }) {
+  return (
+    <span className="route-visibility-icon" aria-hidden="true">
+      <EyeOff className={`route-visibility-glyph ${visible ? "is-visible" : "is-hidden"}`} size={17} />
+      <Eye className={`route-visibility-glyph ${visible ? "is-hidden" : "is-visible"}`} size={17} />
+    </span>
+  );
+}
 
 export default function Login() {
   const { user, configured, signInWithPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
   if (user) return <Navigate to="/" replace />;
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const submit = async (event) => {
+    event.preventDefault();
     setErr("");
     setBusy(true);
-    const { error } = await signInWithPassword(email, password);
-    if (error) setErr(error.message === "Invalid login credentials" ? "Wrong email or password." : error.message);
-    setBusy(false);
+    try {
+      const { error } = await signInWithPassword(email, password);
+      if (error) {
+        setErr(error.message === "Invalid login credentials" ? "That email and password don't match." : error.message);
+      }
+    } catch (error) {
+      setErr(error.message || "We couldn't sign you in. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const wrap = { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#000", color: "#fff", fontFamily: "'DM Sans',sans-serif", padding: 24 };
-  const card = { width: "100%", maxWidth: 380, background: "#121216", border: "1px solid #1E1E22", borderRadius: 16, padding: 28 };
-  const input = { width: "100%", height: 44, background: "#000", border: "1px solid #3A3D4A", borderRadius: 8, padding: "0 14px", color: "#fff", fontSize: 15, marginBottom: 12 };
-  const primary = { width: "100%", height: 44, background: "#EDD2F6", color: "#000", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 500, cursor: "pointer", opacity: busy ? 0.6 : 1 };
-
   return (
-    <div style={wrap}>
-      <div style={card}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 22 }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="2" /><path d="M12 4 A8 8 0 0 1 12 20" stroke="#E15CF7" strokeWidth="2" /></svg>
-          <span style={{ fontSize: 18, fontWeight: 500 }}>Eon Prototype Hub</span>
-        </div>
-        {!configured ? (
-          <p style={{ fontSize: 13, color: "#9094A5", textAlign: "center", lineHeight: 1.5 }}>
-            Supabase isn't configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env, then reload.
-          </p>
-        ) : (
-          <form onSubmit={submit}>
-            <p style={{ fontSize: 13, color: "#9094A5", textAlign: "center", marginBottom: 18 }}>Sign in to view your team's prototypes.</p>
-            <input style={input} type="email" required autoComplete="email" placeholder="you@company.com"
-              aria-label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input style={input} type="password" required autoComplete="current-password" placeholder="Password"
-              aria-label="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            {err && <div role="alert" style={{ color: "#FF508F", fontSize: 12, marginBottom: 10 }}>{err}</div>}
-            <button style={primary} type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-            <p style={{ fontSize: 12, color: "#9094A5", textAlign: "center", marginTop: 14 }}>
-              No account? Ask your admin — accounts are created from the admin dashboard.
-            </p>
-          </form>
-        )}
+    <main className="route-shell auth-shell">
+      <div className="auth-layout">
+        <section className="auth-intro" aria-labelledby="auth-intro-title">
+          <div className="route-brand route-brand--large">
+            <EonMark />
+            <span>Eon Prototype Hub</span>
+          </div>
+          <div className="auth-intro-copy">
+            <span className="route-eyebrow">One review space</span>
+            <h1 id="auth-intro-title">Turn product ideas into shared decisions.</h1>
+            <p>Explore prototypes, compare the source design, and keep team feedback connected to the work.</p>
+          </div>
+          <div className="auth-proof" aria-label="Product benefits">
+            <span>Interactive prototypes</span>
+            <span>Live team feedback</span>
+            <span>Figma + Linear context</span>
+          </div>
+        </section>
+
+        <section className="route-card auth-card" aria-labelledby="login-title">
+          <div className="auth-card-brand route-brand">
+            <EonMark />
+            <span>Eon</span>
+          </div>
+          <div className="auth-card-heading">
+            <h2 id="login-title">Welcome back</h2>
+            <p>Sign in to open your team's prototype workspace.</p>
+          </div>
+
+          {!configured ? (
+            <div className="route-state route-state--error" role="alert">
+              <span className="route-state-icon"><AlertCircle size={18} /></span>
+              <div>
+                <strong>Workspace isn't configured</strong>
+                <p>Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to the environment, then reload.</p>
+              </div>
+            </div>
+          ) : (
+            <form className="route-form auth-form" onSubmit={submit} noValidate={false}>
+              <div className="route-field">
+                <label htmlFor="login-email">Email address</label>
+                <input id="login-email" className="route-input" type="email" required autoComplete="email"
+                  inputMode="email" placeholder="you@company.com" value={email}
+                  aria-describedby={err ? "login-error" : undefined}
+                  onChange={(event) => setEmail(event.target.value)} />
+              </div>
+
+              <div className="route-field">
+                <label htmlFor="login-password">Password</label>
+                <div className="route-input-wrap">
+                  <input id="login-password" className="route-input route-input--with-action"
+                    type={showPassword ? "text" : "password"} required autoComplete="current-password"
+                    placeholder="Enter your password" value={password}
+                    aria-describedby={err ? "login-error" : undefined}
+                    onChange={(event) => setPassword(event.target.value)} />
+                  <button className="route-input-action route-pressable" type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}>
+                    <PasswordVisibilityIcon visible={showPassword} />
+                  </button>
+                </div>
+              </div>
+
+              {err && (
+                <div id="login-error" className="route-inline-error" role="alert">
+                  <AlertCircle size={15} aria-hidden="true" />
+                  <span>{err}</span>
+                </div>
+              )}
+
+              <button className="route-button route-button--primary route-button--wide route-pressable" type="submit" disabled={busy}>
+                {busy && <Loader2 className="route-spinner" size={17} aria-hidden="true" />}
+                <span>{busy ? "Signing in…" : "Sign in"}</span>
+              </button>
+            </form>
+          )}
+
+          {configured && (
+            <p className="auth-help">Need access? Ask a workspace admin to create your account.</p>
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

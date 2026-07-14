@@ -9,9 +9,23 @@ import {
   Figma, CircleDot, Circle, ChevronDown, Link2, FileText, Plus, Minus, Shield, LogOut, Upload, Trash2,
   Square, LayoutGrid, Copy, Check,
 } from "lucide-react";
-import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, parsePrototypeConfig } from "./prototypes";
+import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, parsePrototypeConfig, safeMediaUrl } from "./prototypes";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
+
+function parseHttpUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const parsed = new URL(value.trim());
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function decodeUrlPart(value) {
+  try { return decodeURIComponent(value); } catch { return value; }
+}
 
 // Paste-into-Claude spec for authoring a prototype that plugs into the hub's
 // theme switch, state controls, and shared media. Copied by the sidebar button.
@@ -448,7 +462,7 @@ export default function PrototypeHub({
                   </div>
                   {(!story.figma_url || editFigma) && (
                     <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                      <Input value={story.figma_url || ""} onChange={(e) => patch("figma_url", e.target.value)} placeholder="Paste a Figma URL"
+                      <Input value={story.figma_url || ""} onChange={(e) => patch("figma_url", e.target.value)} placeholder="Paste a Figma URL" aria-label="Figma frame URL"
                         style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
                       {editFigma && <button onClick={() => setEditFigma(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
                     </div>
@@ -470,7 +484,7 @@ export default function PrototypeHub({
                   </div>
                   {(!story.issue_url || editLinear) && (
                     <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                      <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/…/issue/DES-418/…" style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
+                      <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/…/issue/DES-418/…" aria-label="Linear issue URL" style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
                       {editLinear && <button onClick={() => setEditLinear(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
                     </div>
                   )}
@@ -485,41 +499,96 @@ export default function PrototypeHub({
   );
 }
 
+const PREVIEW_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
+
+const StatePreviewTile = memo(function StatePreviewTile({ c, story, media, tile }) {
+  const previewRef = useRef(null);
+  const [previewWidth, setPreviewWidth] = useState(360);
+  const [shouldRender, setShouldRender] = useState(false);
+  const tvp = VIEWPORTS[tile.viewport];
+
+  useEffect(() => {
+    const node = previewRef.current;
+    if (!node) return undefined;
+    const updateWidth = (width) => {
+      const next = Math.max(1, Math.round(width));
+      setPreviewWidth((current) => current === next ? current : next);
+    };
+    updateWidth(node.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") {
+      const onResize = () => updateWidth(node.getBoundingClientRect().width);
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    }
+    const observer = new ResizeObserver(([entry]) => updateWidth(entry.contentRect.width));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const node = previewRef.current;
+    if (!node) return undefined;
+    if (typeof IntersectionObserver === "undefined") {
+      setShouldRender(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      setShouldRender(true);
+      observer.disconnect();
+    }, { rootMargin: "320px 0px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const source = useMemo(
+    () => shouldRender ? renderStory(story, tile.theme, media, tile.args) : "",
+    [shouldRender, story, tile.theme, tile.args, media],
+  );
+  const scale = Math.min(previewWidth / tvp.w, 1);
+  const title = `${story.title} — ${tile.label}${tile.sub ? ` (${tile.sub})` : ""}`;
+
+  return (
+    <div style={{ display: "flex", minWidth: 0, width: "100%", maxWidth: 360, flex: "1 1 280px", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: c.text, background: c.panel, border: `1px solid ${c.border}`, borderRadius: 6, padding: "3px 8px", textTransform: "capitalize", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tile.label}</span>
+        {tile.sub && <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, color: c.muted, textTransform: "capitalize" }}>{tile.sub}</span>}
+      </div>
+      <div ref={previewRef} style={{ position: "relative", width: "100%", aspectRatio: `${tvp.w} / ${tvp.h}`, borderRadius: 10, overflow: "hidden", border: `1px solid ${c.border}`, background: "#fff", boxShadow: "0 8px 30px rgba(0,0,0,.22)" }}>
+        {shouldRender ? (
+          <iframe title={title} srcDoc={source} loading="lazy" sandbox={PREVIEW_SANDBOX} referrerPolicy="no-referrer"
+            style={{ position: "absolute", inset: 0, width: tvp.w, height: tvp.h, border: "none", background: "#fff", colorScheme: tile.theme, transform: `scale(${scale})`, transformOrigin: "top left" }} />
+        ) : (
+          <div aria-hidden="true" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: c.raised, color: c.muted, fontSize: 12 }}>
+            Preview loads when visible
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
 /* ---- All-states grid. `by` fans out over control states, light/dark themes,
    or every viewport — each combination rendered in its own labeled tile. ---- */
 export function StateGrid({ c, story, media, theme, viewport, by }) {
-  const base = currentArgs(story);
-  let tiles;
-  if (by === "themes") {
-    tiles = ["light", "dark"].map((t) => ({ key: `t-${t}`, label: t, sub: null, theme: t, viewport, args: base }));
-  } else if (by === "screens") {
-    tiles = Object.keys(VIEWPORTS).map((v) => ({ key: `v-${v}`, label: VIEWPORTS[v].label, sub: `${VIEWPORTS[v].w}×${VIEWPORTS[v].h}`, theme, viewport: v, args: base }));
-  } else {
+  const tiles = useMemo(() => {
+    const base = currentArgs(story);
+    if (by === "themes") {
+      return ["light", "dark"].map((tileTheme) => ({ key: `t-${tileTheme}`, label: tileTheme, sub: null, theme: tileTheme, viewport, args: base }));
+    }
+    if (by === "screens") {
+      return Object.keys(VIEWPORTS).map((screen) => ({ key: `v-${screen}`, label: VIEWPORTS[screen].label, sub: `${VIEWPORTS[screen].w}×${VIEWPORTS[screen].h}`, theme, viewport: screen, args: base }));
+    }
     const combos = stateCombos(story);
-    if (!combos) return <StatesNotice c={c} />;
-    tiles = combos.map((combo) => ({ key: JSON.stringify(combo), label: Object.values(combo).join(" · ") || "Default", sub: theme, theme, viewport, args: { ...base, ...combo } }));
-  }
+    if (!combos) return null;
+    return combos.map((combo) => ({ key: JSON.stringify(combo), label: Object.values(combo).join(" · ") || "Default", sub: theme, theme, viewport, args: { ...base, ...combo } }));
+  }, [story, by, theme, viewport]);
 
-  const TILE_W = 360;
+  if (!tiles) return <StatesNotice c={c} />;
 
   return (
-    <div style={{ width: "100%", display: "flex", flexWrap: "wrap", gap: 20, alignContent: "flex-start" }}>
-      {tiles.map((tile) => {
-        const tvp = VIEWPORTS[tile.viewport];
-        const s = Math.min(TILE_W / tvp.w, 1);
-        return (
-          <div key={tile.key} style={{ display: "flex", flexDirection: "column", gap: 8, width: TILE_W }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 500, color: c.text, background: c.panel, border: `1px solid ${c.border}`, borderRadius: 6, padding: "3px 8px", textTransform: "capitalize" }}>{tile.label}</span>
-              {tile.sub && <span style={{ fontSize: 11, color: c.muted, textTransform: "capitalize" }}>{tile.sub}</span>}
-            </div>
-            <div style={{ width: TILE_W, height: tvp.h * s, borderRadius: 10, overflow: "hidden", border: `1px solid ${c.border}`, background: "#fff", boxShadow: "0 8px 30px rgba(0,0,0,.22)" }}>
-              <iframe title={tile.label} srcDoc={renderStory(story, tile.theme, media, tile.args)}
-                style={{ width: tvp.w, height: tvp.h, border: "none", background: "#fff", colorScheme: tile.theme, transform: `scale(${s})`, transformOrigin: "top left" }} />
-            </div>
-          </div>
-        );
-      })}
+    <div style={{ width: "100%", display: "flex", flexWrap: "wrap", gap: 20, alignContent: "flex-start", alignItems: "flex-start" }}>
+      {tiles.map((tile) => <StatePreviewTile key={tile.key} c={c} story={story} media={media} tile={tile} />)}
     </div>
   );
 }
@@ -566,12 +635,16 @@ export const FigmaEmbed = memo(function FigmaEmbed({ url }) {
 
 // Parse file name + node from a Figma URL, e.g. .../design/KEY/Orion---Core-App?node-id=14010-9626
 export function figmaMeta(url = "") {
-  const valid = /figma\.com/i.test(url) && !/REPLACE/i.test(url);
+  const parsed = parseHttpUrl(url);
+  const host = parsed?.hostname.toLowerCase() || "";
+  const valid = Boolean(parsed)
+    && (host === "figma.com" || host.endsWith(".figma.com"))
+    && !/REPLACE/i.test(url);
   let title = "Figma file", node = null;
-  const m = url.match(/figma\.com\/(?:file|design|proto|board)\/[^/]+\/([^/?#]+)/i);
-  if (m) title = decodeURIComponent(m[1]).replace(/-+/g, " ").trim() || title;
-  const n = url.match(/node-id=([^&]+)/i);
-  if (n) node = decodeURIComponent(n[1]);
+  if (!valid) return { valid: false, title, node };
+  const match = parsed.pathname.match(/^\/(?:file|design|proto|board)\/[^/]+\/([^/]+)/i);
+  if (match) title = decodeUrlPart(match[1]).replace(/-+/g, " ").trim() || title;
+  node = parsed.searchParams.get("node-id") || null;
   return { valid, title, node };
 }
 
@@ -589,14 +662,16 @@ export function FigmaCard({ c, url }) {
           <div style={{ fontSize: 13, fontWeight: 500, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta.title}</div>
           {meta.node && <div style={{ fontSize: 11, color: c.muted }}>Node {meta.node}</div>}
         </div>
-        <a href={url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, fontSize: 12, color: c.text, background: c.raised, border: `1px solid ${c.border}`, borderRadius: 8, padding: "5px 10px", textDecoration: "none" }}>
-          <ExternalLink style={{ width: 13, height: 13 }} /> Open in Figma
-        </a>
+        {meta.valid && (
+          <a href={url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, fontSize: 12, color: c.text, background: c.raised, border: `1px solid ${c.border}`, borderRadius: 8, padding: "5px 10px", textDecoration: "none" }}>
+            <ExternalLink style={{ width: 13, height: 13 }} /> Open in Figma
+          </a>
+        )}
       </div>
       <div style={{ flex: 1, minHeight: 0, background: "#1e1e1e" }}>
         {meta.valid
           ? <FigmaEmbed url={url} />
-          : <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: c.muted, fontSize: 12, padding: 16, textAlign: "center" }}>That link isn't an embeddable Figma URL — “Open in Figma” still works.</div>}
+          : <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: c.muted, fontSize: 12, padding: 16, textAlign: "center" }}>Use a valid figma.com share URL to embed this frame.</div>}
       </div>
     </div>
   );
@@ -606,9 +681,10 @@ export function FigmaCard({ c, url }) {
    The whole card links to the issue. ---- */
 export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
   const stateColor = live?.state?.color;
-  const clickable = Boolean(issueUrl);
+  const safeIssueUrl = parseHttpUrl(issueUrl)?.href || "";
+  const clickable = Boolean(safeIssueUrl);
   return (
-    <a href={issueUrl || undefined} target={clickable ? "_blank" : undefined} rel="noreferrer"
+    <a href={safeIssueUrl || undefined} target={clickable ? "_blank" : undefined} rel="noreferrer"
       style={{ flex: "1 1 auto", minHeight: 240, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column", textDecoration: "none", color: c.text, cursor: clickable ? "pointer" : "default", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{live?.identifier || identifier || "ISSUE"}</span>
@@ -648,6 +724,7 @@ export function UploadPanel({ c, story, onSave, onClear, onCancel }) {
   const [html, setHtml] = useState(story.prototype_html || "");
   const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState("");
+  const fileInputRef = useRef(null);
 
   const readFile = (file) => {
     if (!file) return;
@@ -675,11 +752,13 @@ export function UploadPanel({ c, story, onSave, onClear, onCancel }) {
         onDrop={(e) => { e.preventDefault(); setDragOver(false); readFile(e.dataTransfer.files?.[0]); }}
         style={{ border: `1.5px dashed ${dragOver ? c.brand : c.border}`, borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, background: dragOver ? c.active : "transparent" }}>
         <span style={{ fontSize: 13, color: c.secondary, flex: 1 }}>Drag & drop a .html file here, or</span>
-        <label style={{ fontSize: 13, color: c.brand, cursor: "pointer", textDecoration: "underline" }}>
-          browse
-          <input type="file" accept=".html,.htm,text/html" aria-label="Choose an HTML file"
-            onChange={(e) => readFile(e.target.files?.[0])} style={{ display: "none" }} />
-        </label>
+        <button type="button" onClick={() => fileInputRef.current?.click()}
+          style={{ minHeight: 36, padding: "0 10px", border: `1px solid ${c.border}`, borderRadius: 8, background: c.bg, color: c.brand, cursor: "pointer", fontSize: 13 }}>
+          Browse files
+        </button>
+        <input ref={fileInputRef} type="file" accept=".html,.htm,text/html" tabIndex={-1} aria-hidden="true"
+          onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ""; }}
+          style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap", border: 0 }} />
       </div>
       <Textarea value={html} onChange={(e) => setHtml(e.target.value)} spellCheck={false}
         placeholder="…or paste a self-contained HTML document here"
@@ -726,6 +805,7 @@ export function MediaManager({ c, assets, onSetAsset }) {
   const [ph, setPh] = useState({ w: 320, h: 180, label: "", bg: "#E5E7EB", fg: "#94A3B8", name: "" });
   const [img, setImg] = useState({ name: "", url: "" });
   const [copied, setCopied] = useState("");
+  const [mediaError, setMediaError] = useState("");
   const field = { height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 };
   const panel = { background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 };
   const btn = { height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", fontSize: 12 };
@@ -739,17 +819,33 @@ export function MediaManager({ c, assets, onSetAsset }) {
 
   const cleanKey = (s) => s.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/(^-|-$)/g, "");
   const phData = MEDIA.placeholder(ph.w, ph.h, ph.label, ph.bg, ph.fg);
+  const saveAssetUrl = (key, value) => {
+    const candidate = value.trim();
+    if (!candidate) {
+      setMediaError("");
+      onSetAsset(key, "");
+      return true;
+    }
+    const safe = safeMediaUrl(candidate);
+    if (!safe) {
+      setMediaError("Use an http(s), relative, or data:image URL for shared media.");
+      return false;
+    }
+    setMediaError("");
+    onSetAsset(key, safe);
+    return true;
+  };
   const savePlaceholder = () => {
     const key = cleanKey(ph.name);
     if (!key) return;
-    onSetAsset(key, phData);
+    setMediaError("");
+    onSetAsset(key, safeMediaUrl(phData));
     setPh({ ...ph, name: "" });
   };
   const addImage = () => {
     const key = cleanKey(img.name);
     if (!key || !img.url.trim()) return;
-    onSetAsset(key, img.url.trim());
-    setImg({ name: "", url: "" });
+    if (saveAssetUrl(key, img.url)) setImg({ name: "", url: "" });
   };
 
   // One flat list: team logos, the always-available preset photos, then
@@ -759,18 +855,19 @@ export function MediaManager({ c, assets, onSetAsset }) {
     eonLogo: { label: "Eon logo (hub)", html: MEDIA.logos.eon(c.text, c.brand) },
     acmeLogo: { label: "Acme logo (stories)", html: MEDIA.logos.acme(40, 10, "#4F46E5") },
   };
+  const safeAsset = (key) => safeMediaUrl(assets[key]);
   const customKeys = Object.keys(assets).filter((k) => !logoDefaults[k] && !PRESET_MEDIA[k] && assets[k]);
   const items = [
     ...Object.entries(logoDefaults).map(([k, d]) => ({
-      key: k, label: d.label, kind: "Logo", url: assets[k] || "", linkUrl: assets[k] || "",
-      previewHtml: assets[k] ? null : d.html, previewSrc: assets[k],
+      key: k, label: d.label, kind: "Logo", url: assets[k] || "", linkUrl: safeAsset(k),
+      previewHtml: assets[k] ? null : d.html, previewSrc: safeAsset(k),
     })),
     ...Object.keys(PRESET_MEDIA).map((k) => ({
       key: k, label: k, kind: assets[k] ? "Preset · replaced" : "Preset", url: assets[k] || "",
-      linkUrl: assets[k] || PRESET_MEDIA[k], previewSrc: assets[k] || PRESET_MEDIA[k],
+      linkUrl: safeAsset(k) || PRESET_MEDIA[k], previewSrc: safeAsset(k) || PRESET_MEDIA[k],
     })),
     ...customKeys.map((k) => ({
-      key: k, label: k, kind: "Saved", url: assets[k], linkUrl: assets[k], previewSrc: assets[k], removable: true,
+      key: k, label: k, kind: "Saved", url: assets[k], linkUrl: safeAsset(k), previewSrc: safeAsset(k), removable: true,
     })),
   ];
 
@@ -783,7 +880,9 @@ export function MediaManager({ c, assets, onSetAsset }) {
       <div style={{ height: 110, borderRadius: 10, border: `1px solid ${c.border}`, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
         {item.previewHtml
           ? <span dangerouslySetInnerHTML={{ __html: item.previewHtml }} />
-          : <img src={item.previewSrc} alt={item.label} loading="lazy" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />}
+          : item.previewSrc
+            ? <img src={item.previewSrc} alt={item.label} loading="lazy" referrerPolicy="no-referrer" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+            : <span style={{ padding: 12, color: c.muted, fontSize: 12, textAlign: "center" }}>Add a valid image URL to preview this asset.</span>}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <Token name={item.key} />
@@ -795,17 +894,14 @@ export function MediaManager({ c, assets, onSetAsset }) {
         )}
       </div>
       <Input key={`${item.key}-${item.url}`} defaultValue={item.url} placeholder="Paste image URL to replace" aria-label={`Image URL for ${item.key}`}
-        onBlur={(e) => { const v = e.target.value.trim(); if (v !== item.url) onSetAsset(item.key, v); }} style={field} />
+        onBlur={(e) => { const v = e.target.value.trim(); if (v !== item.url) saveAssetUrl(item.key, v); }} style={field} />
     </div>
   );
 
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ height: 56, borderBottom: `1px solid ${c.border}`, background: c.nav, display: "flex", alignItems: "center", gap: 10, padding: "0 20px", position: "sticky", top: 0, zIndex: 5 }}>
-        <span style={{ fontSize: 15, fontWeight: 500 }}>Media library</span>
-        <span style={{ fontSize: 12, color: c.muted }}>Every image available to prototypes — use any of them as {"{{name}}"}; replace a URL here and every prototype updates</span>
-      </div>
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+        <p style={{ margin: 0, color: c.muted, fontSize: 12, lineHeight: 1.5 }}>Use any shared image as {"{{name}}"}. Replacing its URL updates every prototype that references it.</p>
         <div style={{ ...panel, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginRight: 4 }}>Add an image</div>
           <Input value={img.name} onChange={(e) => setImg({ ...img, name: e.target.value })} placeholder="Name (e.g. teamPhoto)" aria-label="New image name" style={{ ...field, flex: "0 1 200px" }} />
@@ -813,6 +909,7 @@ export function MediaManager({ c, assets, onSetAsset }) {
           <button onClick={addImage} disabled={!img.name.trim() || !img.url.trim()} style={{ ...btn, background: c.primary, color: c.primaryText, border: "none", opacity: img.name.trim() && img.url.trim() ? 1 : 0.5 }}>Add to media</button>
           {img.name.trim() && <span style={{ fontSize: 11, color: c.muted }}>Will be available as <code style={{ color: c.text }}>{`{{${cleanKey(img.name)}}}`}</code></span>}
         </div>
+        {mediaError && <p role="alert" style={{ margin: 0, color: "#FF508F", fontSize: 12 }}>{mediaError}</p>}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
           {items.map(mediaCard)}
@@ -823,16 +920,16 @@ export function MediaManager({ c, assets, onSetAsset }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16, marginTop: 14 }}>
             <div>
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <Input type="number" value={ph.w} onChange={(e) => setPh({ ...ph, w: +e.target.value || 0 })} style={field} />
-                <Input type="number" value={ph.h} onChange={(e) => setPh({ ...ph, h: +e.target.value || 0 })} style={field} />
+                <Input type="number" min={1} max={4096} value={ph.w} onChange={(e) => setPh({ ...ph, w: +e.target.value || 0 })} aria-label="Placeholder width in pixels" style={field} />
+                <Input type="number" min={1} max={4096} value={ph.h} onChange={(e) => setPh({ ...ph, h: +e.target.value || 0 })} aria-label="Placeholder height in pixels" style={field} />
               </div>
-              <Input value={ph.label} onChange={(e) => setPh({ ...ph, label: e.target.value })} placeholder={`Label (default ${ph.w}×${ph.h})`} style={{ ...field, marginBottom: 8 }} />
+              <Input value={ph.label} onChange={(e) => setPh({ ...ph, label: e.target.value })} placeholder={`Label (default ${ph.w}×${ph.h})`} aria-label="Placeholder label" style={{ ...field, marginBottom: 8 }} />
               <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                <input type="color" value={ph.bg} onChange={(e) => setPh({ ...ph, bg: e.target.value })} style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
-                <input type="color" value={ph.fg} onChange={(e) => setPh({ ...ph, fg: e.target.value })} style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
+                <input type="color" value={ph.bg} onChange={(e) => setPh({ ...ph, bg: e.target.value })} aria-label="Placeholder background color" style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
+                <input type="color" value={ph.fg} onChange={(e) => setPh({ ...ph, fg: e.target.value })} aria-label="Placeholder foreground color" style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
               </div>
               <div style={{ display: "flex", gap: 6 }}>
-                <Input value={ph.name} onChange={(e) => setPh({ ...ph, name: e.target.value })} placeholder="Save as (e.g. blankHero)" style={field} />
+                <Input value={ph.name} onChange={(e) => setPh({ ...ph, name: e.target.value })} placeholder="Save as (e.g. blankHero)" aria-label="Placeholder asset name" style={field} />
                 <button onClick={savePlaceholder} disabled={!ph.name.trim()} style={{ ...btn, opacity: ph.name.trim() ? 1 : 0.5 }}>Save</button>
               </div>
               <p style={{ fontSize: 11, color: c.muted, marginTop: 8 }}>Or drop <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> straight into a prototype.</p>

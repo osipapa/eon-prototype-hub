@@ -1,131 +1,419 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, Loader2,
+  RefreshCw, ShieldCheck, Trash2, UserPlus, Users, X,
+} from "lucide-react";
 import { useAuth } from "../lib/auth";
-import { listProfiles, setProfileRole, createAccount, setAccountPassword, deleteAccount } from "../lib/data";
-import { ArrowLeft, UserPlus, KeyRound, Trash2 } from "lucide-react";
+import { createAccount, deleteAccount, listProfiles, setAccountPassword, setProfileRole } from "../lib/data";
+import "./routes.css";
 
 export default function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [pending, setPending] = useState({});
+  const [message, setMessage] = useState(null);
   const [form, setForm] = useState({ email: "", password: "", role: "member" });
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [resetTarget, setResetTarget] = useState(null);
+  const [resetValue, setResetValue] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const modalRef = useRef(null);
+  const modalReturnFocusRef = useRef(null);
+  const modalBusyRef = useRef(false);
+  modalBusyRef.current = Boolean(
+    (resetTarget && pending[`password-${resetTarget.id}`])
+    || (deleteTarget && pending[`delete-${deleteTarget.id}`]),
+  );
 
-  async function load() {
-    try { setRows(await listProfiles()); } catch (e) { console.error(e); }
+  async function load({ silent = false } = {}) {
+    if (!silent) setLoading(true);
+    setLoadError("");
+    try {
+      setRows(await listProfiles());
+    } catch (error) {
+      setLoadError(error.message || "We couldn't load the team members.");
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }
+
   useEffect(() => { load(); }, []);
 
-  const run = async (fn, okMsg) => {
-    setBusy(true);
-    setMsg("");
-    try { await fn(); setMsg(okMsg); await load(); } catch (e) { setMsg(`Error: ${e.message}`); }
-    setBusy(false);
+  useEffect(() => {
+    if (!resetTarget && !deleteTarget) return undefined;
+    const previousFocus = modalReturnFocusRef.current || document.activeElement;
+    const dialog = modalRef.current;
+    const focusableSelector = "button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])";
+    const focusTarget = dialog?.querySelector("[data-autofocus]") || dialog?.querySelector(focusableSelector);
+    focusTarget?.focus();
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        if (modalBusyRef.current) return;
+        setResetTarget(null);
+        setDeleteTarget(null);
+        return;
+      }
+      if (event.key !== "Tab" || !dialog) return;
+      const controls = [...dialog.querySelectorAll(focusableSelector)];
+      if (!controls.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previousFocus?.focus?.();
+      modalReturnFocusRef.current = null;
+    };
+  }, [resetTarget, deleteTarget]);
+
+  const setActionPending = (key, value) => {
+    setPending((current) => {
+      const next = { ...current };
+      if (value) next[key] = true;
+      else delete next[key];
+      return next;
+    });
   };
 
-  const changeRole = (id, role) => run(() => setProfileRole(id, role), "Role updated.");
+  const run = async (key, action, successMessage) => {
+    setActionPending(key, true);
+    setMessage(null);
+    try {
+      await action();
+      setMessage({ type: "success", text: successMessage });
+      await load({ silent: true });
+      return true;
+    } catch (error) {
+      setMessage({ type: "error", text: error.message || "That change couldn't be saved." });
+      return false;
+    } finally {
+      setActionPending(key, false);
+    }
+  };
 
-  const addAccount = (e) => {
-    e.preventDefault();
-    run(async () => {
-      await createAccount(form.email, form.password, form.role);
+  const changeRole = async (member, role) => {
+    if (role === member.role) return;
+    const previousRole = member.role;
+    setRows((current) => current.map((row) => row.id === member.id ? { ...row, role } : row));
+    const success = await run(
+      `role-${member.id}`,
+      () => setProfileRole(member.id, role),
+      `${member.email} is now ${role === "admin" ? "an admin" : "a member"}.`,
+    );
+    if (!success) {
+      setRows((current) => current.map((row) => row.id === member.id ? { ...row, role: previousRole } : row));
+    }
+  };
+
+  const addAccount = async (event) => {
+    event.preventDefault();
+    const email = form.email.trim();
+    const success = await run(
+      "create",
+      () => createAccount(email, form.password, form.role),
+      `Account created for ${email}.`,
+    );
+    if (success) {
       setForm({ email: "", password: "", role: "member" });
-    }, `Account created for ${form.email}.`);
+      setShowCreatePassword(false);
+    }
   };
 
-  const resetPassword = (r) => {
-    const pw = window.prompt(`New password for ${r.email} (min 8 characters):`);
-    if (!pw) return;
-    run(() => setAccountPassword(r.id, pw), `Password updated for ${r.email}.`);
+  const openPasswordReset = (member, trigger) => {
+    modalReturnFocusRef.current = trigger;
+    setResetValue("");
+    setShowResetPassword(false);
+    setResetTarget(member);
   };
 
-  const removeAccount = (r) => {
-    if (!window.confirm(`Delete the account ${r.email}? This can't be undone.`)) return;
-    run(() => deleteAccount(r.id), `Deleted ${r.email}.`);
+  const resetPassword = async (event) => {
+    event.preventDefault();
+    if (!resetTarget) return;
+    const success = await run(
+      `password-${resetTarget.id}`,
+      () => setAccountPassword(resetTarget.id, resetValue),
+      `Password updated for ${resetTarget.email}.`,
+    );
+    if (success) setResetTarget(null);
   };
 
-  const bg = "#000", panel = "#121216", border = "#1E1E22", text = "#fff", muted = "#9094A5";
-  const th = { textAlign: "left", padding: "10px 16px", fontSize: 12, fontWeight: 500, color: muted };
-  const td = { padding: "12px 16px", fontSize: 14, borderTop: `1px solid ${border}` };
-  const select = { background: bg, color: text, border: `1px solid ${border}`, borderRadius: 8, height: 32, padding: "0 8px" };
-  const input = { height: 36, background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: "0 12px", color: text, fontSize: 13 };
-  const iconBtn = { width: 30, height: 30, borderRadius: 8, border: `1px solid ${border}`, background: "transparent", color: muted, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" };
+  const removeAccount = async () => {
+    if (!deleteTarget) return;
+    const success = await run(
+      `delete-${deleteTarget.id}`,
+      () => deleteAccount(deleteTarget.id),
+      `Deleted ${deleteTarget.email}.`,
+    );
+    if (success) setDeleteTarget(null);
+  };
 
   return (
-    <div style={{ minHeight: "100vh", background: bg, color: text, fontFamily: "'DM Sans',sans-serif" }}>
-      <div style={{ height: 56, borderBottom: `1px solid ${border}`, display: "flex", alignItems: "center", gap: 12, padding: "0 20px" }}>
-        <button onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: `1px solid ${border}`, color: muted, borderRadius: 8, height: 32, padding: "0 12px", cursor: "pointer", fontSize: 13 }}>
-          <ArrowLeft style={{ width: 14, height: 14 }} /> Hub
+    <main className="route-shell admin-shell">
+      <header className="route-topbar">
+        <button className="route-button route-button--quiet route-pressable" onClick={() => navigate("/")}>
+          <ArrowLeft size={16} aria-hidden="true" />
+          <span>Back to hub</span>
         </button>
-        <span style={{ fontSize: 15, fontWeight: 500 }}>Admin — Team members</span>
-      </div>
-      <div style={{ padding: 24, maxWidth: 860, display: "flex", flexDirection: "column", gap: 20 }}>
-        <div style={{ background: panel, border: `1px solid ${border}`, borderRadius: 16, overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr><th style={th}>Member</th><th style={th}>Email</th><th style={th}>Role</th><th style={th}>Account</th></tr></thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id}>
-                  <td style={td}>{r.full_name || "—"}</td>
-                  <td style={{ ...td, color: muted }}>{r.email}</td>
-                  <td style={td}>
-                    <select value={r.role} disabled={busy || r.id === user?.id} aria-label={`Role for ${r.email}`}
-                      onChange={(e) => changeRole(r.id, e.target.value)} style={select}>
-                      <option value="member">member</option>
-                      <option value="admin">admin</option>
-                    </select>
-                    {r.id === user?.id && <span style={{ fontSize: 11, color: muted, marginLeft: 8 }}>you</span>}
-                  </td>
-                  <td style={td}>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => resetPassword(r)} disabled={busy} title="Set password"
-                        aria-label={`Set password for ${r.email}`} style={iconBtn}>
-                        <KeyRound style={{ width: 14, height: 14 }} />
-                      </button>
-                      {r.id !== user?.id && (
-                        <button onClick={() => removeAccount(r)} disabled={busy} title="Delete account"
-                          aria-label={`Delete account ${r.email}`} style={iconBtn}>
-                          <Trash2 style={{ width: 14, height: 14 }} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="route-topbar-divider" aria-hidden="true" />
+        <div className="route-topbar-context">
+          <ShieldCheck size={17} aria-hidden="true" />
+          <span>Workspace admin</span>
         </div>
+      </header>
 
-        <div style={{ background: panel, border: `1px solid ${border}`, borderRadius: 16, padding: 18 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 500, marginBottom: 12 }}>
-            <UserPlus style={{ width: 15, height: 15, color: muted }} /> Add account
+      <div className="admin-page">
+        <header className="admin-page-heading">
+          <div>
+            <span className="route-eyebrow">Workspace settings</span>
+            <h1>Team members</h1>
+            <p>Manage who can access, edit, and administer your shared prototype workspace.</p>
           </div>
-          <form onSubmit={addAccount} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input type="email" required value={form.email} placeholder="teammate@company.com"
-              aria-label="New account email" autoComplete="off"
-              onChange={(e) => setForm({ ...form, email: e.target.value })} style={{ ...input, flex: 2, minWidth: 220 }} />
-            <input type="text" required minLength={8} value={form.password} placeholder="Password (min 8 chars)"
-              aria-label="New account password" autoComplete="off"
-              onChange={(e) => setForm({ ...form, password: e.target.value })} style={{ ...input, flex: 1.4, minWidth: 180 }} />
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
-              aria-label="New account role" style={{ ...select, height: 36 }}>
-              <option value="member">member</option>
-              <option value="admin">admin</option>
-            </select>
-            <button type="submit" disabled={busy}
-              style={{ height: 36, padding: "0 16px", borderRadius: 8, border: "none", background: "#EDD2F6", color: "#000", fontSize: 13, fontWeight: 500, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
-              Create account
+          <span className="admin-member-count"><Users size={15} aria-hidden="true" /><strong>{loading ? "—" : rows.length}</strong> {!loading && rows.length === 1 ? "member" : "members"}</span>
+        </header>
+
+        {message && (
+          <div className={`route-notice route-notice--${message.type}`} role={message.type === "error" ? "alert" : "status"}>
+            {message.type === "error" ? <AlertCircle size={17} /> : <CheckCircle2 size={17} />}
+            <span>{message.text}</span>
+            <button className="route-notice-dismiss route-pressable" onClick={() => setMessage(null)} aria-label="Dismiss message"><X size={15} /></button>
+          </div>
+        )}
+
+        <section className="route-card admin-members-card" aria-labelledby="members-heading">
+          <div className="route-card-header">
+            <div>
+              <h2 id="members-heading">People with access</h2>
+              <p>Admins manage accounts and roles. Members can view and edit prototypes.</p>
+            </div>
+          </div>
+
+          {loadError ? (
+            <div className="route-state route-state--error admin-load-state" role="alert">
+              <span className="route-state-icon"><AlertCircle size={18} /></span>
+              <div>
+                <strong>Team members couldn't load</strong>
+                <p>{loadError}</p>
+              </div>
+              <button className="route-button route-button--secondary route-pressable" onClick={() => load()}>
+                <RefreshCw size={15} /> Retry
+              </button>
+            </div>
+          ) : loading ? (
+            <div className="admin-loading" role="status" aria-label="Loading team members">
+              {[0, 1, 2].map((item) => (
+                <div className="admin-loading-row" key={item}>
+                  <span className="admin-loading-avatar" />
+                  <span className="admin-loading-line" />
+                  <span className="admin-loading-line admin-loading-line--short" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr><th>Member</th><th>Email</th><th>Role</th><th><span className="route-sr-only">Account actions</span></th></tr>
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr className="admin-empty-row">
+                      <td colSpan={4}>
+                        <span className="route-state-icon"><Users size={20} /></span>
+                        <strong>No team members yet</strong>
+                        <p>Create the first account below to start collaborating.</p>
+                      </td>
+                    </tr>
+                  ) : rows.map((member) => {
+                    const rolePending = pending[`role-${member.id}`];
+                    const passwordPending = pending[`password-${member.id}`];
+                    const deletePending = pending[`delete-${member.id}`];
+                    const rowBusy = passwordPending || deletePending;
+                    const displayName = member.full_name || member.email?.split("@")[0] || "Team member";
+                    return (
+                      <tr key={member.id}>
+                        <td data-label="Member">
+                          <div className="admin-person">
+                            <span className="admin-avatar" aria-hidden="true">{initials(displayName)}</span>
+                            <div>
+                              <strong>{displayName}</strong>
+                              {member.id === user?.id && <span className="admin-you-badge">You</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td data-label="Email"><span className="admin-email">{member.email}</span></td>
+                        <td data-label="Role">
+                          <div className="admin-role-control">
+                            <select className="route-select" value={member.role}
+                              disabled={Boolean(rolePending) || member.id === user?.id}
+                              title={member.id === user?.id ? "You can't change your own role" : undefined}
+                              aria-label={`Role for ${member.email}`}
+                              onChange={(event) => changeRole(member, event.target.value)}>
+                              <option value="member">Member</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                            {rolePending && <Loader2 className="route-spinner" size={15} aria-label="Updating role" />}
+                          </div>
+                        </td>
+                        <td data-label="Actions">
+                          <div className="admin-row-actions">
+                            <button className="route-icon-button route-pressable" onClick={(event) => openPasswordReset(member, event.currentTarget)}
+                              disabled={Boolean(rowBusy)} title="Set password" aria-label={`Set password for ${member.email}`}>
+                              {passwordPending ? <Loader2 className="route-spinner" size={16} /> : <KeyRound size={16} />}
+                            </button>
+                            {member.id !== user?.id && (
+                              <button className="route-icon-button route-icon-button--danger route-pressable"
+                                onClick={(event) => { modalReturnFocusRef.current = event.currentTarget; setDeleteTarget(member); }} disabled={Boolean(rowBusy)}
+                                title="Delete account" aria-label={`Delete account ${member.email}`}>
+                                {deletePending ? <Loader2 className="route-spinner" size={16} /> : <Trash2 size={16} />}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="route-card admin-create-card" aria-labelledby="create-account-heading">
+          <div className="route-card-header admin-create-heading">
+            <span className="route-section-icon"><UserPlus size={18} /></span>
+            <div>
+              <h2 id="create-account-heading">Add an account</h2>
+              <p>Create secure credentials, then share them directly with your teammate.</p>
+            </div>
+          </div>
+          <form className="admin-create-form" onSubmit={addAccount}>
+            <div className="route-field admin-email-field">
+              <label htmlFor="admin-new-email">Email address</label>
+              <input id="admin-new-email" className="route-input" type="email" required value={form.email}
+                placeholder="teammate@company.com" autoComplete="off"
+                onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
+            </div>
+            <div className="route-field admin-password-field">
+              <label htmlFor="admin-new-password">Temporary password</label>
+              <div className="route-input-wrap">
+                <input id="admin-new-password" className="route-input route-input--with-action"
+                  type={showCreatePassword ? "text" : "password"} required minLength={8}
+                  value={form.password} placeholder="At least 8 characters" autoComplete="new-password"
+                  onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} />
+                <button className="route-input-action route-pressable" type="button"
+                  onClick={() => setShowCreatePassword((visible) => !visible)}
+                  aria-label={showCreatePassword ? "Hide temporary password" : "Show temporary password"}
+                  aria-pressed={showCreatePassword}>
+                  <PasswordVisibilityIcon visible={showCreatePassword} />
+                </button>
+              </div>
+            </div>
+            <div className="route-field admin-role-field">
+              <label htmlFor="admin-new-role">Role</label>
+              <select id="admin-new-role" className="route-select" value={form.role}
+                onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}>
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button className="route-button route-button--primary route-pressable admin-create-button" type="submit" disabled={Boolean(pending.create)}>
+              {pending.create && <Loader2 className="route-spinner" size={16} />}
+              {pending.create ? "Creating…" : "Create account"}
             </button>
           </form>
-          {msg && <p role="status" style={{ fontSize: 12, color: msg.startsWith("Error") ? "#FF508F" : muted, marginTop: 10 }}>{msg}</p>}
-          <p style={{ fontSize: 12, color: muted, marginTop: 12 }}>
-            There is no self-signup: you create accounts here and hand teammates their password.
-            Use the key button to set a new password, the trash button to delete an account.
-            Members can view and edit prototypes; admins additionally manage accounts, roles, and can delete content.
-          </p>
-        </div>
+          <p className="admin-create-note">There is no self-signup. Use the key action beside any member to set a new password later.</p>
+        </section>
       </div>
-    </div>
+
+      {resetTarget && (
+        <div className="route-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !pending[`password-${resetTarget.id}`]) setResetTarget(null); }}>
+          <section ref={modalRef} data-route-modal className="route-modal" role="dialog" aria-modal="true" aria-labelledby="reset-password-title" aria-describedby="reset-password-description">
+            <div className="route-modal-header">
+              <div>
+                <h2 id="reset-password-title">Set a new password</h2>
+                <p id="reset-password-description">Update the credentials for {resetTarget.email}.</p>
+              </div>
+              <button className="route-icon-button route-pressable" onClick={() => setResetTarget(null)} disabled={Boolean(pending[`password-${resetTarget.id}`])} aria-label="Close password dialog"><X size={17} /></button>
+            </div>
+            <form onSubmit={resetPassword}>
+              <div className="route-modal-body">
+                <div className="route-field">
+                  <label htmlFor="admin-reset-password">New password</label>
+                  <div className="route-input-wrap">
+                    <input data-autofocus id="admin-reset-password" className="route-input route-input--with-action"
+                      type={showResetPassword ? "text" : "password"} required minLength={8}
+                      value={resetValue} placeholder="At least 8 characters" autoComplete="new-password"
+                      onChange={(event) => setResetValue(event.target.value)} />
+                    <button className="route-input-action route-pressable" type="button"
+                      onClick={() => setShowResetPassword((visible) => !visible)}
+                      aria-label={showResetPassword ? "Hide new password" : "Show new password"}
+                      aria-pressed={showResetPassword}>
+                      <PasswordVisibilityIcon visible={showResetPassword} />
+                    </button>
+                  </div>
+                  <span className="route-field-help">Use at least 8 characters.</span>
+                </div>
+              </div>
+              <div className="route-modal-footer">
+                <button className="route-button route-button--secondary route-pressable" type="button" onClick={() => setResetTarget(null)} disabled={Boolean(pending[`password-${resetTarget.id}`])}>Cancel</button>
+                <button className="route-button route-button--primary route-pressable" type="submit" disabled={Boolean(pending[`password-${resetTarget.id}`])}>
+                  {pending[`password-${resetTarget.id}`] && <Loader2 className="route-spinner" size={16} />}
+                  {pending[`password-${resetTarget.id}`] ? "Updating…" : "Update password"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="route-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !pending[`delete-${deleteTarget.id}`]) setDeleteTarget(null); }}>
+          <section ref={modalRef} data-route-modal className="route-modal route-modal--compact" role="dialog" aria-modal="true" aria-labelledby="delete-account-title" aria-describedby="delete-account-description">
+            <div className="route-modal-header">
+              <div>
+                <h2 id="delete-account-title">Delete this account?</h2>
+                <p id="delete-account-description">{deleteTarget.email} will immediately lose workspace access. This can't be undone.</p>
+              </div>
+              <button className="route-icon-button route-pressable" onClick={() => setDeleteTarget(null)} disabled={Boolean(pending[`delete-${deleteTarget.id}`])} aria-label="Close delete dialog"><X size={17} /></button>
+            </div>
+            <div className="route-modal-footer">
+              <button data-autofocus className="route-button route-button--secondary route-pressable" type="button" onClick={() => setDeleteTarget(null)} disabled={Boolean(pending[`delete-${deleteTarget.id}`])}>Keep account</button>
+              <button className="route-button route-button--danger route-pressable" type="button" onClick={removeAccount} disabled={Boolean(pending[`delete-${deleteTarget.id}`])}>
+                {pending[`delete-${deleteTarget.id}`] && <Loader2 className="route-spinner" size={16} />}
+                {pending[`delete-${deleteTarget.id}`] ? "Deleting…" : "Delete account"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </main>
+  );
+}
+
+function initials(name) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "T";
+}
+
+function PasswordVisibilityIcon({ visible }) {
+  return (
+    <span className="route-visibility-icon" aria-hidden="true">
+      <EyeOff className={`route-visibility-glyph ${visible ? "is-visible" : "is-hidden"}`} size={17} />
+      <Eye className={`route-visibility-glyph ${visible ? "is-hidden" : "is-visible"}`} size={17} />
+    </span>
   );
 }

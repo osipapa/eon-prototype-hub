@@ -14,7 +14,7 @@ export const HUB = {
     selected: "#121216", selectedText: "#FFFFFF" },
   light: { bg: "#F9F9FD", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F9F9FD", border: "#DDE0EA",
     text: "#1E1E22", muted: "#565B6C", secondary: "rgba(18,18,22,0.75)",
-    hover: "#F9F9FD", active: "rgba(212,0,247,0.1)", brand: "#D400F7",
+    hover: "#F9F9FD", active: "rgba(160,0,186,0.1)", brand: "#A000BA",
     primary: "#000000", primaryText: "#FFFFFF",
     selected: "#FFFFFF", selectedText: "#1E1E22" },
 };
@@ -49,20 +49,66 @@ export const PRESET_MEDIA = {
   productImage: "https://picsum.photos/seed/eon-product/1000/1000",
 };
 
+const DATA_IMAGE_URL = /^data:image\/(?:avif|gif|jpe?g|png|svg\+xml|webp)(?:;charset=[a-z0-9_-]+)?(?:;base64)?,/i;
+
+// Assets are team-editable and some logo helpers return HTML strings. Keep URL
+// validation at that boundary so a pasted javascript: URL or quote cannot turn
+// into executable markup in the hub. Relative URLs remain supported for assets
+// deployed alongside the app; data URLs are restricted to image MIME types.
+export function safeMediaUrl(value) {
+  const candidate = typeof value === "string" ? value.trim() : "";
+  if (!candidate) return "";
+  if (DATA_IMAGE_URL.test(candidate)) {
+    return candidate.replace(/[\u0000-\u0020\u007f"'<>`]/g, (character) =>
+      `%${character.charCodeAt(0).toString(16).padStart(2, "0").toUpperCase()}`);
+  }
+  if (/[\u0000-\u0020\u007f"'<>`]/.test(candidate)) return "";
+  try {
+    const parsed = new URL(candidate, "https://eon.invalid/");
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? candidate : "";
+  } catch {
+    return "";
+  }
+}
+
+function escapeMarkup(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function boundedDimension(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(4096, Math.max(1, Math.round(number))) : fallback;
+}
+
 export const MEDIA = {
   logos: {
-    eon: (stroke = "#FFFFFF", brand = "#E15CF7", img) =>
-      img ? `<img src="${img}" alt="logo" style="width:24px;height:24px;border-radius:6px;object-fit:cover"/>`
-        : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="${stroke}" stroke-width="2"/><path d="M12 4 A8 8 0 0 1 12 20" stroke="${brand}" stroke-width="2"/></svg>`,
-    acme: (size = 32, radius = 8, bg = "#4F46E5", img) =>
-      img ? `<img src="${img}" alt="logo" style="width:${size}px;height:${size}px;border-radius:${radius}px;object-fit:cover"/>`
-        : `<div style="width:${size}px;height:${size}px;border-radius:${radius}px;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${Math.round(size * 0.44)}px">A</div>`,
+    eon: (stroke = "#FFFFFF", brand = "#E15CF7", img) => {
+      const src = safeMediaUrl(img);
+      return src
+        ? `<img src="${escapeMarkup(src)}" alt="logo" style="width:24px;height:24px;border-radius:6px;object-fit:cover"/>`
+        : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="${escapeMarkup(stroke)}" stroke-width="2"/><path d="M12 4 A8 8 0 0 1 12 20" stroke="${escapeMarkup(brand)}" stroke-width="2"/></svg>`;
+    },
+    acme: (size = 32, radius = 8, bg = "#4F46E5", img) => {
+      const safeSize = boundedDimension(size, 32);
+      const safeRadius = Math.min(safeSize, boundedDimension(radius, 8));
+      const src = safeMediaUrl(img);
+      return src
+        ? `<img src="${escapeMarkup(src)}" alt="logo" style="width:${safeSize}px;height:${safeSize}px;border-radius:${safeRadius}px;object-fit:cover"/>`
+        : `<div style="width:${safeSize}px;height:${safeSize}px;border-radius:${safeRadius}px;background:${escapeMarkup(bg)};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${Math.round(safeSize * 0.44)}px">A</div>`;
+    },
   },
   avatar: (initials = "SL", bg = "#1E1E22", fg = "#9094A5", size = 32) =>
-    `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:${fg};font-size:12px;font-weight:600">${initials}</div>`,
+    `<div style="width:${boundedDimension(size, 32)}px;height:${boundedDimension(size, 32)}px;border-radius:50%;background:${escapeMarkup(bg)};display:flex;align-items:center;justify-content:center;color:${escapeMarkup(fg)};font-size:12px;font-weight:600">${escapeMarkup(initials)}</div>`,
   placeholder: (w = 320, h = 180, label, bg = "#E5E7EB", fg = "#94A3B8") => {
-    const txt = label || `${w}×${h}`;
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><rect width='100%' height='100%' fill='${bg}'/><path d='M0 0L${w} ${h}M${w} 0L0 ${h}' stroke='${fg}' stroke-width='1' opacity='.35'/><text x='50%' y='50%' fill='${fg}' font-family='sans-serif' font-size='14' text-anchor='middle' dominant-baseline='middle'>${txt}</text></svg>`;
+    const width = boundedDimension(w, 320);
+    const height = boundedDimension(h, 180);
+    const txt = escapeMarkup(label || `${width}×${height}`);
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'><rect width='100%' height='100%' fill='${escapeMarkup(bg)}'/><path d='M0 0L${width} ${height}M${width} 0L0 ${height}' stroke='${escapeMarkup(fg)}' stroke-width='1' opacity='.35'/><text x='50%' y='50%' fill='${escapeMarkup(fg)}' font-family='sans-serif' font-size='14' text-anchor='middle' dominant-baseline='middle'>${txt}</text></svg>`;
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   },
 };
@@ -216,7 +262,7 @@ export function replaceMediaTokens(html, media = {}) {
     const token = raw.trim();
     const ph = token.match(/^placeholder:(\d+)x(\d+)(?::(.*))?$/i);
     if (ph) return MEDIA.placeholder(+ph[1], +ph[2], (ph[3] || "").trim());
-    if (media[token]) return media[token];
+    if (media[token]) return safeMediaUrl(media[token]) || m;
     if (PRESET_MEDIA[token]) return PRESET_MEDIA[token];
     return m;
   });
@@ -244,13 +290,22 @@ export function parsePrototypeConfig(html) {
 export function stateCombos(project, cap = 16) {
   const controls = project?.controls || [];
   if (!controls.length) return null;
+  const limit = Number.isFinite(cap) ? Math.max(0, Math.floor(cap)) : 16;
+  if (limit === 0) return [];
   let out = [{}];
   for (const ctrl of controls) {
     const next = [];
-    for (const acc of out) for (const opt of ctrl.options || []) next.push({ ...acc, [ctrl.key]: opt });
+    for (const acc of out) {
+      for (const opt of ctrl.options || []) {
+        next.push({ ...acc, [ctrl.key]: opt });
+        if (next.length >= limit) break;
+      }
+      if (next.length >= limit) break;
+    }
     out = next;
+    if (!out.length) break;
   }
-  return out.slice(0, cap);
+  return out;
 }
 
 // helper: merge a project's stored defaults (used when no live args passed)

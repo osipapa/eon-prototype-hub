@@ -29,6 +29,14 @@
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --shadow-surface:
+      0 0 0 1px rgba(255, 255, 255, .08),
+      0 1px 2px rgba(0, 0, 0, .24),
+      0 12px 34px rgba(0, 0, 0, .18);
+    --shadow-surface-hover:
+      0 0 0 1px rgba(255, 255, 255, .13),
+      0 1px 2px rgba(0, 0, 0, .28),
+      0 16px 40px rgba(0, 0, 0, .22);
   }
   .light {
     --background: 240 40% 98%;
@@ -50,8 +58,26 @@
     --border: 228 27% 89%;
     --input: 228 27% 89%;
     --ring: 289 100% 48%;
+    --shadow-surface:
+      0 0 0 1px rgba(0, 0, 0, .06),
+      0 1px 2px -1px rgba(0, 0, 0, .08),
+      0 8px 24px rgba(34, 27, 44, .08);
+    --shadow-surface-hover:
+      0 0 0 1px rgba(0, 0, 0, .09),
+      0 2px 4px -1px rgba(0, 0, 0, .1),
+      0 12px 30px rgba(34, 27, 44, .1);
   }
 }
+
+.eon-app-splash, .eon-app-error { display: grid; min-height: 100vh; min-height: 100dvh; place-items: center; background: #000; color: #9094A5; }
+.eon-app-splash { grid-auto-flow: column; gap: 10px; font-size: 13px; }
+.eon-app-spinner { width: 16px; height: 16px; border: 2px solid rgba(237, 210, 246, .2); border-top-color: #EDD2F6; border-radius: 50%; animation: eon-spin 800ms linear infinite; }
+.eon-app-error { padding: 24px; }
+.eon-app-error > div { width: min(420px, 100%); padding: 28px; border-radius: 18px; background: #121216; box-shadow: var(--shadow-surface); text-align: center; }
+.eon-app-error span { color: #fff; font-size: 17px; font-weight: 650; }
+.eon-app-error p { margin: 8px 0 18px; font-size: 13px; line-height: 1.5; }
+.eon-app-error button { min-height: 42px; padding: 0 16px; border: 0; border-radius: 10px; background: #EDD2F6; color: #000; cursor: pointer; font-size: 13px; font-weight: 650; transition: transform 150ms var(--ease-out), filter 150ms var(--ease-out); }
+.eon-app-error button:active { transform: scale(.96); }
 
 @layer base {
   * { @apply border-border; }
@@ -60,8 +86,9 @@
     -moz-osx-font-smoothing: grayscale;
   }
   html, body, #root { width: 100%; height: 100%; }
-  body { @apply bg-background text-foreground; margin: 0; font-family: "DM Sans", sans-serif; }
-  button, input, textarea { font: inherit; }
+  body { @apply bg-background text-foreground; margin: 0; min-width: 320px; font-family: "DM Sans", sans-serif; }
+  button, input, textarea, select { font: inherit; }
+  button, a, label { -webkit-tap-highlight-color: transparent; }
   h1, h2, h3 { text-wrap: balance; }
   p { text-wrap: pretty; }
 
@@ -78,17 +105,18 @@
   display: flex;
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   min-width: 0;
   overflow: hidden;
   font-family: "DM Sans", sans-serif;
 }
 
 .eon-buttonish {
-  transition-property: transform;
+  transition-property: transform, filter, box-shadow, background-color, color, opacity;
   transition-duration: 160ms;
   transition-timing-function: var(--ease-out);
 }
-.eon-buttonish:active:not(:disabled) { transform: scale(.97); }
+.eon-buttonish:active:not(:disabled) { transform: scale(.96); }
 .eon-buttonish:disabled { cursor: not-allowed; }
 
 .eon-icon-button {
@@ -123,36 +151,66 @@
   position: relative;
   z-index: 30;
   display: flex;
-  width: 240px;
-  flex: 0 0 240px;
+  width: 256px;
+  flex: 0 0 256px;
   flex-direction: column;
   border-right: 1px solid;
-  box-shadow: 8px 0 24px rgba(0, 0, 0, .08);
+  box-shadow: 8px 0 28px rgba(0, 0, 0, .09);
 }
-.eon-sidebar-head { padding: 16px 14px 12px; border-bottom: 1px solid; }
-.eon-brand { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.eon-sidebar-head { padding: 14px 14px 12px; border-bottom: 1px solid; }
+.eon-brand-row { display: flex; min-height: 40px; align-items: center; gap: 8px; margin-bottom: 12px; }
+.eon-brand { display: flex; min-width: 0; flex: 1; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; letter-spacing: -.015em; }
+.eon-brand-logo { display: block; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 7px; object-fit: cover; outline: 1px solid rgba(255, 255, 255, .1); outline-offset: -1px; }
+.light .eon-brand-logo { outline-color: rgba(0, 0, 0, .1); }
 .eon-sidebar-switcher { display: flex; gap: 3px; margin-top: 10px; padding: 3px; border-radius: 10px; }
+.eon-brand-row + .eon-sidebar-switcher { margin-top: 0; }
 .eon-sidebar-head > .eon-secondary-button { width: 100%; margin-top: 8px; }
+.eon-sidebar-search-row { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+.eon-sidebar-search { position: relative; min-width: 0; flex: 1; }
+.eon-sidebar-search > svg { position: absolute; z-index: 1; top: 12px; left: 12px; width: 15px; height: 15px; pointer-events: none; color: hsl(var(--muted-foreground)); }
+.eon-sidebar-search-row > .eon-icon-button { flex: 0 0 40px; }
 .eon-story-list { flex: 1; overflow-y: auto; padding: 10px 8px 18px; }
-.eon-new-story { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-bottom: 10px; padding: 0 12px; border: 1.5px dashed; border-radius: 12px; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; }
+.eon-new-story { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; margin-bottom: 12px; padding: 0 12px; border: 1.5px dashed; border-radius: 12px; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; }
 .eon-group-label { display: flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .045em; text-transform: uppercase; }
+.eon-group-label-row { display: flex; min-height: 34px; align-items: center; }
+.eon-group-toggle { display: flex; min-width: 0; min-height: 34px; flex: 1; align-items: center; gap: 5px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; text-align: left; font-size: 11px; font-weight: 650; letter-spacing: .045em; text-transform: uppercase; }
+.eon-group-toggle svg { flex: 0 0 auto; transition: transform 160ms var(--ease-out); }
+.eon-group-toggle svg.is-collapsed { transform: rotate(-90deg); }
+.eon-group-edit { display: grid; width: 34px; height: 34px; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; opacity: 0; }
+.eon-group-label-row:focus-within .eon-group-edit { opacity: 1; }
 .eon-story-row { position: relative; display: flex; align-items: center; min-height: 42px; margin-bottom: 2px; border-top: 2px solid transparent; border-radius: 10px; }
 .eon-story-select { display: flex; min-width: 0; min-height: 40px; flex: 1; align-items: center; gap: 9px; padding: 0 8px 0 12px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; text-align: left; font-size: 13px; }
 .eon-story-select span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eon-story-select > span:nth-child(2) { min-width: 0; flex: 1; }
+.eon-status-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(144, 148, 165, .08); }
+.eon-unread-count { display: inline-flex; min-width: 19px; height: 19px; flex: 0 0 auto; align-items: center; justify-content: center; padding: 0 5px; border-radius: 10px; font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.eon-comment-count { flex: 0 0 auto; font-size: 10px; font-variant-numeric: tabular-nums; }
 .eon-story-rename { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; padding: 0 8px 0 12px; }
 .eon-story-rename input { min-width: 0; width: 100%; height: 32px; padding: 0 8px; border: 1px solid; border-radius: 8px; outline: 0; font-size: 13px; }
 .eon-group-rename { min-width: 0; width: 100%; height: 24px; padding: 0 6px; border: 1px solid; border-radius: 6px; outline: 0; font-size: 11px; font-weight: 600; letter-spacing: .045em; text-transform: uppercase; }
-.eon-story-menu { position: absolute; top: 42px; right: 0; z-index: 50; width: 148px; padding: 4px; border-radius: 12px; opacity: 1; transform: scale(1); transform-origin: top right; transition: transform 160ms var(--ease-out), opacity 120ms var(--ease-out); }
+.eon-story-menu { position: absolute; top: 42px; right: 0; z-index: 50; width: 156px; padding: 5px; border-radius: 13px; opacity: 1; transform: scale(1); transform-origin: top right; transition: transform 160ms var(--ease-out), opacity 120ms var(--ease-out); }
 .eon-story-menu button { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 9px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 13px; text-align: left; }
+.eon-story-menu button:disabled { cursor: not-allowed; opacity: .4; }
 .eon-sidebar-foot { display: flex; align-items: center; gap: 6px; min-height: 60px; padding: 10px; border-top: 1px solid; }
 .eon-sidebar-foot > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.eon-sidebar-empty, .eon-sidebar-mode-info { display: flex; min-height: 220px; align-items: center; justify-content: center; flex-direction: column; gap: 7px; padding: 28px 18px; text-align: center; }
+.eon-sidebar-empty strong, .eon-sidebar-mode-info strong { margin-top: 4px; font-size: 13px; }
+.eon-sidebar-empty span, .eon-sidebar-mode-info > span:last-child { font-size: 12px; line-height: 1.5; }
+.eon-sidebar-mode-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; }
 
 .eon-workspace-main { display: flex; min-width: 0; flex: 1; flex-direction: column; overflow: hidden; }
-.eon-toolbar { position: relative; z-index: 20; flex: 0 0 auto; border-bottom: 1px solid; }
-.eon-toolbar-primary { display: flex; min-height: 56px; align-items: center; gap: 10px; padding: 8px 12px; }
+.eon-toolbar { position: relative; z-index: 20; flex: 0 0 auto; border-bottom: 1px solid; box-shadow: 0 8px 24px rgba(0, 0, 0, .04); }
+.eon-toolbar-primary { display: flex; min-height: 60px; align-items: center; gap: 9px; padding: 9px 14px; }
 .eon-toolbar-title { display: flex; min-width: 0; align-items: center; gap: 8px; }
 .eon-toolbar-title > span { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.eon-toolbar-tools { display: flex; min-height: 58px; align-items: center; gap: 16px; overflow-x: auto; padding: 8px 12px 10px; border-top: 1px solid rgba(144, 148, 165, .12); scrollbar-width: thin; }
+.eon-toolbar-tools { display: flex; min-height: 56px; align-items: center; gap: 16px; overflow-x: auto; padding: 8px 14px; border-top: 1px solid rgba(144, 148, 165, .12); scrollbar-width: thin; }
+.eon-status-button { display: inline-flex; min-height: 36px; align-items: center; gap: 3px; padding: 0 5px 0 0; border: 0; border-radius: 9px; background: transparent; cursor: pointer; }
+.eon-save-state { display: inline-flex; min-height: 32px; align-items: center; gap: 5px; padding: 0 9px; border: 0; border-radius: 9px; font-size: 11px; white-space: nowrap; }
+button.eon-save-state { cursor: pointer; }
+.eon-save-state.is-compact { min-height: 28px; padding: 0 7px; }
+.eon-save-state.is-compact span { display: none; }
+.eon-inline-alert { display: flex; min-height: 42px; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid; font-size: 12px; }
+.eon-inline-alert > span { min-width: 0; flex: 1; }
 .eon-tool-group { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
 .eon-tool-group > span { font-size: 11px; font-weight: 600; letter-spacing: .025em; text-transform: uppercase; white-space: nowrap; }
 .eon-icon-segment { display: flex; gap: 2px; padding: 3px; border-radius: 11px; }
@@ -176,14 +234,14 @@
   }
 }
 
-.eon-canvas-zone { position: relative; display: flex; min-width: 0; min-height: 0; flex: 1; }
+.eon-canvas-zone { position: relative; display: flex; min-width: 0; min-height: 0; flex: 1; isolation: isolate; }
 .eon-canvas { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
 /* left+right anchors give the shrink-to-fit width the whole canvas to work
    with (left:50% alone caps it at half and wraps early); auto margins center. */
-.eon-ctlbar-float { position: absolute; bottom: 14px; left: 12px; right: 12px; z-index: 12; display: flex; width: fit-content; max-width: 100%; margin: 0 auto; align-items: center; justify-content: center; flex-wrap: wrap; border-radius: 100px; }
-.eon-canvas-stage { display: flex; align-items: center; justify-content: center; padding: 32px; box-sizing: border-box; }
+.eon-ctlbar-float { position: absolute; bottom: 14px; left: 12px; right: 12px; z-index: 12; display: flex; width: fit-content; max-width: calc(100% - 24px); margin: 0 auto; align-items: center; justify-content: center; flex-wrap: wrap; border-radius: 18px; backdrop-filter: blur(18px); }
+.eon-canvas-stage { display: flex; align-items: center; justify-content: center; padding: 32px 32px 96px; box-sizing: border-box; }
 .eon-grid-stage { min-width: 100%; min-height: 100%; padding: 28px; box-sizing: border-box; }
-.eon-prototype-frame { display: block; border: 0; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 18px 60px rgba(0,0,0,.32); }
+.eon-prototype-frame { display: block; border: 0; border-radius: 13px; background: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 18px 60px rgba(0,0,0,.32); }
 .light .eon-prototype-frame { box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 18px 60px rgba(0,0,0,.18); }
 .eon-media-scroll { min-height: 0; flex: 1; overflow: auto; }
 
@@ -201,13 +259,13 @@
 .eon-compare-empty { display: flex; flex: 1; min-height: 0; flex-direction: column; justify-content: center; gap: 12px; padding: 20px; }
 .eon-compare-embed { flex: 1; min-height: 0; }
 
-.eon-inspector { position: relative; z-index: 25; display: flex; width: 360px; flex: 0 0 360px; flex-direction: column; border-left: 1px solid; box-shadow: -8px 0 24px rgba(0,0,0,.08); }
+.eon-inspector { position: relative; z-index: 25; display: flex; width: 380px; flex: 0 0 380px; flex-direction: column; border-left: 1px solid; box-shadow: -8px 0 28px rgba(0,0,0,.09); }
 .eon-inspector-head { display: flex; min-height: 64px; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-bottom: 1px solid; }
 .eon-inspector-head > div:first-child { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
 .eon-inspector-head strong { font-size: 14px; }
 .eon-inspector-head span { font-size: 12px; }
 .eon-inspector-tabs { display: flex; min-height: 0; flex: 1; flex-direction: column; }
-.eon-review-tabs { display: grid; height: auto; margin: 10px 12px 0; padding: 3px; grid-template-columns: 1.35fr 1fr; border-radius: 11px; }
+.eon-review-tabs { display: grid; height: auto; margin: 10px 12px 0; padding: 3px; grid-template-columns: 1.35fr 1fr 1fr; border-radius: 11px; }
 .eon-review-tabs [role="tab"] { display: flex; min-width: 0; min-height: 36px; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; border-radius: 8px; font-size: 12px; }
 .eon-count { display: inline-flex; min-width: 18px; height: 18px; align-items: center; justify-content: center; padding: 0 5px; border-radius: 9px; font-size: 10px; font-variant-numeric: tabular-nums; }
 .eon-inspector-content { min-height: 0; flex: 1; margin: 0; overflow: hidden; }
@@ -221,6 +279,25 @@
 .eon-reference-empty { display: flex; min-height: 260px; align-items: center; justify-content: center; flex-direction: column; gap: 8px; padding: 24px; border-radius: 14px; text-align: center; }
 .eon-reference-empty strong { margin-top: 4px; font-size: 14px; }
 .eon-reference-empty span { max-width: 240px; font-size: 13px; line-height: 1.5; }
+.eon-details-content { overflow-y: auto; }
+.eon-details { display: flex; min-height: 100%; flex-direction: column; gap: 12px; padding: 14px 12px 22px; }
+.eon-details-section { display: flex; flex-direction: column; gap: 11px; padding: 14px; border-radius: 15px; box-shadow: var(--shadow-surface); }
+.eon-details-heading { display: flex; align-items: flex-start; gap: 8px; }
+.eon-details-heading > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+.eon-details-heading strong { font-size: 13px; }
+.eon-details-heading span { font-size: 11px; line-height: 1.4; }
+.eon-stage-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.eon-stage-button { display: flex; min-height: 42px; align-items: center; gap: 7px; padding: 0 9px; border: 0; border-radius: 10px; cursor: pointer; text-align: left; font-size: 12px; font-weight: 600; }
+.eon-stage-button > svg { margin-left: auto; }
+.eon-stage-index { display: grid; width: 20px; height: 20px; flex: 0 0 20px; place-items: center; border-radius: 7px; font-size: 10px; font-weight: 700; }
+.eon-advance-button { min-height: 40px; border-radius: 10px; font-size: 12px; font-weight: 650; }
+.eon-readiness-list { display: flex; flex-direction: column; gap: 7px; }
+.eon-readiness-item { display: flex; min-height: 28px; align-items: center; gap: 8px; font-size: 12px; }
+.eon-readiness-item > span { display: grid; width: 22px; height: 22px; flex: 0 0 22px; place-items: center; border-radius: 8px; }
+.eon-share-review { box-shadow: none; }
+.eon-share-review .eon-secondary-button { width: 100%; }
+.eon-copy-error { color: #FF6B8A; font-size: 11px; line-height: 1.4; }
+.eon-project-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 4px; font-size: 10px; font-variant-numeric: tabular-nums; }
 
 .eon-comments { display: flex; height: 100%; min-height: 0; flex-direction: column; }
 .eon-comment-list { min-height: 0; flex: 1; overflow-y: auto; padding: 18px 16px 24px; }
@@ -234,21 +311,25 @@
 .eon-comment-meta { display: flex; align-items: baseline; gap: 7px; }
 .eon-comment-meta strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .eon-comment-meta time { font-size: 11px; font-variant-numeric: tabular-nums; }
+.eon-pending-label { margin-left: auto; font-size: 10px; }
 .eon-comment-body p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .eon-comment-composer { flex: 0 0 auto; padding: 12px; border-top: 1px solid; }
 .eon-composer-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .eon-composer-meta > span { min-width: 0; flex: 1; font-size: 11px; line-height: 1.35; }
 
 @media (max-width: 1180px) {
-  .eon-inspector { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 92vw); transform: translateX(0); transition: transform 240ms var(--ease-drawer); }
+  .eon-inspector { position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 92vw); height: 100vh; height: 100dvh; transform: translateX(0); box-shadow: -20px 0 60px rgba(0,0,0,.28); transition: transform 240ms var(--ease-drawer); }
   @starting-style { .eon-inspector { transform: translateX(100%); } }
 }
 
 @media (max-width: 900px) {
-  .eon-sidebar { position: fixed; top: 0; bottom: 0; left: 0; width: min(280px, 88vw); transform: translateX(0); transition: transform 240ms var(--ease-drawer); }
+  .eon-sidebar { position: fixed; top: 0; bottom: 0; left: 0; width: min(292px, 88vw); height: 100vh; height: 100dvh; transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,.28); transition: transform 240ms var(--ease-drawer); }
   @starting-style { .eon-sidebar { transform: translateX(-100%); } }
   .eon-toolbar-title > span { max-width: 180px; }
 }
+
+.eon-drawer-scrim { position: fixed; inset: 0; z-index: 24; border: 0; background: rgba(0, 0, 0, .52); backdrop-filter: blur(3px); cursor: default; animation: eon-scrim-in 160ms var(--ease-out); }
+@keyframes eon-scrim-in { from { opacity: 0; } }
 
 @media (max-width: 899px) {
   /* Too narrow to compare side by side — the split and its control step aside. */
@@ -263,7 +344,9 @@
   .eon-upload-button, .eon-full-button { width: 40px; padding: 0 !important; justify-content: center; }
   .eon-toolbar-tools { gap: 12px; padding-inline: 8px; }
   .eon-tool-group > span { display: none; }
-  .eon-canvas-stage { padding: 20px; }
+  .eon-canvas-stage { padding: 20px 20px 92px; }
+  .eon-save-state:not(.is-compact) span { display: none; }
+  .eon-save-state:not(.is-compact) { width: 32px; min-height: 32px; justify-content: center; padding: 0; }
 }
 
 @media (max-width: 480px) {
@@ -272,12 +355,23 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .eon-buttonish, .eon-comment, .eon-story-menu, .eon-inspector, .eon-sidebar { transition-duration: 0ms; }
+  .eon-buttonish, .eon-comment, .eon-story-menu, .eon-inspector, .eon-sidebar, .eon-modal { transition-duration: 0ms; }
+  .eon-buttonish:active:not(:disabled) { transform: none; }
   .eon-story-menu, .eon-inspector, .eon-sidebar { transform: none; }
+  .eon-drawer-scrim { animation: none; }
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .eon-buttonish:hover:not(:disabled) { filter: brightness(1.08); }
+  .light .eon-buttonish:hover:not(:disabled) { filter: brightness(.97); }
+  .eon-icon-button:hover:not(:disabled), .eon-text-button:hover:not(:disabled) { background: rgba(144, 148, 165, .12) !important; }
+  .eon-secondary-button:hover:not(:disabled), .eon-details-section:hover { box-shadow: var(--shadow-surface-hover); }
+  .eon-story-row:hover { background: rgba(144, 148, 165, .07) !important; }
+  .eon-group-label-row:hover .eon-group-edit { opacity: 1; }
   .eon-story-menu button:hover { background: rgba(144, 148, 165, .12); }
+}
+@media (hover: none) {
+  .eon-group-edit { opacity: 1; }
 }
 
 /* Floating canvas control bar + top toolbar: stay usable as the canvas narrows. */
@@ -294,8 +388,8 @@
 }
 
 /* New-prototype dialog */
-.eon-modal-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .55); }
-.eon-modal { display: flex; width: min(600px, 100%); max-height: 100%; flex-direction: column; border: 1px solid; border-radius: 16px; box-shadow: 0 24px 80px rgba(0, 0, 0, .45); transition: transform 180ms var(--ease-out), opacity 140ms var(--ease-out); }
+.eon-modal-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .62); backdrop-filter: blur(8px); }
+.eon-modal { display: flex; width: min(600px, 100%); max-height: 100%; flex-direction: column; border: 1px solid; border-radius: 18px; box-shadow: 0 24px 80px rgba(0, 0, 0, .45); transition: transform 180ms var(--ease-out), opacity 140ms var(--ease-out); }
 @starting-style { .eon-modal { opacity: 0; transform: scale(.97) translateY(6px); } }
 .eon-modal-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px 20px; border-bottom: 1px solid; }
 .eon-modal-head strong { flex: 1; font-size: 15px; letter-spacing: -.01em; }
@@ -303,6 +397,20 @@
 .eon-modal-step { display: flex; flex-direction: column; gap: 8px; }
 .eon-modal-foot { display: flex; align-items: center; gap: 8px; padding: 12px 20px 14px; border-top: 1px solid; }
 .eon-dropzone { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1.5px dashed; border-radius: 10px; }
+.eon-confirm-modal { width: min(440px, 100%); align-items: center; gap: 11px; padding: 26px; text-align: center; }
+.eon-confirm-modal h2 { margin: 4px 0 0; font-size: 18px; letter-spacing: -.02em; }
+.eon-confirm-modal > p { margin: 0; font-size: 13px; line-height: 1.55; }
+.eon-confirm-icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 14px; }
+.eon-confirm-actions { display: grid; width: 100%; margin-top: 8px; grid-template-columns: 1fr 1fr; gap: 8px; }
+.eon-visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+.eon-empty-workspace { display: grid; width: 100%; min-height: 100vh; min-height: 100dvh; place-items: center; padding: 24px; }
+.eon-empty-workspace-card { display: flex; width: min(380px, 100%); align-items: center; flex-direction: column; gap: 10px; padding: 36px; border-radius: 20px; text-align: center; }
+.eon-empty-workspace-card h1 { margin: 4px 0 0; font-size: 19px; }
+.eon-empty-workspace-card p { margin: 0 0 8px; font-size: 13px; }
+.eon-empty-workspace-icon { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 14px; }
+.eon-spin { animation: eon-spin 800ms linear infinite; }
+@keyframes eon-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   .eon-modal { transition-duration: 0ms; transform: none; }
+  .eon-spin, .eon-app-spinner { animation: none; }
 }

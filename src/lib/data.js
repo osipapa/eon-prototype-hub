@@ -78,6 +78,15 @@ export async function upsertAsset(teamId, asset) {
   return data;
 }
 
+// Keep every open workspace in sync when a teammate changes shared media.
+export function subscribeAssets(cb) {
+  const ch = supabase
+    .channel("assets-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "assets" }, cb)
+    .subscribe();
+  return () => supabase.removeChannel(ch);
+}
+
 // Upload a File to Storage, return its public URL.
 export async function uploadMedia(file) {
   const path = `${crypto.randomUUID()}-${file.name}`;

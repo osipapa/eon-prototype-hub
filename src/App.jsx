@@ -1,15 +1,37 @@
+import { Component, lazy, Suspense } from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./lib/auth";
-import Login from "./routes/Login";
-import Hub from "./routes/Hub";
-import Admin from "./routes/Admin";
+
+const Login = lazy(() => import("./routes/Login"));
+const Hub = lazy(() => import("./routes/Hub"));
+const Admin = lazy(() => import("./routes/Admin"));
 
 function Splash({ children }) {
   return (
-    <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#000", color: "#9094A5", fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>
-      {children}
+    <div className="eon-app-splash" role="status" aria-live="polite">
+      <span className="eon-app-spinner" aria-hidden="true" />
+      <span>{children}</span>
     </div>
   );
+}
+
+class AppErrorBoundary extends Component {
+  state = { error: null };
+
+  static getDerivedStateFromError(error) { return { error }; }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="eon-app-error" role="alert">
+        <div>
+          <span>Something went wrong</span>
+          <p>The hub hit an unexpected error. Your saved team data is unaffected.</p>
+          <button onClick={() => window.location.reload()}>Reload the hub</button>
+        </div>
+      </div>
+    );
+  }
 }
 
 function RequireAuth({ children, adminOnly }) {
@@ -23,14 +45,18 @@ function RequireAuth({ children, adminOnly }) {
 
 export default function App() {
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<RequireAuth><Hub /></RequireAuth>} />
-        <Route path="/p/:slug" element={<RequireAuth><Hub /></RequireAuth>} />
-        <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </HashRouter>
+    <AppErrorBoundary>
+      <HashRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Suspense fallback={<Splash>Loading Eon…</Splash>}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<RequireAuth><Hub /></RequireAuth>} />
+            <Route path="/p/:slug" element={<RequireAuth><Hub /></RequireAuth>} />
+            <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </HashRouter>
+    </AppErrorBoundary>
   );
 }
