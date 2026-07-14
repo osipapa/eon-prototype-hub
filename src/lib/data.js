@@ -70,6 +70,14 @@ export async function listAssets() {
   return data;
 }
 
+// The sign-in screen has no authenticated team context yet, so it reads only
+// the one asset intentionally exposed as public workspace branding.
+export async function getPublicEonLogo() {
+  const { data, error } = await supabase.rpc("get_public_eon_logo");
+  if (error) throw error;
+  return data || "";
+}
+
 export async function upsertAsset(teamId, asset) {
   const { data, error } = await supabase
     .from("assets").upsert({ team_id: teamId, ...asset }, { onConflict: "team_id,key" })

@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
-  AlertCircle, ArrowDown, ArrowUp, Bell, Check, ChevronDown, Circle, CircleDot, Columns2, Copy,
-  ExternalLink, Figma, FileText, LayoutGrid, Link2, Loader2, LogOut,
+  AlertCircle, ArrowDown, ArrowUp, Bell, Check, ChevronDown, Circle, Copy,
+  ExternalLink, FileText, LayoutGrid, Link2, Loader2, LogOut,
   Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
   PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, Square, Sun,
@@ -791,7 +792,7 @@ function WorkspaceToolbar({
                 <button className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)}
                   title="Compare with the linked Figma frame" aria-label="Compare with Figma" aria-pressed={compare}
                   style={{ color: compare ? c.selectedText : c.muted, background: compare ? c.selected : "transparent" }}>
-                  <Columns2 size={16} />
+                  <FigmaIcon size={16} />
                 </button>
               </div>
             </ToolGroup>
@@ -899,7 +900,7 @@ function ReviewInspector({
         <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
           <TabsTrigger data-tutorial="comments-tab" value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
           <TabsTrigger data-tutorial="details-tab" value="details"><FileText size={14} /> Details</TabsTrigger>
-          <TabsTrigger data-tutorial="linear-tab" value="linear"><CircleDot size={14} /> Linear</TabsTrigger>
+          <TabsTrigger data-tutorial="linear-tab" value="linear"><LinearIcon size={14} /> Linear</TabsTrigger>
         </TabsList>
         <TabsContent data-tutorial="comments-thread" value="comments" className="eon-inspector-content">
           <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
@@ -912,7 +913,7 @@ function ReviewInspector({
           />
         </TabsContent>
         <TabsContent data-tutorial="linear-content" value="linear" className="eon-inspector-content eon-reference-content">
-          <ReferenceHeader c={c} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
+          <ReferenceHeader c={c} icon={LinearIcon} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
           {(!story.issue_url || editLinear) && <Input aria-label="Linear issue URL" value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
           <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
         </TabsContent>
@@ -1012,7 +1013,7 @@ function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
       {meta.valid ? (
         <>
           <div className="eon-compare-head" style={{ borderColor: c.border }}>
-            <Figma size={15} color={c.brand} aria-hidden="true" />
+            <FigmaIcon size={15} />
             <div className="eon-compare-meta">
               <strong>{meta.title}</strong>
               {meta.node && <span style={{ color: c.muted }}>Node {meta.node}</span>}
@@ -1030,7 +1031,7 @@ function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
         </>
       ) : (
         <div className="eon-compare-empty">
-          <ReferenceEmpty c={c} icon={Figma} title="No Figma frame linked" body="Paste a share URL to compare the source design here." />
+          <ReferenceEmpty c={c} icon={FigmaIcon} title="No Figma frame linked" body="Paste a share URL to compare the source design here." />
           {linkInput}
         </div>
       )}
@@ -1038,10 +1039,10 @@ function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
   );
 }
 
-function ReferenceHeader({ c, label, hasValue, editing, setEditing }) {
+function ReferenceHeader({ c, icon: Icon, label, hasValue, editing, setEditing }) {
   return (
     <div className="eon-reference-head">
-      <div><strong>{label}</strong></div>
+      <div>{Icon && <Icon size={15} style={{ color: c.secondary }} />}<strong>{label}</strong></div>
       {hasValue && <button className="eon-buttonish eon-text-button" onClick={() => setEditing((value) => !value)} style={{ color: editing ? c.brand : c.secondary }}>{editing ? "Done" : "Edit link"}</button>}
     </div>
   );

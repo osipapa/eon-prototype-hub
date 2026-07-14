@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
   Search, Monitor, Laptop, Tablet, Smartphone, Sun, Moon, Maximize2, ExternalLink,
-  Figma, CircleDot, Circle, ChevronDown, Link2, FileText, Plus, Minus, Shield, LogOut, Upload, Trash2,
+  Circle, ChevronDown, Link2, FileText, Plus, Minus, Shield, LogOut, Upload, Trash2,
   Square, LayoutGrid, Copy, Check,
 } from "lucide-react";
 import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, parsePrototypeConfig, safeMediaUrl } from "./prototypes";
@@ -439,7 +440,7 @@ export default function PrototypeHub({
                 {/* figma */}
                 <div style={{ flexBasis: `${linksSplit * 100}%`, minWidth: 200, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: 12, color: c.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                    <Figma style={{ width: 13, height: 13, color: c.brand }} /> Figma frame
+                    <FigmaIcon size={13} /> Figma frame
                     {story.figma_url && !editFigma && <button onClick={() => setEditFigma(true)} style={{ marginLeft: "auto", fontSize: 11, color: c.muted, background: "transparent", border: "none", cursor: "pointer" }}>Edit link</button>}
                   </div>
                   {(!story.figma_url || editFigma) && (
@@ -451,7 +452,7 @@ export default function PrototypeHub({
                   )}
                   {story.figma_url
                     ? <FigmaCard c={c} url={story.figma_url} />
-                    : <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px dashed ${c.border}`, background: c.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20 }}><Figma style={{ width: 22, height: 22, color: c.muted }} /><div style={{ fontSize: 13, color: c.text }}>No Figma frame linked</div><div style={{ fontSize: 12, color: c.muted }}>Paste a share URL to embed a live preview.</div></div>}
+                    : <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px dashed ${c.border}`, background: c.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, textAlign: "center", padding: 20 }}><FigmaIcon size={22} /><div style={{ fontSize: 13, color: c.text }}>No Figma frame linked</div><div style={{ fontSize: 12, color: c.muted }}>Paste a share URL to embed a live preview.</div></div>}
                 </div>
                 {/* resizer */}
                 <div onMouseDown={startLinksResize} title="Drag to resize" role="separator" aria-orientation="vertical"
@@ -461,7 +462,7 @@ export default function PrototypeHub({
                 {/* linear */}
                 <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: 12, color: c.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                    <CircleDot style={{ width: 13, height: 13, color: "#5E6AD2" }} /> Linear issue
+                    <LinearIcon size={13} style={{ color: "#5E6AD2" }} /> Linear issue
                     {story.issue_url && !editLinear && <button onClick={() => setEditLinear(true)} style={{ marginLeft: "auto", fontSize: 11, color: c.muted, background: "transparent", border: "none", cursor: "pointer" }}>Edit link</button>}
                   </div>
                   {(!story.issue_url || editLinear) && (
@@ -641,8 +642,6 @@ export function figmaMeta(url = "") {
   return { valid, title, node };
 }
 
-const FIGMA_MARK = `<svg width="15" height="15" viewBox="0 0 38 57" xmlns="http://www.w3.org/2000/svg"><path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#A259FF"/></svg>`;
-
 /* ---- Figma unfurl card: icon + file name + Open in Figma, over a live preview.
    Mirrors how Linear renders an embedded link. ---- */
 export function FigmaCard({ c, url }) {
@@ -650,7 +649,7 @@ export function FigmaCard({ c, url }) {
   return (
     <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px solid ${c.border}`, background: c.bg, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderBottom: `1px solid ${c.border}`, flexShrink: 0 }}>
-        <span style={{ display: "inline-flex", flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: FIGMA_MARK }} />
+        <FigmaIcon size={15} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 500, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta.title}</div>
           {meta.node && <div style={{ fontSize: 11, color: c.muted }}>Node {meta.node}</div>}
@@ -680,6 +679,7 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
     <a href={safeIssueUrl || undefined} target={clickable ? "_blank" : undefined} rel="noreferrer"
       style={{ flex: "1 1 auto", minHeight: 240, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column", textDecoration: "none", color: c.text, cursor: clickable ? "pointer" : "default", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <LinearIcon size={15} style={{ color: c.muted }} />
         <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{live?.identifier || identifier || "ISSUE"}</span>
         {live?.state
           ? <Badge style={{ background: stateColor ? `${stateColor}26` : c.raised, color: stateColor || c.text, border: "none", fontWeight: 500, fontSize: 11 }}>{live.state.name}</Badge>

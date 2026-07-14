@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { cacheEonLogo } from "../lib/branding";
 import PrototypeHub from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import {
@@ -20,7 +21,9 @@ function sortProjects(rows) {
 }
 
 function assetMap(rows) {
-  return Object.fromEntries(rows.map((item) => [item.key, item.url]));
+  const assets = Object.fromEntries(rows.map((item) => [item.key, item.url]));
+  cacheEonLogo(assets.eonLogo);
+  return assets;
 }
 
 function hasFields(value) {

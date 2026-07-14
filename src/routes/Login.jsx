@@ -1,10 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import { cacheEonLogo, readCachedEonLogo, safeBrandLogoUrl } from "../lib/branding";
+import { getPublicEonLogo } from "../lib/data";
 import "./routes.css";
 
-function EonMark() {
+function EonMark({ src }) {
+  const [failed, setFailed] = useState(false);
+  const safeSrc = safeBrandLogoUrl(src);
+
+  useEffect(() => setFailed(false), [safeSrc]);
+
+  if (safeSrc && !failed) {
+    return <img className="route-brand-mark route-brand-logo" src={safeSrc} alt="Eon" onError={() => setFailed(true)} />;
+  }
+
   return (
     <svg className="route-brand-mark" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
@@ -24,11 +35,24 @@ function PasswordVisibilityIcon({ visible }) {
 
 export default function Login() {
   const { user, configured, signInWithPassword } = useAuth();
+  const [logoUrl, setLogoUrl] = useState(readCachedEonLogo);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+
+  useEffect(() => {
+    if (!configured) return undefined;
+    let active = true;
+    getPublicEonLogo().then((url) => {
+      if (!active) return;
+      setLogoUrl(cacheEonLogo(url));
+    }).catch(() => {
+      // Keep the cached logo or fallback mark when branding is temporarily unavailable.
+    });
+    return () => { active = false; };
+  }, [configured]);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -53,7 +77,7 @@ export default function Login() {
       <div className="auth-layout">
         <section className="auth-intro" aria-labelledby="auth-intro-title">
           <div className="route-brand route-brand--large">
-            <EonMark />
+            <EonMark src={logoUrl} />
             <span>Eon Prototype Hub</span>
           </div>
           <div className="auth-intro-copy">
@@ -70,7 +94,7 @@ export default function Login() {
 
         <section className="route-card auth-card" aria-labelledby="login-title">
           <div className="auth-card-brand route-brand">
-            <EonMark />
+            <EonMark src={logoUrl} />
             <span>Eon</span>
           </div>
           <div className="auth-card-heading">

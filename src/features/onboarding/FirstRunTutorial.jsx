@@ -7,6 +7,7 @@ import {
 import {
   createTutorialSteps, TUTORIAL_PERSONAS, validTutorialPersona,
 } from "./tutorial";
+import { LinearIcon } from "../../components/BrandIcons";
 import "./tutorial.css";
 
 const ICONS = {
@@ -14,7 +15,7 @@ const ICONS = {
   prototype: Monitor,
   review: ListChecks,
   comments: MessageSquare,
-  linear: CircleDot,
+  linear: LinearIcon,
   status: CircleDot,
   prompt: Copy,
   mobile: Smartphone,

@@ -156,6 +156,16 @@ returns trigger language plpgsql set search_path = public as $$
 begin new.updated_at = now(); return new; end;
 $$;
 
+-- The signed-out login can read only the logo URL, not the asset row or any
+-- other team media. The fixed search path keeps this security-definer helper
+-- from resolving attacker-controlled objects.
+create or replace function public.get_public_eon_logo()
+returns text language sql stable security definer set search_path = public as $$
+  select url from public.assets where key = 'eonLogo' order by created_at asc limit 1;
+$$;
+revoke all on function public.get_public_eon_logo() from public;
+grant execute on function public.get_public_eon_logo() to anon, authenticated;
+
 -- Trigger functions never need to be client-callable via PostgREST RPC.
 revoke execute on function public.handle_new_user() from anon, authenticated;
 revoke execute on function public.guard_profile_privileges() from anon, authenticated;
