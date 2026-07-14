@@ -147,7 +147,7 @@
   .cat-row + .cat-row{border-top:1px solid var(--divider)}
   .cat-name{font-size:var(--font-size-body);line-height:1.4}
   .cat-stars{display:flex}
-  .cat-star{width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+  .cat-star{width:40px;height:44px;display:flex;align-items:center;justify-content:center}
   .cat-star svg{width:24px;height:24px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
   .cat-star.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
 
@@ -156,7 +156,8 @@
   .q-sub{display:flex;flex-direction:column;gap:8px}
   .q-text{font-size:var(--font-size-body);line-height:1.4}
   .pills{display:flex;flex-wrap:wrap;gap:8px}
-  .pill{padding:8px 16px;border-radius:var(--radius-pill);font-size:var(--font-size-caption-1);line-height:16px;font-weight:500;background:var(--button-fill-secondary-default);border:1px solid var(--button-border-secondary);color:var(--button-text-secondary-default);transition:background .12s,color .12s}
+  .pill{position:relative;padding:8px 16px;border-radius:var(--radius-pill);font-size:var(--font-size-caption-1);line-height:16px;font-weight:500;background:var(--button-fill-secondary-default);border:1px solid var(--button-border-secondary);color:var(--button-text-secondary-default);transition:background .12s,color .12s}
+  .pill::after{content:'';position:absolute;inset:-6px} /* 44pt hit area without growing the pill */
   .pill.on{background:var(--button-fill-secondary-selected);border-color:var(--button-fill-secondary-selected);color:var(--button-text-secondary-selected)}
 
   textarea{width:100%;min-height:96px;padding:16px;border-radius:var(--radius-modal);background:var(--background-1);border:1px solid var(--input-border-default);color:var(--text-primary);font-size:var(--font-size-body);line-height:1.4;resize:none;outline:none}
@@ -166,11 +167,11 @@
   .btn-primary{display:block;width:100%;height:50px;border-radius:var(--radius-control);background:var(--button-fill-primary-default);color:var(--button-text-primary-default);font-size:var(--font-size-body);font-weight:500}
   .btn-primary:hover{background:var(--button-fill-primary-hover)}
   .btn-primary:active{background:var(--button-fill-primary-pressed)}
-  .btn-primary:disabled{background:var(--button-fill-primary-disabled);color:var(--button-text-primary-disabled);cursor:default}
+  .btn-primary:disabled,.btn-primary.inactive{background:var(--button-fill-primary-disabled);color:var(--button-text-primary-disabled);cursor:default}
   .btn-secondary{display:block;width:100%;height:50px;margin-top:8px;border-radius:var(--radius-control);background:var(--button-fill-secondary-default);border:1px solid var(--button-border-secondary);color:var(--button-text-secondary-default);font-size:var(--font-size-body);font-weight:500}
   .btn-secondary:hover{background:var(--button-fill-secondary-hover)}
   .btn-ghost{display:block;width:100%;height:44px;margin-top:4px;color:var(--text-secondary);font-size:var(--font-size-body)}
-  .privacy{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);text-align:center;margin-top:-12px;line-height:1.4}
+  .privacy{font-size:var(--font-size-caption-1);color:var(--text-secondary);text-align:center;margin-top:-12px;line-height:1.4}
 
   .end-state{padding:32px 16px 16px;text-align:center}
   .end-icon{width:56px;height:56px;border-radius:50%;background:var(--alert-background-success);color:var(--icon-success);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
@@ -308,7 +309,7 @@
 
         <div class="q-block">
           <div class="q-sub">
-            <div class="q-text">How did you have access to the car?</div>
+            <div class="q-text">How did you access the car?</div>
             <div class="pills" data-group="access">
               <button class="pill" data-value="eon_app">Eon App</button>
               <button class="pill" data-value="chargekey_app">ChargeKey App</button>
@@ -341,13 +342,14 @@
           <div class="q-block hidden" id="support-followup">
             <div class="divider"></div>
             <div class="q-sub">
-              <div class="q-text">Have customer support resolved your issue?</div>
+              <div class="q-text">Has customer support resolved your issue?</div>
               <div class="pills" data-group="resolved">
                 <button class="pill" data-value="no">No</button>
                 <button class="pill" data-value="yes">Yes</button>
               </div>
             </div>
-            <div class="q-sub">
+            <!-- notes open only when the issue is unresolved -->
+            <div class="q-sub hidden" id="support-notes">
               <div class="q-text">Describe what happened, so we can improve</div>
               <textarea id="support-comment" placeholder="Add more detail (optional)" aria-label="Support experience details"></textarea>
             </div>
@@ -359,7 +361,7 @@
           </div>
         </div>
 
-        <button class="btn-primary" id="submit-btn" disabled onclick="submitReview()">Submit Rating</button>
+        <button class="btn-primary inactive" id="submit-btn" aria-disabled="true" onclick="submitReview()">Submit Rating</button>
         <div class="privacy">Your ratings are shared with the owner anonymously.</div>
       </div>
 
@@ -374,11 +376,14 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
           $30 in Eon credit added
         </div>
+        <div class="followup hidden" id="high-followup">
+          <p><span>We're on it.</span> Our support team will follow up on your open issue within 24 hours.</p>
+        </div>
         <div class="d5 hidden" id="d5-ask">
           <div class="divider"></div>
           <p>Enjoying Eon? A public review helps a lot.</p>
           <button class="btn-primary">Rate Eon on the App Store</button>
-          <button class="btn-ghost">Maybe Later</button>
+          <button class="btn-ghost" onclick="document.getElementById('d5-ask').classList.add('hidden')">Maybe Later</button>
         </div>
       </div>
 
@@ -409,11 +414,11 @@
         <div class="ref-field">
           <label>Referral link</label>
           <span class="link">https://eon.rent/owner/signup?ref=MIGUEL30</span>
-          <button class="copy-btn" aria-label="Copy referral link">
+          <button class="copy-btn" id="copy-btn" aria-label="Copy referral link" onclick="copyReferral()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
-        <button class="btn-primary ref-cta">Share Link</button>
+        <button class="btn-secondary ref-cta">Share Link</button>
       </div>
     </section>
 
@@ -429,7 +434,7 @@
     <pre class="p-block" id="p1-json"></pre>
     <div class="p-head"><b>Mixpanel · Trip Review Details Added</b><span id="p2-status">waiting</span></div>
     <pre class="p-block" id="p2-json"></pre>
-    <div class="p-route"><b>Routing:</b> Trip Reviewed fires on the star tap so every rating is counted · rating 5 fires D5 public review ask · rating 1 to 3 opens support triage · category scores and survey answers roll up to the owner scorecard</div>
+    <div class="p-route"><b>Routing:</b> Trip Reviewed fires on the star tap so every rating is counted · rating 5 fires D5 public review ask · rating 1 to 3 or an unresolved support issue opens triage · category scores and survey answers roll up to the owner scorecard</div>
   </div>
 
   <nav class="tabbar">
@@ -533,10 +538,8 @@
         pill.onclick = function () {
           var g = group.dataset.group, v = pill.dataset.value;
           state[g] = state[g] === v ? null : v;
-          if (g === 'contacted' && (state[g] === 'no' || state[g] === null)) {
-            state.resolved = null;
-            document.getElementById('support-comment').value = '';
-          }
+          if (g === 'contacted' && (state[g] === 'no' || state[g] === null)) state.resolved = null;
+          if (state.resolved !== 'no') document.getElementById('support-comment').value = '';
           render();
         };
       });
@@ -554,10 +557,23 @@
     }
 
     function submitReview() {
-      if (!state.rating) return;
+      if (!state.rating) { // no dead end: point back at the stars
+        starsEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('rating-word').textContent = 'Tap a star first';
+        return;
+      }
       state.done = true;
       if (hasDetails()) console.log('Mixpanel track: Trip Review Details Added', detailsPayload());
       render();
+    }
+
+    function copyReferral() {
+      var link = document.querySelector('.ref-field .link').textContent;
+      if (navigator.clipboard) navigator.clipboard.writeText(link);
+      var btn = document.getElementById('copy-btn');
+      btn.style.color = 'var(--text-success)';
+      btn.setAttribute('aria-label', 'Copied');
+      setTimeout(function () { btn.style.color = ''; btn.setAttribute('aria-label', 'Copy referral link'); }, 1200);
     }
 
     function hasDetails() {
@@ -621,17 +637,21 @@
         });
       });
 
-      // support follow-up appears once support was contacted
+      // support follow-up appears once support was contacted; notes only when unresolved
       var contactedYes = state.contacted === 'yes_eon' || state.contacted === 'yes_owner';
       document.getElementById('support-followup').classList.toggle('hidden', !contactedYes);
+      document.getElementById('support-notes').classList.toggle('hidden', state.resolved !== 'no');
 
-      document.getElementById('submit-btn').disabled = !r;
+      var submitBtn = document.getElementById('submit-btn');
+      submitBtn.classList.toggle('inactive', !r);
+      submitBtn.setAttribute('aria-disabled', !r ? 'true' : 'false');
 
-      // end states
+      // end states; an unresolved support issue opens triage at any rating
       document.getElementById('review-form').classList.toggle('hidden', state.done);
       document.getElementById('end-high').classList.toggle('hidden', !(state.done && r >= 4));
       document.getElementById('end-low').classList.toggle('hidden', !(state.done && r <= 3));
-      document.getElementById('d5-ask').classList.toggle('hidden', r !== 5); // D5 fires on 5 stars only
+      document.getElementById('high-followup').classList.toggle('hidden', state.resolved !== 'no');
+      document.getElementById('d5-ask').classList.toggle('hidden', r !== 5 || state.resolved === 'no'); // no public ask over an open issue
 
       // payload overlay
       var p = document.getElementById('payload');
