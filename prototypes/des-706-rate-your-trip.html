@@ -129,20 +129,22 @@
 
   /* ---------- rate your trip (per Figma 14782:53780) ---------- */
   .rate-card{background:var(--menu-list-background);border:1px solid var(--menu-list-border);border-radius:var(--radius-modal);overflow:hidden;margin-top:24px}
-  .rate-body{padding:24px 16px 16px;display:flex;flex-direction:column;gap:24px}
+  .rate-head{padding:20px 16px 16px;border-bottom:1px solid var(--divider)}
   .rate-head h2{font-size:var(--font-size-title-2);font-weight:500;line-height:1.2}
   .rate-head p{font-size:var(--font-size-body);color:var(--text-secondary);margin-top:8px;line-height:1.4}
+  .rate-content{padding:24px 16px 16px;display:flex;flex-direction:column;gap:16px}
+  .q-label{text-align:center;font-size:var(--font-size-body);font-weight:500}
 
-  .stars{display:flex;gap:4px;margin-left:-4px} /* tight left-aligned cluster; -4px optically aligns first glyph to the heading */
+  .stars{display:flex;justify-content:center;gap:12px} /* centered hero rating */
   .star-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;transition:transform .1s}
   .star-btn:active{transform:scale(1.15)}
   .star-btn svg{width:36px;height:36px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
   .star-btn.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
-  .rating-word{text-align:left;font-size:var(--font-size-body);line-height:1.4;min-height:22px;margin-top:-8px}
+  .rating-word{text-align:center;font-size:var(--font-size-body);line-height:1.4;margin-top:-4px}
 
-  /* first state is collapsed: only header + subtitle + stars show until a star is tapped */
+  /* first state is collapsed: only the header, question, and stars show until a star is tapped */
   .after-rating{display:none}
-  .after-rating.open{display:flex;flex-direction:column;gap:16px;animation:reveal .3s ease}
+  .after-rating.open{display:flex;flex-direction:column;gap:24px;animation:reveal .3s ease}
   @keyframes reveal{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 
   .divider{height:1px;background:var(--divider);border-radius:16px}
@@ -157,7 +159,7 @@
   .cat-star.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
 
   /* survey questions with pill options (design: button-tab, radius 100) */
-  .q-block{display:flex;flex-direction:column;gap:16px}
+  .q-block{display:flex;flex-direction:column;gap:24px}
   .q-sub{display:flex;flex-direction:column;gap:8px}
   .q-text{font-size:var(--font-size-body);font-weight:500;line-height:1.4}
   .pills{display:flex;flex-wrap:wrap;gap:8px}
@@ -297,16 +299,18 @@
 
     <!-- ============ RATE YOUR TRIP (Figma 14782:53780) ============ -->
     <section class="rate-card" aria-label="Rate your trip">
-      <div class="rate-body" id="review-form">
+      <div id="review-form">
         <div class="rate-head">
           <h2>Rate Your Trip</h2>
           <p>Earn $30 in Eon credit toward your next booking.</p>
         </div>
-
+        <div class="rate-content">
+        <div class="q-label">How was your trip overall?</div>
         <div class="stars" id="stars" role="radiogroup" aria-label="Overall rating, 1 to 5 stars"></div>
+        <div class="rating-word hidden" id="rating-word"></div>
+
         <!-- everything below reveals after the first star tap -->
         <div class="after-rating" id="after-rating">
-        <div class="rating-word" id="rating-word"></div>
         <div class="divider"></div>
 
         <div class="cat-list" id="cats"></div>
@@ -371,6 +375,7 @@
 
         <button class="btn-primary inactive" id="submit-btn" aria-disabled="true" onclick="submitReview()">Submit Rating</button>
         <div class="privacy">Your ratings are shared with the owner anonymously.</div>
+        </div>
         </div>
       </div>
 
@@ -626,7 +631,9 @@
         starBtns[i].classList.toggle('on', i < r);
         starBtns[i].setAttribute('aria-checked', i + 1 === r ? 'true' : 'false');
       }
-      document.getElementById('rating-word').textContent = r ? WORDS[r] : '';
+      var rw = document.getElementById('rating-word');
+      rw.textContent = r ? WORDS[r] : '';
+      rw.classList.toggle('hidden', r === 0); // hidden (no reserved space) until rated
 
       // collapsed first state: the rest reveals only after a star is tapped
       document.getElementById('after-rating').classList.toggle('open', r > 0);
