@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PrototypeWorkspace from "../features/hub/PrototypeWorkspace";
+import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 
 const initialProjects = [
   {
@@ -71,39 +72,44 @@ const initialComments = [
 export default function WorkspacePreview() {
   const [projects, setProjects] = useState(initialProjects);
   const [comments, setComments] = useState(initialComments);
+  const [assets, setAssets] = useState({});
   const [activeId, setActiveId] = useState(initialProjects[0].id);
+  const [tutorialOpen, setTutorialOpen] = useState(() => new URLSearchParams(window.location.search).get("tutorial") === "1");
 
   const patchProject = (id, patch) => {
     setProjects((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
   };
 
   return (
-    <PrototypeWorkspace
-      projects={projects}
-      assets={{}}
-      comments={comments}
-      isAdmin
-      profile={{ id: "preview-user", full_name: "Mate", role: "admin" }}
-      userEmail="mate@example.com"
-      activeId={activeId}
-      onSelectStory={(project) => setActiveId(project?.id)}
-      onPatchProject={patchProject}
-      onSetAsset={() => {}}
-      onNewProject={async () => {}}
-      onDeleteProject={(id) => setProjects((items) => items.filter((item) => item.id !== id))}
-      onReorder={() => {}}
-      onCreateComment={async (projectId, body) => {
-        setComments((items) => [...items, {
-          id: `preview-${Date.now()}`,
-          project_id: projectId,
-          author_id: "preview-user",
-          body,
-          created_at: new Date().toISOString(),
-          author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
-        }]);
-      }}
-      onOpenAdmin={() => {}}
-      onSignOut={() => {}}
-    />
+    <>
+      <PrototypeWorkspace
+        projects={projects}
+        assets={assets}
+        comments={comments}
+        isAdmin
+        profile={{ id: "preview-user", full_name: "Mate", role: "admin" }}
+        userEmail="mate@example.com"
+        activeId={activeId}
+        onSelectStory={(project) => setActiveId(project?.id)}
+        onPatchProject={patchProject}
+        onSetAsset={(key, url) => setAssets((current) => ({ ...current, [key]: url }))}
+        onNewProject={async () => {}}
+        onDeleteProject={(id) => setProjects((items) => items.filter((item) => item.id !== id))}
+        onReorder={() => {}}
+        onCreateComment={async (projectId, body) => {
+          setComments((items) => [...items, {
+            id: `preview-${Date.now()}`,
+            project_id: projectId,
+            author_id: "preview-user",
+            body,
+            created_at: new Date().toISOString(),
+            author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
+          }]);
+        }}
+        onOpenAdmin={() => {}}
+        onSignOut={() => {}}
+      />
+      {tutorialOpen && <FirstRunTutorial firstName="Mate" isQa onExit={() => setTutorialOpen(false)} />}
+    </>
   );
 }

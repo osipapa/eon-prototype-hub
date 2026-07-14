@@ -1,0 +1,223 @@
+.eon-tutorial-overlay,
+.eon-tutorial-overlay * { box-sizing: border-box; }
+
+.eon-tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  overflow: auto;
+  background: rgba(0, 0, 0, .72);
+  color: #fff;
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-backdrop-filter: blur(12px) saturate(1.08);
+  backdrop-filter: blur(12px) saturate(1.08);
+  animation: eon-tutorial-scrim-in 220ms ease-out both;
+  transition: opacity 170ms ease-in;
+}
+
+.eon-tutorial-overlay.is-closing { opacity: 0; }
+
+.eon-tutorial-dialog {
+  width: min(820px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow: hidden auto;
+  border-radius: 24px;
+  background: rgba(17, 17, 21, .96);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .13), 0 36px 120px rgba(0, 0, 0, .68);
+  animation: eon-tutorial-materialize 420ms cubic-bezier(.23, 1, .32, 1) both;
+  transition: transform 170ms ease-in, filter 170ms ease-in;
+}
+
+.eon-tutorial-overlay.is-closing .eon-tutorial-dialog {
+  transform: translateY(5px) scale(.99);
+  filter: blur(2px);
+}
+
+.eon-tutorial-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px 10px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(17, 17, 21, .88);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.eon-tutorial-brand { display: flex; min-width: 0; align-items: center; gap: 9px; font-size: 13px; font-weight: 650; }
+.eon-tutorial-brand-mark { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: #edd2f6; color: #000; box-shadow: 0 8px 24px rgba(237, 210, 246, .13); }
+.eon-tutorial-qa { display: inline-flex; min-height: 24px; align-items: center; padding: 0 8px; border-radius: 7px; background: rgba(225, 92, 247, .12); color: #ed9ff9; box-shadow: inset 0 0 0 1px rgba(225, 92, 247, .2); font-size: 9px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+
+.eon-tutorial-icon-button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #9094a5;
+  cursor: pointer;
+  transition: transform 150ms cubic-bezier(.23, 1, .32, 1), background-color 150ms ease-out, color 150ms ease-out;
+}
+.eon-tutorial-icon-button:hover { background: #232328; color: #fff; }
+.eon-tutorial-icon-button:active { transform: scale(.96); }
+
+.eon-tutorial-body { display: grid; min-height: 410px; grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr); }
+
+.eon-tutorial-visual {
+  position: relative;
+  display: grid;
+  min-height: 410px;
+  place-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 42px;
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  background: radial-gradient(circle at 50% 38%, rgba(225, 92, 247, .18), transparent 48%), #0b0b0e;
+}
+
+.eon-tutorial-orb { position: absolute; z-index: -1; border-radius: 50%; filter: blur(2px); opacity: .72; }
+.eon-tutorial-orb--one { top: 13%; right: 8%; width: 120px; height: 120px; background: rgba(225, 92, 247, .11); }
+.eon-tutorial-orb--two { bottom: 8%; left: 8%; width: 84px; height: 84px; background: rgba(237, 210, 246, .08); }
+
+.eon-tutorial-visual-card {
+  width: min(100%, 292px);
+  overflow: hidden;
+  border-radius: 17px;
+  background: rgba(22, 22, 27, .88);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .13), 0 24px 72px rgba(0, 0, 0, .45);
+  transform: perspective(700px) rotateX(1deg) rotateY(-2deg);
+  animation: eon-tutorial-preview-in 520ms 110ms cubic-bezier(.23, 1, .32, 1) both;
+}
+
+.eon-tutorial-visual-topbar { display: flex; height: 34px; align-items: center; justify-content: space-between; padding: 0 11px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.eon-tutorial-window-dots { display: flex; gap: 4px; }
+.eon-tutorial-window-dots i { width: 5px; height: 5px; border-radius: 50%; background: #4b4b55; }
+.eon-tutorial-window-dots i:first-child { background: #e15cf7; }
+.eon-tutorial-visual-pill { width: 52px; height: 7px; border-radius: 5px; background: #303038; }
+.eon-tutorial-visual-layout { display: grid; height: 188px; grid-template-columns: 68px 1fr; }
+.eon-tutorial-visual-sidebar { display: flex; flex-direction: column; gap: 10px; padding: 14px 10px; border-right: 1px solid rgba(255, 255, 255, .07); background: rgba(9, 9, 11, .45); }
+.eon-tutorial-visual-sidebar span { display: block; width: 34px; height: 6px; border-radius: 5px; background: #34343c; }
+.eon-tutorial-visual-sidebar span.is-wide { width: 43px; height: 8px; margin-bottom: 5px; background: #5d5260; }
+.eon-tutorial-visual-sidebar span.is-active { width: 47px; height: 20px; margin: -6px 0 -6px -3px; border-radius: 6px; background: rgba(225, 92, 247, .14); box-shadow: inset 2px 0 #e15cf7; }
+.eon-tutorial-visual-canvas { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 15px; padding: 18px; background: linear-gradient(145deg, #17171b, #0f0f12); }
+.eon-tutorial-visual-icon { display: grid; width: 56px; height: 56px; place-items: center; border-radius: 17px; background: #edd2f6; color: #000; box-shadow: 0 14px 36px rgba(237, 210, 246, .12); }
+
+.eon-tutorial-micro-search { display: flex; width: 132px; height: 29px; align-items: center; gap: 7px; padding: 0 9px; border-radius: 8px; background: #24242b; color: #7e8290; font-size: 8px; }
+.eon-tutorial-micro-controls { display: flex; align-items: center; gap: 5px; }
+.eon-tutorial-micro-controls span, .eon-tutorial-micro-build span { display: inline-flex; height: 26px; align-items: center; gap: 5px; padding: 0 8px; border-radius: 7px; background: #292930; color: #d8d8df; font-size: 8px; }
+.eon-tutorial-micro-controls i { width: 19px; height: 19px; border-radius: 6px; background: #303038; }
+.eon-tutorial-micro-controls i.is-selected { background: #edd2f6; box-shadow: 0 0 0 2px rgba(237, 210, 246, .08); }
+.eon-tutorial-micro-thread { display: flex; width: 130px; flex-direction: column; gap: 5px; }
+.eon-tutorial-micro-thread span { width: 88px; height: 18px; border-radius: 7px 7px 7px 2px; background: #303038; }
+.eon-tutorial-micro-thread span.is-mine { width: 96px; margin-left: auto; border-radius: 7px 7px 2px; background: rgba(225, 92, 247, .24); }
+.eon-tutorial-micro-build { display: flex; gap: 6px; }
+.eon-tutorial-micro-build span:last-child { background: #edd2f6; color: #000; }
+.eon-tutorial-micro-ready { display: inline-flex; align-items: center; gap: 7px; color: #d8d8df; font-size: 9px; font-weight: 650; }
+.eon-tutorial-micro-ready svg { display: block; padding: 3px; border-radius: 50%; background: #6fec7b; color: #071008; }
+.eon-tutorial-micro-welcome { display: flex; gap: 6px; }
+.eon-tutorial-micro-welcome svg { box-sizing: content-box; padding: 7px; border-radius: 8px; background: #28282f; color: #c7c8d0; }
+
+.eon-tutorial-copy { display: flex; min-width: 0; justify-content: center; flex-direction: column; padding: 42px 44px; animation: eon-tutorial-copy-in 280ms cubic-bezier(.23, 1, .32, 1) both; }
+.eon-tutorial-eyebrow { color: #e15cf7; font-size: 10px; font-weight: 750; letter-spacing: .105em; text-transform: uppercase; }
+.eon-tutorial-copy h1 { max-width: 390px; margin: 12px 0 0; color: #fff; font-size: clamp(27px, 3.2vw, 36px); font-weight: 590; letter-spacing: -.045em; line-height: 1.04; text-wrap: balance; }
+.eon-tutorial-copy > p { max-width: 400px; margin: 17px 0 0; color: #aaacb8; font-size: 13px; line-height: 1.62; text-wrap: pretty; }
+.eon-tutorial-tips { display: flex; margin: 22px 0 0; padding: 0; flex-direction: column; gap: 10px; list-style: none; }
+.eon-tutorial-tips li { display: flex; align-items: flex-start; gap: 9px; color: #d8d8df; font-size: 11px; line-height: 1.5; }
+.eon-tutorial-tips li > span { display: grid; width: 20px; height: 20px; flex: 0 0 20px; place-items: center; margin-top: -1px; border-radius: 6px; background: rgba(225, 92, 247, .1); color: #ed9ff9; }
+.eon-tutorial-callout { display: flex; align-items: flex-start; gap: 8px; margin-top: 22px; padding: 11px 12px; border-radius: 11px; background: rgba(237, 210, 246, .065); color: #bfc0ca; box-shadow: inset 0 0 0 1px rgba(237, 210, 246, .09); font-size: 10px; line-height: 1.5; }
+.eon-tutorial-callout svg { flex: 0 0 auto; margin-top: 1px; color: #ed9ff9; }
+
+.eon-tutorial-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 16px 14px 20px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(17, 17, 21, .9);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+.eon-tutorial-progress { display: flex; align-items: center; gap: 11px; }
+.eon-tutorial-progress-label { color: #7f8290; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.eon-tutorial-dots { display: flex; align-items: center; gap: 5px; }
+.eon-tutorial-dots i { width: 5px; height: 5px; border-radius: 4px; background: #3a3a42; transition: width 180ms cubic-bezier(.23, 1, .32, 1), background-color 180ms ease-out; }
+.eon-tutorial-dots i.is-complete { background: #716576; }
+.eon-tutorial-dots i.is-active { width: 18px; background: #e15cf7; }
+.eon-tutorial-actions { display: flex; align-items: center; gap: 8px; }
+.eon-tutorial-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 7px; padding: 0 15px; border: 0; border-radius: 11px; cursor: pointer; font-size: 12px; font-weight: 650; white-space: nowrap; transition: transform 150ms cubic-bezier(.23, 1, .32, 1), background-color 150ms ease-out, box-shadow 150ms ease-out, color 150ms ease-out; }
+.eon-tutorial-button:active { transform: scale(.96); }
+.eon-tutorial-button.is-primary { background: #edd2f6; color: #000; box-shadow: inset 0 1px rgba(255, 255, 255, .34), 0 9px 26px rgba(237, 210, 246, .1); }
+.eon-tutorial-button.is-primary:hover { background: #f3ddfa; box-shadow: inset 0 1px rgba(255, 255, 255, .42), 0 12px 30px rgba(237, 210, 246, .16); }
+.eon-tutorial-button.is-secondary { background: #242429; color: #c4c5ce; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+.eon-tutorial-button.is-secondary:hover { background: #2c2c32; color: #fff; }
+.eon-tutorial-button.is-quiet { background: transparent; color: #9094a5; }
+.eon-tutorial-button.is-quiet:hover { background: #222227; color: #fff; }
+.eon-tutorial-overlay :focus-visible { outline: 2px solid #e15cf7; outline-offset: 2px; }
+
+.eon-tutorial-dialog.is-welcome .eon-tutorial-eyebrow { animation: eon-tutorial-welcome-item 360ms 160ms cubic-bezier(.23, 1, .32, 1) both; }
+.eon-tutorial-dialog.is-welcome .eon-tutorial-copy h1 { animation: eon-tutorial-welcome-item 400ms 220ms cubic-bezier(.23, 1, .32, 1) both; }
+.eon-tutorial-dialog.is-welcome .eon-tutorial-copy > p { animation: eon-tutorial-welcome-item 400ms 280ms cubic-bezier(.23, 1, .32, 1) both; }
+.eon-tutorial-dialog.is-welcome .eon-tutorial-callout { animation: eon-tutorial-welcome-item 400ms 340ms cubic-bezier(.23, 1, .32, 1) both; }
+
+@keyframes eon-tutorial-scrim-in { from { opacity: 0; } }
+@keyframes eon-tutorial-materialize { from { opacity: 0; transform: translateY(14px) scale(.975); filter: blur(5px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+@keyframes eon-tutorial-preview-in { from { opacity: 0; transform: perspective(700px) translateY(12px) rotateX(2deg) rotateY(-4deg) scale(.96); } }
+@keyframes eon-tutorial-copy-in { from { opacity: 0; transform: translateX(7px); } }
+@keyframes eon-tutorial-welcome-item { from { opacity: 0; transform: translateY(7px); filter: blur(3px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
+@media (max-width: 720px) {
+  .eon-tutorial-overlay { align-items: start; padding: 10px; }
+  .eon-tutorial-dialog { max-height: calc(100dvh - 20px); border-radius: 20px; }
+  .eon-tutorial-body { min-height: 0; grid-template-columns: 1fr; }
+  .eon-tutorial-visual { min-height: 190px; padding: 25px; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+  .eon-tutorial-visual-card { width: min(100%, 270px); transform: none; }
+  .eon-tutorial-visual-layout { height: 120px; }
+  .eon-tutorial-visual-sidebar { gap: 7px; padding-block: 10px; }
+  .eon-tutorial-visual-canvas { gap: 9px; padding: 10px; }
+  .eon-tutorial-visual-icon { width: 44px; height: 44px; border-radius: 14px; }
+  .eon-tutorial-copy { padding: 28px 24px 30px; }
+  .eon-tutorial-copy h1 { font-size: clamp(25px, 8vw, 32px); }
+}
+
+@media (max-width: 480px) {
+  .eon-tutorial-header { padding-left: 14px; }
+  .eon-tutorial-qa { max-width: 86px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .eon-tutorial-visual { min-height: 164px; padding: 18px; }
+  .eon-tutorial-visual-layout { height: 103px; }
+  .eon-tutorial-copy { padding: 25px 18px 28px; }
+  .eon-tutorial-copy h1 { margin-top: 10px; font-size: 25px; }
+  .eon-tutorial-copy > p { margin-top: 14px; }
+  .eon-tutorial-footer { align-items: stretch; flex-direction: column; gap: 11px; padding: 12px 14px 14px; }
+  .eon-tutorial-progress { justify-content: space-between; }
+  .eon-tutorial-actions { width: 100%; }
+  .eon-tutorial-actions .eon-tutorial-button { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eon-tutorial-overlay,
+  .eon-tutorial-dialog,
+  .eon-tutorial-visual-card,
+  .eon-tutorial-copy,
+  .eon-tutorial-dialog.is-welcome .eon-tutorial-eyebrow,
+  .eon-tutorial-dialog.is-welcome .eon-tutorial-copy h1,
+  .eon-tutorial-dialog.is-welcome .eon-tutorial-copy > p,
+  .eon-tutorial-dialog.is-welcome .eon-tutorial-callout { animation: none; transition-duration: 0ms; }
+  .eon-tutorial-dots i { transition-duration: 0ms; }
+}

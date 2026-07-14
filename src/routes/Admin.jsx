@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, Loader2,
-  RefreshCw, ShieldCheck, Trash2, UserPlus, Users, X,
+  PlayCircle, RefreshCw, ShieldCheck, Trash2, UserPlus, Users, X,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { createAccount, deleteAccount, listProfiles, setAccountPassword, setProfileRole } from "../lib/data";
@@ -174,6 +174,10 @@ export default function Admin() {
           <ShieldCheck size={17} aria-hidden="true" />
           <span>Workspace admin</span>
         </div>
+        <button className="route-button route-button--secondary route-pressable admin-tutorial-button" onClick={() => navigate("/?tutorial=1")} aria-label="Preview onboarding tutorial">
+          <PlayCircle size={16} aria-hidden="true" />
+          <span>Preview onboarding</span>
+        </button>
       </header>
 
       <div className="admin-page">

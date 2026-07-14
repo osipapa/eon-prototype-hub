@@ -18,9 +18,10 @@ import {
   parsePrototypeConfig, renderStory,
 } from "./prototypes";
 import {
-  FigmaEmbed, LinearCard, MediaManager, SETUP_PROMPT, StateGrid,
+  FigmaEmbed, LinearCard, MediaManager, StateGrid,
   UploadPanel, figmaMeta,
 } from "./PrototypeHub";
+import { buildSetupPrompt } from "./setupPrompt";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 const REVIEW_STAGES = ["Exploration", "In review", "Handoff", "Shipped"];
@@ -104,6 +105,9 @@ export default function PrototypeWorkspace({
     const controls = story.controls?.length ? story.controls : (cfg.controls || []);
     return { ...story, controls, defaults: { ...(cfg.defaults || {}), ...(story.defaults || {}) } };
   }, [story, cfg]);
+  const setupControlSource = story?.controls?.length
+    ? "stored project controls (these override embedded eon-config controls)"
+    : cfg.controls?.length ? "embedded eon-config" : "none";
   const args = useMemo(
     () => (effStory ? currentArgs(effStory, liveArgs[effStory.id]) : {}),
     [effStory, liveArgs],
@@ -316,7 +320,16 @@ export default function PrototypeWorkspace({
   };
   const copySetupPrompt = async () => {
     try {
-      await navigator.clipboard.writeText(SETUP_PROMPT);
+      await copyText(buildSetupPrompt({
+        project: story,
+        controls: effStory?.controls,
+        defaults: effStory?.defaults,
+        currentArgs: args,
+        assets,
+        theme: protoTheme,
+        viewport,
+        controlSource: setupControlSource,
+      }));
       setCopiedPrompt(true);
       window.setTimeout(() => setCopiedPrompt(false), 1600);
     } catch { /* Clipboard may be blocked by the browser. */ }
@@ -462,7 +475,8 @@ export default function PrototypeWorkspace({
                   </div>
                 ) : (
                   <div className="eon-grid-stage">
-                    <StateGrid c={c} story={effStory} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
+                    <StateGrid c={c} story={effStory} sourceProject={story} currentArgs={args} controlSource={setupControlSource}
+                      media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
                   </div>
                 )}
               </section>
@@ -569,7 +583,7 @@ function WorkspaceSidebar({
               </button>
             </div>
             <button className="eon-buttonish eon-secondary-button" onClick={copySetupPrompt}
-              title="Copy the prototype authoring prompt" style={{ borderColor: c.border, background: c.raised, color: copiedPrompt ? c.brand : c.secondary }}>
+              title="Includes the current controls, selected values, viewports, and shared media variables" style={{ borderColor: c.border, background: c.raised, color: copiedPrompt ? c.brand : c.secondary }}>
               {copiedPrompt ? <Check size={14} /> : <Copy size={14} />}
               {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
             </button>

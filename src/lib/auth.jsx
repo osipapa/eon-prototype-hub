@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "./supabase";
+import { TUTORIAL_METADATA_KEY } from "../features/onboarding/tutorial";
 
 const AuthContext = createContext(null);
 
@@ -28,6 +29,22 @@ export function AuthProvider({ children }) {
     return () => sub.subscription.unsubscribe();
   }, [loadProfile]);
 
+  const completeTutorial = useCallback(async () => {
+    if (!session?.user) return null;
+    const completedAt = new Date().toISOString();
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        ...(session.user.user_metadata || {}),
+        [TUTORIAL_METADATA_KEY]: completedAt,
+      },
+    });
+    if (error) throw error;
+    if (data.user) {
+      setSession((current) => current ? { ...current, user: data.user } : current);
+    }
+    return completedAt;
+  }, [session?.user]);
+
   const value = {
     session,
     user: session?.user ?? null,
@@ -40,6 +57,7 @@ export function AuthProvider({ children }) {
       supabase.auth.signInWithPassword({ email, password }),
     signOut: () => supabase.auth.signOut(),
     refreshProfile: () => loadProfile(session?.user?.id),
+    completeTutorial,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

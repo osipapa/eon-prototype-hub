@@ -581,6 +581,10 @@
   color: var(--route-brand);
 }
 
+.admin-tutorial-button {
+  margin-left: auto;
+}
+
 .admin-page {
   display: flex;
   width: min(100%, 1120px);
@@ -1149,6 +1153,15 @@
 
   .route-topbar-context span,
   .route-topbar-divider {
+    display: none;
+  }
+
+  .admin-tutorial-button {
+    min-width: 44px;
+    padding-inline: 12px;
+  }
+
+  .admin-tutorial-button span {
     display: none;
   }
 

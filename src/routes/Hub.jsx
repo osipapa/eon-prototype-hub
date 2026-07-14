@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import PrototypeHub from "../features/hub/PrototypeWorkspace";
+import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
+import {
+  firstNameFor, TUTORIAL_METADATA_KEY, tutorialStorageKey,
+} from "../features/onboarding/tutorial";
 import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, subscribeAssets, listComments, createComment, subscribeComments,
@@ -34,8 +38,9 @@ function commentsTableIsMissing(error) {
 }
 
 export default function Hub() {
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, signOut, completeTutorial } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { slug } = useParams();
   const [projects, setProjects] = useState(null);
   const [assets, setAssets] = useState({});
@@ -46,6 +51,45 @@ export default function Hub() {
   const savedTimers = useRef({});
   const pending = useRef({});
   const inFlight = useRef({});
+  const tutorialResolved = useRef(false);
+  const [tutorialMode, setTutorialMode] = useState(null);
+  const tutorialQaRequested = new URLSearchParams(location.search).get("tutorial") === "1";
+
+  useEffect(() => {
+    if (!projects || !user?.id || tutorialResolved.current) return;
+    const remoteComplete = Boolean(user.user_metadata?.[TUTORIAL_METADATA_KEY]);
+    let localComplete = false;
+    try {
+      localComplete = window.localStorage.getItem(tutorialStorageKey(user.id)) === "complete";
+    } catch {
+      // Auth metadata remains the cross-device source of truth if storage is unavailable.
+    }
+
+    if (tutorialQaRequested) {
+      tutorialResolved.current = true;
+      setTutorialMode("qa");
+    } else if (!remoteComplete && !localComplete) {
+      tutorialResolved.current = true;
+      setTutorialMode("first-run");
+    }
+  }, [projects, tutorialQaRequested, user]);
+
+  const exitTutorial = () => {
+    if (tutorialMode === "first-run" && user?.id) {
+      try {
+        window.localStorage.setItem(tutorialStorageKey(user.id), "complete");
+      } catch {
+        // Continue with auth metadata when private browsing blocks storage.
+      }
+      completeTutorial().catch((error) => {
+        console.error("Couldn't sync tutorial completion.", error);
+      });
+    }
+    if (tutorialMode === "qa") {
+      navigate(location.pathname || "/", { replace: true });
+    }
+    setTutorialMode(null);
+  };
 
   // Server rows stay authoritative except for fields this browser is actively
   // saving. This prevents a realtime refresh from erasing optimistic typing.
@@ -336,27 +380,36 @@ export default function Hub() {
   const currentProjectId = active?.id || projects[0]?.id;
 
   return (
-    <PrototypeHub
-      projects={projects}
-      assets={assets}
-      comments={comments}
-      isAdmin={isAdmin}
-      profile={profile}
-      userEmail={user?.email}
-      activeId={active?.id}
-      saveState={saveStates[currentProjectId] || "idle"}
-      onRetrySave={() => retryProjectSave(currentProjectId)}
-      loadError={loadError}
-      onRetryLoad={retryLoad}
-      onSelectStory={(project) => navigate(project?.slug ? `/p/${project.slug}` : "/")}
-      onPatchProject={onPatchProject}
-      onSetAsset={onSetAsset}
-      onNewProject={onNewProject}
-      onDeleteProject={onDeleteProject}
-      onReorder={onReorder}
-      onCreateComment={onCreateComment}
-      onOpenAdmin={() => navigate("/admin")}
-      onSignOut={signOut}
-    />
+    <>
+      <PrototypeHub
+        projects={projects}
+        assets={assets}
+        comments={comments}
+        isAdmin={isAdmin}
+        profile={profile}
+        userEmail={user?.email}
+        activeId={active?.id}
+        saveState={saveStates[currentProjectId] || "idle"}
+        onRetrySave={() => retryProjectSave(currentProjectId)}
+        loadError={loadError}
+        onRetryLoad={retryLoad}
+        onSelectStory={(project) => navigate(project?.slug ? `/p/${project.slug}` : "/")}
+        onPatchProject={onPatchProject}
+        onSetAsset={onSetAsset}
+        onNewProject={onNewProject}
+        onDeleteProject={onDeleteProject}
+        onReorder={onReorder}
+        onCreateComment={onCreateComment}
+        onOpenAdmin={() => navigate("/admin")}
+        onSignOut={signOut}
+      />
+      {tutorialMode && (
+        <FirstRunTutorial
+          firstName={firstNameFor(profile, user)}
+          isQa={tutorialMode === "qa"}
+          onExit={exitTutorial}
+        />
+      )}
+    </>
   );
 }

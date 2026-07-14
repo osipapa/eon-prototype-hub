@@ -10,6 +10,9 @@ import {
   Square, LayoutGrid, Copy, Check,
 } from "lucide-react";
 import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, parsePrototypeConfig, safeMediaUrl } from "./prototypes";
+import { buildSetupPrompt } from "./setupPrompt";
+
+export { buildSetupPrompt } from "./setupPrompt";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 
@@ -26,44 +29,6 @@ function parseHttpUrl(value) {
 function decodeUrlPart(value) {
   try { return decodeURIComponent(value); } catch { return value; }
 }
-
-// Paste-into-Claude spec for authoring a prototype that plugs into the hub's
-// theme switch, state controls, and shared media. Copied by the sidebar button.
-export const SETUP_PROMPT = `Build a single, self-contained HTML file — an interactive UI prototype for the Eon Prototype Hub. It renders inside a sandboxed iframe. Follow this contract so it plugs into the hub's theme switch, state controls, and shared media.
-
-1) SELF-CONTAINED
-- One .html file. Inline all CSS and JS. External CDN links (images, fonts, Tailwind CDN) are fine; never reference local files.
-
-2) LIGHT / DARK THEMING (driven by the hub's Theme switch)
-- The hub sets, on the root <html>: class "dark" or "light", data-theme="dark|light", data-color-mode, the CSS color-scheme, forces prefers-color-scheme for JS, and exposes window.__story = { theme, args }.
-- Do NOT hardcode one theme. Support both via a class/attribute strategy, e.g.:
-    :root { --bg:#ffffff; --fg:#111827; --card:#f8fafc; --border:#e5e7eb }
-    html.dark, html[data-theme="dark"] { --bg:#0b1120; --fg:#f1f5f9; --card:#111827; --border:#1f2937 }
-    body { background:var(--bg); color:var(--fg) }
-  (Tailwind dark: variants also work.) If you add your own theme toggle, hide it when window.__story exists so the hub drives it.
-
-3) MULTIPLE STATES (appear as pills in the canvas control bar and as tiles in grid view)
-- Declare the states the hub should offer with an embedded config block:
-    <script type="application/json" id="eon-config">
-    { "controls": [
-        { "key": "state", "label": "State", "options": ["default", "loading", "error", "empty"] },
-        { "key": "plan",  "label": "Plan",  "options": ["free", "pro"] }
-      ],
-      "defaults": { "state": "default", "plan": "pro" } }
-    </script>
-- Render the current selection from window.__story.args (or the data-<key> attributes on <html>), e.g. read window.__story.args.state and show that state. The hub reloads the frame when a control changes, so reading it once on load is enough.
-
-4) SHARED MEDIA (logos / images / placeholders)
-- Reference shared assets by token so they map to the hub's Media library and update everywhere at once:
-    {{eonLogo}}  {{acmeLogo}}  {{yourSavedImageName}}   -> the asset's URL
-    {{placeholder:320x180}}  or  {{placeholder:320x180:Label}}  -> a generated placeholder image
-- These preset photo tokens always work, no setup needed — prefer them for any imagery:
-    {{heroImage}} 1600x900   {{bannerImage}} 1600x500   {{cardImage}} 800x600
-    {{portraitImage}} 900x1200   {{squareImage}} 800x800   {{thumbnailImage}} 480x320
-    {{avatarImage}} 320x320   {{productImage}} 1000x1000
-- Use them as <img src="{{cardImage}}"> or in CSS background:url({{heroImage}}).
-
-Output only the finished HTML file, nothing else.`;
 
 export default function PrototypeHub({
   projects, assets = {}, isAdmin, userEmail,
@@ -90,7 +55,20 @@ export default function PrototypeHub({
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
   const copySetupPrompt = async () => {
-    try { await navigator.clipboard.writeText(SETUP_PROMPT); setCopiedPrompt(true); setTimeout(() => setCopiedPrompt(false), 1600); } catch (e) { /* clipboard blocked */ }
+    try {
+      await navigator.clipboard.writeText(buildSetupPrompt({
+        project: story,
+        controls: effStory?.controls,
+        defaults: effStory?.defaults,
+        currentArgs: args,
+        assets,
+        theme: protoTheme,
+        viewport,
+        controlSource: setupControlSource,
+      }));
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 1600);
+    } catch (e) { /* clipboard blocked */ }
   };
 
   const commitRename = (id, value) => {
@@ -147,6 +125,9 @@ export default function PrototypeHub({
     const controls = story.controls?.length ? story.controls : (cfg.controls || []);
     return { ...story, controls, defaults: { ...(cfg.defaults || {}), ...(story.defaults || {}) } };
   }, [story, cfg]);
+  const setupControlSource = story?.controls?.length
+    ? "stored project controls (these override embedded eon-config controls)"
+    : cfg.controls?.length ? "embedded eon-config" : "none";
   const args = effStory ? currentArgs(effStory, liveArgs[effStory.id]) : {};
   const vp = VIEWPORTS[viewport];
   const media = assets; // full asset map: {{eonLogo}}, {{acmeLogo}}, and any saved key
@@ -241,7 +222,7 @@ export default function PrototypeHub({
               );
             })}
           </div>
-          <button onClick={copySetupPrompt} title="Copy a prompt that tells an AI exactly how to build a prototype for this hub (theming, states, media)"
+          <button onClick={copySetupPrompt} title="Includes the current controls, selected values, viewports, and shared media variables"
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", height: 30, marginTop: 8, borderRadius: 8, border: `1px solid ${c.border}`, background: c.raised, color: copiedPrompt ? c.brand : c.secondary, cursor: "pointer", fontSize: 12 }}>
             {copiedPrompt ? <Check style={{ width: 13, height: 13 }} /> : <Copy style={{ width: 13, height: 13 }} />}
             {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
@@ -381,7 +362,8 @@ export default function PrototypeHub({
                   style={{ width: vp.w, height: vp.h, border: "none", borderRadius: 10, background: "#fff", colorScheme: protoTheme, transform: `scale(${scale * zoom})`, transformOrigin: "top left", boxShadow: "0 12px 48px rgba(0,0,0,.28)" }} />
               </div>
             ) : (
-              <StateGrid c={c} story={effStory} media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
+              <StateGrid c={c} story={effStory} sourceProject={story} currentArgs={args} controlSource={setupControlSource}
+                media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
             )}
             </div>
             <div className="eon-ctlbar" style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", alignItems: "center", background: c.panel, border: `1px solid ${c.border}`, borderRadius: 100, boxShadow: "0 8px 30px rgba(0,0,0,.35)", maxWidth: "94%", flexWrap: "wrap", justifyContent: "center" }}>
@@ -570,7 +552,7 @@ const StatePreviewTile = memo(function StatePreviewTile({ c, story, media, tile 
 
 /* ---- All-states grid. `by` fans out over control states, light/dark themes,
    or every viewport — each combination rendered in its own labeled tile. ---- */
-export function StateGrid({ c, story, media, theme, viewport, by }) {
+export function StateGrid({ c, story, sourceProject = story, currentArgs: selectedArgs, controlSource, media, theme, viewport, by }) {
   const tiles = useMemo(() => {
     const base = currentArgs(story);
     if (by === "themes") {
@@ -584,7 +566,18 @@ export function StateGrid({ c, story, media, theme, viewport, by }) {
     return combos.map((combo) => ({ key: JSON.stringify(combo), label: Object.values(combo).join(" · ") || "Default", sub: theme, theme, viewport, args: { ...base, ...combo } }));
   }, [story, by, theme, viewport]);
 
-  if (!tiles) return <StatesNotice c={c} />;
+  if (!tiles) return (
+    <StatesNotice c={c} prompt={buildSetupPrompt({
+      project: sourceProject,
+      controls: story?.controls,
+      defaults: story?.defaults,
+      currentArgs: selectedArgs || currentArgs(story),
+      assets: media,
+      theme,
+      viewport,
+      controlSource,
+    })} />
+  );
 
   return (
     <div style={{ width: "100%", display: "flex", flexWrap: "wrap", gap: 20, alignContent: "flex-start", alignItems: "flex-start" }}>
@@ -595,11 +588,11 @@ export function StateGrid({ c, story, media, theme, viewport, by }) {
 
 /* ---- Shown by the states grid when a prototype declares no states: the hub
    can only fan out what the HTML declares via its eon-config block. ---- */
-function StatesNotice({ c }) {
+function StatesNotice({ c, prompt }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(SETUP_PROMPT);
+      await navigator.clipboard.writeText(prompt || buildSetupPrompt());
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch { /* Clipboard may be blocked by the browser. */ }
@@ -810,9 +803,10 @@ export function MediaManager({ c, assets, onSetAsset }) {
   const panel = { background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 };
   const btn = { height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", fontSize: 12 };
   const copy = async (text, id) => { try { await navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(""), 1200); } catch (e) { /* clipboard blocked */ } };
-  const Token = ({ name }) => (
-    <button onClick={() => copy(`{{${name}}}`, `tok-${name}`)} title="Copy token"
-      style={{ fontSize: 11, fontFamily: "ui-monospace, Menlo, monospace", color: c.text, background: c.raised, border: `1px solid ${c.border}`, padding: "2px 7px", borderRadius: 6, cursor: "pointer" }}>
+  const Token = ({ name, available = true }) => (
+    <button onClick={() => available && copy(`{{${name}}}`, `tok-${name}`)} disabled={!available}
+      title={available ? "Copy token" : "Add a valid image URL to activate this token"}
+      style={{ fontSize: 11, fontFamily: "ui-monospace, Menlo, monospace", color: c.text, background: c.raised, border: `1px solid ${c.border}`, padding: "2px 7px", borderRadius: 6, cursor: available ? "pointer" : "not-allowed", opacity: available ? 1 : 0.5 }}>
       {copied === `tok-${name}` ? "copied" : `{{${name}}}`}
     </button>
   );
@@ -859,7 +853,7 @@ export function MediaManager({ c, assets, onSetAsset }) {
   const customKeys = Object.keys(assets).filter((k) => !logoDefaults[k] && !PRESET_MEDIA[k] && assets[k]);
   const items = [
     ...Object.entries(logoDefaults).map(([k, d]) => ({
-      key: k, label: d.label, kind: "Logo", url: assets[k] || "", linkUrl: safeAsset(k),
+      key: k, label: d.label, kind: assets[k] ? "Logo" : "Logo · add URL", url: assets[k] || "", linkUrl: safeAsset(k),
       previewHtml: assets[k] ? null : d.html, previewSrc: safeAsset(k),
     })),
     ...Object.keys(PRESET_MEDIA).map((k) => ({
@@ -885,7 +879,7 @@ export function MediaManager({ c, assets, onSetAsset }) {
             : <span style={{ padding: 12, color: c.muted, fontSize: 12, textAlign: "center" }}>Add a valid image URL to preview this asset.</span>}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <Token name={item.key} />
+        <Token name={item.key} available={Boolean(item.linkUrl)} />
         <button onClick={() => copy(item.linkUrl, `link-${item.key}`)} disabled={!item.linkUrl} style={{ ...btn, height: 26, padding: "0 8px", opacity: item.linkUrl ? 1 : 0.5 }}>{copied === `link-${item.key}` ? "Copied" : "Link"}</button>
         {(item.url || item.removable) && (
           <button onClick={() => onSetAsset(item.key, "")} title={item.removable ? "Remove from library" : "Reset to default"} style={{ ...btn, height: 26, padding: "0 8px", marginLeft: "auto" }}>
