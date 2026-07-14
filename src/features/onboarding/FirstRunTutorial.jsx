@@ -1,25 +1,41 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight, Check, ChevronLeft, MessageSquare, Monitor, PanelLeftOpen,
-  SlidersHorizontal, Sparkles, X,
+  ArrowRight, Check, ChevronLeft, CircleDot, Code2, Copy, ListChecks,
+  MessageSquare, Monitor, Palette, PanelLeftOpen, SlidersHorizontal,
+  Smartphone, Sparkles, Upload, X,
 } from "lucide-react";
-import { createTutorialSteps } from "./tutorial";
+import {
+  createTutorialSteps, TUTORIAL_PERSONAS, validTutorialPersona,
+} from "./tutorial";
 import "./tutorial.css";
 
 const ICONS = {
   library: PanelLeftOpen,
   prototype: Monitor,
-  review: MessageSquare,
+  review: ListChecks,
+  comments: MessageSquare,
+  linear: CircleDot,
+  status: CircleDot,
+  prompt: Copy,
+  mobile: Smartphone,
+  upload: Upload,
   sliders: SlidersHorizontal,
   sparkles: Sparkles,
+};
+
+const PERSONA_ICONS = {
+  designer: Palette,
+  operations: ListChecks,
+  engineer: Code2,
 };
 
 const FOCUSABLE = "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex='-1'])";
 const EDGE = 12;
 const GAP = 14;
 
-export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
-  const steps = useMemo(() => createTutorialSteps(firstName), [firstName]);
+export default function FirstRunTutorial({ firstName, initialPersona = null, isQa = false, onPersonaSelect, onExit }) {
+  const [persona, setPersona] = useState(() => validTutorialPersona(initialPersona));
+  const steps = useMemo(() => createTutorialSteps(firstName, persona), [firstName, persona]);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   const [coachSize, setCoachSize] = useState({ width: 330, height: 210 });
@@ -28,19 +44,24 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
   const targetRef = useRef(null);
   const previousFocusRef = useRef(null);
   const exitTimerRef = useRef(null);
-  const step = steps[stepIndex];
+  const step = steps[stepIndex] || null;
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
-  const Icon = ICONS[step.icon] || Sparkles;
+  const Icon = step ? (ICONS[step.icon] || Sparkles) : Sparkles;
 
   const requestExit = useCallback((reason) => {
     if (closing) return;
     setClosing(true);
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    exitTimerRef.current = window.setTimeout(() => onExit?.(reason), reduceMotion ? 0 : 150);
-  }, [closing, onExit]);
+    exitTimerRef.current = window.setTimeout(() => onExit?.(reason, persona), reduceMotion ? 0 : 150);
+  }, [closing, onExit, persona]);
 
   const locateTarget = useCallback(() => {
+    if (!step) {
+      targetRef.current = null;
+      setTargetRect(null);
+      return;
+    }
     const target = findVisibleTarget(step.targets);
     targetRef.current = target;
     if (!target) {
@@ -62,7 +83,7 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
   }, [step]);
 
   const closeWorkspaceDrawers = () => {
-    document.querySelectorAll(".eon-sidebar[role='dialog'] [data-drawer-close], .eon-inspector[role='dialog'] [data-drawer-close]")
+    document.querySelectorAll(".eon-sidebar[role='dialog'] [data-drawer-close], .eon-inspector[role='dialog'] [data-drawer-close], .eon-controls-sheet [data-drawer-close]")
       .forEach((button) => button.click());
   };
 
@@ -72,9 +93,20 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
   };
 
   const goForward = useCallback(() => {
+    if (!step) return;
     if (isLast) requestExit("complete");
     else goToStep(stepIndex + 1);
-  }, [isLast, requestExit, stepIndex]);
+  }, [isLast, requestExit, step, stepIndex]);
+
+  const selectPersona = (nextPersona) => {
+    const valid = validTutorialPersona(nextPersona);
+    if (!valid) return;
+    setStepIndex(0);
+    setPersona(valid);
+    Promise.resolve(onPersonaSelect?.(valid)).catch((error) => {
+      console.error("Couldn't save tutorial role.", error);
+    });
+  };
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement;
@@ -85,37 +117,53 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
   }, []);
 
   useEffect(() => {
+    if (!step) return undefined;
     let followFrame;
     let followTimer;
+    let tabRetryTimer;
+    let reviewTabHandled = !step.tab;
+    window.dispatchEvent(new CustomEvent("eon:tutorial:reveal", {
+      detail: { panel: step.reveal || null, tab: step.tab || null },
+    }));
+    const refreshTarget = () => {
+      if (!reviewTabHandled) {
+        reviewTabHandled = selectReviewTab(step.tab);
+        if (!reviewTabHandled) {
+          window.clearTimeout(tabRetryTimer);
+          tabRetryTimer = window.setTimeout(refreshTarget, 90);
+        }
+      }
+      locateTarget();
+    };
     const frame = window.requestAnimationFrame(() => {
-      const reveal = step.key === "library"
+      const reveal = step.reveal === "library"
         ? { panel: '[data-tutorial="prototype-library"]', trigger: '[data-tutorial="nav-toggle"]' }
-        : step.key === "review"
+        : step.reveal === "review"
           ? { panel: '[data-tutorial="review-panel"]', trigger: '[data-tutorial="review-toggle"]' }
           : null;
       if (reveal && !findVisibleTarget([reveal.panel])) {
         const trigger = findVisibleTarget([reveal.trigger]);
         if (trigger?.getAttribute("aria-pressed") !== "true") trigger?.click();
-        followFrame = window.requestAnimationFrame(locateTarget);
+        followFrame = window.requestAnimationFrame(refreshTarget);
         const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-        followTimer = window.setTimeout(locateTarget, reduceMotion ? 0 : 260);
+        followTimer = window.setTimeout(refreshTarget, reduceMotion ? 0 : 260);
         return;
       }
-      locateTarget();
+      refreshTarget();
     });
-    const afterInteraction = () => window.requestAnimationFrame(locateTarget);
-    const onGeometryChange = () => locateTarget();
+    const afterInteraction = () => window.queueMicrotask(refreshTarget);
+    const onGeometryChange = () => refreshTarget();
     window.addEventListener("resize", onGeometryChange);
     window.addEventListener("scroll", onGeometryChange, true);
-    document.addEventListener("click", afterInteraction, true);
+    document.addEventListener("click", afterInteraction);
 
     const mutationObserver = typeof MutationObserver !== "undefined"
-      ? new MutationObserver(() => window.requestAnimationFrame(locateTarget))
+      ? new MutationObserver(refreshTarget)
       : null;
     mutationObserver?.observe(document.body, { childList: true, subtree: true });
 
     const targetObserver = targetRef.current && typeof ResizeObserver !== "undefined"
-      ? new ResizeObserver(locateTarget)
+      ? new ResizeObserver(refreshTarget)
       : null;
     if (targetObserver && targetRef.current) targetObserver.observe(targetRef.current);
 
@@ -123,13 +171,14 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
       window.cancelAnimationFrame(frame);
       if (followFrame) window.cancelAnimationFrame(followFrame);
       if (followTimer) window.clearTimeout(followTimer);
+      if (tabRetryTimer) window.clearTimeout(tabRetryTimer);
       window.removeEventListener("resize", onGeometryChange);
       window.removeEventListener("scroll", onGeometryChange, true);
-      document.removeEventListener("click", afterInteraction, true);
+      document.removeEventListener("click", afterInteraction);
       mutationObserver?.disconnect();
       targetObserver?.disconnect();
     };
-  }, [locateTarget, step.key]);
+  }, [locateTarget, step]);
 
   useEffect(() => {
     const coach = coachRef.current;
@@ -142,20 +191,34 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
     });
     observer.observe(coach);
     return () => observer.disconnect();
-  }, []);
+  }, [persona]);
 
   useEffect(() => {
     const focusTimer = window.setTimeout(() => {
       coachRef.current?.querySelector("[data-tutorial-autofocus]")?.focus();
     }, 60);
     return () => window.clearTimeout(focusTimer);
-  }, [stepIndex]);
+  }, [persona, stepIndex]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
         requestExit("dismiss");
+        return;
+      }
+      if (!step) {
+        if (event.key !== "Tab") return;
+        const controls = tutorialFocusables(coachRef.current, null);
+        if (!controls.length) return;
+        const currentIndex = controls.indexOf(document.activeElement);
+        if (event.shiftKey && currentIndex <= 0) {
+          event.preventDefault();
+          controls.at(-1)?.focus();
+        } else if (!event.shiftKey && (currentIndex === controls.length - 1 || currentIndex === -1)) {
+          event.preventDefault();
+          controls[0]?.focus();
+        }
         return;
       }
       const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
@@ -184,7 +247,41 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [goForward, requestExit, stepIndex]);
+  }, [goForward, requestExit, step, stepIndex]);
+
+  if (!step) {
+    return (
+      <div className={`eon-coach-root eon-persona-root is-ready${closing ? " is-closing" : ""}`}>
+        <div className="eon-persona-scrim" />
+        <section ref={coachRef} className="eon-persona-card" role="dialog" aria-labelledby="eon-persona-title" aria-describedby="eon-persona-description">
+          <header className="eon-persona-header">
+            <span className="eon-coach-icon" aria-hidden="true"><Sparkles size={15} /></span>
+            <span>Personalize your walkthrough</span>
+            {isQa && <span className="eon-coach-qa" aria-label="QA preview. Completion state will not change.">QA</span>}
+            <button className="eon-coach-close" type="button" onClick={() => requestExit("dismiss")} aria-label="Close walkthrough"><X size={17} /></button>
+          </header>
+          <div className="eon-persona-copy">
+            <span className="eon-persona-kicker">Hey {firstName}</span>
+            <h1 id="eon-persona-title">What do you do most?</h1>
+            <p id="eon-persona-description">Pick a track and I’ll show only the workflow that matters to you.</p>
+          </div>
+          <div className="eon-persona-options">
+            {Object.entries(TUTORIAL_PERSONAS).map(([key, item], index) => {
+              const PersonaIcon = PERSONA_ICONS[key] || Sparkles;
+              return (
+                <button key={key} data-tutorial-autofocus={index === 0 || undefined} className="eon-persona-option" type="button" onClick={() => selectPersona(key)}>
+                  <span className="eon-persona-option-icon" aria-hidden="true"><PersonaIcon size={18} /></span>
+                  <span><strong>{item.label}</strong><small>{item.description}</small></span>
+                  <ArrowRight size={16} aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
+          <p className="eon-persona-note">Admins can restart any track for QA or onboarding.</p>
+        </section>
+      </div>
+    );
+  }
 
   const position = placeCoach(targetRect, step.placement, coachSize);
   const hole = targetRect && scrimGeometry(targetRect);
@@ -219,7 +316,7 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
           </button>
         </header>
 
-        <div className="eon-coach-copy" key={step.key} aria-live="polite">
+        <div className="eon-coach-copy" key={`${persona}-${step.key}`} aria-live="polite">
           <h1 id="eon-coach-title">{step.title}</h1>
           <p id="eon-coach-description">{step.body}</p>
           {step.interactive && (
@@ -249,6 +346,18 @@ export default function FirstRunTutorial({ firstName, isQa = false, onExit }) {
       </section>
     </div>
   );
+}
+
+function selectReviewTab(tab) {
+  if (!tab) return true;
+  // The review drawer animates in from off-canvas on narrow screens. Its tab is
+  // safe to activate as soon as it mounts, even before it enters the viewport.
+  const trigger = document.querySelector(`[data-tutorial="${tab}-tab"]`);
+  if (!trigger) return false;
+  if (trigger?.getAttribute("data-state") !== "active" && trigger?.getAttribute("aria-selected") !== "true") {
+    trigger?.click();
+  }
+  return true;
 }
 
 function findVisibleTarget(selectors = []) {

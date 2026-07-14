@@ -24,6 +24,9 @@ create table if not exists public.profiles (
   email text not null,
   full_name text,
   role text not null default 'member' check (role in ('admin', 'member')),
+  tutorial_persona text check (tutorial_persona in ('designer', 'operations', 'engineer')),
+  tutorial_requested_at timestamptz,
+  tutorial_completed_at timestamptz,
   team_id uuid references public.teams(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -264,6 +267,7 @@ create policy "author delete comments" on public.comments for delete
 alter publication supabase_realtime add table public.projects;
 alter publication supabase_realtime add table public.assets;
 alter publication supabase_realtime add table public.comments;
+alter publication supabase_realtime add table public.profiles;
 
 -- ---------------------------------------------------------------------------
 -- Storage bucket for media (public read, authenticated write)

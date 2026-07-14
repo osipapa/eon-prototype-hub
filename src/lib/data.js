@@ -109,6 +109,21 @@ export async function setProfileRole(id, role) {
   if (error) throw error;
 }
 
+export async function requestProfileTutorial(id, persona) {
+  if (!["designer", "operations", "engineer"].includes(persona)) {
+    throw new Error("Choose a valid tutorial track.");
+  }
+  const requestedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ tutorial_persona: persona, tutorial_requested_at: requestedAt })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 /* Account management (admin) --------------------------------------------------
    Accounts are created and managed by admins only — there is no self-signup.
    The admin-users edge function holds the service_role key server-side. */

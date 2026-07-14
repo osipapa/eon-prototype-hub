@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PrototypeWorkspace from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
+import { validTutorialPersona } from "../features/onboarding/tutorial";
 
 const initialProjects = [
   {
@@ -70,11 +71,13 @@ const initialComments = [
 ];
 
 export default function WorkspacePreview() {
+  const tutorialParams = new URLSearchParams(window.location.search);
   const [projects, setProjects] = useState(initialProjects);
   const [comments, setComments] = useState(initialComments);
   const [assets, setAssets] = useState({});
   const [activeId, setActiveId] = useState(initialProjects[0].id);
-  const [tutorialOpen, setTutorialOpen] = useState(() => new URLSearchParams(window.location.search).get("tutorial") === "1");
+  const [tutorialOpen, setTutorialOpen] = useState(() => tutorialParams.get("tutorial") === "1");
+  const tutorialPersona = validTutorialPersona(tutorialParams.get("persona"));
 
   const patchProject = (id, patch) => {
     setProjects((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
@@ -109,7 +112,7 @@ export default function WorkspacePreview() {
         onOpenAdmin={() => {}}
         onSignOut={() => {}}
       />
-      {tutorialOpen && <FirstRunTutorial firstName="Mate" isQa onExit={() => setTutorialOpen(false)} />}
+      {tutorialOpen && <FirstRunTutorial firstName="Mate" initialPersona={tutorialPersona} isQa onExit={() => setTutorialOpen(false)} />}
     </>
   );
 }

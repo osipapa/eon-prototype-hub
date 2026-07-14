@@ -4,7 +4,7 @@ import { useAuth } from "../lib/auth";
 import PrototypeHub from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import {
-  firstNameFor, TUTORIAL_METADATA_KEY, tutorialStorageKey,
+  firstNameFor, TUTORIAL_METADATA_KEY, tutorialStorageKey, validTutorialPersona,
 } from "../features/onboarding/tutorial";
 import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
@@ -38,7 +38,7 @@ function commentsTableIsMissing(error) {
 }
 
 export default function Hub() {
-  const { user, profile, isAdmin, signOut, completeTutorial } = useAuth();
+  const { user, profile, isAdmin, signOut, completeTutorial, saveTutorialPersona } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { slug } = useParams();
@@ -52,12 +52,18 @@ export default function Hub() {
   const pending = useRef({});
   const inFlight = useRef({});
   const tutorialResolved = useRef(false);
+  const handledTutorialRequest = useRef(null);
   const [tutorialMode, setTutorialMode] = useState(null);
-  const tutorialQaRequested = new URLSearchParams(location.search).get("tutorial") === "1";
+  const tutorialParams = new URLSearchParams(location.search);
+  const tutorialQaRequested = tutorialParams.get("tutorial") === "1";
+  const tutorialQaPersona = validTutorialPersona(tutorialParams.get("persona"));
 
   useEffect(() => {
-    if (!projects || !user?.id || tutorialResolved.current) return;
+    if (!projects || !user?.id) return;
     const remoteComplete = Boolean(user.user_metadata?.[TUTORIAL_METADATA_KEY]);
+    const requestedAt = profile?.tutorial_requested_at || null;
+    const requestedTime = Date.parse(requestedAt || "") || 0;
+    const completedTime = Date.parse(profile?.tutorial_completed_at || "") || 0;
     let localComplete = false;
     try {
       localComplete = window.localStorage.getItem(tutorialStorageKey(user.id)) === "complete";
@@ -67,25 +73,38 @@ export default function Hub() {
 
     if (tutorialQaRequested) {
       tutorialResolved.current = true;
-      setTutorialMode("qa");
-    } else if (!remoteComplete && !localComplete) {
-      tutorialResolved.current = true;
-      setTutorialMode("first-run");
+      setTutorialMode((current) => current?.kind === "qa"
+        ? current
+        : { kind: "qa", persona: tutorialQaPersona });
+      return;
     }
-  }, [projects, tutorialQaRequested, user]);
 
-  const exitTutorial = () => {
-    if (tutorialMode === "first-run" && user?.id) {
+    if (tutorialMode) return;
+    if (requestedAt && requestedAt !== handledTutorialRequest.current && requestedTime > completedTime) {
+      handledTutorialRequest.current = requestedAt;
+      tutorialResolved.current = true;
+      setTutorialMode({ kind: "assigned", persona: validTutorialPersona(profile?.tutorial_persona) });
+      return;
+    }
+
+    if (!tutorialResolved.current && !remoteComplete && !localComplete && !profile?.tutorial_completed_at) {
+      tutorialResolved.current = true;
+      setTutorialMode({ kind: "first-run", persona: validTutorialPersona(profile?.tutorial_persona) });
+    }
+  }, [profile, projects, tutorialMode, tutorialQaPersona, tutorialQaRequested, user]);
+
+  const exitTutorial = (_reason, persona) => {
+    if (["first-run", "assigned"].includes(tutorialMode?.kind) && user?.id) {
       try {
         window.localStorage.setItem(tutorialStorageKey(user.id), "complete");
       } catch {
         // Continue with auth metadata when private browsing blocks storage.
       }
-      completeTutorial().catch((error) => {
+      completeTutorial(persona).catch((error) => {
         console.error("Couldn't sync tutorial completion.", error);
       });
     }
-    if (tutorialMode === "qa") {
+    if (tutorialMode?.kind === "qa") {
       navigate(location.pathname || "/", { replace: true });
     }
     setTutorialMode(null);
@@ -406,7 +425,9 @@ export default function Hub() {
       {tutorialMode && (
         <FirstRunTutorial
           firstName={firstNameFor(profile, user)}
-          isQa={tutorialMode === "qa"}
+          initialPersona={tutorialMode.persona}
+          isQa={tutorialMode.kind === "qa"}
+          onPersonaSelect={tutorialMode.kind === "qa" ? undefined : saveTutorialPersona}
           onExit={exitTutorial}
         />
       )}

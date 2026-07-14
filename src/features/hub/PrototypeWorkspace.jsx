@@ -10,7 +10,7 @@ import {
   ExternalLink, Figma, FileText, LayoutGrid, Link2, Loader2, LogOut,
   Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
-  PanelRightOpen, Pencil, Plus, Search, Send, Shield, Smartphone, Square, Sun,
+  PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, Square, Sun,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
@@ -66,7 +66,7 @@ export default function PrototypeWorkspace({
   const [copiedReviewLink, setCopiedReviewLink] = useState(false);
   const [reviewLinkCopyError, setReviewLinkCopyError] = useState("");
   const [reviewLocationKey, setReviewLocationKey] = useState(() => window.location.hash);
-  const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false });
+  const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false, compactControls: false });
   const seenStorageKey = `eon-review-seen:${profile?.id || "anonymous"}`;
   const [seenComments, setSeenComments] = useState(() => readStoredJson(seenStorageKey));
   const compareRef = useRef(null);
@@ -83,6 +83,7 @@ export default function PrototypeWorkspace({
       navDrawer: window.matchMedia("(max-width: 900px)").matches,
       inspectorDrawer: window.matchMedia("(max-width: 1180px)").matches,
       noCompare: window.matchMedia("(max-width: 899px)").matches,
+      compactControls: window.matchMedia("(max-width: 680px)").matches,
     });
     update();
     window.addEventListener("resize", update);
@@ -189,6 +190,23 @@ export default function PrototypeWorkspace({
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [breakpoints, inspectorOpen, navOpen]);
+
+  useEffect(() => {
+    const revealTutorialTarget = (event) => {
+      const { panel, tab } = event.detail || {};
+      if (panel === "library") {
+        setNavOpen(true);
+        if (breakpoints.navDrawer) setInspectorOpen(false);
+      }
+      if (panel === "review") {
+        setInspectorOpen(true);
+        if (breakpoints.inspectorDrawer) setNavOpen(false);
+      }
+      if (["comments", "details", "linear"].includes(tab)) setInspectorTab(tab);
+    };
+    window.addEventListener("eon:tutorial:reveal", revealTutorialTarget);
+    return () => window.removeEventListener("eon:tutorial:reveal", revealTutorialTarget);
+  }, [breakpoints.inspectorDrawer, breakpoints.navDrawer]);
 
   useEffect(() => {
     const syncLocation = () => setReviewLocationKey(window.location.hash);
@@ -484,7 +502,7 @@ export default function PrototypeWorkspace({
                 c={c} layout={layout} effStory={effStory} args={args} setArg={setArg}
                 gridOptions={gridOptions} effGridBy={effGridBy} setGridBy={setGridBy}
                 protoTheme={protoTheme} setProtoTheme={setProtoTheme} canvasBg={canvasBg}
-                setCanvasBg={setCanvasBg} segmented={segmented}
+                setCanvasBg={setCanvasBg} segmented={segmented} compact={breakpoints.compactControls}
               />
               {layout === "single" && (
                 <div className="eon-zoom eon-zoom-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
@@ -582,7 +600,7 @@ function WorkspaceSidebar({
                 <Bell size={15} />
               </button>
             </div>
-            <button className="eon-buttonish eon-secondary-button" onClick={copySetupPrompt}
+            <button data-tutorial="setup-prompt" className="eon-buttonish eon-secondary-button" onClick={copySetupPrompt}
               title="Includes the current controls, selected values, viewports, and shared media variables" style={{ borderColor: c.border, background: c.raised, color: copiedPrompt ? c.brand : c.secondary }}>
               {copiedPrompt ? <Check size={14} /> : <Copy size={14} />}
               {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
@@ -719,8 +737,8 @@ function WorkspaceToolbar({
         <div data-tutorial="prototype-title" className="eon-toolbar-title">
           <span>{view === "media" ? "Media library" : story.title}</span>
           {view === "stories" && (liveLinear?.state
-            ? <Badge className="eon-story-status" title="Synced from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: 0, fontWeight: 600 }}>{liveLinear.state.name} · Linear</Badge>
-            : <button className="eon-buttonish eon-status-button" onClick={onOpenReviewDetails} aria-label={`Review status: ${story.status}. Open project details`}>
+            ? <Badge data-tutorial="review-status" className="eon-story-status" title="Synced from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: 0, fontWeight: 600 }}>{liveLinear.state.name} · Linear</Badge>
+            : <button data-tutorial="review-status" className="eon-buttonish eon-status-button" onClick={onOpenReviewDetails} aria-label={`Review status: ${story.status}. Open project details`}>
                 <Badge className="eon-story-status" style={{ background: sc0, color: sc1, border: 0, fontWeight: 600 }}>{story.status}</Badge>
                 <ChevronDown size={12} style={{ color: c.muted }} />
               </button>)}
@@ -733,7 +751,7 @@ function WorkspaceToolbar({
         </button>
         {view === "stories" && (
           <>
-            <button className="eon-buttonish eon-secondary-button eon-upload-button" onClick={() => setShowUpload((open) => !open)} aria-expanded={showUpload} aria-label="Upload prototype HTML" title="Upload prototype HTML"
+            <button data-tutorial="prototype-upload" className="eon-buttonish eon-secondary-button eon-upload-button" onClick={() => setShowUpload((open) => !open)} aria-expanded={showUpload} aria-label="Upload prototype HTML" title="Upload prototype HTML"
               style={{ borderColor: showUpload ? c.brand : c.border, background: c.panel, color: showUpload ? c.brand : c.secondary }}>
               <Upload size={15} /> <span>Upload HTML</span>
             </button>
@@ -755,7 +773,7 @@ function WorkspaceToolbar({
               {Object.keys(VIEWPORTS).map((key) => {
                 const Icon = VP_ICON[key];
                 const selected = viewport === key;
-                return <button className="eon-buttonish eon-icon-button" key={key} onClick={() => setViewport(key)} title={VIEWPORTS[key].label} aria-label={`${VIEWPORTS[key].label} viewport`} aria-pressed={selected} style={{ color: selected ? c.selectedText : c.muted, background: selected ? c.selected : "transparent" }}><Icon size={16} /></button>;
+                return <button data-tutorial={key === "mobile" ? "viewport-mobile" : undefined} className="eon-buttonish eon-icon-button" key={key} onClick={() => setViewport(key)} title={VIEWPORTS[key].label} aria-label={`${VIEWPORTS[key].label} viewport`} aria-pressed={selected} style={{ color: selected ? c.selectedText : c.muted, background: selected ? c.selected : "transparent" }}><Icon size={16} /></button>;
               })}
             </div>
           </ToolGroup>
@@ -788,10 +806,14 @@ function WorkspaceToolbar({
    prototype theme, canvas background. Zoom floats separately, bottom-right. ---- */
 function CanvasControlBar({
   c, layout, effStory, args, setArg, gridOptions, effGridBy, setGridBy,
-  protoTheme, setProtoTheme, canvasBg, setCanvasBg, segmented,
+  protoTheme, setProtoTheme, canvasBg, setCanvasBg, segmented, compact,
 }) {
-  return (
-    <div data-tutorial="canvas-controls" className="eon-ctlbar eon-ctlbar-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+  const [open, setOpen] = useState(false);
+  const sheetRef = useDrawerFocus(compact && open, () => setOpen(false));
+  const firstControl = layout === "single" ? (effStory.controls || [])[0] : null;
+  const activeSummary = firstControl ? args[firstControl.key] : (layout === "grid" ? effGridBy : protoTheme);
+  const controlContent = (
+    <>
       {layout === "single" && (effStory.controls || []).map((control) => (
         <ToolGroup key={control.key} label={control.label} c={c}>{segmented(control.options, args[control.key], (value) => setArg(control.key, value))}</ToolGroup>
       ))}
@@ -810,6 +832,46 @@ function CanvasControlBar({
           </label>
         </div>
       </ToolGroup>
+    </>
+  );
+
+  useEffect(() => {
+    if (!compact) setOpen(false);
+  }, [compact]);
+
+  if (compact) {
+    return (
+      <div className="eon-mobile-controls">
+        <button data-tutorial="canvas-controls" className="eon-buttonish eon-controls-trigger" onClick={() => setOpen(true)}
+          aria-expanded={open} aria-haspopup="dialog" aria-controls="eon-mobile-controls-sheet"
+          style={{ background: c.panel, color: c.text, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+          <SlidersHorizontal size={16} aria-hidden="true" />
+          <span>Controls</span>
+          <span className="eon-controls-trigger-value" style={{ color: c.muted }}>{String(activeSummary || "")}</span>
+        </button>
+        {open && (
+          <>
+            <button className="eon-controls-scrim" onClick={() => setOpen(false)} aria-label="Close prototype controls" />
+            <section ref={sheetRef} id="eon-mobile-controls-sheet" className="eon-controls-sheet" role="dialog" aria-modal="true" aria-labelledby="eon-mobile-controls-title"
+              style={{ background: c.panel, color: c.text, boxShadow: "0 -20px 60px rgba(0,0,0,.32)" }}>
+              <div className="eon-controls-sheet-head" style={{ borderColor: c.border }}>
+                <div>
+                  <strong id="eon-mobile-controls-title">Prototype controls</strong>
+                  <span style={{ color: c.muted }}>Adjust the state and appearance</span>
+                </div>
+                <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={() => setOpen(false)} aria-label="Close prototype controls" style={{ color: c.muted }}><X size={17} /></button>
+              </div>
+              <div className="eon-controls-sheet-body">{controlContent}</div>
+            </section>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div data-tutorial="canvas-controls" className="eon-ctlbar eon-ctlbar-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+      {controlContent}
     </div>
   );
 }
@@ -835,11 +897,11 @@ function ReviewInspector({
       </div>
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
         <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
-          <TabsTrigger value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
-          <TabsTrigger value="details"><FileText size={14} /> Details</TabsTrigger>
-          <TabsTrigger value="linear"><CircleDot size={14} /> Linear</TabsTrigger>
+          <TabsTrigger data-tutorial="comments-tab" value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
+          <TabsTrigger data-tutorial="details-tab" value="details"><FileText size={14} /> Details</TabsTrigger>
+          <TabsTrigger data-tutorial="linear-tab" value="linear"><CircleDot size={14} /> Linear</TabsTrigger>
         </TabsList>
-        <TabsContent value="comments" className="eon-inspector-content">
+        <TabsContent data-tutorial="comments-thread" value="comments" className="eon-inspector-content">
           <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
         </TabsContent>
         <TabsContent value="details" className="eon-inspector-content eon-details-content">
@@ -849,7 +911,7 @@ function ReviewInspector({
             copyReviewLink={copyReviewLink} copiedReviewLink={copiedReviewLink} reviewLinkCopyError={reviewLinkCopyError}
           />
         </TabsContent>
-        <TabsContent value="linear" className="eon-inspector-content eon-reference-content">
+        <TabsContent data-tutorial="linear-content" value="linear" className="eon-inspector-content eon-reference-content">
           <ReferenceHeader c={c} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
           {(!story.issue_url || editLinear) && <Input aria-label="Linear issue URL" value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
           <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
@@ -873,7 +935,7 @@ function ProjectDetails({
 
   return (
     <div className="eon-details" style={{ color: c.secondary }}>
-      <section className="eon-details-section">
+      <section data-tutorial="review-stage" className="eon-details-section">
         <div className="eon-details-heading">
           <div><strong style={{ color: c.text }}>Review stage</strong><span style={{ color: c.muted }}>Keep the team aligned on what happens next.</span></div>
           <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} compact />
@@ -919,7 +981,7 @@ function ProjectDetails({
         </div>
       </section>
 
-      <section className="eon-details-section eon-share-review" style={{ background: c.raised }}>
+      <section data-tutorial="share-review" className="eon-details-section eon-share-review" style={{ background: c.raised }}>
         <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Share this exact view</strong><span style={{ color: c.muted }}>Includes viewport, theme, state, canvas, and review tab.</span></div></div>
         <button className="eon-buttonish eon-secondary-button" onClick={copyReviewLink}
           style={{ borderColor: c.border, background: c.panel, color: copiedReviewLink ? c.brand : c.secondary }}>

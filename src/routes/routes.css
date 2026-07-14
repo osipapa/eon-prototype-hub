@@ -828,6 +828,7 @@
 .admin-role-control {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -839,6 +840,21 @@
 
 .admin-role-control .route-spinner {
   color: var(--route-brand);
+}
+
+.admin-tutorial-track {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 7px;
+  background: rgba(225, 92, 247, 0.08);
+  color: #d99be4;
+  box-shadow: inset 0 0 0 1px rgba(225, 92, 247, 0.12);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  white-space: nowrap;
 }
 
 .admin-row-actions {
@@ -978,6 +994,35 @@
 .route-modal--compact {
   width: min(100%, 440px);
 }
+
+.route-tutorial-modal { width: min(100%, 680px); }
+.admin-tutorial-personas { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-tutorial-persona {
+  display: flex;
+  min-width: 0;
+  min-height: 138px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 9px;
+  padding: 15px;
+  border: 0;
+  border-radius: 15px;
+  background: var(--route-surface-raised);
+  color: var(--route-text);
+  cursor: pointer;
+  text-align: left;
+  box-shadow: inset 0 0 0 1px var(--route-border), 0 7px 22px rgba(0, 0, 0, .14);
+  transition-property: transform, background-color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(.23, 1, .32, 1);
+}
+.admin-tutorial-persona:hover { background: #27272d; box-shadow: inset 0 0 0 1px rgba(225, 92, 247, .25), 0 10px 28px rgba(0, 0, 0, .2); }
+.admin-tutorial-persona:active { transform: scale(.96); }
+.admin-tutorial-persona.is-selected { background: rgba(225, 92, 247, .09); box-shadow: inset 0 0 0 2px rgba(225, 92, 247, .62), 0 10px 30px rgba(0, 0, 0, .22); }
+.admin-tutorial-persona > span { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: rgba(225, 92, 247, .1); color: var(--route-brand); }
+.admin-tutorial-persona strong { font-size: 13px; font-weight: 650; }
+.admin-tutorial-persona small { color: var(--route-muted); font-size: 10px; line-height: 1.45; text-wrap: pretty; }
+.admin-tutorial-help { margin: 14px 2px 0; color: var(--route-muted); font-size: 11px; line-height: 1.5; }
 
 .route-modal-header {
   display: flex;
@@ -1197,6 +1242,10 @@
   .route-modal {
     border-radius: 18px;
   }
+
+  .admin-tutorial-personas { grid-template-columns: 1fr; }
+  .admin-tutorial-persona { min-height: 68px; align-items: center; flex-direction: row; padding: 11px 12px; }
+  .admin-tutorial-persona small { flex: 1; }
 
   .route-modal-footer {
     align-items: stretch;
