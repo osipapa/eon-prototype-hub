@@ -133,7 +133,7 @@
   .rate-head h2{font-size:var(--font-size-title-2);font-weight:500;line-height:1.2}
   .rate-head p{font-size:var(--font-size-body);color:var(--text-secondary);margin-top:8px;line-height:1.4}
 
-  .stars{display:flex;justify-content:space-between;width:100%;max-width:328px;margin:0 auto}
+  .stars{display:flex;gap:4px;margin-left:-4px} /* tight left-aligned cluster; -4px optically aligns first glyph to the heading */
   .star-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;transition:transform .1s}
   .star-btn:active{transform:scale(1.15)}
   .star-btn svg{width:36px;height:36px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
