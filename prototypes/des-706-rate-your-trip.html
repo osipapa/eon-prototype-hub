@@ -22,13 +22,14 @@
     --icon-brand:#E15CF7; --icon-success:#6FEC7B;
     --button-fill-primary-default:#EDD2F6; --button-fill-primary-hover:#E9C1F6;
     --button-fill-primary-pressed:#DCA5EE; --button-text-primary-default:#000000;
+    --button-fill-primary-disabled:rgba(144,148,165,0.2);
+    --button-text-primary-disabled:rgba(144,148,165,0.5);
     --button-fill-secondary-default:rgba(144,148,165,0.1);
     --button-fill-secondary-hover:rgba(144,148,165,0.2);
+    --button-fill-secondary-selected:#EDD2F6; --button-text-secondary-selected:#000000;
     --button-border-secondary:rgba(144,148,165,0.2); --button-text-secondary-default:#FFFFFF;
     --card-background-default:#121216; --card-border-default:#1E1E22;
-    --chip-background-neutral:rgba(144,148,165,0.1); --chip-border-neutral:rgba(144,148,165,0.1);
-    --chip-background-brand:rgba(225,92,247,0.1); --chip-border-active:#E15CF7;
-    --chip-background-success:rgba(111,236,123,0.15);
+    --menu-list-background:#121216; --menu-list-border:#1E1E22;
     --banner-background-pending:rgba(133,181,255,0.15); --banner-border-inprogress:rgba(133,181,255,0.15);
     --alert-background-success:rgba(111,236,123,0.15);
     --input-border-default:#3A3D4A; --input-border-active:#EDD2F6;
@@ -53,13 +54,14 @@
     --icon-brand:#D400F7; --icon-success:#00AC10;
     --button-fill-primary-default:#000000; --button-fill-primary-hover:#1E1E22;
     --button-fill-primary-pressed:#3A3D4A; --button-text-primary-default:#FFFFFF;
+    --button-fill-primary-disabled:rgba(144,148,165,0.2);
+    --button-text-primary-disabled:rgba(144,148,165,0.75);
     --button-fill-secondary-default:rgba(144,148,165,0.1);
     --button-fill-secondary-hover:rgba(144,148,165,0.2);
+    --button-fill-secondary-selected:#000000; --button-text-secondary-selected:#FFFFFF;
     --button-border-secondary:rgba(144,148,165,0.2); --button-text-secondary-default:#000000;
     --card-background-default:#FFFFFF; --card-border-default:#DDE0EA;
-    --chip-background-neutral:rgba(144,148,165,0.1); --chip-border-neutral:rgba(144,148,165,0.1);
-    --chip-background-brand:rgba(212,0,247,0.1); --chip-border-active:#D400F7;
-    --chip-background-success:rgba(0,172,16,0.15);
+    --menu-list-background:#FFFFFF; --menu-list-border:#DDE0EA;
     --banner-background-pending:rgba(38,122,255,0.15); --banner-border-inprogress:rgba(38,122,255,0.15);
     --alert-background-success:rgba(0,172,16,0.15);
     --input-border-default:#9094A5; --input-border-active:#000000;
@@ -99,83 +101,76 @@
   .page{max-width:600px;margin:0 auto;padding:4px 16px 170px}
 
   .greeting h1{font-size:var(--font-size-title-1);font-weight:500;line-height:1.25}
-  .greeting p{font-size:var(--font-size-body);color:var(--text-secondary);margin-top:4px}
 
   /* ---------- shared: rows, cards ---------- */
   .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 4px;border-bottom:1px solid var(--divider)}
   .row .r-title{font-size:var(--font-size-body);font-weight:500}
-  .row .r-sub{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);margin-top:3px}
   .row svg{color:var(--text-secondary-50);flex-shrink:0}
   .rows{margin-top:16px}
 
   .card{background:var(--card-background-default);border:1px solid var(--card-border-default);border-radius:var(--radius-card);overflow:hidden;margin-top:24px}
   .card-head{padding:16px 16px 0}
   .card-head h2{font-size:var(--font-size-title-2);font-weight:500}
-  .card-head p{font-size:14px;color:var(--text-secondary);margin-top:4px;line-height:1.45}
   .card-pad{padding:16px}
 
-  /* ---------- trip photos ---------- */
+  /* ---------- trip photos (preset media tokens from the hub library) ---------- */
   .photo-tabs{display:flex;gap:20px;margin-top:16px}
   .photo-tab{font-size:var(--font-size-body);color:var(--text-secondary);padding-bottom:6px;border-bottom:2px solid transparent}
   .photo-tab.on{color:var(--text-primary);font-weight:500;border-bottom-color:var(--tab-line-active)}
   .photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px}
-  .photo{aspect-ratio:1/1;border-radius:var(--radius-control);background:var(--background-3);display:flex;align-items:center;justify-content:center;color:var(--icon-fill-icon)}
+  .photo{position:relative;overflow:hidden;aspect-ratio:1/1;border-radius:var(--radius-control);background:var(--background-3);display:flex;align-items:center;justify-content:center;color:var(--icon-fill-icon)}
   .photo svg{width:60%;height:60%}
+  .photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 
   /* ---------- incidentals ---------- */
   .file-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-top:1px solid var(--divider);font-size:var(--font-size-body)}
   .file-row svg{color:var(--text-secondary-50);flex-shrink:0}
   .see-all{display:block;width:100%;padding:14px;font-size:var(--font-size-body);font-weight:500;border-top:1px solid var(--divider)}
 
-  /* ---------- rate your trip ---------- */
-  .rate-head{background:var(--background-1);padding:16px;border-bottom:1px solid var(--card-border-default)}
-  .rate-head h2{font-size:var(--font-size-title-2);font-weight:500}
-  .rate-head p{font-size:14px;color:var(--text-secondary);margin-top:4px;line-height:1.45}
-  .rate-head .trip-ref{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);margin-top:8px}
-  .rate-body{padding:24px 16px 16px}
+  /* ---------- rate your trip (per Figma 14782:53780) ---------- */
+  .rate-card{background:var(--menu-list-background);border:1px solid var(--menu-list-border);border-radius:var(--radius-modal);overflow:hidden;margin-top:24px}
+  .rate-body{padding:24px 16px 16px;display:flex;flex-direction:column;gap:24px}
+  .rate-head h2{font-size:var(--font-size-title-2);font-weight:400;line-height:1.2;text-transform:capitalize}
+  .rate-head p{font-size:var(--font-size-body);color:var(--text-secondary);margin-top:8px;line-height:1.4}
 
-  .q-label{font-size:var(--font-size-body);font-weight:500;text-align:center}
-  .stars{display:flex;justify-content:center;gap:4px;margin-top:16px}
-  .star-btn{width:52px;height:44px;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+  .stars{display:flex;justify-content:space-between;width:100%;max-width:328px;margin:0 auto}
+  .star-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;transition:transform .1s}
   .star-btn:active{transform:scale(1.15)}
-  .star-btn svg{width:38px;height:38px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
+  .star-btn svg{width:36px;height:36px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
   .star-btn.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
-  .rating-word{text-align:center;font-size:14px;color:var(--text-secondary);margin-top:8px;min-height:20px}
-  .rating-word.set{color:var(--text-primary);font-weight:500}
+  .rating-word{text-align:center;font-size:var(--font-size-body);line-height:1.4;min-height:22px;margin-top:-8px}
 
-  /* instant-save confirmation: rating is captured on the tap, not on a submit */
-  .saved-chip{display:flex;justify-content:center;margin-top:12px}
-  .saved-chip span{display:inline-flex;align-items:center;gap:6px;height:31px;padding:0 8px;border-radius:var(--radius-control);background:var(--chip-background-success);color:var(--text-success);font-size:var(--font-size-caption-1)}
+  .divider{height:1px;background:var(--divider);border-radius:16px}
 
-  .after-rating{max-height:0;overflow:hidden;opacity:0;transition:max-height .35s ease,opacity .3s ease}
-  .after-rating.open{max-height:1400px;opacity:1}
-  .divider{height:1px;background:var(--divider);margin:24px 0 16px}
-  .sec-label{font-size:var(--font-size-body);font-weight:500}
-  .sec-hint{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);margin-top:2px}
-
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-  .chip{padding:8px 12px;border-radius:var(--radius-control);font-size:14px;color:var(--text-secondary);background:var(--chip-background-neutral);border:1px solid var(--chip-border-neutral);transition:background .12s,border-color .12s,color .12s}
-  .chip.on{background:var(--chip-background-brand);border-color:var(--chip-border-active);color:var(--text-primary)}
-
-  .cat-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+  .cat-list{display:flex;flex-direction:column}
+  .cat-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
   .cat-row + .cat-row{border-top:1px solid var(--divider)}
-  .cat-name{font-size:var(--font-size-body);color:var(--text-secondary)}
-  .cat-stars{display:flex;gap:2px}
-  .cat-star{width:30px;height:30px;display:flex;align-items:center;justify-content:center}
-  .cat-star svg{width:21px;height:21px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
+  .cat-name{font-size:var(--font-size-body);line-height:1.4}
+  .cat-stars{display:flex}
+  .cat-star{width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+  .cat-star svg{width:24px;height:24px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
   .cat-star.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
 
-  textarea{width:100%;min-height:88px;margin-top:12px;padding:12px;border-radius:var(--radius-control);background:transparent;border:1px solid var(--input-border-default);color:var(--text-primary);font-size:14px;line-height:1.45;resize:none;outline:none}
+  /* survey questions with pill options (design: button-tab, radius 100) */
+  .q-block{display:flex;flex-direction:column;gap:16px}
+  .q-sub{display:flex;flex-direction:column;gap:8px}
+  .q-text{font-size:var(--font-size-body);line-height:1.4}
+  .pills{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{padding:8px 16px;border-radius:var(--radius-pill);font-size:var(--font-size-caption-1);line-height:16px;font-weight:500;background:var(--button-fill-secondary-default);border:1px solid var(--button-border-secondary);color:var(--button-text-secondary-default);transition:background .12s,color .12s}
+  .pill.on{background:var(--button-fill-secondary-selected);border-color:var(--button-fill-secondary-selected);color:var(--button-text-secondary-selected)}
+
+  textarea{width:100%;min-height:96px;padding:16px;border-radius:var(--radius-modal);background:var(--background-1);border:1px solid var(--input-border-default);color:var(--text-primary);font-size:var(--font-size-body);line-height:1.4;resize:none;outline:none}
   textarea:focus{border-color:var(--input-border-active)}
   textarea::placeholder{color:var(--input-placeholder-primary)}
 
-  .btn-primary{display:block;width:100%;height:50px;margin-top:16px;border-radius:var(--radius-control);background:var(--button-fill-primary-default);color:var(--button-text-primary-default);font-size:var(--font-size-body);font-weight:500}
+  .btn-primary{display:block;width:100%;height:50px;border-radius:var(--radius-control);background:var(--button-fill-primary-default);color:var(--button-text-primary-default);font-size:var(--font-size-body);font-weight:500}
   .btn-primary:hover{background:var(--button-fill-primary-hover)}
   .btn-primary:active{background:var(--button-fill-primary-pressed)}
+  .btn-primary:disabled{background:var(--button-fill-primary-disabled);color:var(--button-text-primary-disabled);cursor:default}
   .btn-secondary{display:block;width:100%;height:50px;margin-top:8px;border-radius:var(--radius-control);background:var(--button-fill-secondary-default);border:1px solid var(--button-border-secondary);color:var(--button-text-secondary-default);font-size:var(--font-size-body);font-weight:500}
   .btn-secondary:hover{background:var(--button-fill-secondary-hover)}
   .btn-ghost{display:block;width:100%;height:44px;margin-top:4px;color:var(--text-secondary);font-size:var(--font-size-body)}
-  .privacy{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);text-align:center;margin-top:12px;line-height:1.4}
+  .privacy{font-size:var(--font-size-caption-1);color:var(--text-secondary-50);text-align:center;margin-top:-12px;line-height:1.4}
 
   .end-state{padding:32px 16px 16px;text-align:center}
   .end-icon{width:56px;height:56px;border-radius:50%;background:var(--alert-background-success);color:var(--icon-success);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
@@ -187,6 +182,8 @@
   .followup p span{color:var(--text-pending);font-weight:500}
   .d5{margin-top:24px}
   .d5 p{font-size:14px;color:var(--text-secondary);line-height:1.45;text-align:center}
+  .d5 .divider{margin-bottom:16px}
+  .d5 .btn-primary{margin-top:12px}
 
   /* ---------- refer a friend ---------- */
   .ref-copy{font-size:14px;color:var(--text-secondary);margin-top:4px;line-height:1.45}
@@ -194,6 +191,7 @@
   .ref-field label{position:absolute;top:-8px;left:12px;padding:0 4px;background:var(--card-background-default);font-size:var(--font-size-caption-1);color:var(--text-secondary-50)}
   .ref-field .link{font-size:14px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
   .ref-field .copy-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary-50)}
+  .ref-cta{margin-top:16px}
 
   /* ---------- tab bar (mobile only) ---------- */
   .tabbar{position:fixed;bottom:0;left:0;right:0;background:var(--navigation-bar-background);border-top:1px solid var(--navigation-bar-border);display:flex;justify-content:space-around;padding:10px 8px 24px;z-index:5}
@@ -202,7 +200,7 @@
   .tab svg{width:24px;height:24px}
 
   /* ---------- mixpanel payload overlay (dev aid, toggled via hub control) ---------- */
-  .payload{position:fixed;left:12px;right:12px;bottom:86px;z-index:6;max-width:576px;margin:0 auto;background:var(--background-1);border:1px solid var(--chip-border-active);border-radius:var(--radius-modal);padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  .payload{position:fixed;left:12px;right:12px;bottom:86px;z-index:6;max-width:576px;margin:0 auto;background:var(--background-1);border:1px solid var(--icon-brand);border-radius:var(--radius-modal);padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
   .payload .p-head{display:flex;justify-content:space-between;align-items:center;font-size:var(--font-size-caption-1)}
   .payload .p-head b{color:var(--text-brand);font-weight:500}
   .payload .p-head span{color:var(--text-secondary-50)}
@@ -291,41 +289,78 @@
       <button class="see-all">See All</button>
     </section>
 
-    <!-- ============ RATE YOUR TRIP (refactored) ============ -->
-    <section class="card" aria-label="Rate your trip">
-      <div class="rate-head">
-        <h2>Rate Your Trip</h2>
-        <p>One tap earns you $30 in Eon credit on your next booking.</p>
-        <div class="trip-ref">Tesla Model 3 · Jun 28 to Jul 5</div>
-      </div>
-
-      <!-- form: the star tap saves the rating instantly; everything after is optional -->
+    <!-- ============ RATE YOUR TRIP (Figma 14782:53780) ============ -->
+    <section class="rate-card" aria-label="Rate your trip">
       <div class="rate-body" id="review-form">
-        <div class="q-label">How was your trip overall?</div>
+        <div class="rate-head">
+          <h2>Rate Your Trip</h2>
+          <p>Earn $30 in Eon credit toward your next booking.</p>
+        </div>
+
         <div class="stars" id="stars" role="radiogroup" aria-label="Overall rating, 1 to 5 stars"></div>
         <div class="rating-word" id="rating-word"></div>
-        <div class="saved-chip hidden" id="saved-chip">
-          <span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-            Rating saved · $30 credit added
-          </span>
+
+        <div class="divider"></div>
+
+        <div class="cat-list" id="cats"></div>
+
+        <div class="divider"></div>
+
+        <div class="q-block">
+          <div class="q-sub">
+            <div class="q-text">How did you have access to the car?</div>
+            <div class="pills" data-group="access">
+              <button class="pill" data-value="eon_app">Eon App</button>
+              <button class="pill" data-value="chargekey_app">ChargeKey App</button>
+              <button class="pill" data-value="tesla_app">Tesla App</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="q-sub">
+            <div class="q-text">How did you communicate with the owner?</div>
+            <div class="pills" data-group="comm">
+              <button class="pill" data-value="through_eon">Through Eon</button>
+              <button class="pill" data-value="direct">Directly with the owner</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="q-sub">
+            <div class="q-text">Have you contacted customer support?</div>
+            <div class="pills" data-group="contacted">
+              <button class="pill" data-value="no">No</button>
+              <button class="pill" data-value="yes_eon">Yes through Eon</button>
+              <button class="pill" data-value="yes_owner">Yes through the owner</button>
+            </div>
+          </div>
+
+          <!-- shown once support was contacted -->
+          <div class="q-block hidden" id="support-followup">
+            <div class="divider"></div>
+            <div class="q-sub">
+              <div class="q-text">Have customer support resolved your issue?</div>
+              <div class="pills" data-group="resolved">
+                <button class="pill" data-value="no">No</button>
+                <button class="pill" data-value="yes">Yes</button>
+              </div>
+            </div>
+            <div class="q-sub">
+              <div class="q-text">Describe what happened, so we can improve</div>
+              <textarea id="support-comment" placeholder="Add more detail (optional)" aria-label="Support experience details"></textarea>
+            </div>
+          </div>
+
+          <div class="q-sub">
+            <div class="q-text">Any additional details?</div>
+            <textarea id="comment" placeholder="Add more detail (optional)" aria-label="Additional trip details"></textarea>
+          </div>
         </div>
 
-        <div class="after-rating" id="after-rating">
-          <div class="divider"></div>
-          <div class="sec-label" id="tags-label">What stood out?</div>
-          <div class="chips" id="chips"></div>
-
-          <div class="divider"></div>
-          <div class="sec-label">Rate the details</div>
-          <div class="sec-hint">Optional. Helps the owner improve.</div>
-          <div id="cats" style="margin-top:8px"></div>
-
-          <textarea id="comment" placeholder="Anything else? (optional)" aria-label="Trip feedback"></textarea>
-
-          <button class="btn-primary" id="done-btn" onclick="finishReview()">Done</button>
-          <div class="privacy">Your ratings are shared with the owner anonymously.</div>
-        </div>
+        <button class="btn-primary" id="submit-btn" disabled onclick="submitReview()">Submit Rating</button>
+        <div class="privacy">Your ratings are shared with the owner anonymously.</div>
       </div>
 
       <!-- end state: 4 to 5 stars -->
@@ -342,7 +377,7 @@
         <div class="d5 hidden" id="d5-ask">
           <div class="divider"></div>
           <p>Enjoying Eon? A public review helps a lot.</p>
-          <button class="btn-primary" style="margin-top:12px">Rate Eon on the App Store</button>
+          <button class="btn-primary">Rate Eon on the App Store</button>
           <button class="btn-ghost">Maybe Later</button>
         </div>
       </div>
@@ -378,7 +413,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
         </div>
-        <button class="btn-primary">Share Link</button>
+        <button class="btn-primary ref-cta">Share Link</button>
       </div>
     </section>
 
@@ -394,7 +429,7 @@
     <pre class="p-block" id="p1-json"></pre>
     <div class="p-head"><b>Mixpanel · Trip Review Details Added</b><span id="p2-status">waiting</span></div>
     <pre class="p-block" id="p2-json"></pre>
-    <div class="p-route"><b>Routing:</b> Trip Reviewed fires on the star tap so every rating is counted · rating 5 fires D5 public review ask · rating 1 to 3 opens support triage · details fire on Done and roll up to the owner scorecard</div>
+    <div class="p-route"><b>Routing:</b> Trip Reviewed fires on the star tap so every rating is counted · rating 5 fires D5 public review ask · rating 1 to 3 opens support triage · category scores and survey answers roll up to the owner scorecard</div>
   </div>
 
   <nav class="tabbar">
@@ -415,47 +450,46 @@
     var STAR = '<svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M12 2.6l2.8 6 6.6.7-4.9 4.4 1.4 6.5L12 16.9l-5.9 3.3 1.4-6.5-4.9-4.4 6.6-.7z"/></svg>';
     var WORDS = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
     var CATS = [
-      { key: 'cleanliness',       name: 'Cleanliness' },
-      { key: 'vehicle_condition', name: 'Vehicle condition' },
-      { key: 'charging_range',    name: 'Charging & range' },
-      { key: 'pickup_return',     name: 'Pickup & return' }
-    ];
-    var TAGS_POS = [
-      { key: 'spotless_car',    label: 'Spotless car',          cat: 'cleanliness' },
-      { key: 'fully_charged',   label: 'Fully charged',         cat: 'charging_range' },
-      { key: 'easy_pickup',     label: 'Easy pickup',           cat: 'pickup_return' },
-      { key: 'great_to_drive',  label: 'Great to drive',        cat: 'vehicle_condition' },
-      { key: 'smooth_app',      label: 'Smooth app',            cat: null },
-      { key: 'responsive_owner',label: 'Responsive owner',      cat: null }
-    ];
-    var TAGS_NEG = [
-      { key: 'not_clean',       label: "Car wasn't clean",      cat: 'cleanliness' },
-      { key: 'low_battery',     label: 'Low battery at pickup', cat: 'charging_range' },
-      { key: 'mechanical_issue',label: 'Mechanical issue',      cat: 'vehicle_condition' },
-      { key: 'pickup_delay',    label: 'Pickup took too long',  cat: 'pickup_return' },
-      { key: 'app_problems',    label: 'App problems',          cat: null },
-      { key: 'slow_response',   label: 'Slow to respond',       cat: null }
+      { key: 'cleanliness',    name: 'Cleanliness' },
+      { key: 'car_condition',  name: 'Car condition' },
+      { key: 'charging_range', name: 'Charging & range' },
+      { key: 'pickup_return',  name: 'Pickup & return' }
     ];
 
-    var state = { rating: 0, cats: {}, tags: [], saved: false, done: false };
+    var state = { rating: 0, cats: {}, access: null, comm: null, contacted: null, resolved: null, saved: false, done: false };
 
-    // ---- photo grid (pre/post trip) ----
+    // ---- photo grid: preset media tokens resolve to the hub media library; ----
+    // ---- glyphs stay as the standalone fallback when tokens are unreplaced ----
     var GLYPHS = {
       car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16v-3l1.6-4.2A1.8 1.8 0 0 1 6.3 7.5h11.4a1.8 1.8 0 0 1 1.7 1.3L21 13v3"/><path d="M3 13h18"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/></svg>',
       interior: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4"/><path d="M4.3 10.6h5.5M14.2 10.6h5.5M12 14.4V20"/></svg>',
       wheel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.8"/><path d="M12 3.5v5.7M12 14.8v5.7M3.5 12h5.7M14.8 12h5.7"/></svg>'
     };
-    var PHOTO_SETS = {
-      pre:  ['car','car','car','car','interior','interior','wheel','wheel','wheel','wheel'],
-      post: ['car','car','car','car','interior','interior','wheel','wheel','wheel','wheel']
-    };
+    var PHOTOS = [
+      { img: '{{heroImage}}',      glyph: 'car' },
+      { img: '{{cardImage}}',      glyph: 'car' },
+      { img: '{{bannerImage}}',    glyph: 'car' },
+      { img: '{{productImage}}',   glyph: 'car' },
+      { img: '{{portraitImage}}',  glyph: 'interior' },
+      { img: '{{squareImage}}',    glyph: 'interior' },
+      { img: '{{thumbnailImage}}', glyph: 'wheel' },
+      { img: '{{avatarImage}}',    glyph: 'wheel' },
+      { img: '{{squareImage}}',    glyph: 'wheel' },
+      { img: '{{thumbnailImage}}', glyph: 'wheel' }
+    ];
     function setPhotoTab(which) {
       document.getElementById('tab-pre').classList.toggle('on', which === 'pre');
       document.getElementById('tab-post').classList.toggle('on', which === 'post');
       var grid = document.getElementById('photo-grid');
       grid.innerHTML = '';
-      PHOTO_SETS[which].forEach(function (g) {
-        var d = document.createElement('div'); d.className = 'photo'; d.innerHTML = GLYPHS[g];
+      PHOTOS.forEach(function (p) {
+        var d = document.createElement('div'); d.className = 'photo';
+        d.innerHTML = GLYPHS[p.glyph];
+        if (p.img.indexOf('{{') === -1) { // token was replaced by the hub: show the real photo
+          var im = document.createElement('img'); im.src = p.img; im.alt = '';
+          im.onerror = function () { im.remove(); };
+          d.appendChild(im);
+        }
         grid.appendChild(d);
       });
     }
@@ -493,11 +527,24 @@
       row.appendChild(name); row.appendChild(wrap); catsEl.appendChild(row);
     });
 
-    // The tap IS the submit: the rating event fires immediately, so the CSAT
-    // signal survives even if the user never touches the optional details.
+    // ---- survey pills (single select per group) ----
+    document.querySelectorAll('.pills').forEach(function (group) {
+      group.querySelectorAll('.pill').forEach(function (pill) {
+        pill.onclick = function () {
+          var g = group.dataset.group, v = pill.dataset.value;
+          state[g] = state[g] === v ? null : v;
+          if (g === 'contacted' && (state[g] === 'no' || state[g] === null)) {
+            state.resolved = null;
+            document.getElementById('support-comment').value = '';
+          }
+          render();
+        };
+      });
+    });
+
+    // The tap IS the submit for the CSAT signal: the rating event fires
+    // immediately, so it survives even if the rest of the form is abandoned.
     function setRating(n) {
-      var wasPositive = state.rating >= 4, isPositive = n >= 4;
-      if (state.rating > 0 && wasPositive !== isPositive) state.tags = []; // sentiment flipped: tag sets differ
       var first = !state.saved;
       state.rating = n;
       state.saved = true;
@@ -506,20 +553,16 @@
       render();
     }
 
-    function toggleTag(key) {
-      var i = state.tags.indexOf(key);
-      if (i === -1) state.tags.push(key); else state.tags.splice(i, 1);
-      render();
-    }
-
-    function finishReview() {
+    function submitReview() {
+      if (!state.rating) return;
       state.done = true;
       if (hasDetails()) console.log('Mixpanel track: Trip Review Details Added', detailsPayload());
       render();
     }
 
     function hasDetails() {
-      return state.tags.length > 0 || Object.keys(state.cats).length > 0 ||
+      return Object.keys(state.cats).length > 0 || state.access || state.comm || state.contacted ||
+        document.getElementById('support-comment').value.trim().length > 0 ||
         document.getElementById('comment').value.trim().length > 0;
     }
 
@@ -535,17 +578,21 @@
       return {
         event: 'Trip Review Details Added',
         cleanliness_rating: state.cats.cleanliness || null,
-        vehicle_condition_rating: state.cats.vehicle_condition || null,
+        car_condition_rating: state.cats.car_condition || null,
         charging_range_rating: state.cats.charging_range || null,
         pickup_return_rating: state.cats.pickup_return || null,
-        tags: state.tags,
+        access_method: state.access,
+        owner_communication: state.comm,
+        contacted_support: state.contacted,
+        support_resolved: state.resolved,
+        has_support_comment: document.getElementById('support-comment').value.trim().length > 0,
         has_comment: document.getElementById('comment').value.trim().length > 0,
         trip_id: 'trp_8Xk2m'
       };
     }
 
     function render() {
-      var r = state.rating, positive = r >= 4;
+      var r = state.rating;
 
       // overall stars + word
       var starBtns = starsEl.children;
@@ -553,13 +600,7 @@
         starBtns[i].classList.toggle('on', i < r);
         starBtns[i].setAttribute('aria-checked', i + 1 === r ? 'true' : 'false');
       }
-      var word = document.getElementById('rating-word');
-      word.textContent = r ? WORDS[r] : '';
-      word.classList.toggle('set', r > 0);
-
-      // instant-save confirmation + progressive reveal
-      document.getElementById('saved-chip').classList.toggle('hidden', !state.saved);
-      document.getElementById('after-rating').classList.toggle('open', r > 0);
+      document.getElementById('rating-word').textContent = r ? WORDS[r] : '';
 
       // category stars
       var catBtns = catsEl.querySelectorAll('.cat-star');
@@ -570,21 +611,21 @@
         b.setAttribute('aria-checked', idx + 1 === val ? 'true' : 'false');
       });
 
-      // adaptive tags
-      document.getElementById('tags-label').textContent = positive ? 'What stood out?' : 'What went wrong?';
-      var chipsEl = document.getElementById('chips');
-      chipsEl.innerHTML = '';
-      (positive ? TAGS_POS : TAGS_NEG).forEach(function (t) {
-        var b = document.createElement('button');
-        b.className = 'chip' + (state.tags.indexOf(t.key) !== -1 ? ' on' : '');
-        b.textContent = t.label;
-        b.setAttribute('aria-pressed', state.tags.indexOf(t.key) !== -1 ? 'true' : 'false');
-        b.onclick = function () { toggleTag(t.key); };
-        chipsEl.appendChild(b);
+      // survey pills
+      document.querySelectorAll('.pills').forEach(function (group) {
+        var g = group.dataset.group;
+        group.querySelectorAll('.pill').forEach(function (pill) {
+          var on = state[g] === pill.dataset.value;
+          pill.classList.toggle('on', on);
+          pill.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
       });
-      document.getElementById('comment').placeholder = positive
-        ? 'Anything else? (optional)'
-        : 'Tell us what happened. We read every one. (optional)';
+
+      // support follow-up appears once support was contacted
+      var contactedYes = state.contacted === 'yes_eon' || state.contacted === 'yes_owner';
+      document.getElementById('support-followup').classList.toggle('hidden', !contactedYes);
+
+      document.getElementById('submit-btn').disabled = !r;
 
       // end states
       document.getElementById('review-form').classList.toggle('hidden', state.done);
@@ -599,7 +640,7 @@
         document.getElementById('p1-status').textContent = state.saved ? 'fired on star tap ✓' : 'waiting for rating';
         document.getElementById('p1-json').textContent = compactJson(ratingPayload());
         document.getElementById('p2-status').textContent = state.done
-          ? (hasDetails() ? 'fired on Done ✓' : 'skipped, no details')
+          ? (hasDetails() ? 'fired on submit ✓' : 'skipped, no details')
           : (hasDetails() ? 'building' : 'waiting');
         document.getElementById('p2-json').textContent = compactJson(detailsPayload());
       }
@@ -612,10 +653,10 @@
     // ---- presets for the hub's state control ----
     var PRESETS = {
       'default':     function () {},
-      'rated-5':     function () { state.rating = 5; state.saved = true; state.cats = { cleanliness: 5, vehicle_condition: 5, charging_range: 4, pickup_return: 5 }; state.tags = ['spotless_car', 'easy_pickup']; },
-      'rated-2':     function () { state.rating = 2; state.saved = true; state.cats = { cleanliness: 1, vehicle_condition: 3, charging_range: 2 }; state.tags = ['not_clean', 'low_battery']; },
-      'submitted-5': function () { state.rating = 5; state.saved = true; state.cats = { cleanliness: 5, vehicle_condition: 5, charging_range: 4, pickup_return: 5 }; state.tags = ['spotless_car', 'easy_pickup']; state.done = true; },
-      'submitted-2': function () { state.rating = 2; state.saved = true; state.cats = { cleanliness: 1, vehicle_condition: 3, charging_range: 2 }; state.tags = ['not_clean', 'low_battery']; state.done = true; }
+      'rated-5':     function () { state.rating = 5; state.saved = true; state.cats = { cleanliness: 5, car_condition: 5, charging_range: 4, pickup_return: 5 }; state.access = 'eon_app'; state.comm = 'through_eon'; state.contacted = 'no'; },
+      'rated-2':     function () { state.rating = 2; state.saved = true; state.cats = { cleanliness: 1, car_condition: 3, charging_range: 2 }; state.access = 'chargekey_app'; state.comm = 'direct'; state.contacted = 'yes_eon'; state.resolved = 'no'; },
+      'submitted-5': function () { PRESETS['rated-5'](); state.done = true; },
+      'submitted-2': function () { PRESETS['rated-2'](); state.done = true; }
     };
     (PRESETS[initialState] || PRESETS['default'])();
     render();
