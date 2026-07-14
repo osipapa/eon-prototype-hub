@@ -138,11 +138,11 @@
   .star-btn:active{transform:scale(1.15)}
   .star-btn svg{width:36px;height:36px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
   .star-btn.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
-  .rating-word{text-align:center;font-size:var(--font-size-body);line-height:1.4;min-height:22px;margin-top:-8px}
+  .rating-word{text-align:left;font-size:var(--font-size-body);line-height:1.4;min-height:22px;margin-top:-8px}
 
   /* first state is collapsed: only header + subtitle + stars show until a star is tapped */
   .after-rating{display:none}
-  .after-rating.open{display:flex;flex-direction:column;gap:24px;animation:reveal .3s ease}
+  .after-rating.open{display:flex;flex-direction:column;gap:16px;animation:reveal .3s ease}
   @keyframes reveal{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 
   .divider{height:1px;background:var(--divider);border-radius:16px}
@@ -152,7 +152,7 @@
   .cat-row + .cat-row{border-top:1px solid var(--divider)}
   .cat-name{font-size:var(--font-size-body);line-height:1.4}
   .cat-stars{display:flex}
-  .cat-star{width:40px;height:44px;display:flex;align-items:center;justify-content:center}
+  .cat-star{width:34px;height:44px;display:flex;align-items:center;justify-content:center}
   .cat-star svg{width:24px;height:24px;fill:none;stroke:var(--star-empty);stroke-width:1.5;transition:fill .12s,stroke .12s}
   .cat-star.on svg{fill:var(--icon-brand);stroke:var(--icon-brand)}
 
@@ -323,8 +323,6 @@
             </div>
           </div>
 
-          <div class="divider"></div>
-
           <div class="q-sub">
             <div class="q-text">How did you communicate with the owner?</div>
             <div class="pills" data-group="comm">
@@ -332,8 +330,6 @@
               <button class="pill" data-value="direct">Directly with the owner</button>
             </div>
           </div>
-
-          <div class="divider"></div>
 
           <div class="q-sub">
             <div class="q-text">Have you contacted customer support?</div>
