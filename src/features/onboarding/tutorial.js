@@ -97,18 +97,6 @@ const DESIGNER_STEPS = [
     tab: "linear",
     interactive: true,
   },
-  {
-    key: "review-process",
-    eyebrow: "Design handoff",
-    title: "Move the review forward deliberately.",
-    body: "Use the shared stages when exploration is ready for review, handoff, or shipping.",
-    icon: "review",
-    targets: ['[data-tutorial="review-stage"]'],
-    placement: "left",
-    reveal: "review",
-    tab: "details",
-    interactive: true,
-  },
 ];
 
 const OPERATIONS_STEPS = [
@@ -120,18 +108,6 @@ const OPERATIONS_STEPS = [
     icon: "status",
     targets: ['[data-tutorial="review-status"]'],
     placement: "bottom",
-    interactive: true,
-  },
-  {
-    key: "review-process",
-    eyebrow: "Review workflow",
-    title: "Keep every handoff explicit.",
-    body: "Move work from exploration through review, handoff, and shipped.",
-    icon: "review",
-    targets: ['[data-tutorial="review-stage"]'],
-    placement: "left",
-    reveal: "review",
-    tab: "details",
     interactive: true,
   },
   {
@@ -167,7 +143,6 @@ const OPERATIONS_STEPS = [
     targets: ['[data-tutorial="share-review"]'],
     placement: "left",
     reveal: "review",
-    tab: "details",
     interactive: true,
   },
   {
@@ -246,7 +221,6 @@ const ENGINEER_STEPS = [
     targets: ['[data-tutorial="share-review"]'],
     placement: "left",
     reveal: "review",
-    tab: "details",
     interactive: true,
   },
 ];

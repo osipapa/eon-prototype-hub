@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
-  ExternalLink, FileText, LayoutGrid, Link2, Loader2, LogOut,
+  ExternalLink, LayoutGrid, Link2, Loader2, LogOut,
   Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
   PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, Square, Sun,
@@ -209,7 +209,8 @@ export default function PrototypeWorkspace({
         setInspectorOpen(true);
         if (breakpoints.inspectorDrawer) setNavOpen(false);
       }
-      if (["comments", "details", "linear"].includes(tab)) setInspectorTab(tab);
+      if (tab === "details") setInspectorTab("linear");
+      else if (["comments", "linear"].includes(tab)) setInspectorTab(tab);
     };
     window.addEventListener("eon:tutorial:reveal", revealTutorialTarget);
     return () => window.removeEventListener("eon:tutorial:reveal", revealTutorialTarget);
@@ -239,7 +240,8 @@ export default function PrototypeWorkspace({
     if (["states", "themes", "screens"].includes(nextGrid)) setGridBy(nextGrid);
     if (/^#[0-9a-f]{6}$/i.test(nextCanvas || "")) setCanvasBg(nextCanvas);
     if (Number.isFinite(nextZoom) && nextZoom >= 0.25 && nextZoom <= 4) setZoom(nextZoom);
-    if (["comments", "details", "linear"].includes(nextTab)) setInspectorTab(nextTab);
+    if (nextTab === "details") setInspectorTab("linear");
+    else if (["comments", "linear"].includes(nextTab)) setInspectorTab(nextTab);
     const linkedArgs = {};
     params.forEach((value, key) => {
       if (!key.startsWith("arg.")) return;
@@ -901,26 +903,28 @@ function ReviewInspector({
   return (
     <aside data-tutorial="review-panel" ref={drawerRef} className="eon-inspector" role={isDrawer ? "dialog" : undefined} aria-modal={isDrawer || undefined} aria-label="Review panel" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-inspector-head" style={{ borderColor: c.border }}>
-        <div>
+        <div className="eon-inspector-title">
           <strong>Review workspace</strong>
-          <span style={{ color: c.muted }}>Feedback, context, and handoff</span>
+          <span style={{ color: c.muted }}>Feedback and delivery context</span>
         </div>
-        {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review panel" style={{ color: c.muted }}><X size={17} /></button>}
+        <div className="eon-inspector-actions">
+          <button data-tutorial="share-review" className="eon-buttonish eon-secondary-button eon-share-link-button" onClick={copyReviewLink}
+            title={reviewLinkCopyError || (copiedReviewLink ? "Review link copied" : "Copy this exact review view")}
+            style={{ borderColor: c.border, background: c.panel, color: copiedReviewLink ? c.brand : c.secondary }}>
+            {copiedReviewLink ? <Check size={14} /> : <Link2 size={14} />}
+            <span>{copiedReviewLink ? "Copied" : "Copy link"}</span>
+          </button>
+          {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review panel" style={{ color: c.muted }}><X size={17} /></button>}
+        </div>
+        {reviewLinkCopyError && <span role="alert" className="eon-visually-hidden">{reviewLinkCopyError}</span>}
       </div>
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
         <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
           <TabsTrigger data-tutorial="comments-tab" value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
-          <TabsTrigger data-tutorial="details-tab" value="details"><FileText size={14} /> Details</TabsTrigger>
           <TabsTrigger data-tutorial="linear-tab" value="linear"><LinearIcon size={14} /> Linear</TabsTrigger>
         </TabsList>
         <TabsContent data-tutorial="comments-thread" value="comments" className="eon-inspector-content">
           <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
-        </TabsContent>
-        <TabsContent value="details" className="eon-inspector-content eon-details-content">
-          <ProjectDetails
-            c={c} story={story}
-            copyReviewLink={copyReviewLink} copiedReviewLink={copiedReviewLink} reviewLinkCopyError={reviewLinkCopyError}
-          />
         </TabsContent>
         <TabsContent data-tutorial="linear-content" value="linear" className="eon-inspector-content eon-reference-content">
           <ReviewReadiness c={c} story={story} comments={comments} />
@@ -930,29 +934,6 @@ function ReviewInspector({
         </TabsContent>
       </Tabs>
     </aside>
-  );
-}
-
-function ProjectDetails({
-  c, story, copyReviewLink, copiedReviewLink, reviewLinkCopyError,
-}) {
-  return (
-    <div className="eon-details" style={{ color: c.secondary }}>
-      <section data-tutorial="share-review" className="eon-details-section eon-share-review" style={{ background: c.raised }}>
-        <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Share this exact view</strong><span style={{ color: c.muted }}>Includes viewport, theme, state, canvas, and review tab.</span></div></div>
-        <button className="eon-buttonish eon-secondary-button" onClick={copyReviewLink}
-          style={{ borderColor: c.border, background: c.panel, color: copiedReviewLink ? c.brand : c.secondary }}>
-          {copiedReviewLink ? <Check size={14} /> : <Link2 size={14} />}
-          {copiedReviewLink ? "Review link copied" : "Copy review link"}
-        </button>
-        {reviewLinkCopyError && <span role="alert" className="eon-copy-error">{reviewLinkCopyError}</span>}
-      </section>
-
-      <div className="eon-project-meta" style={{ color: c.muted }}>
-        <span>/{story.slug}</span>
-        {story.updated_at && <span>{updatedTimeLabel(story.updated_at)}</span>}
-      </div>
-    </div>
   );
 }
 
@@ -966,7 +947,7 @@ function ReviewReadiness({ c, story, comments }) {
 
   return (
       <section className="eon-readiness-card" style={{ color: c.secondary, background: c.panel }}>
-        <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Review readiness</strong><span style={{ color: c.muted }}>{checklist.filter((item) => item.done).length} of {checklist.length} signals ready</span></div></div>
+        <div className="eon-readiness-heading"><div><strong style={{ color: c.text }}>Review readiness</strong><span style={{ color: c.muted }}>{checklist.filter((item) => item.done).length} of {checklist.length} signals ready</span></div></div>
         <div className="eon-readiness-list">
           {checklist.map((item) => (
             <div key={item.label} className="eon-readiness-item" style={{ color: item.done ? c.secondary : c.muted }}>
@@ -1423,11 +1404,6 @@ function relativeTime(value) {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
   return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-function updatedTimeLabel(value) {
-  const relative = relativeTime(value);
-  return relative === "now" ? "Updated just now" : `Updated ${relative} ago`;
 }
 
 function hubShadow(c) {
