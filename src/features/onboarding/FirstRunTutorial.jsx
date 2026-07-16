@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight, Check, ChevronLeft, CircleDot, Code2, Copy, ListChecks,
   MessageSquare, Monitor, Palette, PanelLeftOpen, SlidersHorizontal,
-  Smartphone, Sparkles, Upload, X,
+  Smartphone, Sparkles, X,
 } from "lucide-react";
 import {
   createTutorialSteps, TUTORIAL_PERSONAS, validTutorialPersona,
@@ -19,7 +19,6 @@ const ICONS = {
   status: CircleDot,
   prompt: Copy,
   mobile: Smartphone,
-  upload: Upload,
   sliders: SlidersHorizontal,
   sparkles: Sparkles,
 };

@@ -31,6 +31,106 @@ function decodeUrlPart(value) {
   try { return decodeURIComponent(value); } catch { return value; }
 }
 
+function renderMarkdownInline(value, keyPrefix) {
+  const text = String(value || "");
+  const tokenPattern = /(\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|`([^`]+)`|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~)/g;
+  const output = [];
+  let cursor = 0;
+  let match;
+
+  while ((match = tokenPattern.exec(text))) {
+    if (match.index > cursor) output.push(text.slice(cursor, match.index));
+    const key = `${keyPrefix}-${match.index}`;
+    if (match[2] && match[3]) {
+      const href = parseHttpUrl(match[3])?.href;
+      output.push(href
+        ? <a key={key} href={href} target="_blank" rel="noreferrer">{match[2]}</a>
+        : match[0]);
+    } else if (match[4]) {
+      output.push(<code key={key}>{match[4]}</code>);
+    } else if (match[5] || match[6]) {
+      output.push(<strong key={key}>{match[5] || match[6]}</strong>);
+    } else if (match[7]) {
+      output.push(<s key={key}>{match[7]}</s>);
+    }
+    cursor = tokenPattern.lastIndex;
+  }
+  if (cursor < text.length) output.push(text.slice(cursor));
+  return output;
+}
+
+function MarkdownText({ children }) {
+  const lines = String(children || "").replace(/\r\n?/g, "\n").split("\n");
+  const blocks = [];
+  const startsBlock = (line) => /^(#{1,6})\s+|^\s*[-*+]\s+|^\s*\d+[.)]\s+|^\s*>\s?|^\s*```/.test(line);
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    if (!line.trim()) { index += 1; continue; }
+
+    const fence = line.match(/^\s*```\s*([^\s]*)/);
+    if (fence) {
+      const code = [];
+      index += 1;
+      while (index < lines.length && !/^\s*```/.test(lines[index])) code.push(lines[index++]);
+      if (index < lines.length) index += 1;
+      blocks.push(<pre key={`code-${index}`}><code data-language={fence[1] || undefined}>{code.join("\n")}</code></pre>);
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,6})\s+(.+)/);
+    if (heading) {
+      const Heading = heading[1].length <= 2 ? "h3" : "h4";
+      blocks.push(<Heading key={`heading-${index}`}>{renderMarkdownInline(heading[2], `heading-${index}`)}</Heading>);
+      index += 1;
+      continue;
+    }
+
+    const bullet = line.match(/^\s*[-*+]\s+(.+)/);
+    if (bullet) {
+      const items = [];
+      while (index < lines.length) {
+        const item = lines[index].match(/^\s*[-*+]\s+(.+)/);
+        if (!item) break;
+        items.push(<li key={`bullet-${index}`}>{renderMarkdownInline(item[1], `bullet-${index}`)}</li>);
+        index += 1;
+      }
+      blocks.push(<ul key={`list-${index}`}>{items}</ul>);
+      continue;
+    }
+
+    const ordered = line.match(/^\s*\d+[.)]\s+(.+)/);
+    if (ordered) {
+      const items = [];
+      while (index < lines.length) {
+        const item = lines[index].match(/^\s*\d+[.)]\s+(.+)/);
+        if (!item) break;
+        items.push(<li key={`ordered-${index}`}>{renderMarkdownInline(item[1], `ordered-${index}`)}</li>);
+        index += 1;
+      }
+      blocks.push(<ol key={`ordered-list-${index}`}>{items}</ol>);
+      continue;
+    }
+
+    if (/^\s*>/.test(line)) {
+      const quote = [];
+      while (index < lines.length && /^\s*>/.test(lines[index])) quote.push(lines[index++].replace(/^\s*>\s?/, ""));
+      blocks.push(<blockquote key={`quote-${index}`}>{renderMarkdownInline(quote.join(" "), `quote-${index}`)}</blockquote>);
+      continue;
+    }
+
+    const paragraph = [];
+    while (index < lines.length && lines[index].trim() && !startsBlock(lines[index])) {
+      paragraph.push(lines[index].trim());
+      index += 1;
+    }
+    blocks.push(<p key={`paragraph-${index}`}>{renderMarkdownInline(paragraph.join(" "), `paragraph-${index}`)}</p>);
+  }
+
+  return <div className="eon-linear-markdown">{blocks}</div>;
+}
+
 export default function PrototypeHub({
   projects, assets = {}, isAdmin, userEmail,
   onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder, onOpenAdmin, onSignOut,
@@ -676,8 +776,8 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
   const safeIssueUrl = parseHttpUrl(issueUrl)?.href || "";
   const clickable = Boolean(safeIssueUrl);
   return (
-    <a href={safeIssueUrl || undefined} target={clickable ? "_blank" : undefined} rel="noreferrer"
-      style={{ flex: "1 1 auto", minHeight: 240, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column", textDecoration: "none", color: c.text, cursor: clickable ? "pointer" : "default", overflow: "hidden" }}>
+    <div className="eon-linear-card"
+      style={{ flex: "1 1 auto", minHeight: 240, borderRadius: 12, border: `1px solid ${c.border}`, background: c.bg, padding: 16, display: "flex", flexDirection: "column", color: c.text, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <LinearIcon size={15} style={{ color: c.muted }} />
         <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{live?.identifier || identifier || "ISSUE"}</span>
@@ -687,7 +787,11 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
         {live?.priorityLabel && live.priorityLabel !== "No priority" && (
           <span style={{ fontSize: 11, color: c.muted }}>{live.priorityLabel}</span>
         )}
-        {clickable && <ExternalLink style={{ width: 13, height: 13, color: c.muted, marginLeft: "auto" }} />}
+        {clickable && (
+          <a className="eon-linear-open" href={safeIssueUrl} target="_blank" rel="noreferrer" aria-label="Open issue in Linear" title="Open issue in Linear" style={{ color: c.muted }}>
+            <ExternalLink style={{ width: 14, height: 14 }} />
+          </a>
+        )}
       </div>
       <div style={{ fontSize: 15, fontWeight: 500, marginTop: 12, flexShrink: 0 }}>
         {live ? live.title : `${story.title} — design + build`}
@@ -699,7 +803,7 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
         ))}
       </div>
       {live?.description
-        ? <div style={{ fontSize: 13, color: c.secondary, marginTop: 10, lineHeight: 1.55, flex: 1, overflow: "auto", whiteSpace: "pre-wrap" }}>{live.description}</div>
+        ? <div className="eon-linear-description" style={{ color: c.secondary }}><MarkdownText>{live.description}</MarkdownText></div>
         : <div style={{ fontSize: 13, color: c.muted, marginTop: 10, flex: 1 }}>{live ? "No description in Linear." : ""}</div>}
       <div style={{ fontSize: 11, color: c.muted, paddingTop: 12, marginTop: 8, borderTop: `1px solid ${c.border}`, flexShrink: 0 }}>
         {live
@@ -708,7 +812,7 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
             ? "Loading from Linear…"
             : "Paste a Linear issue URL to link it."}
       </div>
-    </a>
+    </div>
   );
 }
 

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
-  AlertCircle, ArrowDown, ArrowUp, Bell, Check, ChevronDown, Circle, Copy,
+  AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
   ExternalLink, FileText, LayoutGrid, Link2, Loader2, LogOut,
   Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
@@ -25,8 +25,11 @@ import {
 import { buildSetupPrompt } from "./setupPrompt";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
-const REVIEW_STAGES = ["Exploration", "In review", "Handoff", "Shipped"];
 const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
+
+function linearIdentifier(project) {
+  return project?.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || project?.issue_id || null;
+}
 
 export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], isAdmin, profile, userEmail,
@@ -53,7 +56,7 @@ export default function PrototypeWorkspace({
   const [editFigma, setEditFigma] = useState(false);
   const [editLinear, setEditLinear] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [liveLinear, setLiveLinear] = useState(null);
+  const [linearByProject, setLinearByProject] = useState({});
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
@@ -63,7 +66,6 @@ export default function PrototypeWorkspace({
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [splitDragging, setSplitDragging] = useState(false);
   const [inspectorTab, setInspectorTab] = useState("comments");
-  const [attentionOnly, setAttentionOnly] = useState(false);
   const [copiedReviewLink, setCopiedReviewLink] = useState(false);
   const [reviewLinkCopyError, setReviewLinkCopyError] = useState("");
   const [reviewLocationKey, setReviewLocationKey] = useState(() => window.location.hash);
@@ -141,15 +143,19 @@ export default function PrototypeWorkspace({
     return counts;
   }, {}), [comments]);
 
+  const linearProjectKey = useMemo(
+    () => projects.map((item) => `${item.id}:${linearIdentifier(item) || ""}`).join("|"),
+    [projects],
+  );
+
   const groups = useMemo(() => {
     const q = query.toLowerCase();
     const grouped = {};
     projects
       .filter((item) => item.title.toLowerCase().includes(q) || (item.group_name || "").toLowerCase().includes(q))
-      .filter((item) => !attentionOnly || unreadByProject[item.id] > 0 || item.status === "In review")
       .forEach((item) => { (grouped[item.group_name || "General"] ||= []).push(item); });
     return grouped;
-  }, [projects, query, attentionOnly, unreadByProject]);
+  }, [projects, query]);
 
   const storyComments = useMemo(
     () => comments.filter((comment) => comment.project_id === story?.id),
@@ -246,14 +252,21 @@ export default function PrototypeWorkspace({
   }, [story?.id, reviewLocationKey]);
 
   useEffect(() => {
-    const url = story?.issue_url || "";
-    const id = url.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story?.issue_id || null;
-    setLiveLinear(null);
-    if (!id) return undefined;
+    const linkedProjects = projects
+      .map((item) => ({ projectId: item.id, identifier: linearIdentifier(item) }))
+      .filter((item) => item.identifier);
     let stale = false;
-    fetchLinearIssue(id).then((issue) => { if (!stale) setLiveLinear(issue); });
+    setLinearByProject({});
+    if (!linkedProjects.length) return () => { stale = true; };
+
+    Promise.all(linkedProjects.map(async ({ projectId, identifier }) => [
+      projectId,
+      await fetchLinearIssue(identifier),
+    ])).then((entries) => {
+      if (!stale) setLinearByProject(Object.fromEntries(entries));
+    });
     return () => { stale = true; };
-  }, [story?.id, story?.issue_url, story?.issue_id]);
+  }, [linearProjectKey]);
 
   useEffect(() => {
     setStoryMenuId(null);
@@ -282,7 +295,8 @@ export default function PrototypeWorkspace({
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
   const effCompare = compare && !breakpoints.noCompare;
   const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR.Exploration;
-  const linearId = story.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story.issue_id || null;
+  const linearId = linearIdentifier(story);
+  const liveLinear = linearByProject[story.id] || null;
   const frameScale = scale * zoom;
   const frameWidth = vp.w * frameScale;
   const frameHeight = vp.h * frameScale;
@@ -435,7 +449,7 @@ export default function PrototypeWorkspace({
           moveStory={moveStory} projectOrder={projects.map((item) => item.id)}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
           onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
-          attentionOnly={attentionOnly} setAttentionOnly={setAttentionOnly}
+          linearByProject={linearByProject}
           unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
           isDrawer={breakpoints.navDrawer} onClose={() => setNavOpen(false)}
         />
@@ -457,7 +471,7 @@ export default function PrototypeWorkspace({
           showUpload={showUpload} setShowUpload={setShowUpload} openFull={openFull}
           viewport={viewport} setViewport={setViewport} layout={layout} setLayout={setLayout}
           compare={effCompare} setCompare={setCompare} saveState={saveState} onRetrySave={onRetrySave}
-          onOpenReviewDetails={() => { setInspectorTab("details"); setInspectorOpen(true); }}
+          onOpenLinear={() => { setInspectorTab("linear"); setInspectorOpen(true); }}
         />
 
         {loadError && (
@@ -532,7 +546,6 @@ export default function PrototypeWorkspace({
           onCreateComment={onCreateComment} patch={patch}
           editLinear={editLinear} setEditLinear={setEditLinear}
           sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
-          saveState={saveState} onRetrySave={onRetrySave}
           copyReviewLink={copyReviewLink} copiedReviewLink={copiedReviewLink}
           reviewLinkCopyError={reviewLinkCopyError}
           isDrawer={breakpoints.inspectorDrawer} onClose={() => setInspectorOpen(false)}
@@ -560,7 +573,8 @@ function WorkspaceSidebar({
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
   onDeleteProject, moveStory, projectOrder, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
-  attentionOnly, setAttentionOnly, unreadByProject, commentCountByProject,
+  linearByProject,
+  unreadByProject, commentCountByProject,
   isDrawer, onClose,
 }) {
   const hasResults = Object.keys(groups).length > 0;
@@ -595,11 +609,6 @@ function WorkspaceSidebar({
                 <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" aria-label="Search prototypes"
                   style={{ minHeight: 40, paddingLeft: 34, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 10 }} />
               </div>
-              <button className="eon-buttonish eon-icon-button" onClick={() => setAttentionOnly((value) => !value)}
-                aria-label="Show prototypes needing attention" aria-pressed={attentionOnly} title="Needs attention"
-                style={{ color: attentionOnly ? c.brand : c.muted, background: attentionOnly ? c.active : c.raised }}>
-                <Bell size={15} />
-              </button>
             </div>
             <button data-tutorial="setup-prompt" className="eon-buttonish eon-secondary-button" onClick={copySetupPrompt}
               title="Includes the current controls, selected values, viewports, and shared media variables" style={{ borderColor: c.border, background: c.raised, color: copiedPrompt ? c.brand : c.secondary }}>
@@ -618,8 +627,8 @@ function WorkspaceSidebar({
           {!hasResults && (
             <div className="eon-sidebar-empty" style={{ color: c.muted }}>
               <Search size={18} />
-              <strong style={{ color: c.text }}>{attentionOnly ? "Nothing needs attention" : "No prototypes found"}</strong>
-              <span>{attentionOnly ? "You're caught up on reviews." : "Try a different name or group."}</span>
+              <strong style={{ color: c.text }}>No prototypes found</strong>
+              <span>Try a different name or group.</span>
             </div>
           )}
           {Object.entries(groups).map(([group, items]) => (
@@ -650,6 +659,8 @@ function WorkspaceSidebar({
             )}
             {!collapsedGroups[group] && items.map((item) => {
               const active = activeId === item.id;
+              const linearState = linearByProject[item.id]?.state;
+              const statusColor = linearState?.color || (STATUS_COLOR[item.status] || STATUS_COLOR.Exploration)[1];
               return (
                 <div className="eon-story-row" key={item.id} draggable={isAdmin} data-story-menu={item.id}
                   onDragStart={() => setDragId(item.id)}
@@ -672,8 +683,8 @@ function WorkspaceSidebar({
                   ) : (
                     <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose(); }}
                       onDoubleClick={() => isAdmin && setRenamingId(item.id)} title={isAdmin ? "Double-click to rename" : undefined}
-                      aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
-                      <span className="eon-status-dot" style={{ background: (STATUS_COLOR[item.status] || STATUS_COLOR.Exploration)[1] }} />
+                      aria-label={`${item.title}, ${linearState?.name || item.status}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
+                      <span className="eon-status-dot" aria-hidden="true" style={{ "--status-color": statusColor, background: statusColor }} />
                       <span>{item.title}</span>
                       {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}
                       {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && <span className="eon-comment-count" style={{ color: c.muted }}>{commentCountByProject[item.id]}</span>}
@@ -726,7 +737,7 @@ function WorkspaceToolbar({
   c, view, story, liveLinear, sc0, sc1, navOpen, onToggleNav, inspectorOpen,
   onToggleInspector, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
   viewport, setViewport, layout, setLayout, compare, setCompare,
-  saveState, onRetrySave, onOpenReviewDetails,
+  saveState, onRetrySave, onOpenLinear,
 }) {
   return (
     <header className="eon-toolbar" style={{ background: c.nav, borderColor: c.border }}>
@@ -739,7 +750,7 @@ function WorkspaceToolbar({
           <span>{view === "media" ? "Media library" : story.title}</span>
           {view === "stories" && (liveLinear?.state
             ? <Badge data-tutorial="review-status" className="eon-story-status" title="Synced from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: 0, fontWeight: 600 }}>{liveLinear.state.name} · Linear</Badge>
-            : <button data-tutorial="review-status" className="eon-buttonish eon-status-button" onClick={onOpenReviewDetails} aria-label={`Review status: ${story.status}. Open project details`}>
+            : <button data-tutorial="review-status" className="eon-buttonish eon-status-button" onClick={onOpenLinear} aria-label={`Review status: ${story.status}. Open Linear context`}>
                 <Badge className="eon-story-status" style={{ background: sc0, color: sc1, border: 0, fontWeight: 600 }}>{story.status}</Badge>
                 <ChevronDown size={12} style={{ color: c.muted }} />
               </button>)}
@@ -789,7 +800,7 @@ function WorkspaceToolbar({
           <div className="eon-tool-compare">
             <ToolGroup label="Compare with Figma" c={c}>
               <div className="eon-icon-segment" style={{ background: c.raised }}>
-                <button className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)}
+                <button data-tutorial="figma-compare" className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)}
                   title="Compare with the linked Figma frame" aria-label="Compare with Figma" aria-pressed={compare}
                   style={{ color: compare ? c.selectedText : c.muted, background: compare ? c.selected : "transparent" }}>
                   <FigmaIcon size={16} />
@@ -884,7 +895,7 @@ function ToolGroup({ label, c, children }) {
 function ReviewInspector({
   c, story, comments, profile, tab, setTab, onCreateComment, patch,
   editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
-  saveState, onRetrySave, copyReviewLink, copiedReviewLink, reviewLinkCopyError, isDrawer, onClose,
+  copyReviewLink, copiedReviewLink, reviewLinkCopyError, isDrawer, onClose,
 }) {
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
@@ -907,12 +918,12 @@ function ReviewInspector({
         </TabsContent>
         <TabsContent value="details" className="eon-inspector-content eon-details-content">
           <ProjectDetails
-            c={c} story={story} comments={comments} patch={patch}
-            saveState={saveState} onRetrySave={onRetrySave}
+            c={c} story={story}
             copyReviewLink={copyReviewLink} copiedReviewLink={copiedReviewLink} reviewLinkCopyError={reviewLinkCopyError}
           />
         </TabsContent>
         <TabsContent data-tutorial="linear-content" value="linear" className="eon-inspector-content eon-reference-content">
+          <ReviewReadiness c={c} story={story} comments={comments} />
           <ReferenceHeader c={c} icon={LinearIcon} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
           {(!story.issue_url || editLinear) && <Input aria-label="Linear issue URL" value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
           <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
@@ -923,65 +934,10 @@ function ReviewInspector({
 }
 
 function ProjectDetails({
-  c, story, comments, patch, saveState, onRetrySave, copyReviewLink, copiedReviewLink, reviewLinkCopyError,
+  c, story, copyReviewLink, copiedReviewLink, reviewLinkCopyError,
 }) {
-  const currentIndex = Math.max(0, REVIEW_STAGES.indexOf(story.status));
-  const nextStage = REVIEW_STAGES[currentIndex + 1];
-  const checklist = [
-    { label: "Prototype uploaded", done: Boolean(story.prototype_html || ["signin", "dashboard"].includes(story.slug)) },
-    { label: "Figma source linked", done: Boolean(story.figma_url) },
-    { label: "Linear issue linked", done: Boolean(story.issue_url || story.issue_id) },
-    { label: "Team feedback started", done: comments.length > 0 },
-  ];
-
   return (
     <div className="eon-details" style={{ color: c.secondary }}>
-      <section data-tutorial="review-stage" className="eon-details-section">
-        <div className="eon-details-heading">
-          <div><strong style={{ color: c.text }}>Review stage</strong><span style={{ color: c.muted }}>Keep the team aligned on what happens next.</span></div>
-          <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} compact />
-        </div>
-        <div className="eon-stage-list">
-          {REVIEW_STAGES.map((stage, index) => {
-            const selected = story.status === stage;
-            const [background, color] = STATUS_COLOR[stage];
-            return (
-              <button key={stage} className="eon-buttonish eon-stage-button" onClick={() => patch("status", stage)} aria-pressed={selected}
-                style={{ background: selected ? background : c.raised, color: selected ? color : c.secondary, boxShadow: selected ? `inset 0 0 0 1px ${color}55` : "none" }}>
-                <span className="eon-stage-index" style={{ background: selected ? color : c.panel, color: selected ? c.bg : c.muted }}>{index + 1}</span>
-                {stage}
-                {selected && <Check size={14} />}
-              </button>
-            );
-          })}
-        </div>
-        {nextStage && (
-          <Button className="eon-buttonish eon-advance-button" onClick={() => patch("status", nextStage)} style={{ background: c.primary, color: c.primaryText }}>
-            Move to {nextStage}
-          </Button>
-        )}
-      </section>
-
-      <section className="eon-details-section">
-        <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Review brief</strong><span style={{ color: c.muted }}>Goal, focus areas, decisions, and acceptance criteria.</span></div></div>
-        <Textarea value={story.notes || ""} onChange={(event) => patch("notes", event.target.value)}
-          placeholder={"Goal\nWhat should reviewers focus on?\nOpen questions\nAcceptance criteria"}
-          aria-label="Prototype review brief"
-          style={{ minHeight: 150, resize: "vertical", background: c.bg, borderColor: c.border, color: c.text, borderRadius: 12, lineHeight: 1.55 }} />
-      </section>
-
-      <section className="eon-details-section">
-        <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Review readiness</strong><span style={{ color: c.muted }}>{checklist.filter((item) => item.done).length} of {checklist.length} signals ready</span></div></div>
-        <div className="eon-readiness-list">
-          {checklist.map((item) => (
-            <div key={item.label} className="eon-readiness-item" style={{ color: item.done ? c.secondary : c.muted }}>
-              <span style={{ background: item.done ? c.active : c.raised, color: item.done ? c.brand : c.muted }}>{item.done ? <Check size={12} /> : <Circle size={10} />}</span>
-              {item.label}
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section data-tutorial="share-review" className="eon-details-section eon-share-review" style={{ background: c.raised }}>
         <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Share this exact view</strong><span style={{ color: c.muted }}>Includes viewport, theme, state, canvas, and review tab.</span></div></div>
         <button className="eon-buttonish eon-secondary-button" onClick={copyReviewLink}
@@ -997,6 +953,29 @@ function ProjectDetails({
         {story.updated_at && <span>{updatedTimeLabel(story.updated_at)}</span>}
       </div>
     </div>
+  );
+}
+
+function ReviewReadiness({ c, story, comments }) {
+  const checklist = [
+    { label: "Prototype uploaded", done: Boolean(story.prototype_html || ["signin", "dashboard"].includes(story.slug)) },
+    { label: "Figma source linked", done: Boolean(story.figma_url) },
+    { label: "Linear issue linked", done: Boolean(story.issue_url || story.issue_id) },
+    { label: "Team feedback started", done: comments.length > 0 },
+  ];
+
+  return (
+      <section className="eon-readiness-card" style={{ color: c.secondary, background: c.panel }}>
+        <div className="eon-details-heading"><div><strong style={{ color: c.text }}>Review readiness</strong><span style={{ color: c.muted }}>{checklist.filter((item) => item.done).length} of {checklist.length} signals ready</span></div></div>
+        <div className="eon-readiness-list">
+          {checklist.map((item) => (
+            <div key={item.label} className="eon-readiness-item" style={{ color: item.done ? c.secondary : c.muted }}>
+              <span style={{ background: item.done ? c.active : c.raised, color: item.done ? c.brand : c.muted }}>{item.done ? <Check size={12} /> : <Circle size={10} />}</span>
+              {item.label}
+            </div>
+          ))}
+        </div>
+      </section>
   );
 }
 
