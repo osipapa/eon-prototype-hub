@@ -820,7 +820,11 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
 /* ---- Compact upload panel: a drag-and-drop zone up top, the bulky HTML editor
    and tips tucked behind a disclosure so the panel stays short, and a tight
    Save · Re-upload · Remove · Cancel action row. ---- */
-export function UploadPanel({ c, story, onSave, onClear, onCancel }) {
+export function UploadPanel({
+  c, story, onSave, onClear, onCancel,
+  canLinkFile = false, fileLink = null, fileLinkError = "",
+  autoPublish = true, onToggleAutoPublish, onLinkFile, onUnlinkFile, onPublishFile,
+}) {
   const [html, setHtml] = useState(story.prototype_html || "");
   const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState("");
@@ -854,6 +858,35 @@ export function UploadPanel({ c, story, onSave, onClear, onCancel }) {
         </span>
       </div>
 
+      {fileLink ? (
+        /* Live sync chip replaces the dropzone while a local file is linked. */
+        <div className="eon-live-chip" style={{ borderColor: c.border, background: c.raised }}>
+          <span className="eon-live-dot" aria-hidden="true" />
+          <div className="eon-live-chip-meta">
+            <strong style={{ color: c.text }}>
+              <code>{fileLink.name}</code> is live
+            </strong>
+            <span style={{ color: c.muted }}>
+              {autoPublish ? "Every save publishes to your team" : "Rendering locally — publish when ready"}
+              {fileLink.lastSyncAt ? ` · synced ${new Date(fileLink.lastSyncAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""}
+            </span>
+          </div>
+          <label className="eon-live-toggle" style={{ color: c.secondary }}>
+            <input type="checkbox" checked={autoPublish} onChange={onToggleAutoPublish} />
+            Auto-publish
+          </label>
+          {!autoPublish && (
+            <button type="button" onClick={onPublishFile}
+              style={{ minHeight: 32, padding: "0 12px", border: 0, borderRadius: 8, background: c.primary, color: c.primaryText, cursor: "pointer", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+              Publish now
+            </button>
+          )}
+          <button type="button" onClick={onUnlinkFile}
+            style={{ minHeight: 32, padding: "0 12px", border: `1px solid ${c.border}`, borderRadius: 8, background: "transparent", color: c.muted, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
+            Unlink
+          </button>
+        </div>
+      ) : (
       <div className="eon-upload-drop"
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -869,10 +902,18 @@ export function UploadPanel({ c, story, onSave, onClear, onCancel }) {
           style={{ minHeight: 32, padding: "0 12px", border: `1px solid ${c.border}`, borderRadius: 8, background: c.bg, color: c.brand, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
           {hasHtml ? "Re-upload" : "Browse files"}
         </button>
+        {canLinkFile && (
+          <button type="button" onClick={onLinkFile} title="Render this prototype straight from a file on disk — every editor save syncs automatically"
+            style={{ minHeight: 32, padding: "0 12px", border: `1px solid ${c.border}`, borderRadius: 8, background: c.bg, color: c.brand, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
+            Link local file
+          </button>
+        )}
         <input ref={fileInputRef} type="file" accept=".html,.htm,text/html" tabIndex={-1} aria-hidden="true"
           onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ""; }}
           style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap", border: 0 }} />
       </div>
+      )}
+      {fileLinkError && <div role="alert" style={{ fontSize: 12, color: "#FF508F" }}>{fileLinkError}</div>}
 
       <button type="button" className="eon-buttonish eon-upload-disclosure" onClick={() => setShowSource((v) => !v)}
         aria-expanded={showSource} style={{ color: c.secondary }}>

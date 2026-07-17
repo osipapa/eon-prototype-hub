@@ -445,6 +445,17 @@ button.eon-save-state { cursor: pointer; }
 .eon-upload-disclosure svg.is-collapsed { transform: rotate(-90deg); }
 .eon-upload-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
+/* Live local file link */
+.eon-live-chip { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid; border-radius: 10px; }
+.eon-live-chip-meta { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 1px; }
+.eon-live-chip-meta strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eon-live-chip-meta span { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eon-live-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.eon-live-toggle input { accent-color: #EDD2F6; width: 14px; height: 14px; cursor: pointer; }
+.eon-live-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 2px; padding: 2px 7px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: .02em; }
+.eon-live-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: #34D399; animation: eon-live-pulse 1.6s ease-in-out infinite; }
+@keyframes eon-live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
 /* Presence avatars */
 .eon-presence { display: inline-flex; align-items: center; padding-left: 4px; }
 .eon-presence-avatar { display: grid; width: 26px; height: 26px; place-items: center; margin-left: -7px; border: 2px solid; border-radius: 50%; font-size: 10px; font-weight: 700; letter-spacing: .01em; }
@@ -473,4 +484,5 @@ button.eon-save-state { cursor: pointer; }
   .eon-modal { transition-duration: 0ms; transform: none; }
   .eon-spin, .eon-app-spinner { animation: none; }
   .eon-toast { animation: none; }
+  .eon-live-dot { animation: none; }
 }

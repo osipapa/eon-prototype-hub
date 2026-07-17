@@ -268,14 +268,16 @@ begin
   end if;
 
   -- UPDATE: one row per changed field. sort_order / updated_at churn is ignored
-  -- so drag-to-reorder never lands in the timeline. The chatty text fields
-  -- (rename, links, notes) coalesce; discrete events do not.
+  -- so drag-to-reorder never lands in the timeline. The chatty fields (rename,
+  -- links, notes, and repeated HTML updates from live file sync) coalesce;
+  -- discrete events (first upload, removal) do not.
   if NEW.prototype_html is distinct from OLD.prototype_html then
     perform public.record_activity(NEW.team_id, NEW.id, NEW.title, v_actor, v_actor_name,
       case when NEW.prototype_html is null then 'removed_html'
            when OLD.prototype_html is null then 'uploaded_html'
            else 'updated_html' end,
-      '{}'::jsonb, false);
+      '{}'::jsonb,
+      NEW.prototype_html is not null and OLD.prototype_html is not null);
   end if;
   if NEW.status is distinct from OLD.status then
     perform public.record_activity(NEW.team_id, NEW.id, NEW.title, v_actor, v_actor_name,

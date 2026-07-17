@@ -23,6 +23,7 @@ import {
   UploadPanel, figmaMeta,
 } from "./PrototypeHub";
 import { buildSetupPrompt } from "./setupPrompt";
+import { pickHtmlFile, supportsFileLink, watchFile } from "@/lib/localFile";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
@@ -73,6 +74,16 @@ export default function PrototypeWorkspace({
   const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false, compactControls: false });
   const seenStorageKey = `eon-review-seen:${profile?.id || "anonymous"}`;
   const [seenComments, setSeenComments] = useState(() => readStoredJson(seenStorageKey));
+  // Live local file link: one at a time, tied to the prototype it was linked
+  // from. Session-scoped — file handles can't be restored after a reload.
+  const [fileLink, setFileLink] = useState(null); // {handle, name, projectId, lastModified, lastSyncAt}
+  const [autoPublish, setAutoPublish] = useState(true);
+  const [localHtml, setLocalHtml] = useState(null);
+  const [fileLinkError, setFileLinkError] = useState("");
+  const autoPublishRef = useRef(autoPublish);
+  autoPublishRef.current = autoPublish;
+  const patchProjectRef = useRef(onPatchProject);
+  patchProjectRef.current = onPatchProject;
   const compareRef = useRef(null);
   const canvasRef = useRef(null);
   const newDialogReturnFocusRef = useRef(null);
@@ -104,12 +115,21 @@ export default function PrototypeWorkspace({
     return () => observer.disconnect();
   }, [view, navOpen, inspectorOpen]);
 
-  const cfg = useMemo(() => parsePrototypeConfig(story?.prototype_html), [story?.prototype_html]);
+  // While the linked prototype is active, render straight from the local file
+  // (every editor save shows instantly, publish toggle or not).
+  const isLiveLinked = Boolean(fileLink && localHtml != null && fileLink.projectId === story?.id);
+  const sourceHtml = isLiveLinked ? localHtml : story?.prototype_html;
+  const cfg = useMemo(() => parsePrototypeConfig(sourceHtml), [sourceHtml]);
   const effStory = useMemo(() => {
     if (!story) return story;
     const controls = story.controls?.length ? story.controls : (cfg.controls || []);
-    return { ...story, controls, defaults: { ...(cfg.defaults || {}), ...(story.defaults || {}) } };
-  }, [story, cfg]);
+    return {
+      ...story,
+      ...(isLiveLinked ? { prototype_html: localHtml } : {}),
+      controls,
+      defaults: { ...(cfg.defaults || {}), ...(story.defaults || {}) },
+    };
+  }, [story, cfg, isLiveLinked, localHtml]);
   const setupControlSource = story?.controls?.length
     ? "stored project controls (these override embedded eon-config controls)"
     : cfg.controls?.length ? "embedded eon-config" : "none";
@@ -281,6 +301,53 @@ export default function PrototypeWorkspace({
     setEditFigma(false);
     setEditLinear(false);
   }, [story?.id]);
+
+  // Watch the linked file. Keeps running (and publishing) even while another
+  // prototype is selected, so background syncs aren't lost.
+  useEffect(() => {
+    if (!fileLink?.handle) return undefined;
+    const { handle, projectId, lastModified } = fileLink;
+    return watchFile(
+      handle,
+      lastModified,
+      (content, mtime) => {
+        setLocalHtml(content);
+        setFileLink((current) => (current?.handle === handle
+          ? { ...current, lastModified: mtime, lastSyncAt: Date.now() }
+          : current));
+        if (autoPublishRef.current) patchProjectRef.current(projectId, { prototype_html: content });
+      },
+      () => {
+        setFileLinkError("Lost access to the linked file — it may have been moved or deleted. Link it again to resume.");
+        setFileLink(null);
+        setLocalHtml(null);
+      },
+    );
+  }, [fileLink?.handle]);
+
+  const linkLocalFile = async () => {
+    setFileLinkError("");
+    try {
+      const picked = await pickHtmlFile();
+      if (!picked) return;
+      setLocalHtml(picked.content);
+      setFileLink({
+        handle: picked.handle, name: picked.name, projectId: story.id,
+        lastModified: picked.lastModified, lastSyncAt: Date.now(),
+      });
+      if (autoPublishRef.current) patchProjectRef.current(story.id, { prototype_html: picked.content });
+    } catch (error) {
+      setFileLinkError(error?.message || "Couldn't read that file.");
+    }
+  };
+  const unlinkLocalFile = () => {
+    setFileLink(null);
+    setLocalHtml(null);
+    setFileLinkError("");
+  };
+  const publishLocalFile = () => {
+    if (fileLink && localHtml != null) patchProjectRef.current(fileLink.projectId, { prototype_html: localHtml });
+  };
 
   if (!story) {
     return (
@@ -465,7 +532,7 @@ export default function PrototypeWorkspace({
 
       <main className="eon-workspace-main">
         <WorkspaceToolbar
-          c={c} view={view} story={story} liveLinear={liveLinear} sc0={sc0} sc1={sc1} coViewers={coViewers}
+          c={c} view={view} story={story} liveLinear={liveLinear} sc0={sc0} sc1={sc1} coViewers={coViewers} liveLinked={isLiveLinked}
           navOpen={navOpen} onToggleNav={() => {
             const opening = !navOpen;
             setNavOpen(opening);
@@ -494,7 +561,12 @@ export default function PrototypeWorkspace({
           <UploadPanel key={story.id} c={c} story={story}
             onSave={(source) => { patch("prototype_html", source); setShowUpload(false); }}
             onClear={() => { patch("prototype_html", null); setShowUpload(false); }}
-            onCancel={() => setShowUpload(false)} />
+            onCancel={() => setShowUpload(false)}
+            canLinkFile={supportsFileLink()}
+            fileLink={fileLink?.projectId === story.id ? fileLink : null}
+            fileLinkError={fileLinkError}
+            autoPublish={autoPublish} onToggleAutoPublish={() => setAutoPublish((value) => !value)}
+            onLinkFile={linkLocalFile} onUnlinkFile={unlinkLocalFile} onPublishFile={publishLocalFile} />
         )}
 
         {view === "media" ? (
@@ -745,7 +817,7 @@ function WorkspaceSidebar({
 }
 
 function WorkspaceToolbar({
-  c, view, story, liveLinear, sc0, sc1, coViewers = [], navOpen, onToggleNav, inspectorOpen,
+  c, view, story, liveLinear, sc0, sc1, coViewers = [], liveLinked = false, navOpen, onToggleNav, inspectorOpen,
   onToggleInspector, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
   viewport, setViewport, layout, setLayout, compare, setCompare,
   saveState, onRetrySave, onOpenLinear,
@@ -775,9 +847,10 @@ function WorkspaceToolbar({
         </button>
         {view === "stories" && (
           <>
-            <button data-tutorial="prototype-upload" className="eon-buttonish eon-secondary-button eon-upload-button" onClick={() => setShowUpload((open) => !open)} aria-expanded={showUpload} aria-label="Upload prototype HTML" title="Upload prototype HTML"
+            <button data-tutorial="prototype-upload" className="eon-buttonish eon-secondary-button eon-upload-button" onClick={() => setShowUpload((open) => !open)} aria-expanded={showUpload} aria-label={liveLinked ? "Upload prototype HTML (live file sync active)" : "Upload prototype HTML"} title={liveLinked ? "Live file sync active" : "Upload prototype HTML"}
               style={{ borderColor: showUpload ? c.brand : c.border, background: c.panel, color: showUpload ? c.brand : c.secondary }}>
               <Upload size={15} /> <span>Upload HTML</span>
+              {liveLinked && <span className="eon-live-badge" style={{ background: c.active, color: c.brand }}><span className="eon-live-dot" aria-hidden="true" />Live</span>}
             </button>
             <Button className="eon-buttonish eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view" style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 10, gap: 7, fontSize: 13, fontWeight: 600 }}>
               <Maximize2 size={15} /> <span>Open full view</span>
