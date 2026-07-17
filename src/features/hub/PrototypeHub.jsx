@@ -817,10 +817,15 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
 }
 
 /* ---- Upload prototype HTML (persists via projects.prototype_html) ---- */
+/* ---- Compact upload panel: a drag-and-drop zone up top, the bulky HTML editor
+   and tips tucked behind a disclosure so the panel stays short, and a tight
+   Save · Re-upload · Remove · Cancel action row. ---- */
 export function UploadPanel({ c, story, onSave, onClear, onCancel }) {
   const [html, setHtml] = useState(story.prototype_html || "");
   const [dragOver, setDragOver] = useState(false);
   const [err, setErr] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [showSource, setShowSource] = useState(false);
   const fileInputRef = useRef(null);
 
   const readFile = (file) => {
@@ -831,63 +836,81 @@ export function UploadPanel({ c, story, onSave, onClear, onCancel }) {
     }
     setErr("");
     const reader = new FileReader();
-    reader.onload = () => setHtml(String(reader.result));
+    reader.onload = () => { setHtml(String(reader.result)); setFileName(file.name); };
     reader.readAsText(file);
   };
 
+  const hasHtml = Boolean(html.trim());
+  const sizeKb = hasHtml ? Math.max(1, Math.round(new Blob([html]).size / 1024)) : 0;
+  const outline = { display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", cursor: "pointer", fontSize: 13 };
+
   return (
-    <div style={{ borderBottom: `1px solid ${c.border}`, background: c.nav, padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 500 }}>
-        <Upload style={{ width: 14, height: 14, color: c.muted }} /> Upload prototype HTML for “{story.title}”
+    <div className="eon-upload-panel" style={{ borderBottom: `1px solid ${c.border}`, background: c.nav }}>
+      <div className="eon-upload-head" style={{ color: c.text }}>
+        <Upload style={{ width: 14, height: 14, color: c.muted }} aria-hidden="true" />
+        <span>Upload prototype HTML for “{story.title}”</span>
         <span style={{ fontSize: 12, fontWeight: 400, color: c.muted }}>
-          {story.prototype_html ? "This story renders uploaded HTML." : "This story renders a built-in builder or placeholder until HTML is uploaded."}
+          {story.prototype_html ? "This prototype renders uploaded HTML." : "Renders a built-in builder or placeholder until HTML is uploaded."}
         </span>
       </div>
-      <div
+
+      <div className="eon-upload-drop"
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); readFile(e.dataTransfer.files?.[0]); }}
-        style={{ border: `1.5px dashed ${dragOver ? c.brand : c.border}`, borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, background: dragOver ? c.active : "transparent" }}>
-        <span style={{ fontSize: 13, color: c.secondary, flex: 1 }}>Drag & drop a .html file here, or</span>
+        style={{ borderColor: dragOver ? c.brand : c.border, background: dragOver ? c.active : "transparent" }}>
+        <Upload size={15} color={dragOver ? c.brand : c.muted} aria-hidden="true" />
+        <span style={{ fontSize: 13, color: c.secondary, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {hasHtml
+            ? <>HTML ready{fileName ? <> · <code style={{ color: c.text }}>{fileName}</code></> : null} · {sizeKb} KB</>
+            : "Drag & drop a .html file here, or"}
+        </span>
         <button type="button" onClick={() => fileInputRef.current?.click()}
-          style={{ minHeight: 36, padding: "0 10px", border: `1px solid ${c.border}`, borderRadius: 8, background: c.bg, color: c.brand, cursor: "pointer", fontSize: 13 }}>
-          Browse files
+          style={{ minHeight: 32, padding: "0 12px", border: `1px solid ${c.border}`, borderRadius: 8, background: c.bg, color: c.brand, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
+          {hasHtml ? "Re-upload" : "Browse files"}
         </button>
         <input ref={fileInputRef} type="file" accept=".html,.htm,text/html" tabIndex={-1} aria-hidden="true"
           onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ""; }}
           style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap", border: 0 }} />
       </div>
-      <Textarea value={html} onChange={(e) => setHtml(e.target.value)} spellCheck={false}
-        placeholder="…or paste a self-contained HTML document here"
-        aria-label="Prototype HTML source"
-        style={{ minHeight: 160, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 8 }} />
-      <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5 }}>
-        Theme tip: the hub sets <code style={{ color: c.text }}>class="dark"/"light"</code> and{" "}
-        <code style={{ color: c.text }}>data-theme</code> on <code style={{ color: c.text }}>&lt;html&gt;</code>, exposes{" "}
-        <code style={{ color: c.text }}>window.__story</code>, and forces <code style={{ color: c.text }}>prefers-color-scheme</code> for JS.
-        Style against those (or Tailwind <code style={{ color: c.text }}>dark:</code>) so the Theme toggle drives your prototype — hardcoded colors won't switch.
-      </p>
-      <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5 }}>
-        Media tip: use <code style={{ color: c.text }}>{'{{eonLogo}}'}</code>, <code style={{ color: c.text }}>{'{{acmeLogo}}'}</code>, preset photos like{" "}
-        <code style={{ color: c.text }}>{'{{heroImage}}'}</code> / <code style={{ color: c.text }}>{'{{cardImage}}'}</code> / <code style={{ color: c.text }}>{'{{avatarImage}}'}</code>, any saved media key, or{" "}
-        <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> as an image <code style={{ color: c.text }}>src</code> — they map to the Media library and update everywhere at once.
-      </p>
+
+      <button type="button" className="eon-buttonish eon-upload-disclosure" onClick={() => setShowSource((v) => !v)}
+        aria-expanded={showSource} style={{ color: c.secondary }}>
+        <ChevronDown size={13} className={showSource ? "" : "is-collapsed"} aria-hidden="true" />
+        {showSource ? "Hide HTML source" : (hasHtml ? "Edit HTML source" : "Paste HTML source")}
+      </button>
+
+      {showSource && (
+        <>
+          <Textarea value={html} onChange={(e) => { setHtml(e.target.value); setFileName(""); }} spellCheck={false}
+            placeholder="…paste a self-contained HTML document here"
+            aria-label="Prototype HTML source"
+            style={{ minHeight: 150, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 8 }} />
+          <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5, margin: 0 }}>
+            Theme tip: the hub sets <code style={{ color: c.text }}>class="dark"/"light"</code> and <code style={{ color: c.text }}>data-theme</code> on <code style={{ color: c.text }}>&lt;html&gt;</code>, and exposes <code style={{ color: c.text }}>window.__story</code> — style against those so the Theme toggle drives your prototype.
+          </p>
+          <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5, margin: 0 }}>
+            Media tip: <code style={{ color: c.text }}>{'{{eonLogo}}'}</code>, <code style={{ color: c.text }}>{'{{heroImage}}'}</code>, any saved media key, or <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> as an image <code style={{ color: c.text }}>src</code> map to the Media library.
+          </p>
+        </>
+      )}
+
       {err && <div role="alert" style={{ fontSize: 12, color: "#FF508F" }}>{err}</div>}
-      <div style={{ display: "flex", gap: 8 }}>
-        <Button onClick={() => html.trim() && onSave(html)} disabled={!html.trim()}
-          style={{ height: 32, background: c.primary, color: c.primaryText, fontSize: 13, borderRadius: 8, opacity: html.trim() ? 1 : 0.5 }}>
-          Save to story
+
+      <div className="eon-upload-actions">
+        <Button onClick={() => hasHtml && onSave(html)} disabled={!hasHtml}
+          style={{ height: 34, background: c.primary, color: c.primaryText, fontSize: 13, borderRadius: 8, opacity: hasHtml ? 1 : 0.5 }}>
+          Save
         </Button>
+        <button type="button" onClick={() => fileInputRef.current?.click()} style={{ ...outline, color: c.secondary }}>
+          <Upload style={{ width: 13, height: 13 }} aria-hidden="true" /> Re-upload
+        </button>
         {story.prototype_html && (
-          <button onClick={onClear}
-            style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.muted, cursor: "pointer", fontSize: 13 }}>
-            <Trash2 style={{ width: 13, height: 13 }} /> Remove uploaded HTML
+          <button type="button" onClick={onClear} style={{ ...outline, color: c.muted }}>
+            <Trash2 style={{ width: 13, height: 13 }} aria-hidden="true" /> Remove
           </button>
         )}
-        <button onClick={onCancel}
-          style={{ height: 32, padding: "0 12px", borderRadius: 8, border: `1px solid ${c.border}`, background: "transparent", color: c.muted, cursor: "pointer", fontSize: 13 }}>
-          Cancel
-        </button>
+        <button type="button" onClick={onCancel} style={{ ...outline, color: c.muted }}>Cancel</button>
         <span style={{ fontSize: 12, color: c.muted, alignSelf: "center", marginLeft: "auto" }}>
           Saved to Supabase and shared with your team.
         </span>

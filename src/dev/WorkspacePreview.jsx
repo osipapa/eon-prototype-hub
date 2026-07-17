@@ -70,11 +70,26 @@ const initialComments = [
   },
 ];
 
+const initialActivity = [
+  { id: "act-1", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-1", actor_name: "Alex Chen", action: "uploaded_html", detail: {}, created_at: new Date(Date.now() - 52 * 60 * 1000).toISOString() },
+  { id: "act-2", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-1", actor_name: "Alex Chen", action: "status_changed", detail: { from: "Exploration", to: "In review" }, created_at: new Date(Date.now() - 40 * 60 * 1000).toISOString() },
+  { id: "act-3", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "preview-user", actor_name: "Mate", action: "edited_notes", detail: {}, created_at: new Date(Date.now() - 22 * 60 * 1000).toISOString() },
+  { id: "act-4", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-2", actor_name: "Priya Nair", action: "edited_figma", detail: { to: "https://figma.com/x" }, created_at: new Date(Date.now() - 8 * 60 * 1000).toISOString() },
+];
+
 export default function WorkspacePreview() {
   const tutorialParams = new URLSearchParams(window.location.search);
   const [projects, setProjects] = useState(initialProjects);
   const [comments, setComments] = useState(initialComments);
   const [assets, setAssets] = useState({});
+  const [activity] = useState(initialActivity);
+  const [toasts, setToasts] = useState([
+    { toastId: "t1", actor_name: "Priya Nair", action: "edited_figma", detail: { to: "x" }, project_title: "Customer dashboard" },
+  ]);
+  const coViewers = [
+    { id: "teammate-1", name: "Alex Chen", email: "alex@example.com", project_id: "preview-dashboard" },
+    { id: "teammate-2", name: "Priya Nair", email: "priya@example.com", project_id: "preview-dashboard" },
+  ];
   const [activeId, setActiveId] = useState(initialProjects[0].id);
   const [tutorialOpen, setTutorialOpen] = useState(() => tutorialParams.get("tutorial") === "1");
   const tutorialPersona = validTutorialPersona(tutorialParams.get("persona"));
@@ -89,6 +104,10 @@ export default function WorkspacePreview() {
         projects={projects}
         assets={assets}
         comments={comments}
+        activity={activity}
+        coViewers={coViewers}
+        toasts={toasts}
+        onDismissToast={(toastId) => setToasts((items) => items.filter((item) => item.toastId !== toastId))}
         isAdmin
         profile={{ id: "preview-user", full_name: "Mate", role: "admin" }}
         userEmail="mate@example.com"

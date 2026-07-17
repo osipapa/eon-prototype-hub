@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
-  ExternalLink, LayoutGrid, Link2, Loader2, LogOut,
+  ExternalLink, History, LayoutGrid, Link2, Loader2, LogOut,
   Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
   PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, Square, Sun,
@@ -32,7 +32,8 @@ function linearIdentifier(project) {
 }
 
 export default function PrototypeWorkspace({
-  projects, assets = {}, comments = [], isAdmin, profile, userEmail,
+  projects, assets = {}, comments = [], activity = [], coViewers = [],
+  toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
   onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder,
   onCreateComment, onOpenAdmin, onSignOut,
@@ -160,6 +161,11 @@ export default function PrototypeWorkspace({
   const storyComments = useMemo(
     () => comments.filter((comment) => comment.project_id === story?.id),
     [comments, story?.id],
+  );
+
+  const storyActivity = useMemo(
+    () => activity.filter((item) => item.project_id === story?.id),
+    [activity, story?.id],
   );
 
   useEffect(() => {
@@ -438,7 +444,7 @@ export default function PrototypeWorkspace({
       {navOpen && (
         <WorkspaceSidebar
           c={c} media={media} view={view} setView={setView} query={query} setQuery={setQuery}
-          groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin}
+          groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin} currentUserId={profile?.id}
           onNewProject={(event) => { newDialogReturnFocusRef.current = event.currentTarget; setShowNewDialog(true); }} dragId={dragId} setDragId={setDragId}
           dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop}
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
@@ -459,7 +465,7 @@ export default function PrototypeWorkspace({
 
       <main className="eon-workspace-main">
         <WorkspaceToolbar
-          c={c} view={view} story={story} liveLinear={liveLinear} sc0={sc0} sc1={sc1}
+          c={c} view={view} story={story} liveLinear={liveLinear} sc0={sc0} sc1={sc1} coViewers={coViewers}
           navOpen={navOpen} onToggleNav={() => {
             const opening = !navOpen;
             setNavOpen(opening);
@@ -543,7 +549,7 @@ export default function PrototypeWorkspace({
 
       {view === "stories" && inspectorOpen && (
         <ReviewInspector
-          c={c} story={story} comments={storyComments} profile={profile}
+          c={c} story={story} comments={storyComments} activity={storyActivity} profile={profile}
           tab={inspectorTab} setTab={setInspectorTab}
           onCreateComment={onCreateComment} patch={patch}
           editLinear={editLinear} setEditLinear={setEditLinear}
@@ -564,12 +570,13 @@ export default function PrototypeWorkspace({
             setDeleteCandidate(null);
           }} />
       )}
+      <ToastHost c={c} toasts={toasts} onDismiss={onDismissToast} />
     </div>
   );
 }
 
 function WorkspaceSidebar({
-  c, media, view, setView, query, setQuery, groups, activeId, onSelect, isAdmin,
+  c, media, view, setView, query, setQuery, groups, activeId, onSelect, isAdmin, currentUserId,
   onNewProject, dragId, setDragId, dropTargetId, setDropTargetId, handleDrop,
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
@@ -663,6 +670,8 @@ function WorkspaceSidebar({
               const active = activeId === item.id;
               const linearState = linearByProject[item.id]?.state;
               const statusColor = linearState?.color || (STATUS_COLOR[item.status] || STATUS_COLOR.Exploration)[1];
+              // Members can delete only prototypes they created; admins manage anything.
+              const canDelete = isAdmin || item.created_by === currentUserId;
               return (
                 <div className="eon-story-row" key={item.id} draggable={isAdmin} data-story-menu={item.id}
                   onDragStart={() => setDragId(item.id)}
@@ -692,7 +701,7 @@ function WorkspaceSidebar({
                       {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && <span className="eon-comment-count" style={{ color: c.muted }}>{commentCountByProject[item.id]}</span>}
                     </button>
                   )}
-                  {isAdmin && renamingId !== item.id && (
+                  {canDelete && renamingId !== item.id && (
                     <div style={{ position: "relative", flexShrink: 0 }}>
                       <button className="eon-buttonish eon-icon-button" onClick={() => setStoryMenuId((current) => current === item.id ? null : item.id)}
                         aria-label={`Actions for ${item.title}`} aria-expanded={storyMenuId === item.id} style={{ color: c.muted }}>
@@ -700,9 +709,9 @@ function WorkspaceSidebar({
                       </button>
                       {storyMenuId === item.id && (
                         <div className="eon-story-menu" role="menu" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
-                          <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>
-                          <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>
-                          <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
+                          {isAdmin && <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>}
+                          {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>}
+                          {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>}
                           <button className="eon-buttonish" role="menuitem" onClick={(event) => {
                             const restoreFocus = event.currentTarget.closest("[data-story-menu]")?.querySelector('button[aria-label^="Actions for"]');
                             setStoryMenuId(null);
@@ -736,7 +745,7 @@ function WorkspaceSidebar({
 }
 
 function WorkspaceToolbar({
-  c, view, story, liveLinear, sc0, sc1, navOpen, onToggleNav, inspectorOpen,
+  c, view, story, liveLinear, sc0, sc1, coViewers = [], navOpen, onToggleNav, inspectorOpen,
   onToggleInspector, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
   viewport, setViewport, layout, setLayout, compare, setCompare,
   saveState, onRetrySave, onOpenLinear,
@@ -757,6 +766,7 @@ function WorkspaceToolbar({
                 <ChevronDown size={12} style={{ color: c.muted }} />
               </button>)}
         </div>
+        {view === "stories" && <PresenceAvatars c={c} viewers={coViewers} />}
         <div style={{ flex: 1 }} />
         {view === "stories" && <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} />}
         <button className="eon-buttonish eon-icon-button" onClick={() => setHubTheme(hubTheme === "dark" ? "light" : "dark")}
@@ -895,7 +905,7 @@ function ToolGroup({ label, c, children }) {
 }
 
 function ReviewInspector({
-  c, story, comments, profile, tab, setTab, onCreateComment, patch,
+  c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
   editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
   copyReviewLink, copiedReviewLink, reviewLinkCopyError, isDrawer, onClose,
 }) {
@@ -921,10 +931,14 @@ function ReviewInspector({
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
         <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
           <TabsTrigger data-tutorial="comments-tab" value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
+          <TabsTrigger data-tutorial="history-tab" value="history"><History size={14} /> History</TabsTrigger>
           <TabsTrigger data-tutorial="linear-tab" value="linear"><LinearIcon size={14} /> Linear</TabsTrigger>
         </TabsList>
         <TabsContent data-tutorial="comments-thread" value="comments" className="eon-inspector-content">
           <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
+        </TabsContent>
+        <TabsContent data-tutorial="history-thread" value="history" className="eon-inspector-content">
+          <HistoryTimeline c={c} activity={activity} currentUserId={profile?.id} />
         </TabsContent>
         <TabsContent data-tutorial="linear-content" value="linear" className="eon-inspector-content eon-reference-content">
           <ReviewReadiness c={c} story={story} comments={comments} />
@@ -1090,6 +1104,123 @@ function CommentBubble({ c, comment, currentUserId }) {
         <p style={{ color: c.secondary }}>{comment.body}</p>
       </div>
     </article>
+  );
+}
+
+/* ---- Activity: shared vocabulary for the History timeline and change toasts.
+   Each entry maps a stored action to an icon and a human phrase (the actor is
+   rendered separately). detail carries {from,to} for the changes that have one. ---- */
+const ACTIVITY_META = {
+  created:        { icon: Plus,          text: () => "created this prototype" },
+  deleted:        { icon: Trash2,        text: () => "deleted this prototype" },
+  uploaded_html:  { icon: Upload,        text: () => "uploaded prototype HTML" },
+  updated_html:   { icon: Upload,        text: () => "updated the prototype HTML" },
+  removed_html:   { icon: Trash2,        text: () => "removed the uploaded HTML" },
+  status_changed: { icon: Circle,        text: (d) => (d?.to ? `set status to ${d.to}` : "changed the status") },
+  renamed:        { icon: Pencil,        text: (d) => (d?.to ? `renamed it to “${d.to}”` : "renamed the prototype") },
+  edited_figma:   { icon: FigmaIcon,     text: (d) => (d?.to ? "updated the Figma link" : "cleared the Figma link") },
+  edited_linear:  { icon: LinearIcon,    text: (d) => (d?.to ? "updated the Linear link" : "cleared the Linear link") },
+  edited_notes:   { icon: MessageSquare, text: () => "edited the notes" },
+  moved_group:    { icon: LayoutGrid,    text: (d) => (d?.to ? `moved it to “${d.to}”` : "moved it to another group") },
+};
+
+function activityMeta(action) {
+  return ACTIVITY_META[action] || { icon: Circle, text: () => action };
+}
+
+function isDangerAction(action) {
+  return action === "deleted" || action === "removed_html";
+}
+
+function initialsOf(name) {
+  return (name || "T").trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "T";
+}
+
+function HistoryTimeline({ c, activity, currentUserId }) {
+  if (!activity.length) {
+    return (
+      <div className="eon-comment-empty" style={{ color: c.muted }}>
+        <span className="eon-comment-empty-icon" style={{ background: c.raised, color: c.brand }}><History size={20} /></span>
+        <strong style={{ color: c.text }}>No history yet</strong>
+        <span style={{ fontSize: 12 }}>Uploads, status changes, and link edits show up here.</span>
+      </div>
+    );
+  }
+  return (
+    <div className="eon-history" aria-live="polite">
+      {activity.map((item) => {
+        const meta = activityMeta(item.action);
+        const Icon = meta.icon;
+        const name = item.actor_id === currentUserId ? "You" : (item.actor_name || "A teammate");
+        return (
+          <article key={item.id} className="eon-history-item">
+            <span className="eon-history-icon" style={{ background: c.raised, color: isDangerAction(item.action) ? "#FF6B8A" : c.brand }}>
+              <Icon size={13} />
+            </span>
+            <div className="eon-history-body">
+              <p style={{ color: c.secondary }}><strong style={{ color: c.text }}>{name}</strong> {meta.text(item.detail)}</p>
+              <time style={{ color: c.muted }} dateTime={item.created_at}>{relativeTime(item.created_at)}</time>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---- Presence: initials-avatars of teammates viewing the same prototype,
+   fed by the shared realtime presence channel. ---- */
+function PresenceAvatars({ c, viewers }) {
+  if (!viewers.length) return null;
+  const shown = viewers.slice(0, 3);
+  const extra = viewers.length - shown.length;
+  const label = `${viewers.length} teammate${viewers.length > 1 ? "s" : ""} viewing this prototype`;
+  return (
+    <div className="eon-presence" title={label} aria-label={label}>
+      {shown.map((viewer) => (
+        <span key={viewer.id} className="eon-presence-avatar" title={viewer.name}
+          style={{ background: c.active, color: c.brand, borderColor: c.nav }}>
+          {initialsOf(viewer.name)}
+        </span>
+      ))}
+      {extra > 0 && (
+        <span className="eon-presence-avatar eon-presence-more" style={{ background: c.raised, color: c.muted, borderColor: c.nav }}>+{extra}</span>
+      )}
+    </div>
+  );
+}
+
+/* ---- Toasts: a teammate's change, surfaced from the same activity stream that
+   feeds History. Each auto-dismisses; the host keeps at most a short stack. ---- */
+function ToastHost({ c, toasts, onDismiss }) {
+  if (!toasts.length) return null;
+  return (
+    <div className="eon-toast-host" role="status" aria-live="polite">
+      {toasts.map((toast) => <Toast key={toast.toastId} c={c} toast={toast} onDismiss={onDismiss} />)}
+    </div>
+  );
+}
+
+function Toast({ c, toast, onDismiss }) {
+  const dismissRef = useRef(onDismiss);
+  dismissRef.current = onDismiss;
+  useEffect(() => {
+    const timer = setTimeout(() => dismissRef.current?.(toast.toastId), 6000);
+    return () => clearTimeout(timer);
+  }, [toast.toastId]);
+  const meta = activityMeta(toast.action);
+  const Icon = meta.icon;
+  return (
+    <div className="eon-toast" style={{ background: c.panel, borderColor: c.border, boxShadow: hubShadow(c) }}>
+      <span className="eon-toast-icon" style={{ background: c.raised, color: isDangerAction(toast.action) ? "#FF6B8A" : c.brand }}>
+        <Icon size={14} />
+      </span>
+      <div className="eon-toast-body">
+        <p style={{ color: c.text }}><strong>{toast.actor_name || "A teammate"}</strong> {meta.text(toast.detail)}</p>
+        {toast.project_title && <span style={{ color: c.muted }}>{toast.project_title}</span>}
+      </div>
+      <button className="eon-buttonish eon-icon-button" onClick={() => onDismiss?.(toast.toastId)} aria-label="Dismiss notification" style={{ color: c.muted }}><X size={14} /></button>
+    </div>
   );
 }
 

@@ -10,7 +10,9 @@ import {
 import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, subscribeAssets, listComments, createComment, subscribeComments,
+  listActivity, subscribeActivity,
 } from "../lib/data";
+import { joinTeamPresence } from "../lib/presence";
 
 const SAVE_DEBOUNCE_MS = 600;
 const SAVED_VISIBLE_MS = 1800;
@@ -34,11 +36,15 @@ function loadErrorMessage(error) {
   return error?.message || "Couldn't load the shared workspace. Check your connection and try again.";
 }
 
-function commentsTableIsMissing(error) {
+// A table this build expects may not exist yet if its migration hasn't been
+// applied to the shared project. Treat that as "empty" instead of a hard error.
+function tableIsMissing(error, table) {
   return error?.code === "42P01"
     || error?.code === "PGRST205"
-    || /comments.*(does not exist|schema cache)/i.test(error?.message || "");
+    || new RegExp(`${table}.*(does not exist|schema cache)`, "i").test(error?.message || "");
 }
+
+let toastSeq = 0;
 
 export default function Hub() {
   const { user, profile, isAdmin, signOut, completeTutorial, saveTutorialPersona } = useAuth();
@@ -48,7 +54,11 @@ export default function Hub() {
   const [projects, setProjects] = useState(null);
   const [assets, setAssets] = useState({});
   const [comments, setComments] = useState([]);
+  const [activity, setActivity] = useState([]);
+  const [viewers, setViewers] = useState([]);
+  const [toasts, setToasts] = useState([]);
   const [loadError, setLoadError] = useState(null);
+  const presenceRef = useRef(null);
   const [saveStates, setSaveStates] = useState({});
   const timers = useRef({});
   const savedTimers = useRef({});
@@ -139,26 +149,56 @@ export default function Hub() {
     setComments(await listComments());
   }
 
+  async function loadActivity() {
+    setActivity(await listActivity());
+  }
+
   async function load() {
     setLoadError(null);
     try {
-      const [projectRows, assetRows, commentRows] = await Promise.all([
+      const [projectRows, assetRows, commentRows, activityRows] = await Promise.all([
         listProjects(),
         listAssets(),
         listComments().catch((error) => {
-          if (!commentsTableIsMissing(error)) throw error;
+          if (!tableIsMissing(error, "comments")) throw error;
           console.warn("Comments are unavailable until the comments migration is applied.", error);
+          return [];
+        }),
+        listActivity().catch((error) => {
+          if (!tableIsMissing(error, "activity")) throw error;
+          console.warn("History is unavailable until the activity migration is applied.", error);
           return [];
         }),
       ]);
       mergeProjectRows(projectRows);
       setAssets(assetMap(assetRows));
       setComments(commentRows);
+      setActivity(activityRows);
     } catch (error) {
       setLoadError(loadErrorMessage(error));
       throw error;
     }
   }
+
+  // One activity stream feeds two features: the History tab (merge every row)
+  // and live change toasts (a teammate's brand-new row, never your own).
+  function applyActivityChange(payload) {
+    const row = payload?.new;
+    if (!row?.id) return;
+    setActivity((current) => {
+      const next = current.some((item) => item.id === row.id)
+        ? current.map((item) => (item.id === row.id ? row : item))
+        : [row, ...current];
+      return next.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    });
+    if (payload.eventType === "INSERT" && row.actor_id && row.actor_id !== user?.id) {
+      const toast = { ...row, toastId: `t${++toastSeq}` };
+      setToasts((current) => [...current, toast].slice(-4));
+    }
+  }
+
+  const dismissToast = (toastId) =>
+    setToasts((current) => current.filter((item) => item.toastId !== toastId));
 
   function reportRefreshError(error) {
     console.error(error);
@@ -219,14 +259,40 @@ export default function Hub() {
     const unsubProjects = subscribeProjects(applyProjectChange);
     const unsubAssets = subscribeAssets(() => refreshAssets().catch(reportRefreshError));
     const unsubComments = subscribeComments(() => loadComments().catch(reportRefreshError));
+    const unsubActivity = subscribeActivity(applyActivityChange);
     return () => {
       unsubProjects();
       unsubAssets();
       unsubComments();
+      unsubActivity();
       Object.values(timers.current).forEach(clearTimeout);
       Object.values(savedTimers.current).forEach(clearTimeout);
     };
   }, []);
+
+  // Live presence: join the team channel once we know who and where. The
+  // tracked prototype updates as the active one changes (effect below).
+  useEffect(() => {
+    if (!user?.id || !profile?.team_id) return undefined;
+    const handle = joinTeamPresence(
+      profile.team_id,
+      { id: user.id, name: profile.full_name, email: user.email },
+      setViewers,
+    );
+    presenceRef.current = handle;
+    return () => {
+      handle.leave();
+      presenceRef.current = null;
+    };
+  }, [user?.id, profile?.team_id, profile?.full_name, user?.email]);
+
+  // Broadcast which prototype this browser is viewing so teammates see it.
+  useEffect(() => {
+    const activeId = projects?.find((project) => project.slug === slug)?.id
+      || projects?.[0]?.id
+      || null;
+    presenceRef.current?.setProject(activeId);
+  }, [projects, slug]);
 
   function markSaved(id) {
     clearTimeout(savedTimers.current[id]);
@@ -400,6 +466,8 @@ export default function Hub() {
 
   const active = projects.find((project) => project.slug === slug);
   const currentProjectId = active?.id || projects[0]?.id;
+  const coViewers = viewers.filter((viewer) =>
+    viewer.id !== user?.id && viewer.project_id === currentProjectId);
 
   return (
     <>
@@ -407,6 +475,10 @@ export default function Hub() {
         projects={projects}
         assets={assets}
         comments={comments}
+        activity={activity}
+        coViewers={coViewers}
+        toasts={toasts}
+        onDismissToast={dismissToast}
         isAdmin={isAdmin}
         profile={profile}
         userEmail={user?.email}

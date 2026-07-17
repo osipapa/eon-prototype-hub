@@ -63,6 +63,28 @@ export function subscribeComments(cb) {
   return () => supabase.removeChannel(ch);
 }
 
+/* Activity (history + live change toasts) -----------------------------------
+   Rows are self-contained (actor_name / project_title snapshotted, project_id
+   carries no FK), so the History tab and toasts render without joins and keep
+   working after a prototype is deleted. Written only by the projects trigger. */
+export async function listActivity() {
+  const { data, error } = await supabase
+    .from("activity")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return data;
+}
+
+export function subscribeActivity(cb) {
+  const ch = supabase
+    .channel("activity-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "activity" }, cb)
+    .subscribe();
+  return () => supabase.removeChannel(ch);
+}
+
 /* Assets (media library) ----------------------------------------------------*/
 export async function listAssets() {
   const { data, error } = await supabase.from("assets").select("*");
