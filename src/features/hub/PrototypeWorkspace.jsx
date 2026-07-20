@@ -11,7 +11,7 @@ import {
   ExternalLink, History, ImagePlus, LayoutGrid, Link2, Loader2, LogOut,
   Pin, Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
-  PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, SmilePlus, Square, Sun,
+  PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, SmilePlus, Sparkles, Square, Sun,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
@@ -27,6 +27,7 @@ import {
   anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, isBridgeMessage,
 } from "./anchorBridge";
 import { pickHtmlFile, supportsFileLink, watchFile } from "@/lib/localFile";
+import { CHANGELOG, latestChangelogDate, markChangelogSeen, readSeenChangelogDate } from "@/lib/changelog";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
@@ -65,6 +66,14 @@ export default function PrototypeWorkspace({
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [changelogSeen, setChangelogSeen] = useState(() => readSeenChangelogDate());
+  const hasNewChangelog = changelogSeen < latestChangelogDate();
+  const openChangelog = () => {
+    setShowChangelog(true);
+    markChangelogSeen();
+    setChangelogSeen(latestChangelogDate());
+  };
   const [navOpen, setNavOpen] = useState(() => window.innerWidth > 900);
   const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth > 1180);
   const [compare, setCompare] = useState(false);
@@ -653,6 +662,7 @@ export default function PrototypeWorkspace({
           moveStory={moveStory} projectOrder={projects.map((item) => item.id)}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
           onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
+          onOpenChangelog={openChangelog} hasNewChangelog={hasNewChangelog}
           linearByProject={linearByProject}
           unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
           isDrawer={breakpoints.navDrawer} onClose={() => setNavOpen(false)}
@@ -785,6 +795,7 @@ export default function PrototypeWorkspace({
       {showNewDialog && (
         <NewPrototypeDialog c={c} groups={Object.keys(groups)} restoreFocus={newDialogReturnFocusRef.current} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
       )}
+      {showChangelog && <ChangelogDialog c={c} onClose={() => setShowChangelog(false)} />}
       {deleteCandidate && (
         <DeletePrototypeDialog c={c} project={deleteCandidate.project} restoreFocus={deleteCandidate.restoreFocus} onClose={() => setDeleteCandidate(null)}
           onConfirm={async () => {
@@ -804,6 +815,7 @@ function WorkspaceSidebar({
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
   onDeleteProject, moveStory, projectOrder, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
+  onOpenChangelog, hasNewChangelog,
   linearByProject,
   unreadByProject, commentCountByProject,
   isDrawer, onClose,
@@ -959,6 +971,12 @@ function WorkspaceSidebar({
 
       <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
         <span style={{ color: c.muted }}>{userEmail}</span>
+        <button className="eon-buttonish eon-icon-button eon-changelog-button" onClick={onOpenChangelog}
+          aria-label={hasNewChangelog ? "What's new — unread updates" : "What's new"} title="What's new"
+          style={{ color: hasNewChangelog ? c.brand : c.muted, boxShadow: hubShadow(c) }}>
+          <Sparkles size={15} />
+          {hasNewChangelog && <span className="eon-changelog-dot" style={{ background: c.brand }} aria-hidden="true" />}
+        </button>
         {isAdmin && <button className="eon-buttonish eon-icon-button" onClick={onOpenAdmin} aria-label="Admin dashboard" title="Admin dashboard" style={{ color: c.muted, boxShadow: hubShadow(c) }}><Shield size={15} /></button>}
         <button className="eon-buttonish eon-icon-button" onClick={onSignOut} aria-label="Sign out" title="Sign out" style={{ color: c.muted, boxShadow: hubShadow(c) }}><LogOut size={15} /></button>
       </div>
@@ -1904,6 +1922,46 @@ function DeletePrototypeDialog({ c, project, restoreFocus, onClose, onConfirm })
    setup steps — name, group, and optional prototype HTML (drop / browse /
    paste). Creation is delegated to onCreate({title, group, html}); errors
    surface inline. ---- */
+/* ---- What's new: the hub's own changelog (src/lib/changelog.js) ---- */
+function ChangelogDialog({ c, onClose }) {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    const returnFocusTo = document.activeElement;
+    dialogRef.current?.querySelector("button")?.focus();
+    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      returnFocusTo?.focus?.();
+    };
+  }, [onClose]);
+  const formatDate = (value) => new Date(`${value}T00:00:00`)
+    .toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+  return (
+    <div className="eon-modal-overlay" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="What's new" className="eon-modal"
+        style={{ background: c.nav, borderColor: c.border, width: "min(520px, 100%)" }}>
+        <div className="eon-modal-head" style={{ borderColor: c.border }}>
+          <span className="eon-changelog-mark" style={{ background: c.active, color: c.brand }}><Sparkles size={15} /></span>
+          <strong style={{ color: c.text }}>What's new</strong>
+          <button className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close" style={{ color: c.muted }}><X size={16} /></button>
+        </div>
+        <div className="eon-modal-body eon-changelog-body">
+          {CHANGELOG.map((entry) => (
+            <section key={entry.date} className="eon-changelog-entry">
+              <time dateTime={entry.date} style={{ color: c.muted }}>{formatDate(entry.date)}</time>
+              <strong style={{ color: c.text }}>{entry.title}</strong>
+              <ul>
+                {entry.items.map((item) => <li key={item} style={{ color: c.secondary }}>{item}</li>)}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   const [title, setTitle] = useState("");
   const [group, setGroup] = useState("General");

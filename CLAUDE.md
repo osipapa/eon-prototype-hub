@@ -121,6 +121,12 @@ The app uses HashRouter, so client routes work on Pages without a 404.html.
 4. **Delete + reorder** prototypes (admin), and drag-to-reorder `sort_order`.
 5. **Accessibility**: focus rings, aria-labels on icon-only buttons, keyboard nav.
 
+## Changelog
+
+Every push that changes the platform adds an entry to `src/lib/changelog.js`
+(newest first, grouped by day — extend today's entry if one exists) in the same
+commit. Users see it via "What's new" (sparkles, sidebar footer).
+
 ## Guardrails
 
 - Only the anon key goes in the client. Never commit `.env` or the service_role key.

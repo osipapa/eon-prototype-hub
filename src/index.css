@@ -348,6 +348,15 @@ button.eon-save-state { cursor: pointer; }
 .eon-comment-meta time { font-size: 11px; font-variant-numeric: tabular-nums; }
 .eon-pending-label { margin-left: auto; font-size: 10px; }
 .eon-comment-body p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.eon-changelog-button { position: relative; }
+.eon-changelog-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 999px; }
+.eon-changelog-mark { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; }
+.eon-changelog-body { gap: 22px; }
+.eon-changelog-entry { display: flex; flex-direction: column; gap: 6px; }
+.eon-changelog-entry time { font-size: 11px; font-variant-numeric: tabular-nums; text-transform: uppercase; letter-spacing: .05em; }
+.eon-changelog-entry strong { font-size: 14px; letter-spacing: -.01em; }
+.eon-changelog-entry ul { display: flex; flex-direction: column; gap: 7px; margin: 2px 0 0; padding-left: 4px; list-style: none; }
+.eon-changelog-entry li { font-size: 13px; line-height: 1.5; }
 .eon-comment-filter { display: flex; gap: 2px; flex: 0 0 auto; padding: 0 12px; border-bottom: 1px solid; }
 .eon-comment-filter-tab { padding: 9px 10px; border: 0; border-bottom: 2px solid transparent; background: none; font-size: 12px; font-weight: 600; cursor: pointer; }
 .eon-comment-filter-tab span { margin-left: 3px; font-weight: 400; font-variant-numeric: tabular-nums; }
