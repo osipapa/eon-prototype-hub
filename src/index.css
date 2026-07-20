@@ -361,6 +361,14 @@ button.eon-save-state { cursor: pointer; }
 .eon-pin-overlay { position: absolute; inset: 0; pointer-events: none; }
 .eon-canvas-pin { position: absolute; display: grid; width: 24px; height: 24px; place-items: center; padding: 0; border: 1.5px solid; border-radius: 999px 999px 999px 3px; translate: -50% -100%; font-size: 11px; font-weight: 700; cursor: pointer; pointer-events: auto; box-shadow: 0 2px 8px rgba(0,0,0,.25); transition: transform 120ms var(--ease-out); }
 .eon-canvas-pin-pending { animation: eon-pin-drop 240ms var(--ease-out); }
+.eon-canvas-pin-emoji { font-size: 13px; }
+.eon-pin-card { position: absolute; bottom: calc(100% + 9px); left: 50%; z-index: 7; display: flex; width: max-content; max-width: 210px; flex-direction: column; gap: 3px; padding: 8px 10px; border: 1px solid; border-radius: 11px; translate: -50%; text-align: left; font-weight: 400; opacity: 0; pointer-events: none; transition: opacity 120ms linear; }
+.eon-pin-card[data-below] { top: calc(100% + 9px); bottom: auto; }
+.eon-canvas-pin:hover .eon-pin-card, .eon-canvas-pin:focus-visible .eon-pin-card { opacity: 1; }
+.eon-pin-card-meta { display: flex; align-items: baseline; gap: 6px; font-size: 11px; }
+.eon-pin-card-meta strong { font-size: 12px; }
+.eon-pin-card-body { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.eon-pin-card img { max-width: 100%; max-height: 84px; border-radius: 7px; object-fit: contain; }
 @keyframes eon-pin-drop { from { translate: -50% -140%; opacity: 0; } to { translate: -50% -100%; opacity: 1; } }
 .eon-leader-line { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 60; }
 .eon-ring-backdrop { position: absolute; inset: 0; pointer-events: auto; }

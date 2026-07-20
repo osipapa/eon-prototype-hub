@@ -715,7 +715,7 @@ export default function PrototypeWorkspace({
                         style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
                       <PinOverlay
                         c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects}
-                        vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId}
+                        vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId} currentUserId={profile?.id}
                         ringOpen={ringOpen} pinWriteOpen={pinWriteOpen} onQuickComment={quickComment}
                         onWriteComment={writeComment} onCancelRing={cancelRing}
                         onPickPin={(comment) => {
@@ -1624,9 +1624,16 @@ function PinComposer({ c, x, y, frameWidth, onSubmit, onCancel }) {
   );
 }
 
+// A body that is just one emoji (a ring quick-take) — the pin wears it directly.
+function emojiOnlyBody(body) {
+  const text = (body || "").trim();
+  if (!text || /\s/.test(text) || [...text].length > 3) return null;
+  return /^\p{Extended_Pictographic}/u.test(text) ? text : null;
+}
+
 /* ---- Pins on the canvas: dots over the iframe at each anchored comment ---- */
 function PinOverlay({
-  c, pins, pendingAnchor, rects, vp, frameScale, activeAnchorId, onPickPin,
+  c, pins, pendingAnchor, rects, vp, frameScale, activeAnchorId, currentUserId, onPickPin,
   ringOpen, pinWriteOpen, onQuickComment, onWriteComment, onCancelRing,
 }) {
   const place = (anchor) => {
@@ -1645,12 +1652,23 @@ function PinOverlay({
         const point = place(comment.anchor);
         if (!point) return null;
         const active = comment.id === activeAnchorId;
+        // Quick emoji takes wear the emoji itself; everything else is numbered.
+        const emoji = emojiOnlyBody(comment.body);
+        const author = comment.author || {};
+        const name = comment.author_id === currentUserId ? "You" : (author.full_name || author.email?.split("@")[0] || "Teammate");
         return (
-          <button key={comment.id} type="button" data-pin-id={comment.id} className="eon-buttonish eon-canvas-pin"
+          <button key={comment.id} type="button" data-pin-id={comment.id}
+            className={`eon-buttonish eon-canvas-pin${emoji ? " eon-canvas-pin-emoji" : ""}`}
             onClick={() => onPickPin(comment)}
-            aria-label={`Comment pin ${number}`} aria-pressed={active}
+            aria-label={`Comment pin ${number} by ${name}: ${comment.body || "image"}`} aria-pressed={active}
             style={{ left: point.left, top: point.top, background: active ? c.brand : c.panel, color: active ? "#fff" : c.brand, borderColor: c.brand, transform: active ? "scale(1.15)" : undefined }}>
-            {number}
+            {emoji || number}
+            <span className="eon-pin-card" data-below={point.top < 130 || undefined} aria-hidden="true"
+              style={{ background: c.panel, borderColor: c.border, boxShadow: "0 10px 30px rgba(0,0,0,.35)" }}>
+              <span className="eon-pin-card-meta"><strong style={{ color: c.text }}>{name}</strong><span style={{ color: c.muted }}>{relativeTime(comment.created_at)}</span></span>
+              {comment.body && <span className="eon-pin-card-body" style={{ color: c.secondary }}>{comment.body}</span>}
+              {comment.image_url && <img src={comment.image_url} alt="" loading="lazy" />}
+            </span>
           </button>
         );
       })}
