@@ -336,7 +336,13 @@ button.eon-save-state { cursor: pointer; }
 .eon-comment-meta time { font-size: 11px; font-variant-numeric: tabular-nums; }
 .eon-pending-label { margin-left: auto; font-size: 10px; }
 .eon-comment-body p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.eon-comment-image { display: block; width: fit-content; max-width: 100%; margin-top: 6px; overflow: hidden; border: 1px solid; border-radius: 10px; }
+.eon-comment-image img { display: block; max-width: 100%; max-height: 280px; object-fit: contain; }
 .eon-comment-composer { flex: 0 0 auto; padding: 12px; border-top: 1px solid; }
+.eon-composer-attachment { position: relative; width: fit-content; max-width: 100%; margin-bottom: 8px; padding: 4px; border: 1px solid; border-radius: 12px; }
+.eon-composer-attachment img { display: block; max-width: 100%; max-height: 120px; border-radius: 8px; object-fit: contain; }
+.eon-attachment-remove { position: absolute; top: -6px; right: -6px; display: grid; width: 22px; height: 22px; place-items: center; padding: 0; border: 1px solid; border-radius: 999px; }
+.eon-attach-button { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid; border-radius: 10px; }
 .eon-composer-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .eon-composer-meta > span { min-width: 0; flex: 1; font-size: 11px; line-height: 1.35; }
 

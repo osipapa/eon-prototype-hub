@@ -74,9 +74,17 @@ create table if not exists public.comments (
   team_id uuid not null references public.teams(id) on delete cascade,
   project_id uuid not null references public.projects(id) on delete cascade,
   author_id uuid not null references public.profiles(id) on delete cascade,
-  body text not null check (char_length(trim(body)) between 1 and 4000),
+  body text not null,
+  -- Public URL of an attached screenshot in the `media` bucket, under comments/.
+  image_url text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- An attachment is a complete comment on its own, so the body may be empty
+  -- when there is an image.
+  constraint comments_body_check check (
+    char_length(trim(body)) <= 4000
+    and (char_length(trim(body)) >= 1 or image_url is not null)
+  )
 );
 
 create index if not exists comments_project_created_idx

@@ -385,9 +385,10 @@ export default function Hub() {
     navigate(`/p/${newSlug}`);
   }
 
-  async function onCreateComment(projectId, body) {
+  async function onCreateComment(projectId, body, imageUrl = null) {
     const text = body.trim();
-    if (!text) return;
+    // A screenshot on its own is a complete comment.
+    if (!text && !imageUrl) return;
     const optimisticId = `pending-${crypto.randomUUID()}`;
     const optimistic = {
       id: optimisticId,
@@ -395,6 +396,7 @@ export default function Hub() {
       team_id: profile.team_id,
       author_id: user.id,
       body: text,
+      image_url: imageUrl,
       created_at: new Date().toISOString(),
       pending: true,
       author: { id: user.id, email: user.email, full_name: profile.full_name },
@@ -406,6 +408,7 @@ export default function Hub() {
         team_id: profile.team_id,
         author_id: user.id,
         body: text,
+        image_url: imageUrl,
       });
       setComments((items) => items.map((item) => item.id === optimisticId ? saved : item));
     } catch (error) {

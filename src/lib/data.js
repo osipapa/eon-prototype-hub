@@ -126,6 +126,24 @@ export async function uploadMedia(file) {
   return data.publicUrl;
 }
 
+export const MAX_COMMENT_IMAGE_BYTES = 5 * 1024 * 1024;
+
+// Comment screenshots share the media bucket but sit under their own prefix so
+// they never show up alongside curated logos in the media library.
+export async function uploadCommentImage(file) {
+  if (!file.type?.startsWith("image/")) throw new Error("That file isn't an image.");
+  if (file.size > MAX_COMMENT_IMAGE_BYTES) throw new Error("Images need to be under 5 MB.");
+  // Pasted screenshots arrive as a generic "image.png", and arbitrary filenames
+  // can carry characters that make awkward storage keys.
+  const safeName = (file.name || "screenshot.png").replace(/[^\w.-]+/g, "-");
+  const path = `comments/${crypto.randomUUID()}-${safeName}`;
+  const { error } = await supabase.storage
+    .from("media").upload(path, file, { contentType: file.type });
+  if (error) throw error;
+  const { data } = supabase.storage.from("media").getPublicUrl(path);
+  return data.publicUrl;
+}
+
 /* Profiles (admin dashboard) ------------------------------------------------*/
 export async function listProfiles() {
   const { data, error } = await supabase

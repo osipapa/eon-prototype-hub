@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fetchLinearIssue } from "@/lib/data";
+import { fetchLinearIssue, uploadCommentImage, MAX_COMMENT_IMAGE_BYTES } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
-  ExternalLink, History, LayoutGrid, Link2, Loader2, LogOut,
+  ExternalLink, History, ImagePlus, LayoutGrid, Link2, Loader2, LogOut,
   Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
   PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, Square, Sun,
@@ -1107,9 +1107,12 @@ function ReferenceEmpty({ c, icon: Icon, title, body }) {
 
 function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
   const [draft, setDraft] = useState("");
+  const [attachment, setAttachment] = useState(null); // { file, previewUrl }
+  const [dragging, setDragging] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const scrollRef = useRef(null);
+  const fileInputRef = useRef(null);
   const initialScroll = useRef(true);
 
   useEffect(() => {
@@ -1121,21 +1124,66 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
     initialScroll.current = false;
   }, [comments.length]);
 
+  // The preview is an object URL, so it has to be released by hand.
+  useEffect(() => () => { if (attachment) URL.revokeObjectURL(attachment.previewUrl); }, [attachment]);
+
+  const attach = (file) => {
+    if (!file) return;
+    if (!file.type?.startsWith("image/")) { setError("That file isn't an image."); return; }
+    if (file.size > MAX_COMMENT_IMAGE_BYTES) { setError("Images need to be under 5 MB."); return; }
+    setError("");
+    setAttachment((current) => {
+      if (current) URL.revokeObjectURL(current.previewUrl);
+      return { file, previewUrl: URL.createObjectURL(file) };
+    });
+  };
+
+  const clearAttachment = () => {
+    setAttachment((current) => {
+      if (current) URL.revokeObjectURL(current.previewUrl);
+      return null;
+    });
+  };
+
+  const onPaste = (event) => {
+    const file = [...(event.clipboardData?.items || [])]
+      .find((item) => item.kind === "file" && item.type.startsWith("image/"))?.getAsFile();
+    if (!file) return; // Let plain text paste through untouched.
+    event.preventDefault();
+    attach(file);
+  };
+
+  const onDrop = (event) => {
+    event.preventDefault();
+    setDragging(false);
+    attach([...(event.dataTransfer?.files || [])].find((file) => file.type.startsWith("image/")));
+  };
+
   const submit = async () => {
     const body = draft.trim();
-    if (!body || sending) return;
+    if ((!body && !attachment) || sending) return;
+    const pendingAttachment = attachment;
     setSending(true);
     setError("");
     setDraft("");
+    setAttachment(null);
     try {
-      await onCreateComment(projectId, body);
+      const imageUrl = pendingAttachment ? await uploadCommentImage(pendingAttachment.file) : null;
+      await onCreateComment(projectId, body, imageUrl);
+      if (pendingAttachment) URL.revokeObjectURL(pendingAttachment.previewUrl);
     } catch (err) {
       setDraft(body);
+      setAttachment(pendingAttachment);
       setError(err.message || "Couldn't send your comment.");
     } finally {
       setSending(false);
     }
   };
+
+  const canSend = Boolean(draft.trim() || attachment) && !sending;
+  const status = sending
+    ? (attachment ? "Uploading image…" : "Sending comment…")
+    : "Enter to send · paste or drop an image";
 
   return (
     <div className="eon-comments">
@@ -1147,15 +1195,34 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
           </div>
         ) : comments.map((comment) => <CommentBubble key={comment.id} c={c} comment={comment} currentUserId={profile?.id} />)}
       </div>
-      <div className="eon-comment-composer" style={{ borderColor: c.border }}>
-        <Textarea value={draft} maxLength={4000} onChange={(event) => setDraft(event.target.value)}
+      <div className="eon-comment-composer" style={{ borderColor: c.border }}
+        onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+        onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
+        onDrop={onDrop}>
+        {attachment && (
+          <div className="eon-composer-attachment" style={{ borderColor: c.border, background: c.raised }}>
+            <img src={attachment.previewUrl} alt={`Attached image: ${attachment.file.name}`} />
+            <button type="button" className="eon-buttonish eon-attachment-remove" onClick={clearAttachment}
+              aria-label="Remove attached image" style={{ background: c.panel, borderColor: c.border, color: c.secondary }}>
+              <X size={13} />
+            </button>
+          </div>
+        )}
+        <Textarea value={draft} maxLength={4000} onChange={(event) => setDraft(event.target.value)} onPaste={onPaste}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }}
           placeholder="Write a comment…" aria-label="Write a comment"
-          style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.bg, borderColor: error ? "#FF6B8A" : c.border, color: c.text, borderRadius: 12, fontSize: 14, lineHeight: 1.5 }} />
+          style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.bg, borderColor: error ? "#FF6B8A" : dragging ? c.brand : c.border, color: c.text, borderRadius: 12, fontSize: 14, lineHeight: 1.5 }} />
         <div className="eon-composer-meta">
-          <span role={error ? "alert" : "status"} style={{ color: error ? "#FF6B8A" : c.muted }}>{error || (sending ? "Sending comment…" : "Enter to send · Shift+Enter for a new line")}</span>
-          <Button className="eon-buttonish" onClick={submit} disabled={!draft.trim() || sending}
-            style={{ minWidth: 40, minHeight: 40, padding: 0, borderRadius: 10, background: c.primary, color: c.primaryText, opacity: !draft.trim() || sending ? 0.5 : 1 }} aria-label="Send comment">
+          <input ref={fileInputRef} type="file" accept="image/*" hidden
+            onChange={(event) => { attach(event.target.files?.[0]); event.target.value = ""; }} />
+          <button type="button" className="eon-buttonish eon-attach-button" onClick={() => fileInputRef.current?.click()}
+            disabled={sending} aria-label="Attach an image" title="Attach an image"
+            style={{ borderColor: c.border, background: c.panel, color: c.secondary, opacity: sending ? 0.5 : 1 }}>
+            <ImagePlus size={15} />
+          </button>
+          <span role={error ? "alert" : "status"} style={{ color: error ? "#FF6B8A" : c.muted }}>{error || status}</span>
+          <Button className="eon-buttonish" onClick={submit} disabled={!canSend}
+            style={{ minWidth: 40, minHeight: 40, padding: 0, borderRadius: 10, background: c.primary, color: c.primaryText, opacity: canSend ? 1 : 0.5 }} aria-label="Send comment">
             <Send size={15} />
           </Button>
         </div>
@@ -1174,7 +1241,13 @@ function CommentBubble({ c, comment, currentUserId }) {
       <div className="eon-comment-avatar" style={{ background: mine ? c.active : c.raised, color: mine ? c.brand : c.secondary }}>{initials || "T"}</div>
       <div className="eon-comment-body">
         <div className="eon-comment-meta"><strong>{mine ? "You" : name}</strong><time style={{ color: c.muted }} dateTime={comment.created_at}>{relativeTime(comment.created_at)}</time>{comment.pending && <span className="eon-pending-label" style={{ color: c.muted }}>Sending…</span>}</div>
-        <p style={{ color: c.secondary }}>{comment.body}</p>
+        {comment.body && <p style={{ color: c.secondary }}>{comment.body}</p>}
+        {comment.image_url && (
+          <a className="eon-comment-image" href={comment.image_url} target="_blank" rel="noreferrer"
+            style={{ borderColor: c.border }} aria-label="Open image full size">
+            <img src={comment.image_url} alt={comment.body || `Image shared by ${mine ? "you" : name}`} loading="lazy" />
+          </a>
+        )}
       </div>
     </article>
   );

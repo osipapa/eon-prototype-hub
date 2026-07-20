@@ -68,6 +68,17 @@ const initialComments = [
     created_at: new Date(Date.now() - 19 * 60 * 1000).toISOString(),
     author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
   },
+  {
+    id: "comment-3",
+    project_id: "preview-dashboard",
+    author_id: "teammate-2",
+    body: "Here's the overflow I hit at 360px:",
+    // Inline so the preview renders without network or a seeded storage object.
+    image_url: "data:image/svg+xml;utf8," + encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="#2B2F36"/><rect x="16" y="16" width="180" height="18" rx="4" fill="#5B6472"/><rect x="16" y="48" width="288" height="10" rx="3" fill="#414852"/><rect x="16" y="68" width="240" height="10" rx="3" fill="#414852"/><rect x="16" y="112" width="120" height="34" rx="8" fill="#7C5CFF"/></svg>`),
+    created_at: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
+    author: { id: "teammate-2", full_name: "Priya Nair", email: "priya@example.com" },
+  },
 ];
 
 const initialActivity = [
@@ -118,12 +129,13 @@ export default function WorkspacePreview() {
         onNewProject={async () => {}}
         onDeleteProject={(id) => setProjects((items) => items.filter((item) => item.id !== id))}
         onReorder={() => {}}
-        onCreateComment={async (projectId, body) => {
+        onCreateComment={async (projectId, body, imageUrl = null) => {
           setComments((items) => [...items, {
             id: `preview-${Date.now()}`,
             project_id: projectId,
             author_id: "preview-user",
             body,
+            image_url: imageUrl,
             created_at: new Date().toISOString(),
             author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
           }]);
