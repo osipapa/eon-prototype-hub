@@ -393,6 +393,15 @@
               <textarea id="support-comment" placeholder="Add more detail (optional)" aria-label="Support experience details"></textarea>
             </div>
           </div>
+
+          <!-- one open text field at a time: hidden while the support notes are open -->
+          <div class="q-group" id="additional-details">
+            <div class="divider"></div>
+            <div class="q-sub">
+              <div class="q-text">Any additional details?</div>
+              <textarea id="comment" placeholder="Add more detail (optional)" aria-label="Additional trip details"></textarea>
+            </div>
+          </div>
         </div>
 
         <button class="btn-primary inactive" id="submit-btn" aria-disabled="true" onclick="submitReview()">Submit &amp; Claim Eon Credit</button>
@@ -611,7 +620,8 @@
 
     function hasDetails() {
       return Object.keys(state.cats).length > 0 || state.access || state.ownercontact || state.comm ||
-        state.contacted || document.getElementById('support-comment').value.trim().length > 0;
+        state.contacted || document.getElementById('support-comment').value.trim().length > 0 ||
+        document.getElementById('comment').value.trim().length > 0;
     }
 
     function ratingPayload() {
@@ -636,6 +646,7 @@
         support_channel: state.channel,
         support_resolved: state.resolved,
         support_detail_text: document.getElementById('support-comment').value.trim() || null,
+        detail_text: document.getElementById('comment').value.trim() || null,
         trip_id: 'trp_8Xk2m'
       };
     }
@@ -678,7 +689,9 @@
       // support follow-up appears once support was contacted; notes only when unresolved
       document.getElementById('owner-channel').classList.toggle('hidden', state.ownercontact !== 'yes');
       document.getElementById('support-followup').classList.toggle('hidden', !supportContacted());
-      document.getElementById('support-notes').classList.toggle('hidden', state.resolved !== 'no');
+      var notesOpen = state.resolved === 'no';
+      document.getElementById('support-notes').classList.toggle('hidden', !notesOpen);
+      document.getElementById('additional-details').classList.toggle('hidden', notesOpen); // one open text field at a time
 
       var submitBtn = document.getElementById('submit-btn');
       submitBtn.classList.toggle('inactive', !r);
