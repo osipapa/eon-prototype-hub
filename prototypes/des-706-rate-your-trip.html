@@ -711,8 +711,8 @@
     // ---- presets for the hub's state control ----
     var PRESETS = {
       'default':     function () {},
-      'rated-5':     function () { state.rating = 5; state.saved = true; state.cats = { cleanliness: 5, car_condition: 5, charging_range: 4, pickup_return: 5 }; state.access = 'keycard'; state.comm = 'through_eon'; state.contacted = 'no'; },
-      'rated-2':     function () { state.rating = 2; state.saved = true; state.cats = { cleanliness: 1, car_condition: 3, charging_range: 2 }; state.access = 'chargekey_app'; state.comm = 'direct'; state.contacted = 'yes'; state.channel = 'eon'; state.resolved = 'no'; },
+      'rated-5':     function () { state.rating = 5; state.saved = true; state.cats = { cleanliness: 5, car_condition: 5, charging_range: 4, pickup_return: 5 }; state.access = 'keycard'; state.ownercontact = 'no'; state.contacted = 'no'; },
+      'rated-2':     function () { state.rating = 2; state.saved = true; state.cats = { cleanliness: 1, car_condition: 3, charging_range: 2 }; state.access = 'chargekey_app'; state.ownercontact = 'yes'; state.comm = 'direct'; state.contacted = 'yes'; state.channel = 'phone'; state.resolved = 'no'; },
       'submitted-5': function () { PRESETS['rated-5'](); state.done = true; },
       'submitted-2': function () { PRESETS['rated-2'](); state.done = true; }
     };
