@@ -78,6 +78,7 @@ export default function PrototypeWorkspace({
   const [anchorMode, setAnchorMode] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState(null);
   const [ringOpen, setRingOpen] = useState(false);
+  const [pinWriteOpen, setPinWriteOpen] = useState(false);
   const [anchorRects, setAnchorRects] = useState({});
   const [activeAnchorId, setActiveAnchorId] = useState(null);
   const frameRef = useRef(null);
@@ -244,7 +245,9 @@ export default function PrototypeWorkspace({
           viewport, args, theme: protoTheme,
         });
         setAnchorMode(false);
-        // The quick-comment ring opens at the pin; "Write…" hands off to the composer.
+        // The quick-comment ring opens at the pin; "Write…" swaps it for an
+        // inline composer in place.
+        setPinWriteOpen(false);
         setRingOpen(true);
       }
     };
@@ -259,20 +262,25 @@ export default function PrototypeWorkspace({
   const canPlacePin = view === "stories" && layout === "single" && !(compare && !breakpoints.noCompare);
   useEffect(() => { if (!canPlacePin) setAnchorMode(false); }, [canPlacePin]);
   useEffect(() => {
-    if (!anchorMode && !ringOpen) return undefined;
+    if (!anchorMode && !ringOpen && !pinWriteOpen) return undefined;
     const onKey = (event) => {
       if (event.key !== "Escape") return;
       setAnchorMode(false);
-      if (ringOpen) { setRingOpen(false); setPendingAnchor(null); }
+      if (ringOpen || pinWriteOpen) {
+        setRingOpen(false);
+        setPinWriteOpen(false);
+        setPendingAnchor(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [anchorMode, ringOpen]);
+  }, [anchorMode, ringOpen, pinWriteOpen]);
 
-  // Ring choices: post the preset instantly at the pin, or hand off to the composer.
+  // Ring choices: post the preset instantly at the pin, or write in place.
   const quickComment = (body) => {
     const anchor = pendingAnchor;
     setRingOpen(false);
+    setPinWriteOpen(false);
     setPendingAnchor(null);
     Promise.resolve(onCreateComment(story.id, body, null, anchor)).catch(() => {
       // Couldn't post — keep the pin and fall back to the composer, which has error UI.
@@ -283,11 +291,11 @@ export default function PrototypeWorkspace({
   };
   const writeComment = () => {
     setRingOpen(false);
-    setInspectorTab("comments");
-    setInspectorOpen(true);
+    setPinWriteOpen(true);
   };
   const cancelRing = () => {
     setRingOpen(false);
+    setPinWriteOpen(false);
     setPendingAnchor(null);
   };
 
@@ -708,7 +716,7 @@ export default function PrototypeWorkspace({
                       <PinOverlay
                         c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects}
                         vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId}
-                        ringOpen={ringOpen} onQuickComment={quickComment}
+                        ringOpen={ringOpen} pinWriteOpen={pinWriteOpen} onQuickComment={quickComment}
                         onWriteComment={writeComment} onCancelRing={cancelRing}
                         onPickPin={(comment) => {
                           setActiveAnchorId((current) => (current === comment.id ? null : comment.id));
@@ -1584,10 +1592,42 @@ function PinRing({ c, x, y, onPick, onWrite, onCancel }) {
   );
 }
 
+/* ---- Inline composer at the pin: type, Enter posts the anchored comment ---- */
+function PinComposer({ c, x, y, frameWidth, onSubmit, onCancel }) {
+  const [draft, setDraft] = useState("");
+  const inputRef = useRef(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+  // Flip to the left of the pin when the panel would spill past the frame.
+  const width = 232;
+  const flip = x + 16 + width > frameWidth;
+  return (
+    <div className="eon-pin-composer" style={{ left: flip ? x - 16 - width : x + 16, top: y, width, background: c.panel, borderColor: c.border }}>
+      <Textarea ref={inputRef} value={draft} maxLength={4000} rows={2}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+            event.preventDefault();
+            if (draft.trim()) onSubmit(draft.trim());
+          }
+        }}
+        placeholder="Comment…" aria-label="Write a pinned comment"
+        style={{ minHeight: 54, maxHeight: 120, resize: "none", background: c.bg, borderColor: c.border, color: c.text, borderRadius: 9, fontSize: 13, lineHeight: 1.45 }} />
+      <div className="eon-pin-composer-meta">
+        <span style={{ color: c.muted }}>Enter to send</span>
+        <button type="button" className="eon-buttonish eon-pin-composer-send" onClick={() => draft.trim() && onSubmit(draft.trim())}
+          disabled={!draft.trim()} aria-label="Send pinned comment"
+          style={{ background: c.primary, color: c.primaryText, opacity: draft.trim() ? 1 : 0.5 }}>
+          <Send size={13} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ---- Pins on the canvas: dots over the iframe at each anchored comment ---- */
 function PinOverlay({
   c, pins, pendingAnchor, rects, vp, frameScale, activeAnchorId, onPickPin,
-  ringOpen, onQuickComment, onWriteComment, onCancelRing,
+  ringOpen, pinWriteOpen, onQuickComment, onWriteComment, onCancelRing,
 }) {
   const place = (anchor) => {
     const point = anchorPoint(anchor, rects, vp.w, vp.h);
@@ -1619,11 +1659,17 @@ function PinOverlay({
           <Pin size={12} />
         </span>
       )}
-      {pendingPoint && ringOpen && (
+      {pendingPoint && (ringOpen || pinWriteOpen) && (
         <>
           <div className="eon-ring-backdrop" onClick={onCancelRing} aria-hidden="true" />
-          <PinRing c={c} x={pendingPoint.left} y={pendingPoint.top}
-            onPick={onQuickComment} onWrite={onWriteComment} onCancel={onCancelRing} />
+          {ringOpen && (
+            <PinRing c={c} x={pendingPoint.left} y={pendingPoint.top}
+              onPick={onQuickComment} onWrite={onWriteComment} onCancel={onCancelRing} />
+          )}
+          {pinWriteOpen && (
+            <PinComposer c={c} x={pendingPoint.left} y={pendingPoint.top} frameWidth={vp.w * frameScale}
+              onSubmit={onQuickComment} onCancel={onCancelRing} />
+          )}
         </>
       )}
     </div>
