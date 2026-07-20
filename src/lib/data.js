@@ -55,6 +55,16 @@ export async function createComment(comment) {
   return data;
 }
 
+// Resolving is a team action, not an author edit, so it goes through an RPC
+// (row updates are author-only under RLS). Returns the updated row.
+export async function setCommentResolved(commentId, resolved) {
+  const { data, error } = await supabase
+    .rpc("set_comment_resolved", { comment_id: commentId, resolved })
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export function subscribeComments(cb) {
   const ch = supabase
     .channel("comments-changes")

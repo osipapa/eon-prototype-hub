@@ -160,6 +160,8 @@
 
   /* survey questions with pill options (design: button-tab, radius 100) */
   .q-block{display:flex;flex-direction:column;gap:24px}
+  .q-group{display:flex;flex-direction:column;gap:24px}
+  .q-group-label{font-size:var(--font-size-caption-1);color:var(--text-secondary);margin-bottom:-12px}
   .q-sub{display:flex;flex-direction:column;gap:8px}
   .q-text{font-size:var(--font-size-body);font-weight:400;line-height:1.4}
   .pills{display:flex;flex-wrap:wrap;gap:8px}
@@ -316,62 +318,84 @@
         <div class="divider"></div>
 
         <div class="q-block">
-          <div class="q-sub">
-            <div class="q-text">How did you access the car?</div>
-            <div class="pills" data-group="access">
-              <button class="pill" data-value="keycard">Keycard</button>
-              <button class="pill" data-value="chargekey_app">ChargeKey App</button>
-              <button class="pill" data-value="tesla_app">Tesla App</button>
-            </div>
-          </div>
-
-          <div class="q-sub">
-            <div class="q-text">How did you communicate with the owner?</div>
-            <div class="pills" data-group="comm">
-              <button class="pill" data-value="through_eon">Through Eon</button>
-              <button class="pill" data-value="direct">Directly with the owner</button>
-            </div>
-          </div>
-
-          <div class="q-sub">
-            <div class="q-text">Have you contacted customer support?</div>
-            <div class="pills" data-group="contacted">
-              <button class="pill" data-value="no">No</button>
-              <button class="pill" data-value="yes">Yes</button>
-            </div>
-          </div>
-
-          <!-- shown once support was contacted -->
-          <div class="q-block hidden" id="support-followup">
+          <!-- ===== Car access ===== -->
+          <div class="q-group">
+            <div class="q-group-label">Car access</div>
             <div class="q-sub">
-              <div class="q-text">How did you contact them?</div>
-              <div class="pills" data-group="channel">
-                <button class="pill" data-value="eon">Through Eon</button>
-                <button class="pill" data-value="owner">Through the owner</button>
+              <div class="q-text">How did you have access to the car?</div>
+              <div class="pills" data-group="access">
+                <button class="pill" data-value="keycard">KeyCard</button>
+                <button class="pill" data-value="chargekey_app">ChargeKey App</button>
+                <button class="pill" data-value="tesla_app">Tesla App</button>
               </div>
             </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- ===== Communication ===== -->
+          <div class="q-group">
+            <div class="q-group-label">Communication</div>
             <div class="q-sub">
-              <div class="q-text">Has customer support resolved your issue?</div>
-              <div class="pills" data-group="resolved">
+              <div class="q-text">Did you contact the owner?</div>
+              <div class="pills" data-group="ownercontact">
                 <button class="pill" data-value="no">No</button>
                 <button class="pill" data-value="yes">Yes</button>
               </div>
             </div>
-            <!-- notes open only when the issue is unresolved -->
-            <div class="q-sub hidden" id="support-notes">
+            <!-- shown once the owner was contacted -->
+            <div class="q-sub hidden" id="owner-channel">
+              <div class="q-text">How did you reach them?</div>
+              <div class="pills" data-group="comm">
+                <button class="pill" data-value="through_eon">Through Eon</button>
+                <button class="pill" data-value="direct">Directly</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- ===== Customer support ===== -->
+          <div class="q-group">
+            <div class="q-group-label">Customer support</div>
+            <div class="q-sub">
+              <div class="q-text">Have you contacted customer support?</div>
+              <div class="pills" data-group="contacted">
+                <button class="pill" data-value="no">No</button>
+                <button class="pill" data-value="yes">Yes</button>
+                <button class="pill" data-value="yes_owner">Yes through the owner</button>
+              </div>
+            </div>
+            <!-- shown once support was contacted -->
+            <div class="q-group hidden" id="support-followup">
+              <div class="q-sub">
+                <div class="q-text">How did you reach support?</div>
+                <div class="pills" data-group="channel">
+                  <button class="pill" data-value="email">Email</button>
+                  <button class="pill" data-value="phone">Phone</button>
+                </div>
+              </div>
+              <div class="q-sub">
+                <div class="q-text">Did they resolve it?</div>
+                <div class="pills" data-group="resolved">
+                  <button class="pill" data-value="no">No</button>
+                  <button class="pill" data-value="yes">Yes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- notes open only when the issue is unresolved -->
+          <div class="q-group hidden" id="support-notes">
+            <div class="divider"></div>
+            <div class="q-sub">
               <div class="q-text">Describe what happened, so we can improve</div>
               <textarea id="support-comment" placeholder="Add more detail (optional)" aria-label="Support experience details"></textarea>
             </div>
           </div>
-
-          <!-- one open text field at a time: hidden while the support notes are open -->
-          <div class="q-sub" id="additional-details">
-            <div class="q-text">Any additional details?</div>
-            <textarea id="comment" placeholder="Add more detail (optional)" aria-label="Additional trip details"></textarea>
-          </div>
         </div>
 
-        <button class="btn-primary inactive" id="submit-btn" aria-disabled="true" onclick="submitReview()">Submit Rating</button>
+        <button class="btn-primary inactive" id="submit-btn" aria-disabled="true" onclick="submitReview()">Submit &amp; Claim Eon Credit</button>
         </div>
         </div>
       </div>
@@ -462,12 +486,12 @@
     var WORDS = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
     var CATS = [
       { key: 'cleanliness',    name: 'Cleanliness' },
-      { key: 'car_condition',  name: 'Car condition' },
-      { key: 'charging_range', name: 'Charging & range' },
-      { key: 'pickup_return',  name: 'Pickup & return' }
+      { key: 'car_condition',  name: 'Car Condition' },
+      { key: 'charging_range', name: 'Charging & Range' },
+      { key: 'pickup_return',  name: 'Pickup & Return' }
     ];
 
-    var state = { rating: 0, cats: {}, access: null, comm: null, contacted: null, channel: null, resolved: null, saved: false, done: false };
+    var state = { rating: 0, cats: {}, access: null, ownercontact: null, comm: null, contacted: null, channel: null, resolved: null, saved: false, done: false };
 
     // ---- photo grid: preset media tokens resolve to the hub media library; ----
     // ---- glyphs stay as the standalone fallback when tokens are unreplaced ----
@@ -544,12 +568,15 @@
         pill.onclick = function () {
           var g = group.dataset.group, v = pill.dataset.value;
           state[g] = state[g] === v ? null : v;
-          if (g === 'contacted' && state[g] !== 'yes') { state.channel = null; state.resolved = null; }
+          if (g === 'ownercontact' && state[g] !== 'yes') state.comm = null;
+          if (g === 'contacted' && !supportContacted()) { state.channel = null; state.resolved = null; }
           if (state.resolved !== 'no') document.getElementById('support-comment').value = '';
           render();
         };
       });
     });
+
+    function supportContacted() { return state.contacted === 'yes' || state.contacted === 'yes_owner'; }
 
     // The tap IS the submit for the CSAT signal: the rating event fires
     // immediately, so it survives even if the rest of the form is abandoned.
@@ -583,9 +610,8 @@
     }
 
     function hasDetails() {
-      return Object.keys(state.cats).length > 0 || state.access || state.comm || state.contacted ||
-        document.getElementById('support-comment').value.trim().length > 0 ||
-        document.getElementById('comment').value.trim().length > 0;
+      return Object.keys(state.cats).length > 0 || state.access || state.ownercontact || state.comm ||
+        state.contacted || document.getElementById('support-comment').value.trim().length > 0;
     }
 
     function ratingPayload() {
@@ -604,12 +630,12 @@
         charging_range_rating: state.cats.charging_range || null,
         pickup_return_rating: state.cats.pickup_return || null,
         access_method: state.access,
+        contacted_owner: state.ownercontact,
         owner_communication: state.comm,
         contacted_support: state.contacted,
         support_channel: state.channel,
         support_resolved: state.resolved,
-        has_support_comment: document.getElementById('support-comment').value.trim().length > 0,
-        has_comment: document.getElementById('comment').value.trim().length > 0,
+        support_detail_text: document.getElementById('support-comment').value.trim() || null,
         trip_id: 'trp_8Xk2m'
       };
     }
@@ -650,10 +676,9 @@
       });
 
       // support follow-up appears once support was contacted; notes only when unresolved
-      var notesOpen = state.resolved === 'no';
-      document.getElementById('support-followup').classList.toggle('hidden', state.contacted !== 'yes');
-      document.getElementById('support-notes').classList.toggle('hidden', !notesOpen);
-      document.getElementById('additional-details').classList.toggle('hidden', notesOpen); // one open text field at a time
+      document.getElementById('owner-channel').classList.toggle('hidden', state.ownercontact !== 'yes');
+      document.getElementById('support-followup').classList.toggle('hidden', !supportContacted());
+      document.getElementById('support-notes').classList.toggle('hidden', state.resolved !== 'no');
 
       var submitBtn = document.getElementById('submit-btn');
       submitBtn.classList.toggle('inactive', !r);

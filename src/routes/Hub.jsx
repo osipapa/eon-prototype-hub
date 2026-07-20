@@ -10,7 +10,7 @@ import {
 import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, subscribeAssets, listComments, createComment, subscribeComments,
-  listActivity, subscribeActivity,
+  setCommentResolved, listActivity, subscribeActivity,
 } from "../lib/data";
 import { joinTeamPresence } from "../lib/presence";
 
@@ -385,7 +385,7 @@ export default function Hub() {
     navigate(`/p/${newSlug}`);
   }
 
-  async function onCreateComment(projectId, body, imageUrl = null) {
+  async function onCreateComment(projectId, body, imageUrl = null, anchor = null) {
     const text = body.trim();
     // A screenshot on its own is a complete comment.
     if (!text && !imageUrl) return;
@@ -397,6 +397,7 @@ export default function Hub() {
       author_id: user.id,
       body: text,
       image_url: imageUrl,
+      anchor,
       created_at: new Date().toISOString(),
       pending: true,
       author: { id: user.id, email: user.email, full_name: profile.full_name },
@@ -409,10 +410,27 @@ export default function Hub() {
         author_id: user.id,
         body: text,
         image_url: imageUrl,
+        anchor,
       });
       setComments((items) => items.map((item) => item.id === optimisticId ? saved : item));
     } catch (error) {
       setComments((items) => items.filter((item) => item.id !== optimisticId));
+      throw error;
+    }
+  }
+
+  async function onResolveComment(commentId, resolved) {
+    // Optimistic flip; realtime refetch reconciles for everyone else.
+    const before = comments;
+    setComments((items) => items.map((item) => item.id === commentId
+      ? { ...item, resolved_at: resolved ? new Date().toISOString() : null, resolved_by: resolved ? user.id : null }
+      : item));
+    try {
+      const saved = await setCommentResolved(commentId, resolved);
+      // The RPC returns the bare row; keep the joined author from state.
+      setComments((items) => items.map((item) => item.id === commentId ? { ...item, ...saved } : item));
+    } catch (error) {
+      setComments(before);
       throw error;
     }
   }
@@ -497,6 +515,7 @@ export default function Hub() {
         onDeleteProject={onDeleteProject}
         onReorder={onReorder}
         onCreateComment={onCreateComment}
+        onResolveComment={onResolveComment}
         onOpenAdmin={() => navigate("/admin")}
         onSignOut={signOut}
       />

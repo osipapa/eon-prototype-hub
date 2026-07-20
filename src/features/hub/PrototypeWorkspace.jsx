@@ -9,7 +9,7 @@ import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
   ExternalLink, History, ImagePlus, LayoutGrid, Link2, Loader2, LogOut,
-  Maximize2, MessageSquare, Minus, Monitor, Laptop,
+  MapPin, Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
   PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, Square, Sun,
   Tablet, Trash2, Upload, X,
@@ -23,6 +23,9 @@ import {
   UploadPanel, figmaMeta,
 } from "./PrototypeHub";
 import { buildSetupPrompt } from "./setupPrompt";
+import {
+  anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, isBridgeMessage,
+} from "./anchorBridge";
 import { pickHtmlFile, supportsFileLink, watchFile } from "@/lib/localFile";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
@@ -37,7 +40,7 @@ export default function PrototypeWorkspace({
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
   onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder,
-  onCreateComment, onOpenAdmin, onSignOut,
+  onCreateComment, onResolveComment, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
 }) {
   const [hubTheme, setHubTheme] = useStoredState("eon-hub-theme", "dark");
@@ -72,6 +75,11 @@ export default function PrototypeWorkspace({
   const [reviewLinkCopyError, setReviewLinkCopyError] = useState("");
   const [reviewLocationKey, setReviewLocationKey] = useState(() => window.location.hash);
   const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false, compactControls: false });
+  const [anchorMode, setAnchorMode] = useState(false);
+  const [pendingAnchor, setPendingAnchor] = useState(null);
+  const [anchorRects, setAnchorRects] = useState({});
+  const [activeAnchorId, setActiveAnchorId] = useState(null);
+  const frameRef = useRef(null);
   const seenStorageKey = `eon-review-seen:${profile?.id || "anonymous"}`;
   const [seenComments, setSeenComments] = useState(() => readStoredJson(seenStorageKey));
   // Live local file link: one at a time, tied to the prototype it was linked
@@ -139,7 +147,7 @@ export default function PrototypeWorkspace({
   );
   const vp = VIEWPORTS[viewport];
   const html = useMemo(
-    () => (effStory ? renderStory(effStory, protoTheme, media, args) : ""),
+    () => (effStory ? injectAnchorBridge(renderStory(effStory, protoTheme, media, args)) : ""),
     [effStory, args, protoTheme, media],
   );
   const scale = useMemo(() => Math.min(
@@ -187,6 +195,92 @@ export default function PrototypeWorkspace({
     () => activity.filter((item) => item.project_id === story?.id),
     [activity, story?.id],
   );
+
+  /* ---- Anchored comments: pins on the prototype canvas ---- */
+
+  // Open anchored comments get stable numbers in thread order; the canvas
+  // shows the subset placed in the state currently on screen.
+  const anchoredPins = useMemo(() => {
+    let number = 0;
+    return storyComments
+      .filter((comment) => comment.anchor && !comment.resolved_at)
+      .map((comment) => ({ comment, number: ++number }));
+  }, [storyComments]);
+  const pinNumberById = useMemo(
+    () => Object.fromEntries(anchoredPins.map(({ comment, number }) => [comment.id, number])),
+    [anchoredPins],
+  );
+  const visiblePins = useMemo(
+    () => anchoredPins.filter(({ comment }) => anchorMatchesState(comment.anchor, viewport, args, protoTheme)),
+    [anchoredPins, viewport, args, protoTheme],
+  );
+  const watchedSelectors = useMemo(() => {
+    const selectors = new Set();
+    visiblePins.forEach(({ comment }) => comment.anchor.selector && selectors.add(comment.anchor.selector));
+    if (pendingAnchor?.selector) selectors.add(pendingAnchor.selector);
+    return [...selectors];
+  }, [visiblePins, pendingAnchor?.selector]);
+  const postToFrame = (message) => frameRef.current?.contentWindow?.postMessage({ eon: 1, ...message }, "*");
+
+  // One listener covers the bridge's whole vocabulary. The iframe remounts on
+  // state changes, so "ready" re-syncs mode + watched selectors every time.
+  useEffect(() => {
+    const onMessage = (event) => {
+      if (!isBridgeMessage(event, frameRef.current)) return;
+      const message = event.data;
+      if (message.type === "eon-anchor-ready") {
+        postToFrame({ type: "eon-anchor-mode", on: anchorMode });
+        postToFrame({ type: "eon-anchor-query", selectors: watchedSelectors });
+      } else if (message.type === "eon-anchor-rects") {
+        setAnchorRects(message.rects || {});
+      } else if (message.type === "eon-anchor-cancel") {
+        setAnchorMode(false);
+      } else if (message.type === "eon-anchor-click") {
+        setPendingAnchor({
+          selector: message.selector || null,
+          rel_x: message.rel_x, rel_y: message.rel_y,
+          x_pct: message.x_pct, y_pct: message.y_pct,
+          viewport, args, theme: protoTheme,
+        });
+        setAnchorMode(false);
+        setInspectorTab("comments");
+        setInspectorOpen(true);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [anchorMode, watchedSelectors, viewport, args, protoTheme]);
+
+  useEffect(() => { postToFrame({ type: "eon-anchor-mode", on: anchorMode }); }, [anchorMode]);
+  useEffect(() => { postToFrame({ type: "eon-anchor-query", selectors: watchedSelectors }); }, [watchedSelectors]);
+
+  // Placement is a single-view affair; leaving it cancels cleanly.
+  const canPlacePin = view === "stories" && layout === "single" && !(compare && !breakpoints.noCompare);
+  useEffect(() => { if (!canPlacePin) setAnchorMode(false); }, [canPlacePin]);
+  useEffect(() => {
+    if (!anchorMode) return undefined;
+    const onKey = (event) => { if (event.key === "Escape") setAnchorMode(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [anchorMode]);
+
+  // A pending pin describes one exact canvas state; changing state discards it.
+  useEffect(() => {
+    setPendingAnchor((current) =>
+      current && !anchorMatchesState(current, viewport, args, protoTheme) ? null : current);
+  }, [viewport, args, protoTheme]);
+  useEffect(() => { setPendingAnchor(null); setActiveAnchorId(null); setAnchorMode(false); }, [story?.id]);
+
+  // Restore the exact canvas state a pin was placed in.
+  const jumpToAnchor = (comment) => {
+    const anchor = comment.anchor;
+    if (!anchor) return;
+    setLayout("single");
+    if (VIEWPORTS[anchor.viewport]) setViewport(anchor.viewport);
+    if (["light", "dark"].includes(anchor.theme)) setProtoTheme(anchor.theme);
+    if (anchor.args && story) setLiveArgs((current) => ({ ...current, [story.id]: { ...current[story.id], ...anchor.args } }));
+    setActiveAnchorId(comment.id);
+  };
 
   useEffect(() => {
     if (!story?.id || !inspectorOpen || inspectorTab !== "comments" || storyComments.length === 0) return;
@@ -577,13 +671,21 @@ export default function PrototypeWorkspace({
               <section data-tutorial="prototype-canvas" ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`} style={{ background: canvasBg }}>
                 {layout === "single" ? (
                   <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + 64), height: Math.max(canvasSize.height, frameHeight + 64) }}>
-                    <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0 }}>
-                      <iframe data-tutorial="prototype-frame" className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
+                    <div style={{ width: frameWidth, height: frameHeight, flexShrink: 0, position: "relative" }}>
+                      <iframe data-tutorial="prototype-frame" ref={frameRef} className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
                         title={story.title} srcDoc={html}
                         sandbox={PROTOTYPE_SANDBOX}
                         referrerPolicy="no-referrer"
                         allow="clipboard-read; clipboard-write"
                         style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
+                      <PinOverlay
+                        c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects}
+                        vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId}
+                        onPickPin={(comment) => {
+                          setActiveAnchorId((current) => (current === comment.id ? null : comment.id));
+                          setInspectorTab("comments");
+                          setInspectorOpen(true);
+                        }} />
                     </div>
                   </div>
                 ) : (
@@ -624,12 +726,22 @@ export default function PrototypeWorkspace({
           c={c} story={story} comments={storyComments} activity={storyActivity} profile={profile}
           tab={inspectorTab} setTab={setInspectorTab}
           onCreateComment={onCreateComment} patch={patch}
+          anchors={{
+            pinNumberById, activeAnchorId, setActiveAnchorId, onResolveComment, jumpToAnchor,
+            anchorMode, setAnchorMode, canPlacePin, pendingAnchor,
+            clearPendingAnchor: () => setPendingAnchor(null),
+            canvasState: { viewport, args, theme: protoTheme },
+          }}
           editLinear={editLinear} setEditLinear={setEditLinear}
           sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
           copyReviewLink={copyReviewLink} copiedReviewLink={copiedReviewLink}
           reviewLinkCopyError={reviewLinkCopyError}
           isDrawer={breakpoints.inspectorDrawer} onClose={() => setInspectorOpen(false)}
         />
+      )}
+
+      {activeAnchorId && view === "stories" && layout === "single" && (
+        <AnchorLeaderLine c={c} commentId={activeAnchorId} />
       )}
 
       {showNewDialog && (
@@ -979,7 +1091,7 @@ function ToolGroup({ label, c, children }) {
 
 function ReviewInspector({
   c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
-  editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
+  anchors, editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
   copyReviewLink, copiedReviewLink, reviewLinkCopyError, isDrawer, onClose,
 }) {
   const drawerRef = useDrawerFocus(isDrawer, onClose);
@@ -1008,7 +1120,7 @@ function ReviewInspector({
           <TabsTrigger data-tutorial="linear-tab" value="linear"><LinearIcon size={14} /> Linear</TabsTrigger>
         </TabsList>
         <TabsContent data-tutorial="comments-thread" value="comments" className="eon-inspector-content">
-          <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} />
+          <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} anchors={anchors} />
         </TabsContent>
         <TabsContent data-tutorial="history-thread" value="history" className="eon-inspector-content">
           <HistoryTimeline c={c} activity={activity} currentUserId={profile?.id} />
@@ -1105,15 +1217,20 @@ function ReferenceEmpty({ c, icon: Icon, title, body }) {
   );
 }
 
-function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
+function CommentThread({ c, comments, profile, projectId, onCreateComment, anchors = {} }) {
   const [draft, setDraft] = useState("");
   const [attachment, setAttachment] = useState(null); // { file, previewUrl }
   const [dragging, setDragging] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [filter, setFilter] = useState("open");
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const initialScroll = useRef(true);
+
+  const openComments = comments.filter((comment) => !comment.resolved_at);
+  const resolvedComments = comments.filter((comment) => comment.resolved_at);
+  const shown = filter === "resolved" ? resolvedComments : openComments;
 
   useEffect(() => {
     const node = scrollRef.current;
@@ -1123,6 +1240,25 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
     if (initialScroll.current || nearBottom || newestIsMine) node.scrollTop = node.scrollHeight;
     initialScroll.current = false;
   }, [comments.length]);
+
+  // A pin picked on the canvas brings its comment into view.
+  useEffect(() => {
+    if (!anchors.activeAnchorId) return;
+    if (comments.find((comment) => comment.id === anchors.activeAnchorId)?.resolved_at) setFilter("resolved");
+    const node = scrollRef.current?.querySelector(`[data-comment-id="${anchors.activeAnchorId}"]`);
+    node?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [anchors.activeAnchorId]);
+
+  const toggleResolved = async (comment) => {
+    if (!anchors.onResolveComment) return;
+    setError("");
+    try {
+      await anchors.onResolveComment(comment.id, !comment.resolved_at);
+      if (anchors.activeAnchorId === comment.id) anchors.setActiveAnchorId?.(null);
+    } catch (err) {
+      setError(err.message || "Couldn't update the comment.");
+    }
+  };
 
   // The preview is an object URL, so it has to be released by hand.
   useEffect(() => () => { if (attachment) URL.revokeObjectURL(attachment.previewUrl); }, [attachment]);
@@ -1161,15 +1297,19 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
 
   const submit = async () => {
     const body = draft.trim();
-    if ((!body && !attachment) || sending) return;
+    if ((!body && !attachment && !anchors.pendingAnchor) || sending) return;
+    if (!body && !attachment) return; // a bare pin still needs words or a picture
     const pendingAttachment = attachment;
+    const anchor = anchors.pendingAnchor || null;
     setSending(true);
     setError("");
     setDraft("");
     setAttachment(null);
     try {
       const imageUrl = pendingAttachment ? await uploadCommentImage(pendingAttachment.file) : null;
-      await onCreateComment(projectId, body, imageUrl);
+      await onCreateComment(projectId, body, imageUrl, anchor);
+      anchors.clearPendingAnchor?.();
+      setFilter("open");
       if (pendingAttachment) URL.revokeObjectURL(pendingAttachment.previewUrl);
     } catch (err) {
       setDraft(body);
@@ -1183,22 +1323,53 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
   const canSend = Boolean(draft.trim() || attachment) && !sending;
   const status = sending
     ? (attachment ? "Uploading image…" : "Sending comment…")
+    : anchors.anchorMode ? "Click the prototype to place the pin · Esc to cancel"
     : "Enter to send · paste or drop an image";
 
   return (
     <div className="eon-comments">
+      {(resolvedComments.length > 0 || filter === "resolved") && (
+        <div className="eon-comment-filter" role="tablist" aria-label="Filter comments" style={{ borderColor: c.border }}>
+          {[["open", "Open", openComments.length], ["resolved", "Resolved", resolvedComments.length]].map(([key, label, count]) => (
+            <button key={key} role="tab" aria-selected={filter === key} className="eon-buttonish eon-comment-filter-tab"
+              onClick={() => setFilter(key)}
+              style={{ color: filter === key ? c.text : c.muted, borderColor: filter === key ? c.brand : "transparent" }}>
+              {label} <span style={{ color: c.muted }}>{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div ref={scrollRef} className="eon-comment-list" aria-live="polite">
-        {comments.length === 0 ? (
+        {shown.length === 0 ? (
           <div className="eon-comment-empty" style={{ color: c.muted }}>
-            <span className="eon-comment-empty-icon" style={{ background: c.raised, color: c.brand }}><MessageSquare size={20} /></span>
-            <strong style={{ color: c.text }}>Start the conversation</strong>
+            <span className="eon-comment-empty-icon" style={{ background: c.raised, color: c.brand }}>
+              {filter === "resolved" ? <Check size={20} /> : <MessageSquare size={20} />}
+            </span>
+            <strong style={{ color: c.text }}>{filter === "resolved" ? "Nothing resolved yet" : "Start the conversation"}</strong>
           </div>
-        ) : comments.map((comment) => <CommentBubble key={comment.id} c={c} comment={comment} currentUserId={profile?.id} />)}
+        ) : shown.map((comment) => (
+          <CommentBubble key={comment.id} c={c} comment={comment} currentUserId={profile?.id}
+            pinNumber={anchors.pinNumberById?.[comment.id]}
+            active={anchors.activeAnchorId === comment.id}
+            onSelect={() => anchors.setActiveAnchorId?.(anchors.activeAnchorId === comment.id ? null : comment.id)}
+            stateMismatch={Boolean(comment.anchor && anchors.canvasState
+              && !anchorMatchesState(comment.anchor, anchors.canvasState.viewport, anchors.canvasState.args, anchors.canvasState.theme))}
+            onJump={() => anchors.jumpToAnchor?.(comment)}
+            onToggleResolved={anchors.onResolveComment ? () => toggleResolved(comment) : null} />
+        ))}
       </div>
       <div className="eon-comment-composer" style={{ borderColor: c.border }}
         onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
         onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
         onDrop={onDrop}>
+        {anchors.pendingAnchor && (
+          <div className="eon-composer-pin" style={{ borderColor: c.border, background: c.raised, color: c.secondary }}>
+            <span className="eon-pin-dot" style={{ background: c.brand, color: "#fff" }}><MapPin size={11} /></span>
+            <span>Pinned · {anchorStateLabel(anchors.pendingAnchor)}</span>
+            <button type="button" className="eon-buttonish eon-text-button" onClick={() => anchors.clearPendingAnchor?.()}
+              aria-label="Remove pin" style={{ color: c.muted }}><X size={13} /></button>
+          </div>
+        )}
         {attachment && (
           <div className="eon-composer-attachment" style={{ borderColor: c.border, background: c.raised }}>
             <img src={attachment.previewUrl} alt={`Attached image: ${attachment.file.name}`} />
@@ -1210,17 +1381,26 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
         )}
         <Textarea value={draft} maxLength={4000} onChange={(event) => setDraft(event.target.value)} onPaste={onPaste}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }}
-          placeholder="Write a comment…" aria-label="Write a comment"
+          placeholder={anchors.pendingAnchor ? "Describe what the pin points at…" : "Write a comment…"} aria-label="Write a comment"
           style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.bg, borderColor: error ? "#FF6B8A" : dragging ? c.brand : c.border, color: c.text, borderRadius: 12, fontSize: 14, lineHeight: 1.5 }} />
         <div className="eon-composer-meta">
           <input ref={fileInputRef} type="file" accept="image/*" hidden
             onChange={(event) => { attach(event.target.files?.[0]); event.target.value = ""; }} />
+          {anchors.setAnchorMode && (
+            <button type="button" className="eon-buttonish eon-attach-button" onClick={() => anchors.setAnchorMode(!anchors.anchorMode)}
+              disabled={sending || !anchors.canPlacePin} aria-pressed={anchors.anchorMode}
+              aria-label={anchors.anchorMode ? "Cancel pin placement" : "Pin this comment to the prototype"}
+              title={anchors.canPlacePin ? "Pin this comment to a spot on the prototype" : "Pins are placed in single view"}
+              style={{ borderColor: anchors.anchorMode ? c.brand : c.border, background: c.panel, color: anchors.anchorMode ? c.brand : c.secondary, opacity: sending || !anchors.canPlacePin ? 0.5 : 1 }}>
+              <MapPin size={15} />
+            </button>
+          )}
           <button type="button" className="eon-buttonish eon-attach-button" onClick={() => fileInputRef.current?.click()}
             disabled={sending} aria-label="Attach an image" title="Attach an image"
             style={{ borderColor: c.border, background: c.panel, color: c.secondary, opacity: sending ? 0.5 : 1 }}>
             <ImagePlus size={15} />
           </button>
-          <span role={error ? "alert" : "status"} style={{ color: error ? "#FF6B8A" : c.muted }}>{error || status}</span>
+          <span role={error ? "alert" : "status"} style={{ color: error ? "#FF6B8A" : anchors.anchorMode ? c.brand : c.muted }}>{error || status}</span>
           <Button className="eon-buttonish" onClick={submit} disabled={!canSend}
             style={{ minWidth: 40, minHeight: 40, padding: 0, borderRadius: 10, background: c.primary, color: c.primaryText, opacity: canSend ? 1 : 0.5 }} aria-label="Send comment">
             <Send size={15} />
@@ -1231,16 +1411,38 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment }) {
   );
 }
 
-function CommentBubble({ c, comment, currentUserId }) {
+function CommentBubble({
+  c, comment, currentUserId, pinNumber, active, onSelect, stateMismatch, onJump, onToggleResolved,
+}) {
   const author = comment.author || {};
   const name = author.full_name || author.email?.split("@")[0] || "Teammate";
   const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const mine = comment.author_id === currentUserId;
+  const resolved = Boolean(comment.resolved_at);
   return (
-    <article className="eon-comment" style={{ opacity: comment.pending ? 0.6 : 1 }}>
+    <article className="eon-comment" data-comment-id={comment.id}
+      style={{ opacity: comment.pending ? 0.6 : resolved ? 0.75 : 1, boxShadow: active ? `inset 2px 0 0 ${c.brand}` : "none" }}>
       <div className="eon-comment-avatar" style={{ background: mine ? c.active : c.raised, color: mine ? c.brand : c.secondary }}>{initials || "T"}</div>
       <div className="eon-comment-body">
-        <div className="eon-comment-meta"><strong>{mine ? "You" : name}</strong><time style={{ color: c.muted }} dateTime={comment.created_at}>{relativeTime(comment.created_at)}</time>{comment.pending && <span className="eon-pending-label" style={{ color: c.muted }}>Sending…</span>}</div>
+        <div className="eon-comment-meta">
+          {comment.anchor && (
+            <button type="button" className="eon-buttonish eon-pin-dot" onClick={onSelect}
+              aria-label={`Pin ${pinNumber || ""} — show on the prototype`} aria-pressed={active}
+              style={{ background: active ? c.brand : c.raised, color: active ? "#fff" : c.brand, border: `1px solid ${active ? c.brand : c.border}` }}>
+              {pinNumber || <MapPin size={10} />}
+            </button>
+          )}
+          <strong>{mine ? "You" : name}</strong>
+          <time style={{ color: c.muted }} dateTime={comment.created_at}>{relativeTime(comment.created_at)}</time>
+          {comment.pending && <span className="eon-pending-label" style={{ color: c.muted }}>Sending…</span>}
+          {!comment.pending && onToggleResolved && (
+            <button type="button" className="eon-buttonish eon-resolve-button" onClick={onToggleResolved}
+              aria-label={resolved ? "Reopen comment" : "Resolve comment"} title={resolved ? "Reopen" : "Resolve"}
+              style={{ color: resolved ? c.brand : c.muted }}>
+              <Check size={14} />
+            </button>
+          )}
+        </div>
         {comment.body && <p style={{ color: c.secondary }}>{comment.body}</p>}
         {comment.image_url && (
           <a className="eon-comment-image" href={comment.image_url} target="_blank" rel="noreferrer"
@@ -1248,8 +1450,90 @@ function CommentBubble({ c, comment, currentUserId }) {
             <img src={comment.image_url} alt={comment.body || `Image shared by ${mine ? "you" : name}`} loading="lazy" />
           </a>
         )}
+        {comment.anchor && stateMismatch && !resolved && (
+          <button type="button" className="eon-buttonish eon-anchor-context" onClick={onJump}
+            title="Show the prototype exactly as it looked when this pin was placed"
+            style={{ borderColor: c.border, background: c.raised, color: c.secondary }}>
+            <MapPin size={11} /> {anchorStateLabel(comment.anchor)}
+          </button>
+        )}
+        {resolved && <span className="eon-resolved-label" style={{ color: c.muted }}><Check size={11} /> Resolved</span>}
       </div>
     </article>
+  );
+}
+
+/* ---- Pins on the canvas: dots over the iframe at each anchored comment ---- */
+function PinOverlay({ c, pins, pendingAnchor, rects, vp, frameScale, activeAnchorId, onPickPin }) {
+  const place = (anchor) => {
+    const point = anchorPoint(anchor, rects, vp.w, vp.h);
+    if (!point) return null;
+    // Clamp inside the frame so pins on scrolled-away elements stay reachable.
+    return {
+      left: Math.min(Math.max(point.x * frameScale, 10), vp.w * frameScale - 10),
+      top: Math.min(Math.max(point.y * frameScale, 10), vp.h * frameScale - 10),
+    };
+  };
+  const pendingPoint = pendingAnchor ? place(pendingAnchor) : null;
+  return (
+    <div className="eon-pin-overlay" aria-hidden={pins.length === 0 && !pendingPoint}>
+      {pins.map(({ comment, number }) => {
+        const point = place(comment.anchor);
+        if (!point) return null;
+        const active = comment.id === activeAnchorId;
+        return (
+          <button key={comment.id} type="button" data-pin-id={comment.id} className="eon-buttonish eon-canvas-pin"
+            onClick={() => onPickPin(comment)}
+            aria-label={`Comment pin ${number}`} aria-pressed={active}
+            style={{ left: point.left, top: point.top, background: active ? c.brand : c.panel, color: active ? "#fff" : c.brand, borderColor: c.brand, transform: active ? "scale(1.15)" : undefined }}>
+            {number}
+          </button>
+        );
+      })}
+      {pendingPoint && (
+        <span className="eon-canvas-pin eon-canvas-pin-pending" style={{ left: pendingPoint.left, top: pendingPoint.top, background: c.brand, color: "#fff", borderColor: c.brand }}>
+          <MapPin size={12} />
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ---- Leader line from the selected comment card to its pin on the canvas ---- */
+function AnchorLeaderLine({ c, commentId }) {
+  const [line, setLine] = useState(null);
+  useEffect(() => {
+    if (!commentId) { setLine(null); return undefined; }
+    // Both endpoints move independently (pin tracks its element, card scrolls
+    // in the thread), so measure every frame while a comment is selected —
+    // two getBoundingClientRect calls, only while a line is on screen.
+    let frame = 0;
+    const measure = () => {
+      const pin = document.querySelector(`[data-pin-id="${commentId}"]`);
+      const card = document.querySelector(`[data-comment-id="${commentId}"]`);
+      if (!pin || !card) {
+        setLine(null);
+      } else {
+        const pinRect = pin.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        const next = {
+          x1: pinRect.left + pinRect.width / 2, y1: pinRect.top + pinRect.height / 2,
+          x2: cardRect.left, y2: cardRect.top + Math.min(cardRect.height / 2, 26),
+        };
+        setLine((current) => (
+          current && ["x1", "y1", "x2", "y2"].every((key) => current[key] === next[key]) ? current : next));
+      }
+      frame = requestAnimationFrame(measure);
+    };
+    frame = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(frame);
+  }, [commentId]);
+  if (!line) return null;
+  return (
+    <svg className="eon-leader-line" aria-hidden="true">
+      <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} stroke={c.brand} strokeWidth="1.5" strokeDasharray="5 4" />
+      <circle cx={line.x2} cy={line.y2} r="3" fill={c.brand} />
+    </svg>
   );
 }
 

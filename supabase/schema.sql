@@ -77,6 +77,12 @@ create table if not exists public.comments (
   body text not null,
   -- Public URL of an attached screenshot in the `media` bucket, under comments/.
   image_url text,
+  -- Pin on the rendered prototype:
+  -- { selector, rel_x, rel_y, x_pct, y_pct, viewport, args, theme }
+  anchor jsonb,
+  -- Resolution is a team action (see set_comment_resolved below).
+  resolved_at timestamptz,
+  resolved_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   -- An attachment is a complete comment on its own, so the body may be empty
@@ -401,6 +407,21 @@ create policy "author update comments" on public.comments for update
   with check (author_id = auth.uid() and team_id = public.current_team_id());
 create policy "author delete comments" on public.comments for delete
   using ((author_id = auth.uid() or public.is_admin()) and team_id = public.current_team_id());
+
+-- Row updates are author-only, but resolving is a team action, so it goes
+-- through a definer function that only touches the resolved fields.
+create or replace function public.set_comment_resolved(comment_id uuid, resolved boolean)
+returns setof public.comments
+language sql security definer set search_path = public as $$
+  update public.comments
+     set resolved_at = case when resolved then now() else null end,
+         resolved_by = case when resolved then auth.uid() else null end
+   where id = comment_id and team_id = public.current_team_id()
+  returning *;
+$$;
+
+revoke all on function public.set_comment_resolved(uuid, boolean) from anon, public;
+grant execute on function public.set_comment_resolved(uuid, boolean) to authenticated;
 
 -- activity: teammates read; rows are written only by the projects trigger.
 create policy "team read activity" on public.activity for select

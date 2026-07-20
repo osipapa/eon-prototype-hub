@@ -69,6 +69,29 @@ const initialComments = [
     author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
   },
   {
+    id: "comment-anchored",
+    project_id: "preview-dashboard",
+    author_id: "teammate-1",
+    body: "This table needs more breathing room above it.",
+    // Placed against the preview's default canvas state (laptop / dark / pro).
+    anchor: {
+      selector: "main", rel_x: 0.5, rel_y: 0.55, x_pct: 60, y_pct: 55,
+      viewport: "laptop", args: { plan: "pro", state: "default" }, theme: "dark",
+    },
+    created_at: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+    author: { id: "teammate-1", full_name: "Alex Chen", email: "alex@example.com" },
+  },
+  {
+    id: "comment-resolved",
+    project_id: "preview-dashboard",
+    author_id: "preview-user",
+    body: "Logo was fuzzy on retina — swapped the asset.",
+    resolved_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    resolved_by: "teammate-1",
+    created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
+  },
+  {
     id: "comment-3",
     project_id: "preview-dashboard",
     author_id: "teammate-2",
@@ -129,16 +152,22 @@ export default function WorkspacePreview() {
         onNewProject={async () => {}}
         onDeleteProject={(id) => setProjects((items) => items.filter((item) => item.id !== id))}
         onReorder={() => {}}
-        onCreateComment={async (projectId, body, imageUrl = null) => {
+        onCreateComment={async (projectId, body, imageUrl = null, anchor = null) => {
           setComments((items) => [...items, {
             id: `preview-${Date.now()}`,
             project_id: projectId,
             author_id: "preview-user",
             body,
             image_url: imageUrl,
+            anchor,
             created_at: new Date().toISOString(),
             author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
           }]);
+        }}
+        onResolveComment={async (commentId, resolved) => {
+          setComments((items) => items.map((item) => item.id === commentId
+            ? { ...item, resolved_at: resolved ? new Date().toISOString() : null, resolved_by: resolved ? "preview-user" : null }
+            : item));
         }}
         onOpenAdmin={() => {}}
         onSignOut={() => {}}

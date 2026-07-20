@@ -336,6 +336,21 @@ button.eon-save-state { cursor: pointer; }
 .eon-comment-meta time { font-size: 11px; font-variant-numeric: tabular-nums; }
 .eon-pending-label { margin-left: auto; font-size: 10px; }
 .eon-comment-body p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.eon-comment-filter { display: flex; gap: 2px; flex: 0 0 auto; padding: 0 12px; border-bottom: 1px solid; }
+.eon-comment-filter-tab { padding: 9px 10px; border: 0; border-bottom: 2px solid transparent; background: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+.eon-comment-filter-tab span { margin-left: 3px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.eon-pin-dot { display: grid; width: 18px; height: 18px; flex: 0 0 auto; place-items: center; padding: 0; border: 0; border-radius: 999px; font-size: 10px; font-weight: 700; cursor: pointer; }
+.eon-resolve-button { display: grid; width: 22px; height: 22px; margin-left: auto; place-items: center; padding: 0; border: 0; background: none; border-radius: 6px; cursor: pointer; }
+.eon-comment:not(:hover) .eon-resolve-button:not([aria-label="Reopen comment"]):not(:focus-visible) { opacity: 0; }
+.eon-resolved-label { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; }
+.eon-anchor-context { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 4px 9px; border: 1px solid; border-radius: 999px; font-size: 11px; cursor: pointer; }
+.eon-composer-pin { display: flex; align-items: center; gap: 7px; width: fit-content; max-width: 100%; margin-bottom: 8px; padding: 5px 6px 5px 5px; border: 1px solid; border-radius: 999px; font-size: 12px; }
+.eon-composer-pin .eon-text-button { display: grid; place-items: center; padding: 2px; border: 0; background: none; cursor: pointer; }
+.eon-pin-overlay { position: absolute; inset: 0; pointer-events: none; }
+.eon-canvas-pin { position: absolute; display: grid; width: 24px; height: 24px; place-items: center; padding: 0; border: 1.5px solid; border-radius: 999px 999px 999px 3px; translate: -50% -100%; font-size: 11px; font-weight: 700; cursor: pointer; pointer-events: auto; box-shadow: 0 2px 8px rgba(0,0,0,.25); transition: transform 120ms var(--ease-out); }
+.eon-canvas-pin-pending { animation: eon-pin-drop 240ms var(--ease-out); }
+@keyframes eon-pin-drop { from { translate: -50% -140%; opacity: 0; } to { translate: -50% -100%; opacity: 1; } }
+.eon-leader-line { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 60; }
 .eon-comment-image { display: block; width: fit-content; max-width: 100%; margin-top: 6px; overflow: hidden; border: 1px solid; border-radius: 10px; }
 .eon-comment-image img { display: block; max-width: 100%; max-height: 280px; object-fit: contain; }
 .eon-comment-composer { flex: 0 0 auto; padding: 12px; border-top: 1px solid; }
