@@ -440,7 +440,7 @@
     <pre class="p-block" id="p1-json"></pre>
     <div class="p-head"><b>Mixpanel · Trip Review Details Added</b><span id="p2-status">waiting</span></div>
     <pre class="p-block" id="p2-json"></pre>
-    <div class="p-route"><b>Routing:</b> Trip Reviewed fires on the star tap so every rating is counted · rating 5 fires D5 public review ask · rating 1 to 3 or an unresolved support issue opens triage · category scores and survey answers roll up to the owner scorecard</div>
+    <div class="p-route"><b>Routing:</b> Trip Reviewed fires on the star tap so every rating is counted · rating 4 or 5 fires D5 public review ask · rating 1 to 3 or an unresolved support issue opens triage · category scores and survey answers roll up to the owner scorecard</div>
   </div>
 
   <nav class="tabbar">
@@ -664,7 +664,7 @@
       document.getElementById('end-high').classList.toggle('hidden', !(state.done && r >= 4));
       document.getElementById('end-low').classList.toggle('hidden', !(state.done && r <= 3));
       document.getElementById('high-followup').classList.toggle('hidden', state.resolved !== 'no');
-      document.getElementById('d5-ask').classList.toggle('hidden', r !== 5 || state.resolved === 'no'); // no public ask over an open issue
+      document.getElementById('d5-ask').classList.toggle('hidden', r < 4 || state.resolved === 'no'); // 4 and 5 stars get the ask; never over an open issue
 
       // payload overlay
       var p = document.getElementById('payload');
