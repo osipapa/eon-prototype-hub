@@ -1,18 +1,14 @@
 import { Component, lazy, Suspense } from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./lib/auth";
+import LoadingScreen from "./components/LoadingScreen";
 
 const Login = lazy(() => import("./routes/Login"));
 const Hub = lazy(() => import("./routes/Hub"));
 const Admin = lazy(() => import("./routes/Admin"));
 
 function Splash({ children }) {
-  return (
-    <div className="eon-app-splash" role="status" aria-live="polite">
-      <span className="eon-app-spinner" aria-hidden="true" />
-      <span>{children}</span>
-    </div>
-  );
+  return <LoadingScreen>{children}</LoadingScreen>;
 }
 
 class AppErrorBoundary extends Component {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LoadingScreen from "../components/LoadingScreen";
 import PrototypeWorkspace from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import { validTutorialPersona } from "../features/onboarding/tutorial";
@@ -118,6 +119,8 @@ const initialActivity = [
 
 export default function WorkspacePreview() {
   const tutorialParams = new URLSearchParams(window.location.search);
+  // ?workspace-preview&loading — QA view of the app loading screen.
+  if (tutorialParams.has("loading")) return <LoadingScreen>Loading prototypes…</LoadingScreen>;
   const [projects, setProjects] = useState(initialProjects);
   const [comments, setComments] = useState(initialComments);
   const [assets, setAssets] = useState({});

@@ -72,6 +72,18 @@
 .eon-app-splash, .eon-app-error { display: grid; min-height: 100vh; min-height: 100dvh; place-items: center; background: #000; color: #9094A5; }
 .eon-app-splash { grid-auto-flow: column; gap: 10px; font-size: 13px; }
 .eon-app-spinner { width: 16px; height: 16px; border: 2px solid rgba(237, 210, 246, .2); border-top-color: #EDD2F6; border-radius: 50%; animation: eon-spin 800ms linear infinite; }
+.eon-loading-screen { display: flex; min-height: 100vh; min-height: 100dvh; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #000; color: #fff; font-family: 'DM Sans', sans-serif; animation: eon-loading-fade 220ms ease-out; }
+.eon-loading-mark { position: relative; display: grid; width: 64px; height: 64px; place-items: center; border-radius: 20px; background: #0E0F13; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); animation: eon-loading-breathe 2.2s ease-in-out infinite; }
+.eon-loading-mark::before { content: ""; position: absolute; inset: -9px; border: 1px solid rgba(237, 210, 246, .3); border-radius: 25px; animation: eon-loading-ring 2.2s ease-out infinite; }
+.eon-loading-mark img { width: 34px; height: 34px; object-fit: contain; }
+.eon-loading-screen strong { font-size: 15px; font-weight: 600; letter-spacing: .2px; }
+.eon-loading-bar { width: 132px; height: 3px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.08); }
+.eon-loading-bar span { display: block; width: 42%; height: 100%; border-radius: 999px; background: #EDD2F6; animation: eon-loading-slide 1.15s ease-in-out infinite; }
+.eon-loading-status { font-size: 12px; color: #9094A5; }
+@keyframes eon-loading-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes eon-loading-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+@keyframes eon-loading-ring { 0% { transform: scale(.86); opacity: 0; } 45% { opacity: 1; } 100% { transform: scale(1.22); opacity: 0; } }
+@keyframes eon-loading-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(350%); } }
 .eon-app-error { padding: 24px; }
 .eon-app-error > div { width: min(420px, 100%); padding: 28px; border-radius: 18px; background: #121216; box-shadow: var(--shadow-surface); text-align: center; }
 .eon-app-error span { color: #fff; font-size: 17px; font-weight: 650; }
@@ -523,7 +535,7 @@ button.eon-save-state { cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   .eon-modal { transition-duration: 0ms; transform: none; }
-  .eon-spin, .eon-app-spinner { animation: none; }
+  .eon-spin, .eon-app-spinner, .eon-loading-mark, .eon-loading-mark::before, .eon-loading-bar span { animation: none; }
   .eon-toast { animation: none; }
   .eon-live-dot { animation: none; }
 }

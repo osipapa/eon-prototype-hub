@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { cacheEonLogo } from "../lib/branding";
+import LoadingScreen from "../components/LoadingScreen";
 import PrototypeHub from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import {
@@ -500,11 +501,7 @@ export default function Hub() {
         </div>
       );
     }
-    return (
-      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#000", color: "#9094A5", fontFamily: "'DM Sans',sans-serif" }}>
-        Loading prototypes…
-      </div>
-    );
+    return <LoadingScreen>Loading prototypes…</LoadingScreen>;
   }
 
   const active = projects.find((project) => project.slug === slug);
