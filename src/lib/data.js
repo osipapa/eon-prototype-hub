@@ -36,10 +36,13 @@ export function subscribeProjects(cb) {
 }
 
 /* Comments ---------------------------------------------------------------*/
+const COMMENT_SELECT =
+  "*, author:profiles!comments_author_id_fkey(id,email,full_name), reactions:comment_reactions(emoji,profile_id)";
+
 export async function listComments() {
   const { data, error } = await supabase
     .from("comments")
-    .select("*, author:profiles!comments_author_id_fkey(id,email,full_name)")
+    .select(COMMENT_SELECT)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return data;
@@ -49,10 +52,23 @@ export async function createComment(comment) {
   const { data, error } = await supabase
     .from("comments")
     .insert(comment)
-    .select("*, author:profiles!comments_author_id_fkey(id,email,full_name)")
+    .select(COMMENT_SELECT)
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function addCommentReaction(reaction) {
+  const { error } = await supabase.from("comment_reactions").insert(reaction);
+  if (error) throw error;
+}
+
+export async function removeCommentReaction(commentId, profileId, emoji) {
+  const { error } = await supabase
+    .from("comment_reactions")
+    .delete()
+    .match({ comment_id: commentId, profile_id: profileId, emoji });
+  if (error) throw error;
 }
 
 // Resolving is a team action, not an author edit, so it goes through an RPC
@@ -69,6 +85,7 @@ export function subscribeComments(cb) {
   const ch = supabase
     .channel("comments-changes")
     .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, cb)
+    .on("postgres_changes", { event: "*", schema: "public", table: "comment_reactions" }, cb)
     .subscribe();
   return () => supabase.removeChannel(ch);
 }

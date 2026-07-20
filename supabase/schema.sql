@@ -408,6 +408,39 @@ create policy "author update comments" on public.comments for update
 create policy "author delete comments" on public.comments for delete
   using ((author_id = auth.uid() or public.is_admin()) and team_id = public.current_team_id());
 
+-- Emoji reactions on comments. One row per person per emoji per comment;
+-- toggling off deletes the row.
+create table if not exists public.comment_reactions (
+  id uuid primary key default gen_random_uuid(),
+  team_id uuid not null references public.teams(id) on delete cascade,
+  comment_id uuid not null references public.comments(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  emoji text not null check (char_length(emoji) between 1 and 16),
+  created_at timestamptz not null default now(),
+  unique (comment_id, profile_id, emoji)
+);
+
+create index if not exists comment_reactions_comment_idx
+  on public.comment_reactions (comment_id);
+
+alter table public.comment_reactions enable row level security;
+
+create policy "team read reactions" on public.comment_reactions for select
+  using (team_id = public.current_team_id());
+create policy "own insert reactions" on public.comment_reactions for insert
+  with check (
+    team_id = public.current_team_id()
+    and profile_id = auth.uid()
+    and exists (
+      select 1 from public.comments cm
+      where cm.id = comment_id and cm.team_id = public.current_team_id()
+    )
+  );
+create policy "own delete reactions" on public.comment_reactions for delete
+  using (profile_id = auth.uid() and team_id = public.current_team_id());
+
+alter publication supabase_realtime add table public.comment_reactions;
+
 -- Row updates are author-only, but resolving is a team action, so it goes
 -- through a definer function that only touches the resolved fields.
 create or replace function public.set_comment_resolved(comment_id uuid, resolved boolean)

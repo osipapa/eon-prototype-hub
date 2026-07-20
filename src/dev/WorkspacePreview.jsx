@@ -80,6 +80,11 @@ const initialComments = [
     },
     created_at: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
     author: { id: "teammate-1", full_name: "Alex Chen", email: "alex@example.com" },
+    reactions: [
+      { emoji: "👍", profile_id: "teammate-2" },
+      { emoji: "👍", profile_id: "preview-user" },
+      { emoji: "🔥", profile_id: "teammate-2" },
+    ],
   },
   {
     id: "comment-resolved",
@@ -168,6 +173,18 @@ export default function WorkspacePreview() {
           setComments((items) => items.map((item) => item.id === commentId
             ? { ...item, resolved_at: resolved ? new Date().toISOString() : null, resolved_by: resolved ? "preview-user" : null }
             : item));
+        }}
+        onToggleReaction={async (commentId, emoji) => {
+          setComments((items) => items.map((item) => {
+            if (item.id !== commentId) return item;
+            const mine = (item.reactions || []).some((r) => r.profile_id === "preview-user" && r.emoji === emoji);
+            return {
+              ...item,
+              reactions: mine
+                ? (item.reactions || []).filter((r) => !(r.profile_id === "preview-user" && r.emoji === emoji))
+                : [...(item.reactions || []), { emoji, profile_id: "preview-user" }],
+            };
+          }));
         }}
         onOpenAdmin={() => {}}
         onSignOut={() => {}}

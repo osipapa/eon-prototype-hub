@@ -11,7 +11,7 @@ import {
   ExternalLink, History, ImagePlus, LayoutGrid, Link2, Loader2, LogOut,
   Pin, Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
-  PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, Square, Sun,
+  PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, SmilePlus, Square, Sun,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
@@ -40,7 +40,7 @@ export default function PrototypeWorkspace({
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
   onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder,
-  onCreateComment, onResolveComment, onOpenAdmin, onSignOut,
+  onCreateComment, onResolveComment, onToggleReaction, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
 }) {
   const [hubTheme, setHubTheme] = useStoredState("eon-hub-theme", "dark");
@@ -77,6 +77,7 @@ export default function PrototypeWorkspace({
   const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false, compactControls: false });
   const [anchorMode, setAnchorMode] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState(null);
+  const [ringOpen, setRingOpen] = useState(false);
   const [anchorRects, setAnchorRects] = useState({});
   const [activeAnchorId, setActiveAnchorId] = useState(null);
   const frameRef = useRef(null);
@@ -243,8 +244,8 @@ export default function PrototypeWorkspace({
           viewport, args, theme: protoTheme,
         });
         setAnchorMode(false);
-        setInspectorTab("comments");
-        setInspectorOpen(true);
+        // The quick-comment ring opens at the pin; "Write…" hands off to the composer.
+        setRingOpen(true);
       }
     };
     window.addEventListener("message", onMessage);
@@ -258,11 +259,37 @@ export default function PrototypeWorkspace({
   const canPlacePin = view === "stories" && layout === "single" && !(compare && !breakpoints.noCompare);
   useEffect(() => { if (!canPlacePin) setAnchorMode(false); }, [canPlacePin]);
   useEffect(() => {
-    if (!anchorMode) return undefined;
-    const onKey = (event) => { if (event.key === "Escape") setAnchorMode(false); };
+    if (!anchorMode && !ringOpen) return undefined;
+    const onKey = (event) => {
+      if (event.key !== "Escape") return;
+      setAnchorMode(false);
+      if (ringOpen) { setRingOpen(false); setPendingAnchor(null); }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [anchorMode]);
+  }, [anchorMode, ringOpen]);
+
+  // Ring choices: post the preset instantly at the pin, or hand off to the composer.
+  const quickComment = (body) => {
+    const anchor = pendingAnchor;
+    setRingOpen(false);
+    setPendingAnchor(null);
+    Promise.resolve(onCreateComment(story.id, body, null, anchor)).catch(() => {
+      // Couldn't post — keep the pin and fall back to the composer, which has error UI.
+      setPendingAnchor(anchor);
+      setInspectorTab("comments");
+      setInspectorOpen(true);
+    });
+  };
+  const writeComment = () => {
+    setRingOpen(false);
+    setInspectorTab("comments");
+    setInspectorOpen(true);
+  };
+  const cancelRing = () => {
+    setRingOpen(false);
+    setPendingAnchor(null);
+  };
 
   // A pending pin describes one exact canvas state; changing state discards it.
   useEffect(() => {
@@ -681,6 +708,8 @@ export default function PrototypeWorkspace({
                       <PinOverlay
                         c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects}
                         vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId}
+                        ringOpen={ringOpen} onQuickComment={quickComment}
+                        onWriteComment={writeComment} onCancelRing={cancelRing}
                         onPickPin={(comment) => {
                           setActiveAnchorId((current) => (current === comment.id ? null : comment.id));
                           setInspectorTab("comments");
@@ -727,10 +756,11 @@ export default function PrototypeWorkspace({
           tab={inspectorTab} setTab={setInspectorTab}
           onCreateComment={onCreateComment} patch={patch}
           anchors={{
-            pinNumberById, activeAnchorId, setActiveAnchorId, onResolveComment, jumpToAnchor,
-            anchorMode, setAnchorMode, canPlacePin, pendingAnchor,
+            pinNumberById, activeAnchorId, setActiveAnchorId, onResolveComment, onToggleReaction,
+            jumpToAnchor, anchorMode, setAnchorMode, canPlacePin, pendingAnchor,
             clearPendingAnchor: () => setPendingAnchor(null),
             canvasState: { viewport, args, theme: protoTheme },
+            currentUserId: profile?.id,
           }}
           editLinear={editLinear} setEditLinear={setEditLinear}
           sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
@@ -1260,6 +1290,16 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
     }
   };
 
+  const toggleReaction = async (comment, emoji) => {
+    if (!anchors.onToggleReaction) return;
+    setError("");
+    try {
+      await anchors.onToggleReaction(comment.id, emoji);
+    } catch (err) {
+      setError(err.message || "Couldn't save the reaction.");
+    }
+  };
+
   // The preview is an object URL, so it has to be released by hand.
   useEffect(() => () => { if (attachment) URL.revokeObjectURL(attachment.previewUrl); }, [attachment]);
 
@@ -1355,7 +1395,8 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
             stateMismatch={Boolean(comment.anchor && anchors.canvasState
               && !anchorMatchesState(comment.anchor, anchors.canvasState.viewport, anchors.canvasState.args, anchors.canvasState.theme))}
             onJump={() => anchors.jumpToAnchor?.(comment)}
-            onToggleResolved={anchors.onResolveComment ? () => toggleResolved(comment) : null} />
+            onToggleResolved={anchors.onResolveComment ? () => toggleResolved(comment) : null}
+            onToggleReaction={anchors.onToggleReaction ? (emoji) => toggleReaction(comment, emoji) : null} />
         ))}
       </div>
       <div className="eon-comment-composer" style={{ borderColor: c.border }}
@@ -1411,14 +1452,28 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
   );
 }
 
+const REACTION_EMOJI = ["👍", "❤️", "🔥", "🎉", "👀", "😕"];
+
 function CommentBubble({
   c, comment, currentUserId, pinNumber, active, onSelect, stateMismatch, onJump, onToggleResolved,
+  onToggleReaction,
 }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   const author = comment.author || {};
   const name = author.full_name || author.email?.split("@")[0] || "Teammate";
   const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const mine = comment.author_id === currentUserId;
   const resolved = Boolean(comment.resolved_at);
+  const reactionGroups = useMemo(() => {
+    const groups = new Map();
+    (comment.reactions || []).forEach((reaction) => {
+      const group = groups.get(reaction.emoji) || { emoji: reaction.emoji, count: 0, mine: false };
+      group.count += 1;
+      if (reaction.profile_id === currentUserId) group.mine = true;
+      groups.set(reaction.emoji, group);
+    });
+    return [...groups.values()];
+  }, [comment.reactions, currentUserId]);
   return (
     <article className="eon-comment" data-comment-id={comment.id}
       style={{ opacity: comment.pending ? 0.6 : resolved ? 0.75 : 1, boxShadow: active ? `inset 2px 0 0 ${c.brand}` : "none" }}>
@@ -1457,14 +1512,83 @@ function CommentBubble({
             <Pin size={11} /> {anchorStateLabel(comment.anchor)}
           </button>
         )}
+        {(reactionGroups.length > 0 || (onToggleReaction && !comment.pending)) && (
+          <div className="eon-reactions">
+            {reactionGroups.map((group) => (
+              <button key={group.emoji} type="button" className="eon-buttonish eon-reaction-chip"
+                onClick={onToggleReaction ? () => onToggleReaction(group.emoji) : undefined}
+                aria-pressed={group.mine} aria-label={`${group.emoji} ${group.count} — toggle reaction`}
+                style={{ borderColor: group.mine ? c.brand : c.border, background: group.mine ? c.active : c.raised, color: c.secondary }}>
+                {group.emoji} <span style={{ color: group.mine ? c.brand : c.muted }}>{group.count}</span>
+              </button>
+            ))}
+            {onToggleReaction && !comment.pending && (
+              <button type="button" className="eon-buttonish eon-reaction-add" onClick={() => setPickerOpen((open) => !open)}
+                aria-label="Add reaction" aria-expanded={pickerOpen}
+                style={{ borderColor: c.border, background: c.raised, color: c.muted }}>
+                <SmilePlus size={12} />
+              </button>
+            )}
+            {pickerOpen && (
+              <div className="eon-reaction-picker" role="menu" style={{ background: c.panel, borderColor: c.border, boxShadow: "0 8px 24px rgba(0,0,0,.3)" }}>
+                {REACTION_EMOJI.map((emoji) => (
+                  <button key={emoji} type="button" role="menuitem" className="eon-buttonish"
+                    onClick={() => { onToggleReaction(emoji); setPickerOpen(false); }} aria-label={`React with ${emoji}`}>
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {resolved && <span className="eon-resolved-label" style={{ color: c.muted }}><Check size={11} /> Resolved</span>}
       </div>
     </article>
   );
 }
 
+/* ---- Quick-comment ring: the most common feedback, one click after pinning.
+   Emoji options post as-is; labeled options post their body; Write… falls
+   through to the composer. ---- */
+const QUICK_PIN_OPTIONS = [
+  { key: "copy",  icon: "✏️", label: "Change copy", body: "✏️ Change copy" },
+  { key: "slop",  icon: "🤖", label: "AI slop", body: "🤖 AI slop — needs a human pass" },
+  { key: "up",    icon: "👍", label: "Like", body: "👍" },
+  { key: "love",  icon: "❤️", label: "Love", body: "❤️" },
+  { key: "fire",  icon: "🔥", label: "Fire", body: "🔥" },
+  { key: "hmm",   icon: "😕", label: "Not sure", body: "😕" },
+  { key: "write", icon: null, label: "Write…", write: true },
+];
+
+function PinRing({ c, x, y, onPick, onWrite, onCancel }) {
+  const radius = 74;
+  return (
+    <div className="eon-pin-ring" style={{ left: x, top: y }} role="menu" aria-label="Quick comment">
+      {QUICK_PIN_OPTIONS.map((option, index) => {
+        const angle = ((index * 360) / QUICK_PIN_OPTIONS.length - 90) * (Math.PI / 180);
+        return (
+          <button key={option.key} type="button" role="menuitem" className="eon-buttonish eon-pin-ring-item"
+            style={{ left: Math.cos(angle) * radius, top: Math.sin(angle) * radius, background: c.panel, borderColor: c.border, color: c.text, animationDelay: `${index * 18}ms` }}
+            onClick={() => (option.write ? onWrite() : onPick(option.body))}
+            aria-label={option.label}>
+            {option.icon || <MessageSquare size={15} />}
+            <span className="eon-ring-label" style={{ background: c.panel, borderColor: c.border, color: c.secondary }}>{option.label}</span>
+          </button>
+        );
+      })}
+      <button type="button" className="eon-buttonish eon-pin-ring-center" onClick={onCancel} aria-label="Cancel pin"
+        style={{ background: c.raised, borderColor: c.border, color: c.secondary }}>
+        <X size={13} />
+      </button>
+    </div>
+  );
+}
+
 /* ---- Pins on the canvas: dots over the iframe at each anchored comment ---- */
-function PinOverlay({ c, pins, pendingAnchor, rects, vp, frameScale, activeAnchorId, onPickPin }) {
+function PinOverlay({
+  c, pins, pendingAnchor, rects, vp, frameScale, activeAnchorId, onPickPin,
+  ringOpen, onQuickComment, onWriteComment, onCancelRing,
+}) {
   const place = (anchor) => {
     const point = anchorPoint(anchor, rects, vp.w, vp.h);
     if (!point) return null;
@@ -1494,6 +1618,13 @@ function PinOverlay({ c, pins, pendingAnchor, rects, vp, frameScale, activeAncho
         <span className="eon-canvas-pin eon-canvas-pin-pending" style={{ left: pendingPoint.left, top: pendingPoint.top, background: c.brand, color: "#fff", borderColor: c.brand }}>
           <Pin size={12} />
         </span>
+      )}
+      {pendingPoint && ringOpen && (
+        <>
+          <div className="eon-ring-backdrop" onClick={onCancelRing} aria-hidden="true" />
+          <PinRing c={c} x={pendingPoint.left} y={pendingPoint.top}
+            onPick={onQuickComment} onWrite={onWriteComment} onCancel={onCancelRing} />
+        </>
       )}
     </div>
   );

@@ -10,7 +10,7 @@ import {
 import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, subscribeAssets, listComments, createComment, subscribeComments,
-  setCommentResolved, listActivity, subscribeActivity,
+  setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
 } from "../lib/data";
 import { joinTeamPresence } from "../lib/presence";
 
@@ -435,6 +435,28 @@ export default function Hub() {
     }
   }
 
+  async function onToggleReaction(commentId, emoji) {
+    const comment = comments.find((item) => item.id === commentId);
+    if (!comment || String(commentId).startsWith("pending-")) return;
+    const mine = (comment.reactions || []).some((item) => item.profile_id === user.id && item.emoji === emoji);
+    const before = comments;
+    setComments((items) => items.map((item) => item.id === commentId
+      ? {
+        ...item,
+        reactions: mine
+          ? (item.reactions || []).filter((r) => !(r.profile_id === user.id && r.emoji === emoji))
+          : [...(item.reactions || []), { emoji, profile_id: user.id }],
+      }
+      : item));
+    try {
+      if (mine) await removeCommentReaction(commentId, user.id, emoji);
+      else await addCommentReaction({ team_id: profile.team_id, comment_id: commentId, profile_id: user.id, emoji });
+    } catch (error) {
+      setComments(before);
+      throw error;
+    }
+  }
+
   async function onDeleteProject(id) {
     const project = projects.find((item) => item.id === id);
     try {
@@ -516,6 +538,7 @@ export default function Hub() {
         onReorder={onReorder}
         onCreateComment={onCreateComment}
         onResolveComment={onResolveComment}
+        onToggleReaction={onToggleReaction}
         onOpenAdmin={() => navigate("/admin")}
         onSignOut={signOut}
       />
