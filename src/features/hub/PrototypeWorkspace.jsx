@@ -9,7 +9,7 @@ import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
   ExternalLink, History, ImagePlus, LayoutGrid, Link2, Loader2, LogOut,
-  MapPin, Maximize2, MessageSquare, Minus, Monitor, Laptop,
+  Pin, Maximize2, MessageSquare, Minus, Monitor, Laptop,
   MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
   PanelRightOpen, Pencil, Plus, Search, Send, Shield, SlidersHorizontal, Smartphone, Square, Sun,
   Tablet, Trash2, Upload, X,
@@ -1364,7 +1364,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
         onDrop={onDrop}>
         {anchors.pendingAnchor && (
           <div className="eon-composer-pin" style={{ borderColor: c.border, background: c.raised, color: c.secondary }}>
-            <span className="eon-pin-dot" style={{ background: c.brand, color: "#fff" }}><MapPin size={11} /></span>
+            <span className="eon-pin-dot" style={{ background: c.brand, color: "#fff" }}><Pin size={11} /></span>
             <span>Pinned · {anchorStateLabel(anchors.pendingAnchor)}</span>
             <button type="button" className="eon-buttonish eon-text-button" onClick={() => anchors.clearPendingAnchor?.()}
               aria-label="Remove pin" style={{ color: c.muted }}><X size={13} /></button>
@@ -1392,7 +1392,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
               aria-label={anchors.anchorMode ? "Cancel pin placement" : "Pin this comment to the prototype"}
               title={anchors.canPlacePin ? "Pin this comment to a spot on the prototype" : "Pins are placed in single view"}
               style={{ borderColor: anchors.anchorMode ? c.brand : c.border, background: c.panel, color: anchors.anchorMode ? c.brand : c.secondary, opacity: sending || !anchors.canPlacePin ? 0.5 : 1 }}>
-              <MapPin size={15} />
+              <Pin size={15} />
             </button>
           )}
           <button type="button" className="eon-buttonish eon-attach-button" onClick={() => fileInputRef.current?.click()}
@@ -1429,7 +1429,7 @@ function CommentBubble({
             <button type="button" className="eon-buttonish eon-pin-dot" onClick={onSelect}
               aria-label={`Pin ${pinNumber || ""} — show on the prototype`} aria-pressed={active}
               style={{ background: active ? c.brand : c.raised, color: active ? "#fff" : c.brand, border: `1px solid ${active ? c.brand : c.border}` }}>
-              {pinNumber || <MapPin size={10} />}
+              {pinNumber || <Pin size={10} />}
             </button>
           )}
           <strong>{mine ? "You" : name}</strong>
@@ -1454,7 +1454,7 @@ function CommentBubble({
           <button type="button" className="eon-buttonish eon-anchor-context" onClick={onJump}
             title="Show the prototype exactly as it looked when this pin was placed"
             style={{ borderColor: c.border, background: c.raised, color: c.secondary }}>
-            <MapPin size={11} /> {anchorStateLabel(comment.anchor)}
+            <Pin size={11} /> {anchorStateLabel(comment.anchor)}
           </button>
         )}
         {resolved && <span className="eon-resolved-label" style={{ color: c.muted }}><Check size={11} /> Resolved</span>}
@@ -1492,7 +1492,7 @@ function PinOverlay({ c, pins, pendingAnchor, rects, vp, frameScale, activeAncho
       })}
       {pendingPoint && (
         <span className="eon-canvas-pin eon-canvas-pin-pending" style={{ left: pendingPoint.left, top: pendingPoint.top, background: c.brand, color: "#fff", borderColor: c.brand }}>
-          <MapPin size={12} />
+          <Pin size={12} />
         </span>
       )}
     </div>
