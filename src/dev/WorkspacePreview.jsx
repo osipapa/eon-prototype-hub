@@ -88,6 +88,21 @@ const initialComments = [
     ],
   },
   {
+    id: "comment-anchored-mobile",
+    project_id: "preview-dashboard",
+    author_id: "teammate-2",
+    body: "Canceled rows read as disabled — can we soften this pill?",
+    // Pinned to the Hooli table row in the mobile layout — clicking this
+    // comment exercises the jump's state restore across viewport + theme.
+    anchor: {
+      selector: "div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > table:nth-of-type(1) > tbody:nth-of-type(1) > tr:nth-of-type(5)",
+      rel_x: 0.5, rel_y: 0.5, x_pct: 50, y_pct: 90,
+      viewport: "mobile", args: { plan: "pro", state: "default" }, theme: "dark",
+    },
+    created_at: new Date(Date.now() - 9 * 60 * 1000).toISOString(),
+    author: { id: "teammate-2", full_name: "Priya Nair", email: "priya@example.com" },
+  },
+  {
     id: "comment-resolved",
     project_id: "preview-dashboard",
     author_id: "preview-user",

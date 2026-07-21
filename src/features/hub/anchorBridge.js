@@ -7,11 +7,12 @@
    hub → prototype
      { eon:1, type:"eon-anchor-mode", on }        toggle pin-placement mode
      { eon:1, type:"eon-anchor-query", selectors } selectors to track
+     { eon:1, type:"eon-anchor-reveal", selector, doc_x, doc_y } scroll pin into view
    prototype → hub
      { eon:1, type:"eon-anchor-ready" }            bridge is live (iframe mounted)
-     { eon:1, type:"eon-anchor-click", selector, rel_x, rel_y, x_pct, y_pct }
+     { eon:1, type:"eon-anchor-click", selector, rel_x, rel_y, x_pct, y_pct, doc_x, doc_y }
      { eon:1, type:"eon-anchor-cancel" }           Esc pressed inside the iframe
-     { eon:1, type:"eon-anchor-rects", rects }     selector → {x,y,w,h} | null
+     { eon:1, type:"eon-anchor-rects", rects, scroll } selector → {x,y,w,h} | null
 
    Rects are iframe CSS pixels (the viewport space); the hub scales them by the
    canvas frame scale. The script is inert until the hub speaks to it. */
@@ -35,7 +36,7 @@ function sendRects(){
   queued=false;
   var rects={};
   watched.forEach(function(sel){var el=resolve(sel);rects[sel]=el?rectOf(el):null;});
-  post({type:"eon-anchor-rects",rects:rects});
+  post({type:"eon-anchor-rects",rects:rects,scroll:{x:pageXOffset,y:pageYOffset}});
 }
 function queueRects(){if(queued||!watched.length)return;queued=true;requestAnimationFrame(sendRects);}
 function highlight(el){
@@ -52,7 +53,8 @@ function onClick(e){
   var r=el.getBoundingClientRect();
   post({type:"eon-anchor-click",selector:selectorFor(el),
     rel_x:r.width?(e.clientX-r.left)/r.width:.5,rel_y:r.height?(e.clientY-r.top)/r.height:.5,
-    x_pct:innerWidth?e.clientX/innerWidth*100:0,y_pct:innerHeight?e.clientY/innerHeight*100:0});
+    x_pct:innerWidth?e.clientX/innerWidth*100:0,y_pct:innerHeight?e.clientY/innerHeight*100:0,
+    doc_x:e.pageX,doc_y:e.pageY});
 }
 function onKey(e){if(mode&&e.key==="Escape")post({type:"eon-anchor-cancel"});}
 function setMode(on){
@@ -65,6 +67,12 @@ addEventListener("message",function(e){
   if(!m||m.eon!==1)return;
   if(m.type==="eon-anchor-mode")setMode(!!m.on);
   else if(m.type==="eon-anchor-query"){watched=Array.isArray(m.selectors)?m.selectors:[];sendRects();}
+  else if(m.type==="eon-anchor-reveal"){
+    var el=resolve(m.selector);
+    if(el){var r=el.getBoundingClientRect();scrollTo(pageXOffset+r.left+r.width/2-innerWidth/2,pageYOffset+r.top+r.height/2-innerHeight/2);}
+    else if(typeof m.doc_x==="number"&&typeof m.doc_y==="number")scrollTo(m.doc_x-innerWidth/2,m.doc_y-innerHeight/2);
+    queueRects();
+  }
 });
 addEventListener("click",onClick,true);
 addEventListener("mousemove",onMove,true);
@@ -97,10 +105,14 @@ export function anchorMatchesState(anchor, viewport, args, theme) {
 }
 
 // Pin position in iframe CSS pixels: tracked element rect + stored offset,
-// else the stored viewport percentages.
-export function anchorPoint(anchor, rects, vpWidth, vpHeight) {
+// else the stored document point shifted by the prototype's current scroll,
+// else the stored viewport percentages (pre-scroll-capture pins).
+export function anchorPoint(anchor, rects, vpWidth, vpHeight, scroll) {
   const rect = anchor?.selector ? rects?.[anchor.selector] : null;
   if (rect) return { x: rect.x + rect.w * (anchor.rel_x ?? 0.5), y: rect.y + rect.h * (anchor.rel_y ?? 0.5), tracked: true };
+  if (Number.isFinite(anchor?.doc_x) && Number.isFinite(anchor?.doc_y) && scroll) {
+    return { x: anchor.doc_x - scroll.x, y: anchor.doc_y - scroll.y, tracked: false };
+  }
   if (Number.isFinite(anchor?.x_pct)) return { x: (anchor.x_pct / 100) * vpWidth, y: (anchor.y_pct / 100) * vpHeight, tracked: false };
   return null;
 }

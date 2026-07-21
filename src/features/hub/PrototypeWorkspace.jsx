@@ -89,7 +89,10 @@ export default function PrototypeWorkspace({
   const [ringOpen, setRingOpen] = useState(false);
   const [pinWriteOpen, setPinWriteOpen] = useState(false);
   const [anchorRects, setAnchorRects] = useState({});
+  const [anchorScroll, setAnchorScroll] = useState({ x: 0, y: 0 });
   const [activeAnchorId, setActiveAnchorId] = useState(null);
+  // Reveal waiting for the iframe to remount into the pin's canvas state.
+  const pendingRevealRef = useRef(null);
   const frameRef = useRef(null);
   const seenStorageKey = `eon-review-seen:${profile?.id || "anonymous"}`;
   const [seenComments, setSeenComments] = useState(() => readStoredJson(seenStorageKey));
@@ -242,8 +245,13 @@ export default function PrototypeWorkspace({
       if (message.type === "eon-anchor-ready") {
         postToFrame({ type: "eon-anchor-mode", on: anchorMode });
         postToFrame({ type: "eon-anchor-query", selectors: watchedSelectors });
+        if (pendingRevealRef.current) {
+          postToFrame(pendingRevealRef.current);
+          pendingRevealRef.current = null;
+        }
       } else if (message.type === "eon-anchor-rects") {
         setAnchorRects(message.rects || {});
+        setAnchorScroll(message.scroll || { x: 0, y: 0 });
       } else if (message.type === "eon-anchor-cancel") {
         setAnchorMode(false);
       } else if (message.type === "eon-anchor-click") {
@@ -251,6 +259,7 @@ export default function PrototypeWorkspace({
           selector: message.selector || null,
           rel_x: message.rel_x, rel_y: message.rel_y,
           x_pct: message.x_pct, y_pct: message.y_pct,
+          doc_x: message.doc_x, doc_y: message.doc_y,
           viewport, args, theme: protoTheme,
         });
         setAnchorMode(false);
@@ -313,9 +322,10 @@ export default function PrototypeWorkspace({
     setPendingAnchor((current) =>
       current && !anchorMatchesState(current, viewport, args, protoTheme) ? null : current);
   }, [viewport, args, protoTheme]);
-  useEffect(() => { setPendingAnchor(null); setActiveAnchorId(null); setAnchorMode(false); }, [story?.id]);
+  useEffect(() => { setPendingAnchor(null); setActiveAnchorId(null); setAnchorMode(false); pendingRevealRef.current = null; }, [story?.id]);
 
-  // Restore the exact canvas state a pin was placed in.
+  // Restore the exact canvas state a pin was placed in, then scroll the
+  // prototype so the pinned spot is actually on screen.
   const jumpToAnchor = (comment) => {
     const anchor = comment.anchor;
     if (!anchor) return;
@@ -324,6 +334,13 @@ export default function PrototypeWorkspace({
     if (["light", "dark"].includes(anchor.theme)) setProtoTheme(anchor.theme);
     if (anchor.args && story) setLiveArgs((current) => ({ ...current, [story.id]: { ...current[story.id], ...anchor.args } }));
     setActiveAnchorId(comment.id);
+    const reveal = { type: "eon-anchor-reveal", selector: anchor.selector || null, doc_x: anchor.doc_x, doc_y: anchor.doc_y };
+    // Theme/args changes remount the iframe (its key includes both) — the
+    // reveal has to wait for the new frame's "ready". Otherwise post now.
+    const willRemount = (anchor.theme && anchor.theme !== protoTheme)
+      || Object.entries(anchor.args || {}).some(([key, value]) => String(value) !== String(args[key]));
+    if (willRemount) pendingRevealRef.current = reveal;
+    else postToFrame(reveal);
   };
 
   useEffect(() => {
@@ -724,7 +741,7 @@ export default function PrototypeWorkspace({
                         allow="clipboard-read; clipboard-write"
                         style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
                       <PinOverlay
-                        c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects}
+                        c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects} scroll={anchorScroll}
                         vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId} currentUserId={profile?.id}
                         ringOpen={ringOpen} pinWriteOpen={pinWriteOpen} onQuickComment={quickComment}
                         onWriteComment={writeComment} onCancelRing={cancelRing}
@@ -1417,7 +1434,9 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
           <CommentBubble key={comment.id} c={c} comment={comment} currentUserId={profile?.id}
             pinNumber={anchors.pinNumberById?.[comment.id]}
             active={anchors.activeAnchorId === comment.id}
-            onSelect={() => anchors.setActiveAnchorId?.(anchors.activeAnchorId === comment.id ? null : comment.id)}
+            onSelect={() => (anchors.activeAnchorId === comment.id
+              ? anchors.setActiveAnchorId?.(null)
+              : anchors.jumpToAnchor?.(comment))}
             stateMismatch={Boolean(comment.anchor && anchors.canvasState
               && !anchorMatchesState(comment.anchor, anchors.canvasState.viewport, anchors.canvasState.args, anchors.canvasState.theme))}
             onJump={() => anchors.jumpToAnchor?.(comment)}
@@ -1502,7 +1521,10 @@ function CommentBubble({
   }, [comment.reactions, currentUserId]);
   return (
     <article className="eon-comment" data-comment-id={comment.id}
-      style={{ opacity: comment.pending ? 0.6 : resolved ? 0.75 : 1, boxShadow: active ? `inset 2px 0 0 ${c.brand}` : "none" }}>
+      onClick={comment.anchor && onJump
+        ? (event) => { if (!event.target.closest("button, a, textarea, input")) onJump(); }
+        : undefined}
+      style={{ opacity: comment.pending ? 0.6 : resolved ? 0.75 : 1, boxShadow: active ? `inset 2px 0 0 ${c.brand}` : "none", cursor: comment.anchor && onJump ? "pointer" : undefined }}>
       <div className="eon-comment-avatar" style={{ background: mine ? c.active : c.raised, color: mine ? c.brand : c.secondary }}>{initials || "T"}</div>
       <div className="eon-comment-body">
         <div className="eon-comment-meta">
@@ -1651,11 +1673,11 @@ function emojiOnlyBody(body) {
 
 /* ---- Pins on the canvas: dots over the iframe at each anchored comment ---- */
 function PinOverlay({
-  c, pins, pendingAnchor, rects, vp, frameScale, activeAnchorId, currentUserId, onPickPin,
+  c, pins, pendingAnchor, rects, scroll, vp, frameScale, activeAnchorId, currentUserId, onPickPin,
   ringOpen, pinWriteOpen, onQuickComment, onWriteComment, onCancelRing,
 }) {
   const place = (anchor) => {
-    const point = anchorPoint(anchor, rects, vp.w, vp.h);
+    const point = anchorPoint(anchor, rects, vp.w, vp.h, scroll);
     if (!point) return null;
     // Clamp inside the frame so pins on scrolled-away elements stay reachable.
     return {

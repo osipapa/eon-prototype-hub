@@ -5,6 +5,14 @@
 
 export const CHANGELOG = [
   {
+    date: "2026-07-21",
+    title: "Comments jump to their pin",
+    items: [
+      "🎯 Click a pinned comment (or its pin number) and the canvas jumps to it — device, theme, and controls restore, and the prototype scrolls the pinned spot into view.",
+      "📌 Pins now remember where in the page they were placed, so pins in scrolled or long prototypes land in the right section after a reload.",
+    ],
+  },
+  {
     date: "2026-07-20",
     title: "Pinned feedback, reactions, and quicker commenting",
     items: [
