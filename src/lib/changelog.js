@@ -11,6 +11,7 @@ export const CHANGELOG = [
       "🎯 Click a pinned comment (or its pin number) and the canvas jumps to it — device, theme, and controls restore, and the prototype scrolls the pinned spot into view.",
       "📌 Pins now remember where in the page they were placed, so pins in scrolled or long prototypes land in the right section after a reload.",
       "🩹 Fixed uploaded prototypes vanishing from the canvas after editing the Linear or Figma link (live-update events dropped the prototype HTML; a reload brought it back).",
+      "🖥️ Multi-screen prototypes: jumping to a comment pinned on another screen of a stepped flow now switches the prototype to that screen. Pins on inactive screens no longer float in the corner — they appear when their screen does.",
     ],
   },
   {

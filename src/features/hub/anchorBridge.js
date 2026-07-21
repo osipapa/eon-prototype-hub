@@ -7,12 +7,16 @@
    hub → prototype
      { eon:1, type:"eon-anchor-mode", on }        toggle pin-placement mode
      { eon:1, type:"eon-anchor-query", selectors } selectors to track
-     { eon:1, type:"eon-anchor-reveal", selector, doc_x, doc_y } scroll pin into view
+     { eon:1, type:"eon-anchor-reveal", selector, doc_x, doc_y } show + scroll pin into view
    prototype → hub
      { eon:1, type:"eon-anchor-ready" }            bridge is live (iframe mounted)
      { eon:1, type:"eon-anchor-click", selector, rel_x, rel_y, x_pct, y_pct, doc_x, doc_y }
      { eon:1, type:"eon-anchor-cancel" }           Esc pressed inside the iframe
-     { eon:1, type:"eon-anchor-rects", rects, scroll } selector → {x,y,w,h} | null
+     { eon:1, type:"eon-anchor-rects", rects, scroll } selector → {x,y,w,h} | {hidden} | null
+
+   Multi-screen prototypes (stepped flows toggling [hidden] or display:none)
+   report anchors on inactive screens as {hidden:true} — the hub draws no pin
+   for them — and reveal switches the screen before scrolling.
 
    Rects are iframe CSS pixels (the viewport space); the hub scales them by the
    canvas frame scale. The script is inert until the hub speaks to it. */
@@ -32,11 +36,33 @@ function selectorFor(el){
 }
 function resolve(sel){try{return sel?document.querySelector(sel):null;}catch(e){return null;}}
 function rectOf(el){var r=el.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height};}
+function shown(el){return el.getClientRects().length>0;}
 function sendRects(){
   queued=false;
   var rects={};
-  watched.forEach(function(sel){var el=resolve(sel);rects[sel]=el?rectOf(el):null;});
+  watched.forEach(function(sel){
+    var el=resolve(sel);
+    rects[sel]=el?(shown(el)?rectOf(el):{hidden:true}):null;
+  });
   post({type:"eon-anchor-rects",rects:rects,scroll:{x:pageXOffset,y:pageYOffset}});
+}
+/* Walk hidden ancestors and show them, hiding whichever sibling "screen" was
+   visible instead — supports stepped flows that switch screens with [hidden]
+   or inline display:none. */
+function forceShow(el){
+  for(var a=el;a&&a.nodeType===1;a=a.parentElement){
+    if(a.hasAttribute("hidden")){
+      var cls=a.classList[0],sibs=a.parentElement?a.parentElement.children:[];
+      for(var i=0;i<sibs.length;i++){
+        var s=sibs[i];
+        if(s===a||s.hasAttribute("hidden"))continue;
+        if(cls?s.classList.contains(cls):s.tagName===a.tagName)s.setAttribute("hidden","");
+      }
+      a.removeAttribute("hidden");
+    }else if(a.style.display==="none"){
+      a.style.display="";
+    }
+  }
 }
 function queueRects(){if(queued||!watched.length)return;queued=true;requestAnimationFrame(sendRects);}
 function highlight(el){
@@ -69,7 +95,11 @@ addEventListener("message",function(e){
   else if(m.type==="eon-anchor-query"){watched=Array.isArray(m.selectors)?m.selectors:[];sendRects();}
   else if(m.type==="eon-anchor-reveal"){
     var el=resolve(m.selector);
-    if(el){var r=el.getBoundingClientRect();scrollTo(pageXOffset+r.left+r.width/2-innerWidth/2,pageYOffset+r.top+r.height/2-innerHeight/2);}
+    if(el){
+      if(!shown(el))forceShow(el);
+      var r=el.getBoundingClientRect();
+      scrollTo(pageXOffset+r.left+r.width/2-innerWidth/2,pageYOffset+r.top+r.height/2-innerHeight/2);
+    }
     else if(typeof m.doc_x==="number"&&typeof m.doc_y==="number")scrollTo(m.doc_x-innerWidth/2,m.doc_y-innerHeight/2);
     queueRects();
   }
@@ -107,8 +137,11 @@ export function anchorMatchesState(anchor, viewport, args, theme) {
 // Pin position in iframe CSS pixels: tracked element rect + stored offset,
 // else the stored document point shifted by the prototype's current scroll,
 // else the stored viewport percentages (pre-scroll-capture pins).
+// An anchor on a hidden screen ({hidden:true}) gets no pin at all — jumping
+// to its comment switches the prototype to that screen first.
 export function anchorPoint(anchor, rects, vpWidth, vpHeight, scroll) {
   const rect = anchor?.selector ? rects?.[anchor.selector] : null;
+  if (rect?.hidden) return null;
   if (rect) return { x: rect.x + rect.w * (anchor.rel_x ?? 0.5), y: rect.y + rect.h * (anchor.rel_y ?? 0.5), tracked: true };
   if (Number.isFinite(anchor?.doc_x) && Number.isFinite(anchor?.doc_y) && scroll) {
     return { x: anchor.doc_x - scroll.x, y: anchor.doc_y - scroll.y, tracked: false };
