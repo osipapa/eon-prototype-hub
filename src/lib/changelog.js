@@ -10,6 +10,7 @@ export const CHANGELOG = [
     items: [
       "🎯 Click a pinned comment (or its pin number) and the canvas jumps to it — device, theme, and controls restore, and the prototype scrolls the pinned spot into view.",
       "📌 Pins now remember where in the page they were placed, so pins in scrolled or long prototypes land in the right section after a reload.",
+      "🩹 Fixed uploaded prototypes vanishing from the canvas after editing the Linear or Figma link (live-update events dropped the prototype HTML; a reload brought it back).",
     ],
   },
   {

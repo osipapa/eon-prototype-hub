@@ -236,7 +236,12 @@ export default function Hub() {
             const incomingTime = Date.parse(row.updated_at || "") || 0;
             // Supabase events can arrive after a newer fetch or save response.
             // Ignore an older server snapshot, while still applying local drafts.
-            return withLocalDraft(currentTime > incomingTime ? item : row);
+            if (currentTime > incomingTime) return withLocalDraft(item);
+            // Merge, don't replace: realtime UPDATE payloads omit large
+            // (TOASTed) columns that didn't change — e.g. prototype_html when
+            // only issue_url was edited. An absent key means "unchanged";
+            // a present key (even null) is a real change.
+            return withLocalDraft({ ...item, ...row });
           })
           : [...current, withLocalDraft(row)];
         return sortProjects(next);
