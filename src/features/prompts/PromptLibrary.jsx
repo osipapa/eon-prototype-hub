@@ -93,7 +93,7 @@ export default function PromptLibrary({
   };
 
   const handleCopy = async (kind) => {
-    if (!activePrompt || (kind === "ready" && missing.length)) return;
+    if (!activePrompt) return;
     setCopyError("");
     try {
       await copyText(kind === "ready" ? readyPrompt : activePrompt.prompt_body);
@@ -172,28 +172,28 @@ export default function PromptLibrary({
 
         {activePrompt ? (
           <div className="eon-prompt-scroll">
-            <div className="eon-prompt-layout">
+            <div className={`eon-prompt-layout${activePrompt.variables?.length ? "" : " is-single"}`}>
               <PromptArticle
                 c={c}
                 prompt={activePrompt}
+                body={readyPrompt}
                 copied={copied}
-                onCopyTemplate={() => handleCopy("template")}
+                copyError={copyError}
+                onCopy={() => handleCopy("ready")}
                 canEdit={canEdit}
                 canDelete={canDelete}
                 onEdit={() => setEditorPrompt(activePrompt)}
                 onDelete={() => setDeleteCandidate(activePrompt)}
               />
-              <PromptUseRail
-                c={c}
-                prompt={activePrompt}
-                values={values}
-                setVariable={setVariable}
-                missing={missing}
-                copied={copied}
-                copyError={copyError}
-                onCopyReady={() => handleCopy("ready")}
-                onCopyTemplate={() => handleCopy("template")}
-              />
+              {activePrompt.variables?.length > 0 && (
+                <PromptUseRail
+                  c={c}
+                  prompt={activePrompt}
+                  values={values}
+                  setVariable={setVariable}
+                  missing={missing}
+                />
+              )}
             </div>
           </div>
         ) : (
@@ -398,7 +398,7 @@ function PromptSidebar({
 }
 
 function PromptArticle({
-  c, prompt, copied, onCopyTemplate, canEdit, canDelete, onEdit, onDelete,
+  c, prompt, body, copied, copyError, onCopy, canEdit, canDelete, onEdit, onDelete,
 }) {
   return (
     <article className="eon-prompt-article">
@@ -430,20 +430,21 @@ function PromptArticle({
         )}
       </header>
 
-      <section className="eon-prompt-doc-section" aria-labelledby="eon-prompt-template-title">
-        <div className="eon-prompt-section-head">
-          <h2 id="eon-prompt-template-title">Prompt</h2>
+      <section className="eon-prompt-doc-section" aria-label="Live prompt preview">
+        <div className="eon-prompt-code-shell">
           <button
-            className="eon-buttonish eon-secondary-button"
+            className="eon-buttonish eon-prompt-code-copy"
             type="button"
-            onClick={onCopyTemplate}
-            style={{ background: c.panel, color: copied === "template" ? c.brand : c.secondary, borderColor: c.border }}
+            onClick={onCopy}
+            aria-label={copied === "ready" ? "Prompt copied" : "Copy prompt"}
+            title={copied === "ready" ? "Copied" : "Copy prompt"}
+            style={{ background: c.raised, color: copied === "ready" ? c.brand : c.secondary, boxShadow: hubShadow(c) }}
           >
-            <CopyGlyph copied={copied === "template"} />
-            <span>{copied === "template" ? "Copied" : "Copy template"}</span>
+            <CopyGlyph copied={copied === "ready"} />
           </button>
+          <PromptCode c={c} body={body} />
         </div>
-        <PromptCode c={c} body={prompt.prompt_body} />
+        {copyError && <div className="eon-prompt-copy-error" role="alert">{copyError}</div>}
       </section>
 
     </article>
@@ -701,16 +702,12 @@ function PromptUseRail({
   values,
   setVariable,
   missing,
-  copied,
-  copyError,
-  onCopyReady,
-  onCopyTemplate,
 }) {
   return (
     <aside className="eon-prompt-use-rail" aria-label="Use this prompt">
       <div className="eon-prompt-use-card" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
         <div className="eon-prompt-use-head">
-          <h2>Fill & copy</h2>
+          <h2>Variables</h2>
         </div>
 
         <div className="eon-prompt-variables">
@@ -759,27 +756,6 @@ function PromptUseRail({
             <span>{missing.length} required {missing.length === 1 ? "field" : "fields"} left</span>
           </div>
         )}
-        {copyError && <div className="eon-prompt-copy-error" role="alert">{copyError}</div>}
-
-        <button
-          className="eon-buttonish eon-prompt-copy-primary"
-          type="button"
-          onClick={onCopyReady}
-          disabled={missing.length > 0}
-          style={{ background: c.primary, color: c.primaryText }}
-        >
-          <CopyGlyph copied={copied === "ready"} />
-          <span>{copied === "ready" ? "Ready prompt copied" : "Copy ready prompt"}</span>
-        </button>
-        <button
-          className="eon-buttonish eon-prompt-copy-secondary"
-          type="button"
-          onClick={onCopyTemplate}
-          style={{ borderColor: c.border, color: copied === "template" ? c.brand : c.secondary }}
-        >
-          <CopyGlyph copied={copied === "template"} />
-          <span>{copied === "template" ? "Template copied" : "Copy template"}</span>
-        </button>
       </div>
     </aside>
   );
