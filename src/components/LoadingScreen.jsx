@@ -17,7 +17,7 @@ export default function LoadingScreen({ children = "Loading…" }) {
           </svg>
         )}
       </div>
-      <strong>Eon Prototypes</strong>
+      <strong>Eon Design Hub</strong>
       <div className="eon-loading-bar" aria-hidden="true"><span /></div>
       <span className="eon-loading-status">{children}</span>
     </div>

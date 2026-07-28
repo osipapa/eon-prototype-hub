@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
+import DesignHubSwitcher from "@/components/DesignHubSwitcher";
+import EonMark from "@/components/EonMark";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
   ExternalLink, History, ImagePlus, LayoutGrid, Link2, Loader2, LogOut,
@@ -28,6 +30,7 @@ import {
 } from "./anchorBridge";
 import { pickHtmlFile, supportsFileLink, watchFile } from "@/lib/localFile";
 import { CHANGELOG, latestChangelogDate, markChangelogSeen, readSeenChangelogDate } from "@/lib/changelog";
+import { copyText, useStoredState } from "@/lib/uiState";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
@@ -41,7 +44,7 @@ export default function PrototypeWorkspace({
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
   onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder,
-  onCreateComment, onResolveComment, onToggleReaction, onOpenAdmin, onSignOut,
+  onCreateComment, onResolveComment, onToggleReaction, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
 }) {
   const [hubTheme, setHubTheme] = useStoredState("eon-hub-theme", "dark");
@@ -678,7 +681,7 @@ export default function PrototypeWorkspace({
           }}
           moveStory={moveStory} projectOrder={projects.map((item) => item.id)}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
-          onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
+          onOpenPrompts={onOpenPrompts} onOpenTracking={onOpenTracking} onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
           onOpenChangelog={openChangelog} hasNewChangelog={hasNewChangelog}
           linearByProject={linearByProject}
           unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
@@ -832,6 +835,7 @@ function WorkspaceSidebar({
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
   onDeleteProject, moveStory, projectOrder, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
+  onOpenPrompts, onOpenTracking,
   onOpenChangelog, hasNewChangelog,
   linearByProject,
   unreadByProject, commentCountByProject,
@@ -845,11 +849,19 @@ function WorkspaceSidebar({
       <div className="eon-sidebar-head" style={{ borderColor: c.border }}>
         <div className="eon-brand-row">
           <div className="eon-brand">
-            <BrandMark c={c} src={media.eonLogo} />
-            <span>Eon Prototypes</span>
+            <EonMark src={media.eonLogo} />
+            <span>Eon Design Hub</span>
           </div>
           {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close prototype navigation" style={{ color: c.muted }}><X size={17} /></button>}
         </div>
+        <DesignHubSwitcher
+          active="prototypes"
+          c={c}
+          onSelect={(product) => {
+            if (product === "prompts") onOpenPrompts?.();
+            if (product === "tracking") onOpenTracking?.();
+          }}
+        />
         <div className="eon-sidebar-switcher" style={{ background: c.raised }}>
           {["stories", "media"].map((item) => {
             const selected = view === item;
@@ -967,7 +979,7 @@ function WorkspaceSidebar({
                             const restoreFocus = event.currentTarget.closest("[data-story-menu]")?.querySelector('button[aria-label^="Actions for"]');
                             setStoryMenuId(null);
                             onDeleteProject?.(item.id, restoreFocus);
-                          }} style={{ color: "#FF6B8A" }}><Trash2 size={14} /> Delete</button>
+                          }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
                         </div>
                       )}
                     </div>
@@ -1468,7 +1480,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
         <Textarea value={draft} maxLength={4000} onChange={(event) => setDraft(event.target.value)} onPaste={onPaste}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }}
           placeholder={anchors.pendingAnchor ? "Describe what the pin points at…" : "Write a comment…"} aria-label="Write a comment"
-          style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.bg, borderColor: error ? "#FF6B8A" : dragging ? c.brand : c.border, color: c.text, borderRadius: 12, fontSize: 14, lineHeight: 1.5 }} />
+          style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.bg, borderColor: error ? "#D98295" : dragging ? c.brand : c.border, color: c.text, borderRadius: 12, fontSize: 14, lineHeight: 1.5 }} />
         <div className="eon-composer-meta">
           <input ref={fileInputRef} type="file" accept="image/*" hidden
             onChange={(event) => { attach(event.target.files?.[0]); event.target.value = ""; }} />
@@ -1486,7 +1498,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
             style={{ borderColor: c.border, background: c.panel, color: c.secondary, opacity: sending ? 0.5 : 1 }}>
             <ImagePlus size={15} />
           </button>
-          <span role={error ? "alert" : "status"} style={{ color: error ? "#FF6B8A" : anchors.anchorMode ? c.brand : c.muted }}>{error || status}</span>
+          <span role={error ? "alert" : "status"} style={{ color: error ? "#D98295" : anchors.anchorMode ? c.brand : c.muted }}>{error || status}</span>
           <Button className="eon-buttonish" onClick={submit} disabled={!canSend}
             style={{ minWidth: 40, minHeight: 40, padding: 0, borderRadius: 10, background: c.primary, color: c.primaryText, opacity: canSend ? 1 : 0.5 }} aria-label="Send comment">
             <Send size={15} />
@@ -1819,7 +1831,7 @@ function HistoryTimeline({ c, activity, currentUserId }) {
         const name = item.actor_id === currentUserId ? "You" : (item.actor_name || "A teammate");
         return (
           <article key={item.id} className="eon-history-item">
-            <span className="eon-history-icon" style={{ background: c.raised, color: isDangerAction(item.action) ? "#FF6B8A" : c.brand }}>
+            <span className="eon-history-icon" style={{ background: c.raised, color: isDangerAction(item.action) ? "#D98295" : c.brand }}>
               <Icon size={13} />
             </span>
             <div className="eon-history-body">
@@ -1877,7 +1889,7 @@ function Toast({ c, toast, onDismiss }) {
   const Icon = meta.icon;
   return (
     <div className="eon-toast" style={{ background: c.panel, borderColor: c.border, boxShadow: hubShadow(c) }}>
-      <span className="eon-toast-icon" style={{ background: c.raised, color: isDangerAction(toast.action) ? "#FF6B8A" : c.brand }}>
+      <span className="eon-toast-icon" style={{ background: c.raised, color: isDangerAction(toast.action) ? "#D98295" : c.brand }}>
         <Icon size={14} />
       </span>
       <div className="eon-toast-body">
@@ -1925,13 +1937,13 @@ function DeletePrototypeDialog({ c, project, restoreFocus, onClose, onConfirm })
   return (
     <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <div ref={dialogRef} className="eon-modal eon-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="eon-delete-title" aria-describedby="eon-delete-body" style={{ background: c.panel, borderColor: c.border }}>
-        <div className="eon-confirm-icon" style={{ background: "rgba(255,107,138,.12)", color: "#FF6B8A" }}><Trash2 size={18} /></div>
+        <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
         <h2 id="eon-delete-title">Delete “{project.title}”?</h2>
         <p id="eon-delete-body" style={{ color: c.muted }}>This removes the prototype, its shared feedback, and linked review context for everyone. This can't be undone.</p>
         {error && <p role="alert" className="eon-copy-error">{error}</p>}
         <div className="eon-confirm-actions">
           <button autoFocus className="eon-buttonish eon-secondary-button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, color: c.secondary }}>Cancel</button>
-          <Button className="eon-buttonish" onClick={remove} disabled={busy} style={{ minHeight: 40, background: "#FF6B8A", color: "#180107", borderRadius: 10, fontWeight: 650 }}>
+          <Button className="eon-buttonish" onClick={remove} disabled={busy} style={{ minHeight: 40, background: "#D98295", color: "#210C12", borderRadius: 10, fontWeight: 650 }}>
             {busy ? "Deleting…" : "Delete prototype"}
           </Button>
         </div>
@@ -2098,7 +2110,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
           </div>
         </div>
         <div className="eon-modal-foot" style={{ borderColor: c.border }}>
-          <span role="alert" style={{ flex: 1, fontSize: 12, color: "#FF6B8A" }}>{error}</span>
+          <span role="alert" style={{ flex: 1, fontSize: 12, color: "#D98295" }}>{error}</span>
           <button className="eon-buttonish eon-secondary-button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, background: "transparent", color: c.secondary }}>Cancel</button>
           <Button className="eon-buttonish" onClick={submit} disabled={!title.trim() || busy}
             style={{ minHeight: 40, padding: "0 16px", borderRadius: 10, background: c.primary, color: c.primaryText, fontSize: 13, fontWeight: 600, opacity: !title.trim() || busy ? 0.5 : 1 }}>
@@ -2151,7 +2163,7 @@ function SaveIndicator({ c, state, onRetry, compact = false }) {
   const content = {
     saving: { icon: <Loader2 size={13} className="eon-spin" />, label: "Saving…", color: c.muted },
     saved: { icon: <Check size={13} />, label: "Saved", color: c.muted },
-    error: { icon: <AlertCircle size={13} />, label: "Save failed", color: "#FF6B8A" },
+    error: { icon: <AlertCircle size={13} />, label: "Save failed", color: "#D98295" },
   }[state];
   if (!content) return null;
   const Tag = state === "error" && onRetry ? "button" : "span";
@@ -2165,68 +2177,15 @@ function SaveIndicator({ c, state, onRetry, compact = false }) {
   );
 }
 
-function BrandMark({ c, src }) {
-  const safeSrc = safeAssetUrl(src);
-  if (safeSrc) {
-    return <img className="eon-brand-logo" src={safeSrc} alt="Eon" />;
-  }
-  return (
-    <svg className="eon-brand-logo" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-label="Eon">
-      <circle cx="12" cy="12" r="10" stroke={c.text} strokeWidth="2" />
-      <path d="M12 4 A8 8 0 0 1 12 20" stroke={c.brand} strokeWidth="2" />
-    </svg>
-  );
-}
-
-function safeAssetUrl(value) {
-  if (!value) return "";
-  if (/^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);/i.test(value)) return value;
-  try {
-    const url = new URL(value, window.location.origin);
-    return ["http:", "https:", "blob:"].includes(url.protocol) ? url.href : "";
-  } catch {
-    return "";
-  }
-}
-
 function sandboxedFullView(source, title) {
   const escapedSource = String(source).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
   const escapedTitle = String(title || "Prototype").replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]);
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapedTitle}</title><style>*{box-sizing:border-box}html,body,iframe{width:100%;height:100%;margin:0}iframe{display:block;border:0}</style></head><body><iframe title="${escapedTitle}" sandbox="${PROTOTYPE_SANDBOX}" referrerpolicy="no-referrer" allow="clipboard-read; clipboard-write" srcdoc="${escapedSource}"></iframe></body></html>`;
 }
 
-async function copyText(value) {
-  try {
-    await navigator.clipboard.writeText(value);
-    return;
-  } catch { /* Fall back for embedded or permission-restricted browsers. */ }
-  const textarea = document.createElement("textarea");
-  textarea.value = value;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand("copy");
-  textarea.remove();
-  if (!copied) throw new Error("Clipboard unavailable");
-}
-
 function readStoredJson(key) {
   try { return JSON.parse(window.localStorage.getItem(key) || "{}"); }
   catch { return {}; }
-}
-
-function useStoredState(key, initialValue) {
-  const [value, setValue] = useState(() => {
-    try { return window.localStorage.getItem(key) || initialValue; }
-    catch { return initialValue; }
-  });
-  useEffect(() => {
-    try { window.localStorage.setItem(key, value); }
-    catch { /* Storage can be unavailable in hardened browsers. */ }
-  }, [key, value]);
-  return [value, setValue];
 }
 
 function relativeTime(value) {

@@ -35,6 +35,51 @@ export function subscribeProjects(cb) {
   return () => supabase.removeChannel(ch);
 }
 
+/* Prompt library -----------------------------------------------------------*/
+export async function listPrompts() {
+  const { data, error } = await supabase
+    .from("prompts")
+    .select("*")
+    .order("category", { ascending: true })
+    .order("title", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function createPrompt(prompt) {
+  const { data, error } = await supabase
+    .from("prompts")
+    .insert(prompt)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updatePrompt(id, patch) {
+  const { data, error } = await supabase
+    .from("prompts")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deletePrompt(id) {
+  const { error } = await supabase.from("prompts").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export function subscribePrompts(cb) {
+  const ch = supabase
+    .channel("prompts-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "prompts" }, cb)
+    .subscribe();
+  return () => supabase.removeChannel(ch);
+}
+
 /* Comments ---------------------------------------------------------------*/
 const COMMENT_SELECT =
   "*, author:profiles!comments_author_id_fkey(id,email,full_name), reactions:comment_reactions(emoji,profile_id)";

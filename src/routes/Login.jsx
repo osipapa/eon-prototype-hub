@@ -19,7 +19,7 @@ function EonMark({ src }) {
   return (
     <svg className="route-brand-mark" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-      <path d="M12 4 A8 8 0 0 1 12 20" stroke="#E15CF7" strokeWidth="2" />
+      <path d="M12 4 A8 8 0 0 1 12 20" stroke="#EDD2F6" strokeWidth="2" />
     </svg>
   );
 }
@@ -78,16 +78,16 @@ export default function Login() {
         <section className="auth-intro" aria-labelledby="auth-intro-title">
           <div className="route-brand route-brand--large">
             <EonMark src={logoUrl} />
-            <span>Eon Prototype Hub</span>
+            <span>Eon Design Hub</span>
           </div>
           <div className="auth-intro-copy">
-            <span className="route-eyebrow">One review space</span>
+            <span className="route-eyebrow">One design workspace</span>
             <h1 id="auth-intro-title">Turn product ideas into shared decisions.</h1>
-            <p>Explore prototypes, compare the source design, and keep team feedback connected to the work.</p>
+            <p>Review prototypes, reuse approved prompts, and keep design decisions connected to the work.</p>
           </div>
           <div className="auth-proof" aria-label="Product benefits">
-            <span>Interactive prototypes</span>
-            <span>Live team feedback</span>
+            <span>Prototype reviews</span>
+            <span>Shared prompt library</span>
             <span>Figma + Linear context</span>
           </div>
         </section>
@@ -99,7 +99,7 @@ export default function Login() {
           </div>
           <div className="auth-card-heading">
             <h2 id="login-title">Welcome back</h2>
-            <p>Sign in to open your team's prototype workspace.</p>
+            <p>Sign in to open your team's shared design workspace.</p>
           </div>
 
           {!configured ? (

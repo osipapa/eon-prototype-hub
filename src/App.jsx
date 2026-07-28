@@ -5,6 +5,8 @@ import LoadingScreen from "./components/LoadingScreen";
 
 const Login = lazy(() => import("./routes/Login"));
 const Hub = lazy(() => import("./routes/Hub"));
+const Prompts = lazy(() => import("./routes/Prompts"));
+const Tracking = lazy(() => import("./routes/Tracking"));
 const Admin = lazy(() => import("./routes/Admin"));
 
 function Splash({ children }) {
@@ -48,6 +50,10 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<RequireAuth><Hub /></RequireAuth>} />
             <Route path="/p/:slug" element={<RequireAuth><Hub /></RequireAuth>} />
+            <Route path="/prompts" element={<RequireAuth><Prompts /></RequireAuth>} />
+            <Route path="/prompts/:slug" element={<RequireAuth><Prompts /></RequireAuth>} />
+            <Route path="/tracking" element={<RequireAuth><Tracking /></RequireAuth>} />
+            <Route path="/tracking/:slug" element={<RequireAuth><Tracking /></RequireAuth>} />
             <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

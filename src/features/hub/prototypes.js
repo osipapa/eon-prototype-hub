@@ -9,12 +9,12 @@ export const HUB = {
   // neither pink nor white repeats across the toolbar.
   dark: { bg: "#000000", nav: "#000000", panel: "#121216", raised: "#1E1E22", border: "#1E1E22",
     text: "#FFFFFF", muted: "#9094A5", secondary: "rgba(255,255,255,0.7)",
-    hover: "#1E1E22", active: "rgba(225,92,247,0.1)", brand: "#E15CF7",
+    hover: "#1E1E22", active: "rgba(255,255,255,0.065)", brand: "#A99BAE",
     primary: "#EDD2F6", primaryText: "#000000",
     selected: "#121216", selectedText: "#FFFFFF" },
-  light: { bg: "#F9F9FD", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F9F9FD", border: "#DDE0EA",
+  light: { bg: "#F7F7F8", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F2F2F4", border: "#DFE0E4",
     text: "#1E1E22", muted: "#565B6C", secondary: "rgba(18,18,22,0.75)",
-    hover: "#F9F9FD", active: "rgba(160,0,186,0.1)", brand: "#A000BA",
+    hover: "#F2F2F4", active: "rgba(30,30,34,0.055)", brand: "#665D6B",
     primary: "#000000", primaryText: "#FFFFFF",
     selected: "#FFFFFF", selectedText: "#1E1E22" },
 };
@@ -28,9 +28,9 @@ export const VIEWPORTS = {
 
 export const STATUS_COLOR = {
   "Exploration": ["rgba(144,148,165,0.15)", "#9094A5"],
-  "In review": ["rgba(133,181,255,0.15)", "#85B5FF"],
-  "Handoff": ["rgba(255,176,73,0.15)", "#FFB049"],
-  "Shipped": ["rgba(111,236,123,0.15)", "#6FEC7B"],
+  "In review": ["rgba(141,164,184,0.13)", "#8DA4B8"],
+  "Handoff": ["rgba(196,168,121,0.13)", "#C4A879"],
+  "Shipped": ["rgba(143,180,154,0.13)", "#8FB49A"],
 };
 
 export const CANVAS_PRESETS = ["#FFFFFF", "#000000"];
@@ -87,7 +87,7 @@ function boundedDimension(value, fallback) {
 
 export const MEDIA = {
   logos: {
-    eon: (stroke = "#FFFFFF", brand = "#E15CF7", img) => {
+    eon: (stroke = "#FFFFFF", brand = "#A99BAE", img) => {
       const src = safeMediaUrl(img);
       return src
         ? `<img src="${escapeMarkup(src)}" alt="logo" style="width:24px;height:24px;border-radius:6px;object-fit:cover"/>`

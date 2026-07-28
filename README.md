@@ -1,9 +1,10 @@
-# Eon Prototype Hub
+# Eon Design Hub
 
-A shared, Storybook-style hub for interactive HTML prototypes. Sign in, browse
-prototypes by group, preview them across device sizes with independent hub and
-prototype themes, attach Figma frames and Linear issues, discuss work in shared comments, and manage a
-shared media library. Team state lives in Supabase; the site is hosted on GitHub Pages.
+A shared design hub for interactive HTML prototypes, reusable prompts, and implementation-ready tracking references.
+Sign in, browse prototypes by group, preview them across device sizes, copy
+team-approved prompts, copy a Mixpanel tracking setup grounded in Linear issues, attach Figma frames and Linear issues, discuss work in
+shared comments, and manage a shared media library. Team state lives in Supabase;
+the site is hosted on GitHub Pages.
 
 ## Quick start
 
@@ -26,7 +27,7 @@ Storage + Realtime) · GitHub Pages.
 
 ## Roles
 
-- **Member**: view and edit prototypes, links, comments, and media.
+- **Member**: view and edit prototypes, prompts, links, comments, and media; copy tracking references.
 - **Admin**: everything a member can do, plus manage roles (`/admin`) and delete content.
 
 ## Structure
@@ -34,8 +35,10 @@ Storage + Realtime) · GitHub Pages.
 ```
 src/
   lib/         supabase client, auth context, data access
-  routes/      Login, Hub, Admin
+  routes/      Login, Hub, Prompts, Admin
   features/hub/ PrototypeHub UI + prototype builders/media
+  features/prompts/ Prompt Library UI + starter references
+  features/tracking/ Mixpanel reference + reusable setup prompt
 supabase/      schema.sql (tables + RLS), seed.sql
 .github/workflows/deploy.yml   GitHub Pages CI
 ```

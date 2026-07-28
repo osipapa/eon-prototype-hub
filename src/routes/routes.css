@@ -7,13 +7,13 @@
   --route-text: #ffffff;
   --route-secondary: rgba(255, 255, 255, 0.72);
   --route-muted: #9094a5;
-  --route-brand: #e15cf7;
+  --route-brand: #a99bae;
   --route-primary: #edd2f6;
   --route-primary-hover: #f3ddfa;
-  --route-danger: #ff6b8a;
-  --route-danger-soft: rgba(255, 80, 143, 0.1);
-  --route-success: #6fec7b;
-  --route-success-soft: rgba(111, 236, 123, 0.1);
+  --route-danger: #d98295;
+  --route-danger-soft: rgba(217, 130, 149, 0.09);
+  --route-success: #8fb49a;
+  --route-success-soft: rgba(143, 180, 154, 0.09);
   --route-card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.085), 0 24px 72px rgba(0, 0, 0, 0.36);
   width: 100%;
   min-height: 100vh;
@@ -186,7 +186,7 @@
 .route-input:focus,
 .route-select:focus {
   border-color: var(--route-brand);
-  box-shadow: 0 0 0 3px rgba(225, 92, 247, 0.13);
+  box-shadow: 0 0 0 3px rgba(169, 155, 174, 0.12);
 }
 
 .route-input:disabled,
@@ -281,7 +281,7 @@
 
 .route-button--primary:hover:not(:disabled) {
   background: var(--route-primary-hover);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 10px 28px rgba(237, 210, 246, 0.14);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 10px 28px rgba(237, 210, 246, 0.12);
 }
 
 .route-button--secondary,
@@ -426,8 +426,8 @@
   overflow: hidden;
   padding: clamp(24px, 5vw, 64px);
   background:
-    radial-gradient(circle at 18% 12%, rgba(225, 92, 247, 0.12), transparent 30%),
-    radial-gradient(circle at 84% 82%, rgba(237, 210, 246, 0.07), transparent 26%),
+    radial-gradient(circle at 18% 12%, rgba(169, 155, 174, 0.045), transparent 30%),
+    radial-gradient(circle at 84% 82%, rgba(255, 255, 255, 0.028), transparent 26%),
     #000000;
 }
 
@@ -502,7 +502,7 @@
   height: 5px;
   border-radius: 50%;
   background: var(--route-brand);
-  box-shadow: 0 0 12px rgba(225, 92, 247, 0.7);
+  box-shadow: 0 0 8px rgba(169, 155, 174, 0.28);
 }
 
 .auth-card {
@@ -553,7 +553,7 @@
 
 .admin-shell {
   background:
-    radial-gradient(circle at 50% -18%, rgba(225, 92, 247, 0.08), transparent 31%),
+    radial-gradient(circle at 50% -18%, rgba(169, 155, 174, 0.035), transparent 31%),
     var(--route-bg);
 }
 
@@ -806,9 +806,9 @@
   flex: 0 0 36px;
   place-items: center;
   border-radius: 10px;
-  background: rgba(225, 92, 247, 0.1);
-  color: #ed9ff9;
-  box-shadow: 0 0 0 1px rgba(225, 92, 247, 0.12) inset;
+  background: rgba(255, 255, 255, 0.065);
+  color: #b8b5bd;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.075) inset;
   font-size: 11px;
   font-weight: 700;
 }
@@ -858,9 +858,9 @@
   align-items: center;
   padding: 0 7px;
   border-radius: 7px;
-  background: rgba(225, 92, 247, 0.08);
-  color: #d99be4;
-  box-shadow: inset 0 0 0 1px rgba(225, 92, 247, 0.12);
+  background: rgba(255, 255, 255, 0.055);
+  color: #b8b5bd;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.035em;
@@ -955,7 +955,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 11px;
-  background: rgba(225, 92, 247, 0.1);
+  background: rgba(255, 255, 255, 0.065);
   color: var(--route-brand);
 }
 
@@ -1026,10 +1026,10 @@
   transition-duration: 150ms;
   transition-timing-function: cubic-bezier(.23, 1, .32, 1);
 }
-.admin-tutorial-persona:hover { background: #27272d; box-shadow: inset 0 0 0 1px rgba(225, 92, 247, .25), 0 10px 28px rgba(0, 0, 0, .2); }
+.admin-tutorial-persona:hover { background: #27272d; box-shadow: inset 0 0 0 1px rgba(169, 155, 174, .18), 0 10px 28px rgba(0, 0, 0, .2); }
 .admin-tutorial-persona:active { transform: scale(.96); }
-.admin-tutorial-persona.is-selected { background: rgba(225, 92, 247, .09); box-shadow: inset 0 0 0 2px rgba(225, 92, 247, .62), 0 10px 30px rgba(0, 0, 0, .22); }
-.admin-tutorial-persona > span { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: rgba(225, 92, 247, .1); color: var(--route-brand); }
+.admin-tutorial-persona.is-selected { background: rgba(255, 255, 255, .055); box-shadow: inset 0 0 0 2px rgba(169, 155, 174, .42), 0 10px 30px rgba(0, 0, 0, .22); }
+.admin-tutorial-persona > span { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: rgba(255, 255, 255, .065); color: var(--route-brand); }
 .admin-tutorial-persona strong { font-size: 13px; font-weight: 650; }
 .admin-tutorial-persona small { color: var(--route-muted); font-size: 10px; line-height: 1.45; text-wrap: pretty; }
 .admin-tutorial-help { margin: 14px 2px 0; color: var(--route-muted); font-size: 11px; line-height: 1.5; }

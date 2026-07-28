@@ -204,6 +204,8 @@ export default function WorkspacePreview() {
             };
           }));
         }}
+        onOpenPrompts={() => {}}
+        onOpenTracking={() => {}}
         onOpenAdmin={() => {}}
         onSignOut={() => {}}
       />

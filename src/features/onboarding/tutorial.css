@@ -31,8 +31,8 @@
   pointer-events: none;
   opacity: 0;
   box-shadow:
-    0 0 0 2px #e15cf7,
-    0 0 0 7px rgba(225, 92, 247, .16),
+    0 0 0 2px #a99bae,
+    0 0 0 7px rgba(169, 155, 174, .1),
     0 18px 50px rgba(0, 0, 0, .36);
   transition-property: left, top, width, height, opacity, border-radius, box-shadow;
   transition-duration: 260ms;
@@ -93,9 +93,9 @@
   padding: 7px 7px 7px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, .075);
 }
-.eon-coach-icon { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 9px; background: #edd2f6; color: #000; box-shadow: 0 8px 22px rgba(237, 210, 246, .12); }
+.eon-coach-icon { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 9px; background: #edd2f6; color: #000; box-shadow: 0 8px 22px rgba(237, 210, 246, .1); }
 .eon-coach-eyebrow { min-width: 0; overflow: hidden; flex: 1; color: #d7d7df; font-size: 10px; font-weight: 700; letter-spacing: .075em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
-.eon-coach-qa { display: inline-flex; min-height: 22px; align-items: center; padding: 0 7px; border-radius: 7px; background: rgba(225, 92, 247, .12); color: #eea1fa; box-shadow: inset 0 0 0 1px rgba(225, 92, 247, .2); font-size: 9px; font-weight: 750; letter-spacing: .08em; }
+.eon-coach-qa { display: inline-flex; min-height: 22px; align-items: center; padding: 0 7px; border-radius: 7px; background: rgba(255, 255, 255, .055); color: #b8b5bd; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .075); font-size: 9px; font-weight: 750; letter-spacing: .08em; }
 .eon-coach-close { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; padding: 0; border: 0; border-radius: 11px; background: transparent; color: #9094a5; cursor: pointer; transition-property: transform, background-color, color; transition-duration: 150ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
 .eon-coach-close:hover { background: #27272d; color: #fff; }
 .eon-coach-close:active { transform: scale(.96); }
@@ -103,24 +103,24 @@
 .eon-coach-copy { padding: 18px 18px 17px; animation: eon-coach-copy-in 240ms cubic-bezier(.23, 1, .32, 1) both; }
 .eon-coach-copy h1 { margin: 0; color: #fff; font-size: 19px; font-weight: 620; letter-spacing: -.027em; line-height: 1.16; text-wrap: balance; }
 .eon-coach-copy p { margin: 8px 0 0; color: #aaacb8; font-size: 12px; line-height: 1.5; text-wrap: pretty; }
-.eon-coach-try { display: inline-flex; min-height: 26px; align-items: center; gap: 6px; margin-top: 12px; padding: 0 8px; border-radius: 8px; background: rgba(225, 92, 247, .09); color: #eda1f9; box-shadow: inset 0 0 0 1px rgba(225, 92, 247, .12); font-size: 9px; font-weight: 650; letter-spacing: .015em; }
+.eon-coach-try { display: inline-flex; min-height: 26px; align-items: center; gap: 6px; margin-top: 12px; padding: 0 8px; border-radius: 8px; background: rgba(255, 255, 255, .05); color: #b8b5bd; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07); font-size: 9px; font-weight: 650; letter-spacing: .015em; }
 
 .eon-coach-footer { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 9px 8px 14px; border-top: 1px solid rgba(255, 255, 255, .075); }
 .eon-coach-progress { display: flex; align-items: center; gap: 8px; color: #777a87; font-size: 9px; font-variant-numeric: tabular-nums; }
 .eon-coach-progress > div { display: flex; align-items: center; gap: 4px; }
 .eon-coach-progress i { display: block; width: 4px; height: 4px; border-radius: 3px; background: #3d3d46; transition-property: width, background-color; transition-duration: 180ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
 .eon-coach-progress i.is-complete { background: #756879; }
-.eon-coach-progress i.is-active { width: 14px; background: #e15cf7; }
+.eon-coach-progress i.is-active { width: 14px; background: #a99bae; }
 .eon-coach-actions { display: flex; align-items: center; gap: 6px; }
 .eon-coach-button { display: inline-flex; min-width: 44px; min-height: 42px; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; border: 0; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 650; transition-property: transform, background-color, box-shadow, color; transition-duration: 150ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
 .eon-coach-button:active { transform: scale(.96); }
 .eon-coach-button.is-primary { padding-left: 14px; padding-right: 12px; background: #edd2f6; color: #000; box-shadow: inset 0 1px rgba(255, 255, 255, .4), 0 8px 22px rgba(237, 210, 246, .1); }
-.eon-coach-button.is-primary:hover { background: #f3ddfa; box-shadow: inset 0 1px rgba(255, 255, 255, .46), 0 10px 26px rgba(237, 210, 246, .16); }
+.eon-coach-button.is-primary:hover { background: #f3ddfa; box-shadow: inset 0 1px rgba(255, 255, 255, .46), 0 10px 26px rgba(237, 210, 246, .14); }
 .eon-coach-button.is-secondary { padding: 0; background: #27272d; color: #c2c3cc; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
 .eon-coach-button.is-secondary:hover { background: #303037; color: #fff; }
 .eon-coach-button.is-quiet { background: transparent; color: #8f919e; }
 .eon-coach-button.is-quiet:hover { background: #26262c; color: #fff; }
-.eon-coach-root :focus-visible { outline: 2px solid #e15cf7; outline-offset: 2px; }
+.eon-coach-root :focus-visible { outline: 2px solid #a99bae; outline-offset: 2px; }
 
 .eon-coach-root.is-closing .eon-coach-scrim,
 .eon-coach-root.is-closing .eon-coach-spotlight { opacity: 0; }
@@ -175,7 +175,7 @@
 
 .eon-persona-header > span:nth-child(2) { min-width: 0; flex: 1; }
 .eon-persona-copy { padding: 26px 26px 18px; }
-.eon-persona-kicker { color: #eda1f9; font-size: 11px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
+.eon-persona-kicker { color: #b8b5bd; font-size: 11px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
 .eon-persona-copy h1 { margin: 7px 0 0; color: #fff; font-size: clamp(24px, 4vw, 32px); font-weight: 620; letter-spacing: -.04em; line-height: 1.08; text-wrap: balance; }
 .eon-persona-copy p { max-width: 440px; margin: 9px 0 0; color: #aaacb8; font-size: 13px; line-height: 1.55; text-wrap: pretty; }
 
@@ -205,13 +205,13 @@
 .eon-persona-option:nth-child(1) { animation-delay: 70ms; }
 .eon-persona-option:nth-child(2) { animation-delay: 120ms; }
 .eon-persona-option:nth-child(3) { animation-delay: 170ms; }
-.eon-persona-option:hover { background: #28282e; box-shadow: inset 0 0 0 1px rgba(225, 92, 247, .3), 0 12px 30px rgba(0, 0, 0, .22); }
+.eon-persona-option:hover { background: #28282e; box-shadow: inset 0 0 0 1px rgba(169, 155, 174, .18), 0 12px 30px rgba(0, 0, 0, .22); }
 .eon-persona-option:active { transform: scale(.96); }
 .eon-persona-option > span:nth-child(2) { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
 .eon-persona-option strong { font-size: 14px; font-weight: 650; }
 .eon-persona-option small { color: #9a9ca8; font-size: 11px; line-height: 1.45; text-wrap: pretty; }
 .eon-persona-option > svg { align-self: flex-end; color: #777a87; }
-.eon-persona-option-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; background: #edd2f6; color: #000; box-shadow: 0 8px 22px rgba(237, 210, 246, .12); }
+.eon-persona-option-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; background: #edd2f6; color: #000; box-shadow: 0 8px 22px rgba(237, 210, 246, .1); }
 .eon-persona-note { margin: 0; padding: 13px 26px 16px; border-top: 1px solid rgba(255, 255, 255, .075); color: #777a87; font-size: 10px; text-align: center; }
 .eon-persona-root.is-closing .eon-persona-card { opacity: 0; transform: translate(-50%, -50%) translateY(5px) scale(.99); filter: blur(2px); }
 .eon-persona-root.is-closing .eon-persona-scrim { opacity: 0; }

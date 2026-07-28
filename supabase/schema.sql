@@ -67,6 +67,39 @@ create table if not exists public.assets (
   unique (team_id, key)
 );
 
+-- Shared prompt reference library. Prompt bodies use {{variable_name}}
+-- placeholders; variables describes the copy-time input contract.
+create table if not exists public.prompts (
+  id uuid primary key default gen_random_uuid(),
+  team_id uuid not null references public.teams(id) on delete cascade,
+  slug text not null,
+  title text not null,
+  summary text not null default '',
+  category text not null default 'General',
+  status text not null default 'draft'
+    check (status in ('draft', 'published', 'deprecated')),
+  prompt_body text not null,
+  variables jsonb not null default '[]'::jsonb
+    check (jsonb_typeof(variables) = 'array'),
+  usage_notes text not null default '',
+  avoid_notes text not null default '',
+  expected_output text not null default '',
+  examples jsonb not null default '[]'::jsonb
+    check (jsonb_typeof(examples) = 'array'),
+  tags text[] not null default '{}',
+  model_hint text,
+  tools text[] not null default '{}',
+  version int not null default 1 check (version > 0),
+  created_by uuid references public.profiles(id) on delete set null,
+  updated_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (team_id, slug)
+);
+
+create index if not exists prompts_team_category_title_idx
+  on public.prompts (team_id, category, title);
+
 -- Threaded-by-project team comments. Messages are immutable in the first
 -- version; authors (or admins) may remove their own messages.
 create table if not exists public.comments (
@@ -209,6 +242,10 @@ drop trigger if exists projects_touch on public.projects;
 create trigger projects_touch before update on public.projects
   for each row execute function public.touch_updated_at();
 
+drop trigger if exists prompts_touch on public.prompts;
+create trigger prompts_touch before update on public.prompts
+  for each row execute function public.touch_updated_at();
+
 drop trigger if exists comments_touch on public.comments;
 create trigger comments_touch before update on public.comments
   for each row execute function public.touch_updated_at();
@@ -341,6 +378,7 @@ alter table public.teams    enable row level security;
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
 alter table public.assets   enable row level security;
+alter table public.prompts  enable row level security;
 alter table public.comments enable row level security;
 alter table public.invites  enable row level security;
 alter table public.activity enable row level security;
@@ -389,6 +427,23 @@ create policy "team update assets" on public.assets for update
   using (team_id = public.current_team_id());
 create policy "admin delete assets" on public.assets for delete
   using (public.is_admin() and team_id = public.current_team_id());
+
+-- prompts: every teammate reads and contributes; creators/admins delete.
+create policy "team read prompts" on public.prompts for select
+  using (team_id = public.current_team_id());
+create policy "team insert prompts" on public.prompts for insert
+  with check (
+    team_id = public.current_team_id()
+    and (created_by is null or created_by = auth.uid())
+  );
+create policy "team update prompts" on public.prompts for update
+  using (team_id = public.current_team_id())
+  with check (team_id = public.current_team_id());
+create policy "creator or admin delete prompts" on public.prompts for delete
+  using (
+    team_id = public.current_team_id()
+    and (public.is_admin() or created_by = auth.uid())
+  );
 
 -- comments: teammates read and participate; authors or admins may clean up.
 create policy "team read comments" on public.comments for select
@@ -465,6 +520,7 @@ create policy "team read activity" on public.activity for select
 -- ---------------------------------------------------------------------------
 alter publication supabase_realtime add table public.projects;
 alter publication supabase_realtime add table public.assets;
+alter publication supabase_realtime add table public.prompts;
 alter publication supabase_realtime add table public.comments;
 alter publication supabase_realtime add table public.profiles;
 alter publication supabase_realtime add table public.activity;

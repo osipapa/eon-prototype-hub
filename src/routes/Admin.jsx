@@ -222,7 +222,7 @@ export default function Admin() {
           <div>
             <span className="route-eyebrow">Workspace settings</span>
             <h1>Team members</h1>
-            <p>Manage who can access, edit, and administer your shared prototype workspace.</p>
+            <p>Manage who can access, edit, and administer your shared design workspace.</p>
           </div>
           <span className="admin-member-count"><Users size={15} aria-hidden="true" /><strong>{loading ? "—" : rows.length}</strong> {!loading && rows.length === 1 ? "member" : "members"}</span>
         </header>
@@ -239,7 +239,7 @@ export default function Admin() {
           <div className="route-card-header">
             <div>
               <h2 id="members-heading">People with access</h2>
-              <p>Admins manage accounts and roles. Members can view and edit prototypes.</p>
+              <p>Admins manage accounts and roles. Members can use and edit shared design resources.</p>
             </div>
           </div>
 
