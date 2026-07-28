@@ -169,6 +169,33 @@
   border-right: 1px solid;
   box-shadow: 8px 0 28px rgba(0, 0, 0, .09);
 }
+.eon-sidebar-resizer {
+  position: absolute;
+  z-index: 40;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  border: 0;
+  outline: 0;
+  cursor: col-resize;
+  touch-action: none;
+}
+.eon-sidebar-resizer.is-right-edge { right: -5px; }
+.eon-sidebar-resizer.is-left-edge { left: -5px; }
+.eon-sidebar-resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 2px;
+  background: transparent;
+  transition: background-color 140ms var(--ease-out);
+}
+.eon-sidebar-resizer:hover::after,
+.eon-sidebar-resizer:focus-visible::after { background: #EDD2F6; }
+.light .eon-sidebar-resizer:hover::after,
+.light .eon-sidebar-resizer:focus-visible::after { background: #633E6A; }
 .eon-sidebar-head { padding: 14px 14px 12px; border-bottom: 1px solid; }
 .eon-brand-row { display: flex; min-height: 40px; align-items: center; gap: 8px; margin-bottom: 12px; }
 .eon-brand { display: flex; min-width: 0; flex: 1; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; letter-spacing: -.015em; }
@@ -294,6 +321,8 @@ button.eon-save-state { cursor: pointer; }
 .eon-compare-embed { flex: 1; min-height: 0; }
 
 .eon-inspector { position: relative; z-index: 25; display: flex; width: 380px; flex: 0 0 380px; flex-direction: column; border-left: 1px solid; box-shadow: -8px 0 28px rgba(0,0,0,.09); }
+.eon-inspector-mobile-head { display: flex; min-height: 52px; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px 6px 14px; border-bottom: 1px solid; }
+.eon-inspector-mobile-head strong { font-size: 13px; }
 .eon-inspector-head { display: flex; min-height: 64px; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-bottom: 1px solid; }
 .eon-inspector-title { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
 .eon-inspector-head strong { font-size: 14px; }
@@ -418,11 +447,13 @@ button.eon-save-state { cursor: pointer; }
 
 @media (max-width: 1180px) {
   .eon-inspector { position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 92vw); height: 100vh; height: 100dvh; transform: translateX(0); box-shadow: -20px 0 60px rgba(0,0,0,.28); transition: transform 240ms var(--ease-drawer); }
+  .eon-inspector > .eon-sidebar-resizer { display: none; }
   @starting-style { .eon-inspector { transform: translateX(100%); } }
 }
 
 @media (max-width: 900px) {
   .eon-sidebar { position: fixed; top: 0; bottom: 0; left: 0; width: min(292px, 88vw); height: 100vh; height: 100dvh; transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,.28); transition: transform 240ms var(--ease-drawer); }
+  .eon-sidebar > .eon-sidebar-resizer { display: none; }
   @starting-style { .eon-sidebar { transform: translateX(-100%); } }
   .eon-toolbar-title > span { max-width: 180px; }
 }
@@ -647,6 +678,7 @@ button.eon-save-state { cursor: pointer; }
 
 @media (max-width: 900px) {
   .eon-prompt-sidebar { position: fixed; top: 0; bottom: 0; left: 0; width: min(304px, 88vw); height: 100vh; height: 100dvh; transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,.28); transition: transform 240ms var(--ease-drawer); }
+  .eon-prompt-sidebar > .eon-sidebar-resizer { display: none; }
   @starting-style { .eon-prompt-sidebar { transform: translateX(-100%); } }
   .eon-prompt-layout { padding: 36px; }
 }
@@ -814,6 +846,13 @@ button.eon-save-state { cursor: pointer; }
 .eon-tracking-nav-item strong { font-size: 12px; font-weight: 650; }
 .eon-tracking-nav-item small { font-size: 10px; }
 
+.eon-tracking-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.eon-tracking-step { display: flex; min-width: 0; align-items: flex-start; gap: 12px; padding: 18px; border-radius: 16px; }
+.eon-tracking-step > span { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; font-size: 11px; font-weight: 750; }
+.eon-tracking-step > div { min-width: 0; }
+.eon-tracking-step strong { font-size: 12px; font-weight: 650; }
+.eon-tracking-step p { margin: 5px 0 0; font-size: 11px; line-height: 1.55; }
+
 .eon-tracking-source-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .eon-tracking-source {
   display: flex;
@@ -946,7 +985,7 @@ button.eon-save-state { cursor: pointer; }
 @media (max-width: 680px) {
   .eon-tracking-layout { gap: 28px; padding: 26px 20px 44px; }
   .eon-tracking-rail { order: 0; }
-  .eon-tracking-source-grid, .eon-tracking-decision-stack { grid-template-columns: minmax(0, 1fr); }
+  .eon-tracking-source-grid, .eon-tracking-decision-stack, .eon-tracking-steps { grid-template-columns: minmax(0, 1fr); }
   .eon-tracking-source { min-height: 168px; }
   .eon-tracking-hero { padding-bottom: 32px; }
   .eon-tracking-hero h1 { font-size: 34px; }

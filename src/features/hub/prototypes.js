@@ -27,7 +27,6 @@ export const VIEWPORTS = {
 };
 
 export const STATUS_COLOR = {
-  "Exploration": ["rgba(99,204,255,0.16)", "#63CCFF", "#0B6D91"],
   "In review": ["rgba(114,167,255,0.17)", "#72A7FF", "#245FD1"],
   "Handoff": ["rgba(255,179,79,0.17)", "#FFB34F", "#9A4A00"],
   "Shipped": ["rgba(98,229,139,0.16)", "#62E58B", "#147A36"],

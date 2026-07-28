@@ -382,7 +382,7 @@ export default function Hub() {
       || `prototype-${Date.now().toString(36)}`;
     const created = await createProject({
       team_id: profile.team_id, slug: newSlug, title, group_name: group || "General",
-      status: "Exploration", controls: [], defaults: {},
+      status: "In review", controls: [], defaults: {},
       prototype_html: html || null,
       sort_order: (projects?.length || 0),
       ...(profile?.id ? { created_by: profile.id } : {}),

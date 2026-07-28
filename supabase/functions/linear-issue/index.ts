@@ -61,6 +61,7 @@ Deno.serve(async (req: Request) => {
           issues(filter: { team: { key: { eq: $team } }, number: { eq: $number } }, first: 1) {
             nodes {
               identifier title description url updatedAt priorityLabel
+              team { key name }
               state { name color type }
               assignee { name displayName avatarUrl }
               labels { nodes { name color } }

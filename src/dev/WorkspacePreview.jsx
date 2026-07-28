@@ -38,10 +38,10 @@ const initialProjects = [
   },
   {
     id: "preview-checkout",
-    slug: "checkout-exploration",
-    title: "Checkout exploration",
+    slug: "checkout-concept",
+    title: "Checkout concept",
     group_name: "Growth experiments",
-    status: "Exploration",
+    status: "In review",
     controls: [],
     defaults: {},
     figma_url: "",
@@ -127,7 +127,7 @@ const initialComments = [
 
 const initialActivity = [
   { id: "act-1", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-1", actor_name: "Alex Chen", action: "uploaded_html", detail: {}, created_at: new Date(Date.now() - 52 * 60 * 1000).toISOString() },
-  { id: "act-2", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-1", actor_name: "Alex Chen", action: "status_changed", detail: { from: "Exploration", to: "In review" }, created_at: new Date(Date.now() - 40 * 60 * 1000).toISOString() },
+  { id: "act-2", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-1", actor_name: "Alex Chen", action: "status_changed", detail: { from: "Backlog", to: "In review" }, created_at: new Date(Date.now() - 40 * 60 * 1000).toISOString() },
   { id: "act-3", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "preview-user", actor_name: "Mate", action: "edited_notes", detail: {}, created_at: new Date(Date.now() - 22 * 60 * 1000).toISOString() },
   { id: "act-4", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-2", actor_name: "Priya Nair", action: "edited_figma", detail: { to: "https://figma.com/x" }, created_at: new Date(Date.now() - 8 * 60 * 1000).toISOString() },
 ];

@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, BarChart3, Check, ChevronRight, ClipboardCheck,
-  Code2, Copy, ExternalLink, FileText, Menu, Moon, PanelLeftClose,
-  Sun, X,
+  Code2, Copy, FileText, Menu, X,
 } from "lucide-react";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import EonMark from "@/components/EonMark";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
+import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { HUB } from "@/features/hub/prototypes";
-import { copyText, useStoredState } from "@/lib/uiState";
+import { useSystemTheme } from "@/lib/systemTheme";
+import { copyText } from "@/lib/uiState";
 import { MIXPANEL_TRACKING_EXAMPLE } from "./trackingExample";
 
 export default function TrackingLibrary({
@@ -21,12 +22,13 @@ export default function TrackingLibrary({
   onOpenAdmin,
   onSignOut,
 }) {
-  const [hubTheme, setHubTheme] = useStoredState("eon-hub-theme", "dark");
+  const hubTheme = useSystemTheme();
   const [navOpen, setNavOpen] = useState(() => window.innerWidth > 900);
   const [narrow, setNarrow] = useState(() => window.innerWidth <= 900);
   const [copied, setCopied] = useState("");
   const [copyError, setCopyError] = useState("");
   const changelog = useHubChangelog();
+  const sidebarResize = useResizableSidebar("eon-sidebar-width");
   const copiedTimer = useRef(null);
   const c = HUB[hubTheme];
   const example = MIXPANEL_TRACKING_EXAMPLE;
@@ -72,6 +74,7 @@ export default function TrackingLibrary({
           onOpenAdmin={onOpenAdmin}
           onSignOut={onSignOut}
           changelog={changelog}
+          resize={sidebarResize}
           isDrawer={narrow}
           onClose={() => setNavOpen(false)}
         />
@@ -79,32 +82,23 @@ export default function TrackingLibrary({
 
       <main className="eon-tracking-main">
         <header className="eon-prompt-toolbar" style={{ background: c.nav, borderColor: c.border }}>
-          <button
-            className="eon-buttonish eon-icon-button"
-            type="button"
-            onClick={() => setNavOpen((open) => !open)}
-            aria-label={navOpen ? "Collapse tracking navigation" : "Open tracking navigation"}
-            aria-pressed={navOpen}
-            style={{ color: c.muted, boxShadow: hubShadow(c) }}
-          >
-            {navOpen ? <PanelLeftClose size={16} /> : <Menu size={17} />}
-          </button>
+          {narrow && !navOpen && (
+            <button
+              className="eon-buttonish eon-icon-button"
+              type="button"
+              onClick={() => setNavOpen(true)}
+              aria-label="Open tracking navigation"
+              style={{ color: c.muted, boxShadow: hubShadow(c) }}
+            >
+              <Menu size={17} />
+            </button>
+          )}
           <div className="eon-prompt-breadcrumbs" aria-label="Current tracking reference">
             <span style={{ color: c.muted }}>Tracking</span>
             <ChevronRight size={13} aria-hidden="true" style={{ color: c.muted }} />
             <strong>{example.title}</strong>
           </div>
           <div className="eon-prompt-toolbar-spacer" />
-          <button
-            className="eon-buttonish eon-icon-button"
-            type="button"
-            onClick={() => setHubTheme(hubTheme === "dark" ? "light" : "dark")}
-            aria-label={`Switch hub interface to ${hubTheme === "dark" ? "light" : "dark"} theme`}
-            title="Hub interface theme"
-            style={{ color: c.muted, boxShadow: hubShadow(c) }}
-          >
-            {hubTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
         </header>
 
         <div className="eon-tracking-scroll">
@@ -118,74 +112,32 @@ export default function TrackingLibrary({
                 <h1>{example.title}</h1>
                 <p style={{ color: c.secondary }}>{example.summary}</p>
                 <div className="eon-tracking-hero-stats" style={{ borderColor: c.border }}>
-                  <span><strong>8</strong> events</span>
-                  <span><strong>2</strong> Linear sources</span>
-                  <span><strong>Web + iOS</strong></span>
+                  <span><strong>5</strong> setup steps</span>
+                  <span><strong>1</strong> reusable prompt</span>
+                  <span><strong>{example.coverage}</strong></span>
                 </div>
               </header>
 
-              <DocSection c={c} kicker="Source of truth" title="Implementation status">
-                <div className="eon-tracking-source-grid">
-                  {example.sources.map((source) => (
-                    <a
-                      className={`eon-tracking-source eon-tracking-source-${source.tone}`}
-                      key={source.id}
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ background: c.panel, color: c.text, boxShadow: hubShadow(c) }}
-                    >
+              <DocSection c={c} kicker="Setup" title="How tracking is implemented">
+                <div className="eon-tracking-steps">
+                  {example.setupSteps.map((step, index) => (
+                    <div className="eon-tracking-step" key={step.title} style={{ background: c.panel, boxShadow: hubShadow(c) }}>
+                      <span style={{ background: c.active, color: c.brand }}>{index + 1}</span>
                       <div>
-                        <span>{source.id}</span>
-                        <em>{source.status}</em>
-                        <ExternalLink size={14} aria-hidden="true" style={{ color: c.muted }} />
-                      </div>
-                      <strong>{source.title}</strong>
-                      <p style={{ color: c.secondary }}>{source.note}</p>
-                    </a>
-                  ))}
-                </div>
-              </DocSection>
-
-              <DocSection c={c} kicker="Reference" title="Event catalog">
-                <div className="eon-tracking-flow-stack">
-                  {example.flows.map((flow) => (
-                    <section className="eon-tracking-flow" key={flow.id} aria-labelledby={`flow-${flow.id}`}>
-                      <div className="eon-tracking-flow-head">
-                        <div>
-                          <span className={flow.status === "Draft contract" ? "is-draft" : "is-shipped"}>
-                            {flow.source} · {flow.status}
-                          </span>
-                          <h3 id={`flow-${flow.id}`}>{flow.title}</h3>
-                        </div>
-                        <span className="eon-tracking-event-count" style={{ color: c.secondary }}>{flow.events.length} events</span>
-                      </div>
-                      <div className="eon-tracking-event-stack">
-                        {flow.events.map((event) => (
-                          <EventContract c={c} key={`${flow.id}-${event.name}`} event={event} />
-                        ))}
-                      </div>
-                    </section>
-                  ))}
-                </div>
-              </DocSection>
-
-              <DocSection c={c} kicker="Implementation" title="Guardrails">
-                <Checklist c={c} items={example.guardrails} Icon={Code2} tone="info" />
-              </DocSection>
-
-              <DocSection c={c} kicker="Before release" title="Open decisions">
-                <div className="eon-tracking-decision-stack">
-                  {example.openDecisions.map((decision) => (
-                    <div className="eon-tracking-decision" key={decision.title} style={{ background: c.panel }}>
-                      <AlertTriangle size={16} aria-hidden="true" />
-                      <div>
-                        <strong>{decision.title}</strong>
-                        <p style={{ color: c.secondary }}>{decision.detail}</p>
+                        <strong>{step.title}</strong>
+                        <p style={{ color: c.secondary }}>{step.detail}</p>
                       </div>
                     </div>
                   ))}
                 </div>
+              </DocSection>
+
+              <DocSection c={c} kicker="Example" title="Event contract">
+                <EventContract c={c} event={example.eventExample} />
+              </DocSection>
+
+              <DocSection c={c} kicker="Implementation" title="Guardrails">
+                <Checklist c={c} items={example.guardrails} Icon={Code2} tone="info" />
               </DocSection>
 
               <DocSection c={c} kicker="Validation" title="QA checklist">
@@ -218,22 +170,10 @@ export default function TrackingLibrary({
                   Open in Prompt Library
                 </button>
                 {copyError && <p className="eon-prompt-copy-error" role="alert">{copyError}</p>}
-                <div className="eon-tracking-rail-statuses" style={{ borderColor: c.border }}>
-                  <div>
-                    <span className="eon-tracking-status-dot is-shipped" />
-                    <strong>ENG-723</strong>
-                    <em>Shipped reference</em>
-                  </div>
-                  <div>
-                    <span className="eon-tracking-status-dot is-draft" />
-                    <strong>ENG-841</strong>
-                    <em>Draft contract</em>
-                  </div>
-                </div>
                 <div className="eon-tracking-meta" style={{ borderColor: c.border }}>
                   <div><span>Platform</span><strong>Mixpanel</strong></div>
-                  <div><span>Events</span><strong>8</strong></div>
-                  <div><span>Coverage</span><strong>Web + iOS</strong></div>
+                  <div><span>Purpose</span><strong>Product analytics</strong></div>
+                  <div><span>Coverage</span><strong>{example.coverage}</strong></div>
                 </div>
               </div>
             </aside>
@@ -246,7 +186,7 @@ export default function TrackingLibrary({
 }
 
 function TrackingSidebar({
-  c, logo, userEmail, isAdmin, onOpenPrototypes, onOpenPrompts, onOpenAdmin, onSignOut, changelog, isDrawer, onClose,
+  c, logo, userEmail, isAdmin, onOpenPrototypes, onOpenPrompts, onOpenAdmin, onSignOut, changelog, resize, isDrawer, onClose,
 }) {
   return (
     <aside
@@ -254,8 +194,13 @@ function TrackingSidebar({
       role={isDrawer ? "dialog" : "navigation"}
       aria-modal={isDrawer || undefined}
       aria-label="Tracking navigation"
-      style={{ background: c.nav, borderColor: c.border }}
+      style={{
+        background: c.nav,
+        borderColor: c.border,
+        ...(!isDrawer ? { width: resize.width, flexBasis: resize.width } : {}),
+      }}
     >
+      {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize tracking navigation" />}
       <div className="eon-prompt-sidebar-head" style={{ borderColor: c.border }}>
         <div className="eon-brand-row">
           <div className="eon-brand" style={{ color: c.text }}>
@@ -289,7 +234,7 @@ function TrackingSidebar({
           <BarChart3 size={15} aria-hidden="true" style={{ color: c.brand }} />
           <span>
             <strong>Mixpanel tracking setup</strong>
-            <small style={{ color: c.muted }}>ENG-723 · ENG-841</small>
+            <small style={{ color: c.muted }}>General setup guide</small>
           </span>
         </button>
       </div>

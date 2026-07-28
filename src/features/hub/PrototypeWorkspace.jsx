@@ -10,16 +10,16 @@ import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import EonMark from "@/components/EonMark";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
+import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
-  ExternalLink, History, ImagePlus, LayoutGrid, Link2, Loader2,
+  ExternalLink, History, ImagePlus, LayoutGrid, Loader2,
   Pin, Maximize2, MessageSquare, Minus, Monitor, Laptop,
-  MoreHorizontal, Moon, PanelLeftClose, PanelLeftOpen, PanelRightClose,
-  PanelRightOpen, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square, Sun,
+  Menu, MoreHorizontal, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
-  CANVAS_PRESETS, HUB, STATUS_COLOR, VIEWPORTS, currentArgs,
+  CANVAS_PRESETS, HUB, VIEWPORTS, currentArgs,
   parsePrototypeConfig, renderStory,
 } from "./prototypes";
 import {
@@ -31,6 +31,7 @@ import {
   anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, isBridgeMessage,
 } from "./anchorBridge";
 import { pickHtmlFile, supportsFileLink, watchFile } from "@/lib/localFile";
+import { useSystemTheme } from "@/lib/systemTheme";
 import { copyText, useStoredState } from "@/lib/uiState";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
@@ -38,6 +39,42 @@ const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups a
 
 function linearIdentifier(project) {
   return project?.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || project?.issue_id || null;
+}
+
+function linearTeamKey(issue, identifier) {
+  return issue?.team?.key?.toUpperCase()
+    || String(identifier || "").split("-")[0]?.toUpperCase()
+    || "";
+}
+
+function linearConnectionState(issue, identifier, c) {
+  const team = linearTeamKey(issue, identifier);
+  if (!identifier) {
+    return {
+      kind: "error",
+      label: "Linear not connected",
+      color: c.bg === "#000000" ? "#FF7A8A" : "#B42335",
+    };
+  }
+  if (issue?.state) {
+    return {
+      kind: "connected",
+      label: `${issue.state.name}${team ? ` · ${team}` : ""}`,
+      color: issue.state.color || c.text,
+    };
+  }
+  if (issue === undefined) {
+    return {
+      kind: "loading",
+      label: `Connecting Linear${team ? ` · ${team}` : ""}`,
+      color: c.muted,
+    };
+  }
+  return {
+    kind: "error",
+    label: `Linear unavailable${team ? ` · ${team}` : ""}`,
+    color: c.bg === "#000000" ? "#FF7A8A" : "#B42335",
+  };
 }
 
 export default function PrototypeWorkspace({
@@ -48,7 +85,7 @@ export default function PrototypeWorkspace({
   onCreateComment, onResolveComment, onToggleReaction, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
 }) {
-  const [hubTheme, setHubTheme] = useStoredState("eon-hub-theme", "dark");
+  const hubTheme = useSystemTheme();
   const [protoTheme, setProtoTheme] = useStoredState("eon-prototype-theme", "dark");
   const [view, setView] = useState("stories");
   const [viewport, setViewport] = useStoredState("eon-viewport", "laptop");
@@ -71,14 +108,17 @@ export default function PrototypeWorkspace({
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const changelog = useHubChangelog();
+  const sidebarResize = useResizableSidebar("eon-sidebar-width");
+  const inspectorResize = useResizableSidebar(
+    "eon-review-sidebar-width",
+    { initial: 380, min: 320, max: 560, edge: "left" },
+  );
   const [navOpen, setNavOpen] = useState(() => window.innerWidth > 900);
   const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth > 1180);
   const [compare, setCompare] = useState(false);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [splitDragging, setSplitDragging] = useState(false);
   const [inspectorTab, setInspectorTab] = useState("comments");
-  const [copiedReviewLink, setCopiedReviewLink] = useState(false);
-  const [reviewLinkCopyError, setReviewLinkCopyError] = useState("");
   const [reviewLocationKey, setReviewLocationKey] = useState(() => window.location.hash);
   const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false, compactControls: false });
   const [anchorMode, setAnchorMode] = useState(false);
@@ -113,12 +153,18 @@ export default function PrototypeWorkspace({
   const media = assets;
 
   useEffect(() => {
-    const update = () => setBreakpoints({
-      navDrawer: window.matchMedia("(max-width: 900px)").matches,
-      inspectorDrawer: window.matchMedia("(max-width: 1180px)").matches,
-      noCompare: window.matchMedia("(max-width: 899px)").matches,
-      compactControls: window.matchMedia("(max-width: 680px)").matches,
-    });
+    const update = () => {
+      const navDrawer = window.matchMedia("(max-width: 900px)").matches;
+      const inspectorDrawer = window.matchMedia("(max-width: 1180px)").matches;
+      setBreakpoints({
+        navDrawer,
+        inspectorDrawer,
+        noCompare: window.matchMedia("(max-width: 899px)").matches,
+        compactControls: window.matchMedia("(max-width: 680px)").matches,
+      });
+      if (!navDrawer) setNavOpen(true);
+      if (!inspectorDrawer) setInspectorOpen(true);
+    };
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
@@ -521,10 +567,8 @@ export default function PrototypeWorkspace({
   const gridOptions = ["states", "themes", "screens"];
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
   const effCompare = compare && !breakpoints.noCompare;
-  const [sc0, scDark, scLight] = STATUS_COLOR[story.status] || STATUS_COLOR.Exploration;
-  const sc1 = hubTheme === "dark" ? scDark : scLight;
   const linearId = linearIdentifier(story);
-  const liveLinear = linearByProject[story.id] || null;
+  const liveLinear = linearByProject[story.id];
   const frameScale = scale * zoom;
   const frameWidth = vp.w * frameScale;
   const frameHeight = vp.h * frameScale;
@@ -541,28 +585,6 @@ export default function PrototypeWorkspace({
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 
-  const copyReviewLink = async () => {
-    const params = new URLSearchParams({
-      viewport,
-      theme: protoTheme,
-      layout,
-      grid: effGridBy,
-      canvas: canvasBg,
-      zoom: String(zoom),
-      inspect: inspectorTab,
-    });
-    Object.entries(args).forEach(([key, value]) => params.set(`arg.${key}`, JSON.stringify(value)));
-    const route = story.slug ? `#/p/${story.slug}` : (window.location.hash.split("?")[0] || "#/");
-    const url = `${window.location.origin}${window.location.pathname}${route}?${params.toString()}`;
-    setReviewLinkCopyError("");
-    try {
-      await copyText(url);
-      setCopiedReviewLink(true);
-      window.setTimeout(() => setCopiedReviewLink(false), 1600);
-    } catch {
-      setReviewLinkCopyError("Couldn't copy automatically. Check your browser's clipboard permission.");
-    }
-  };
   const commitRename = (id, value) => {
     const title = value.trim();
     const previous = projects.find((item) => item.id === id)?.title;
@@ -680,27 +702,32 @@ export default function PrototypeWorkspace({
           changelog={changelog}
           linearByProject={linearByProject}
           unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
+          resize={sidebarResize}
           isDrawer={breakpoints.navDrawer} onClose={() => setNavOpen(false)}
         />
       )}
 
       <main className="eon-workspace-main">
         <WorkspaceToolbar
-          c={c} view={view} story={story} liveLinear={liveLinear} sc0={sc0} sc1={sc1} coViewers={coViewers} liveLinked={isLiveLinked}
-          navOpen={navOpen} onToggleNav={() => {
-            const opening = !navOpen;
-            setNavOpen(opening);
-            if (opening && breakpoints.navDrawer) setInspectorOpen(false);
-          }} inspectorOpen={inspectorOpen}
+          c={c} view={view} story={story} liveLinear={liveLinear} linearId={linearId} coViewers={coViewers} liveLinked={isLiveLinked}
+          navDrawer={breakpoints.navDrawer} navOpen={navOpen} onOpenNav={() => {
+            setNavOpen(true);
+            setInspectorOpen(false);
+          }}
+          inspectorDrawer={breakpoints.inspectorDrawer} inspectorOpen={inspectorOpen}
           onToggleInspector={() => {
             const opening = !inspectorOpen;
             setInspectorOpen(opening);
-            if (opening && breakpoints.inspectorDrawer) setNavOpen(false);
-          }} hubTheme={hubTheme} setHubTheme={setHubTheme}
+            if (opening) setNavOpen(false);
+          }}
           showUpload={showUpload} setShowUpload={setShowUpload} openFull={openFull}
           viewport={viewport} setViewport={setViewport} layout={layout} setLayout={setLayout}
           compare={effCompare} setCompare={setCompare} saveState={saveState} onRetrySave={onRetrySave}
-          onOpenLinear={() => { setInspectorTab("linear"); setInspectorOpen(true); }}
+          onOpenLinear={() => {
+            setInspectorTab("linear");
+            setInspectorOpen(true);
+            if (breakpoints.inspectorDrawer) setNavOpen(false);
+          }}
         />
 
         {loadError && (
@@ -796,9 +823,8 @@ export default function PrototypeWorkspace({
             currentUserId: profile?.id,
           }}
           editLinear={editLinear} setEditLinear={setEditLinear}
-          sc0={sc0} sc1={sc1} liveLinear={liveLinear} linearId={linearId}
-          copyReviewLink={copyReviewLink} copiedReviewLink={copiedReviewLink}
-          reviewLinkCopyError={reviewLinkCopyError}
+          liveLinear={liveLinear} linearId={linearId}
+          resize={inspectorResize}
           isDrawer={breakpoints.inspectorDrawer} onClose={() => setInspectorOpen(false)}
         />
       )}
@@ -834,13 +860,27 @@ function WorkspaceSidebar({
   changelog,
   linearByProject,
   unreadByProject, commentCountByProject,
+  resize,
   isDrawer, onClose,
 }) {
   const hasResults = Object.keys(groups).length > 0;
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
-    <aside data-tutorial="prototype-library" ref={drawerRef} className="eon-sidebar" role={isDrawer ? "dialog" : "navigation"} aria-modal={isDrawer || undefined} aria-label="Prototype navigation" style={{ background: c.nav, borderColor: c.border }}>
+    <aside
+      data-tutorial="prototype-library"
+      ref={drawerRef}
+      className="eon-sidebar"
+      role={isDrawer ? "dialog" : "navigation"}
+      aria-modal={isDrawer || undefined}
+      aria-label="Prototype navigation"
+      style={{
+        background: c.nav,
+        borderColor: c.border,
+        ...(!isDrawer ? { width: resize.width, flexBasis: resize.width } : {}),
+      }}
+    >
+      {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize prototype navigation" />}
       <div className="eon-sidebar-head" style={{ borderColor: c.border }}>
         <div className="eon-brand-row">
           <div className="eon-brand">
@@ -926,8 +966,8 @@ function WorkspaceSidebar({
             )}
             {!collapsedGroups[group] && items.map((item) => {
               const active = activeId === item.id;
-              const linearState = linearByProject[item.id]?.state;
-              const statusColor = linearState?.color || (STATUS_COLOR[item.status] || STATUS_COLOR.Exploration)[1];
+              const identifier = linearIdentifier(item);
+              const connection = linearConnectionState(linearByProject[item.id], identifier, c);
               // Members can delete only prototypes they created; admins manage anything.
               const canDelete = isAdmin || item.created_by === currentUserId;
               return (
@@ -952,8 +992,8 @@ function WorkspaceSidebar({
                   ) : (
                     <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose(); }}
                       onDoubleClick={() => isAdmin && setRenamingId(item.id)} title={isAdmin ? "Double-click to rename" : undefined}
-                      aria-label={`${item.title}, ${linearState?.name || item.status}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
-                      <span className="eon-status-dot" aria-hidden="true" style={{ "--status-color": statusColor, background: statusColor }} />
+                      aria-label={`${item.title}, ${connection.label}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
+                      <span className="eon-status-dot" aria-hidden="true" style={{ "--status-color": connection.color, background: connection.color }} />
                       <span>{item.title}</span>
                       {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}
                       {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && <span className="eon-comment-count" style={{ color: c.muted }}>{commentCountByProject[item.id]}</span>}
@@ -1006,34 +1046,56 @@ function WorkspaceSidebar({
 }
 
 function WorkspaceToolbar({
-  c, view, story, liveLinear, sc0, sc1, coViewers = [], liveLinked = false, navOpen, onToggleNav, inspectorOpen,
-  onToggleInspector, hubTheme, setHubTheme, showUpload, setShowUpload, openFull,
+  c, view, story, liveLinear, linearId, coViewers = [], liveLinked = false,
+  navDrawer, navOpen, onOpenNav, inspectorDrawer, inspectorOpen, onToggleInspector,
+  showUpload, setShowUpload, openFull,
   viewport, setViewport, layout, setLayout, compare, setCompare,
   saveState, onRetrySave, onOpenLinear,
 }) {
+  const linearConnection = linearConnectionState(liveLinear, linearId, c);
   return (
     <header className="eon-toolbar" style={{ background: c.nav, borderColor: c.border }}>
       <div className="eon-toolbar-primary">
-        <button data-tutorial="nav-toggle" className="eon-buttonish eon-icon-button" onClick={onToggleNav}
-          aria-label={navOpen ? "Collapse prototype navigation" : "Open prototype navigation"} aria-pressed={navOpen} style={{ color: c.muted, boxShadow: hubShadow(c) }}>
-          {navOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
-        </button>
+        {navDrawer && !navOpen && (
+          <button
+            data-tutorial="nav-toggle"
+            className="eon-buttonish eon-icon-button"
+            onClick={onOpenNav}
+            aria-label="Open prototype navigation"
+            style={{ color: c.muted, boxShadow: hubShadow(c) }}
+          >
+            <Menu size={17} />
+          </button>
+        )}
         <div data-tutorial="prototype-title" className="eon-toolbar-title">
           <span>{view === "media" ? "Media library" : story.title}</span>
-          {view === "stories" && (liveLinear?.state
-            ? <Badge data-tutorial="review-status" className="eon-story-status" title="Synced from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: 0, fontWeight: 600 }}>{liveLinear.state.name} · Linear</Badge>
-            : <button data-tutorial="review-status" className="eon-buttonish eon-status-button" onClick={onOpenLinear} aria-label={`Review status: ${story.status}. Open Linear context`}>
-                <Badge className="eon-story-status" style={{ background: sc0, color: sc1, border: 0, fontWeight: 600 }}>{story.status}</Badge>
-                <ChevronDown size={12} style={{ color: c.muted }} />
-              </button>)}
+          {view === "stories" && (
+            <button
+              data-tutorial="review-status"
+              className="eon-buttonish eon-status-button"
+              onClick={onOpenLinear}
+              aria-label={`${linearConnection.label}. Open Linear context`}
+            >
+              <Badge
+                className="eon-story-status"
+                title={linearConnection.kind === "connected" ? "Synced from Linear" : linearConnection.label}
+                style={{
+                  background: `${linearConnection.color}26`,
+                  color: linearConnection.color,
+                  border: 0,
+                  fontWeight: 600,
+                  gap: 5,
+                }}
+              >
+                {linearConnection.kind === "error" && <AlertCircle size={12} aria-hidden="true" />}
+                {linearConnection.label}
+              </Badge>
+            </button>
+          )}
         </div>
         {view === "stories" && <PresenceAvatars c={c} viewers={coViewers} />}
         <div style={{ flex: 1 }} />
         {view === "stories" && <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} />}
-        <button className="eon-buttonish eon-icon-button" onClick={() => setHubTheme(hubTheme === "dark" ? "light" : "dark")}
-          aria-label={`Switch hub interface to ${hubTheme === "dark" ? "light" : "dark"} theme`} title="Hub interface theme" style={{ color: c.muted, boxShadow: hubShadow(c) }}>
-          {hubTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
         {view === "stories" && (
           <>
             <button data-tutorial="prototype-upload" className="eon-buttonish eon-secondary-button eon-upload-button" onClick={() => setShowUpload((open) => !open)} aria-expanded={showUpload} aria-label={liveLinked ? "Upload prototype HTML (live file sync active)" : "Upload prototype HTML"} title={liveLinked ? "Live file sync active" : "Upload prototype HTML"}
@@ -1044,10 +1106,19 @@ function WorkspaceToolbar({
             <Button className="eon-buttonish eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view" style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 10, gap: 7, fontSize: 13, fontWeight: 600 }}>
               <Maximize2 size={15} /> <span>Open full view</span>
             </Button>
-            <button data-tutorial="review-toggle" className="eon-buttonish eon-icon-button" onClick={onToggleInspector}
-              aria-label={inspectorOpen ? "Close review panel" : "Open review panel"} aria-pressed={inspectorOpen} title="Review panel" style={{ color: inspectorOpen ? c.brand : c.muted, boxShadow: hubShadow(c) }}>
-              {inspectorOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
-            </button>
+            {inspectorDrawer && (
+              <button
+                data-tutorial="review-toggle"
+                className="eon-buttonish eon-icon-button"
+                onClick={onToggleInspector}
+                aria-label={inspectorOpen ? "Close review tools" : "Open review tools"}
+                aria-pressed={inspectorOpen}
+                title="Review tools"
+                style={{ color: inspectorOpen ? c.brand : c.muted, boxShadow: hubShadow(c) }}
+              >
+                <MessageSquare size={16} />
+              </button>
+            )}
           </>
         )}
       </div>
@@ -1168,28 +1239,31 @@ function ToolGroup({ label, c, children }) {
 
 function ReviewInspector({
   c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
-  anchors, editLinear, setEditLinear, sc0, sc1, liveLinear, linearId,
-  copyReviewLink, copiedReviewLink, reviewLinkCopyError, isDrawer, onClose,
+  anchors, editLinear, setEditLinear, liveLinear, linearId,
+  resize, isDrawer, onClose,
 }) {
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
-    <aside data-tutorial="review-panel" ref={drawerRef} className="eon-inspector" role={isDrawer ? "dialog" : undefined} aria-modal={isDrawer || undefined} aria-label="Review panel" style={{ background: c.nav, borderColor: c.border }}>
-      <div className="eon-inspector-head" style={{ borderColor: c.border }}>
-        <div className="eon-inspector-title">
-          <strong>Review workspace</strong>
-          <span style={{ color: c.muted }}>Feedback and delivery context</span>
+    <aside
+      data-tutorial="review-panel"
+      ref={drawerRef}
+      className="eon-inspector"
+      role={isDrawer ? "dialog" : undefined}
+      aria-modal={isDrawer || undefined}
+      aria-label="Review panel"
+      style={{
+        background: c.nav,
+        borderColor: c.border,
+        ...(!isDrawer ? { width: resize.width, flexBasis: resize.width } : {}),
+      }}
+    >
+      {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize review tools" />}
+      {isDrawer && (
+        <div className="eon-inspector-mobile-head" style={{ borderColor: c.border }}>
+          <strong>Review tools</strong>
+          <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review tools" style={{ color: c.muted }}><X size={17} /></button>
         </div>
-        <div className="eon-inspector-actions">
-          <button data-tutorial="share-review" className="eon-buttonish eon-secondary-button eon-share-link-button" onClick={copyReviewLink}
-            title={reviewLinkCopyError || (copiedReviewLink ? "Review link copied" : "Copy this exact review view")}
-            style={{ borderColor: c.border, background: c.panel, color: copiedReviewLink ? c.brand : c.secondary }}>
-            {copiedReviewLink ? <Check size={14} /> : <Link2 size={14} />}
-            <span>{copiedReviewLink ? "Copied" : "Copy link"}</span>
-          </button>
-          {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review panel" style={{ color: c.muted }}><X size={17} /></button>}
-        </div>
-        {reviewLinkCopyError && <span role="alert" className="eon-visually-hidden">{reviewLinkCopyError}</span>}
-      </div>
+      )}
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
         <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
           <TabsTrigger data-tutorial="comments-tab" value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
@@ -1206,7 +1280,7 @@ function ReviewInspector({
           <ReviewReadiness c={c} story={story} comments={comments} />
           <ReferenceHeader c={c} icon={LinearIcon} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
           {(!story.issue_url || editLinear) && <Input aria-label="Linear issue URL" value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
-          <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
+          <LinearCard c={c} story={story} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
         </TabsContent>
       </Tabs>
     </aside>

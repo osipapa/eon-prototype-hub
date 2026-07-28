@@ -9,8 +9,8 @@ export const CHANGELOG = [
     title: "The Prototype Hub is now the Design Hub",
     items: [
       "Prompts are now a shared library: create, edit, delete, fill, and copy reusable team prompts.",
-      "Tracking now includes an implementation-ready Mixpanel reference grounded in ENG-723 and ENG-841.",
-      "Prototypes, Prompts, and Tracking now share one navigation shell, Eon palette, semantic statuses, and changelog.",
+      "Tracking now includes a reusable Mixpanel setup guide, implementation prompt, event contract, and QA checklist.",
+      "Prototypes, Prompts, and Tracking now share one system theme, resizable navigation, Eon palette, and changelog.",
     ],
   },
   {

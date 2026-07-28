@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
+import { useSystemTheme } from "@/lib/systemTheme";
 import {
-  Search, Monitor, Laptop, Tablet, Smartphone, Sun, Moon, Maximize2, ExternalLink,
+  Search, Monitor, Laptop, Tablet, Smartphone, Maximize2, ExternalLink,
   Circle, ChevronDown, Link2, FileText, Plus, Minus, Shield, LogOut, Upload, Trash2,
   Square, LayoutGrid, Copy, Check,
 } from "lucide-react";
-import { HUB, VIEWPORTS, STATUS_COLOR, CANVAS_PRESETS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, parsePrototypeConfig, safeMediaUrl } from "./prototypes";
+import { HUB, VIEWPORTS, CANVAS_PRESETS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, parsePrototypeConfig, safeMediaUrl } from "./prototypes";
 import { buildSetupPrompt } from "./setupPrompt";
 
 export { buildSetupPrompt } from "./setupPrompt";
@@ -135,7 +136,7 @@ export default function PrototypeHub({
   projects, assets = {}, isAdmin, userEmail,
   onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder, onOpenAdmin, onSignOut,
 }) {
-  const [hubTheme, setHubTheme] = useState("dark");
+  const hubTheme = useSystemTheme();
   const [protoTheme, setProtoTheme] = useState("dark");
   const [view, setView] = useState("stories");
   const [activeId, setActiveId] = useState(projects[0]?.id);
@@ -274,7 +275,6 @@ export default function PrototypeHub({
   const gridOptions = (effStory.controls || []).length ? ["states", "themes", "screens"] : ["themes", "screens"];
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
 
-  const [sc0, sc1] = STATUS_COLOR[story.status] || STATUS_COLOR["Exploration"];
   // Linear identifier like "DES-418", parsed from the issue URL (falls back to issue_id).
   const linearId = story.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || story.issue_id || null;
   const isFigma = /figma\.com/i.test(story.figma_url || "") && !/REPLACE/i.test(story.figma_url || "");
@@ -406,8 +406,12 @@ export default function PrototypeHub({
           <div className="eon-toolbar" style={{ minHeight: 56, borderBottom: `1px solid ${c.border}`, background: c.nav, display: "flex", alignItems: "center", gap: 12, padding: "0 16px", flexShrink: 0, position: "sticky", top: 0, zIndex: 5 }}>
             <span style={{ fontSize: 15, fontWeight: 500 }}>{story.title}</span>
             {liveLinear?.state
-              ? <Badge title="Live from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: "none", fontWeight: 500 }}>{liveLinear.state.name}</Badge>
-              : <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500 }}>{story.status}</Badge>}
+              ? <Badge title="Live from Linear" style={{ background: `${liveLinear.state.color}26`, color: liveLinear.state.color, border: "none", fontWeight: 500 }}>
+                {liveLinear.state.name} · {(liveLinear.team?.key || String(linearId).split("-")[0]).toUpperCase()}
+              </Badge>
+              : <Badge style={{ background: "rgba(255,122,138,.14)", color: "#FF7A8A", border: "none", fontWeight: 500 }}>
+                {linearId ? `Linear unavailable · ${String(linearId).split("-")[0].toUpperCase()}` : "Linear not connected"}
+              </Badge>}
             <div style={{ flex: 1 }} />
             <div style={{ display: "flex", gap: 2, background: c.raised, borderRadius: 8, padding: 3, border: `1px solid ${c.border}` }}>
               {Object.keys(VIEWPORTS).map((k) => {
@@ -432,11 +436,6 @@ export default function PrototypeHub({
                 );
               })}
             </div>
-            <button onClick={() => setHubTheme(hubTheme === "dark" ? "light" : "dark")} title="Interface theme"
-              aria-label={`Switch to ${hubTheme === "dark" ? "light" : "dark"} interface theme`}
-              style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${c.border}`, background: c.panel, color: c.muted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {hubTheme === "dark" ? <Sun style={{ width: 15, height: 15 }} /> : <Moon style={{ width: 15, height: 15 }} />}
-            </button>
             <button onClick={() => setShowUpload((v) => !v)} aria-expanded={showUpload}
               style={{ display: "flex", alignItems: "center", gap: 6, height: 32, padding: "0 12px", borderRadius: 8, border: `1px solid ${showUpload ? c.brand : c.border}`, background: c.panel, color: showUpload ? c.brand : c.muted, cursor: "pointer", fontSize: 13 }}>
               <Upload style={{ width: 14, height: 14 }} /> Upload HTML
@@ -571,7 +570,7 @@ export default function PrototypeHub({
                       {editLinear && <button onClick={() => setEditLinear(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
                     </div>
                   )}
-                  <LinearCard c={c} story={story} sc0={sc0} sc1={sc1} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
+                  <LinearCard c={c} story={story} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
                 </div>
               </div>
             </div>
@@ -771,8 +770,20 @@ export function FigmaCard({ c, url }) {
 
 /* ---- Linear issue card: live via edge function, static preview fallback.
    The whole card links to the issue. ---- */
-export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
+export function LinearCard({ c, story, live, identifier, issueUrl }) {
   const stateColor = live?.state?.color;
+  const teamKey = live?.team?.key?.toUpperCase()
+    || String(identifier || "").split("-")[0]?.toUpperCase()
+    || "";
+  const errorColor = c.bg === "#000000" ? "#FF7A8A" : "#B42335";
+  const connectionLabel = live?.state
+    ? `${live.state.name}${teamKey ? ` · ${teamKey}` : ""}`
+    : !identifier
+      ? "Linear not connected"
+      : live === undefined
+        ? `Connecting Linear${teamKey ? ` · ${teamKey}` : ""}`
+        : `Linear unavailable${teamKey ? ` · ${teamKey}` : ""}`;
+  const connectionColor = live?.state ? (stateColor || c.text) : identifier && live === undefined ? c.muted : errorColor;
   const safeIssueUrl = parseHttpUrl(issueUrl)?.href || "";
   const clickable = Boolean(safeIssueUrl);
   return (
@@ -781,9 +792,9 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
         <LinearIcon size={15} style={{ color: c.muted }} />
         <span style={{ fontSize: 12, fontWeight: 500, color: c.muted, background: c.raised, padding: "3px 8px", borderRadius: 6 }}>{live?.identifier || identifier || "ISSUE"}</span>
-        {live?.state
-          ? <Badge style={{ background: stateColor ? `${stateColor}26` : c.raised, color: stateColor || c.text, border: "none", fontWeight: 500, fontSize: 11 }}>{live.state.name}</Badge>
-          : <Badge style={{ background: sc0, color: sc1, border: "none", fontWeight: 500, fontSize: 11 }}>{story.status}</Badge>}
+        <Badge style={{ background: `${connectionColor}26`, color: connectionColor, border: "none", fontWeight: 500, fontSize: 11 }}>
+          {connectionLabel}
+        </Badge>
         {live?.priorityLabel && live.priorityLabel !== "No priority" && (
           <span style={{ fontSize: 11, color: c.muted }}>{live.priorityLabel}</span>
         )}
@@ -809,8 +820,8 @@ export function LinearCard({ c, story, sc0, sc1, live, identifier, issueUrl }) {
         {live
           ? `Live from Linear — updated ${new Date(live.updatedAt).toLocaleDateString()}`
           : identifier
-            ? "Loading from Linear…"
-            : "Paste a Linear issue URL to link it."}
+            ? (live === undefined ? "Connecting to Linear…" : "Linear could not be reached. Check the integration and issue link.")
+            : "Linear is not connected. Paste an issue URL above."}
       </div>
     </div>
   );

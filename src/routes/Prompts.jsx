@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import LoadingScreen from "@/components/LoadingScreen";
 import PromptLibrary from "@/features/prompts/PromptLibrary";
-import { STARTER_PROMPTS } from "@/features/prompts/starterPrompts";
+import { PROMPT_CATEGORIES, STARTER_PROMPTS } from "@/features/prompts/starterPrompts";
 import { useAuth } from "@/lib/auth";
 import { cacheEonLogo } from "@/lib/branding";
 import {
@@ -21,6 +21,15 @@ function assetMap(rows) {
   return assets;
 }
 
+function sortPromptRows(rows) {
+  const order = new Map(PROMPT_CATEGORIES.map((category, index) => [category, index]));
+  return [...(rows || [])].sort((left, right) => {
+    const categoryDelta = (order.get(left.category) ?? Number.MAX_SAFE_INTEGER)
+      - (order.get(right.category) ?? Number.MAX_SAFE_INTEGER);
+    return categoryDelta || left.title.localeCompare(right.title);
+  });
+}
+
 export default function Prompts() {
   const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
@@ -37,7 +46,7 @@ export default function Prompts() {
 
     try {
       const [promptRows, assetRows] = await Promise.all([listPrompts(), assetsPromise]);
-      setPrompts(promptRows);
+      setPrompts(sortPromptRows(promptRows));
       setAssets(assetMap(assetRows));
       setSource("shared");
     } catch (error) {
@@ -56,7 +65,7 @@ export default function Prompts() {
     if (source !== "shared") return undefined;
     return subscribePrompts(() => {
       listPrompts()
-        .then(setPrompts)
+        .then((rows) => setPrompts(sortPromptRows(rows)))
         .catch((error) => console.warn("Couldn't refresh the Prompt Library.", error));
     });
   }, [source]);

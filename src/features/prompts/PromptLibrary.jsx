@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle, AlertTriangle, BookOpen, Check, ChevronDown, ChevronRight,
-  Copy, Edit3, FileCode2, Info, Loader2, Menu, Moon, PanelLeftClose,
-  Plus, Save, Search, Sun, Trash2, X,
+  Copy, Edit3, FileCode2, Loader2, Menu,
+  Plus, Save, Search, Trash2, X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,8 +10,10 @@ import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import EonMark from "@/components/EonMark";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
+import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { HUB } from "@/features/hub/prototypes";
-import { copyText, useStoredState } from "@/lib/uiState";
+import { useSystemTheme } from "@/lib/systemTheme";
+import { copyText } from "@/lib/uiState";
 import {
   PROMPT_CATEGORIES, compilePrompt, missingRequiredVariables, promptVariableDefaults,
 } from "./starterPrompts";
@@ -33,7 +35,7 @@ export default function PromptLibrary({
   onUpdatePrompt,
   onDeletePrompt,
 }) {
-  const [hubTheme, setHubTheme] = useStoredState("eon-hub-theme", "dark");
+  const hubTheme = useSystemTheme();
   const [query, setQuery] = useState("");
   const [navOpen, setNavOpen] = useState(() => window.innerWidth > 900);
   const [narrow, setNarrow] = useState(() => window.innerWidth <= 900);
@@ -43,6 +45,7 @@ export default function PromptLibrary({
   const [editorPrompt, setEditorPrompt] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const changelog = useHubChangelog();
+  const sidebarResize = useResizableSidebar("eon-sidebar-width");
   const copiedTimer = useRef(null);
   const c = HUB[hubTheme];
 
@@ -135,6 +138,7 @@ export default function PromptLibrary({
           onOpenAdmin={onOpenAdmin}
           onSignOut={onSignOut}
           changelog={changelog}
+          resize={sidebarResize}
           onNewPrompt={canCreate ? () => setEditorPrompt(newPromptDraft()) : undefined}
           isDrawer={narrow}
           onClose={() => setNavOpen(false)}
@@ -143,16 +147,17 @@ export default function PromptLibrary({
 
       <main className="eon-prompt-main">
         <header className="eon-prompt-toolbar" style={{ background: c.nav, borderColor: c.border }}>
-          <button
-            className="eon-buttonish eon-icon-button"
-            type="button"
-            onClick={() => setNavOpen((open) => !open)}
-            aria-label={navOpen ? "Collapse prompt navigation" : "Open prompt navigation"}
-            aria-pressed={navOpen}
-            style={{ color: c.muted, boxShadow: hubShadow(c) }}
-          >
-            {navOpen ? <PanelLeftClose size={16} /> : <Menu size={17} />}
-          </button>
+          {narrow && !navOpen && (
+            <button
+              className="eon-buttonish eon-icon-button"
+              type="button"
+              onClick={() => setNavOpen(true)}
+              aria-label="Open prompt navigation"
+              style={{ color: c.muted, boxShadow: hubShadow(c) }}
+            >
+              <Menu size={17} />
+            </button>
+          )}
           <div className="eon-prompt-breadcrumbs" aria-label="Current prompt">
             <span style={{ color: c.muted }}>Prompts</span>
             {activePrompt && (
@@ -163,24 +168,7 @@ export default function PromptLibrary({
             )}
           </div>
           <div className="eon-prompt-toolbar-spacer" />
-          <button
-            className="eon-buttonish eon-icon-button"
-            type="button"
-            onClick={() => setHubTheme(hubTheme === "dark" ? "light" : "dark")}
-            aria-label={`Switch hub interface to ${hubTheme === "dark" ? "light" : "dark"} theme`}
-            title="Hub interface theme"
-            style={{ color: c.muted, boxShadow: hubShadow(c) }}
-          >
-            {hubTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
         </header>
-
-        {source === "starter" && (
-          <div className="eon-prompt-source-note" role="status" style={{ background: c.panel, borderColor: c.border, color: c.secondary }}>
-            <Info size={15} aria-hidden="true" />
-            <span><strong style={{ color: c.text }}>Starter library.</strong> Shared prompt storage is not available yet, so these bundled prompts are read-only.</span>
-          </div>
-        )}
 
         {activePrompt ? (
           <div className="eon-prompt-scroll">
@@ -267,6 +255,7 @@ function PromptSidebar({
   onOpenAdmin,
   onSignOut,
   changelog,
+  resize,
   onNewPrompt,
   isDrawer,
   onClose,
@@ -292,8 +281,13 @@ function PromptSidebar({
       role={isDrawer ? "dialog" : "navigation"}
       aria-modal={isDrawer || undefined}
       aria-label="Prompt Library navigation"
-      style={{ background: c.nav, borderColor: c.border }}
+      style={{
+        background: c.nav,
+        borderColor: c.border,
+        ...(!isDrawer ? { width: resize.width, flexBasis: resize.width } : {}),
+      }}
     >
+      {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize prompt navigation" />}
       <div className="eon-prompt-sidebar-head" style={{ borderColor: c.border }}>
         <div className="eon-brand-row">
           <div className="eon-brand" style={{ color: c.text }}>
