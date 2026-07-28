@@ -5,6 +5,15 @@
 
 export const CHANGELOG = [
   {
+    date: "2026-07-28",
+    title: "The Prototype Hub is now the Design Hub",
+    items: [
+      "Prompts are now a shared library: create, edit, delete, fill, and copy reusable team prompts.",
+      "Tracking now includes an implementation-ready Mixpanel reference grounded in ENG-723 and ENG-841.",
+      "Prototypes, Prompts, and Tracking now share one navigation shell, Eon palette, semantic statuses, and changelog.",
+    ],
+  },
+  {
     date: "2026-07-21",
     title: "Comments jump to their pin",
     items: [
@@ -45,6 +54,7 @@ export function readSeenChangelogDate() {
 export function markChangelogSeen() {
   try {
     window.localStorage.setItem(CHANGELOG_SEEN_KEY, latestChangelogDate());
+    window.dispatchEvent(new Event("eon-changelog-seen"));
   } catch {
     // Private mode: the dot just shows again next session.
   }

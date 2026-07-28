@@ -4,18 +4,18 @@
    seed works before any HTML is uploaded. */
 
 export const HUB = {
-  // `primary` is for CTAs only (Open full view, Send). Control selection uses
-  // the quiet `selected` pair (panel-on-track, like the sidebar switcher) so
-  // neither pink nor white repeats across the toolbar.
+  // Baby elephant is the only brand accent. Semantic colors are reserved for
+  // statuses, warnings, and validation so the interface stays expressive
+  // without returning to the previous bright-purple treatment.
   dark: { bg: "#000000", nav: "#000000", panel: "#121216", raised: "#1E1E22", border: "#1E1E22",
     text: "#FFFFFF", muted: "#9094A5", secondary: "rgba(255,255,255,0.7)",
-    hover: "#1E1E22", active: "rgba(255,255,255,0.065)", brand: "#A99BAE",
+    hover: "#1E1E22", active: "rgba(255,255,255,0.065)", brand: "#EDD2F6",
     primary: "#EDD2F6", primaryText: "#000000",
     selected: "#121216", selectedText: "#FFFFFF" },
   light: { bg: "#F7F7F8", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F2F2F4", border: "#DFE0E4",
     text: "#1E1E22", muted: "#565B6C", secondary: "rgba(18,18,22,0.75)",
     hover: "#F2F2F4", active: "rgba(30,30,34,0.055)", brand: "#665D6B",
-    primary: "#000000", primaryText: "#FFFFFF",
+    primary: "#EDD2F6", primaryText: "#171119",
     selected: "#FFFFFF", selectedText: "#1E1E22" },
 };
 
@@ -27,10 +27,10 @@ export const VIEWPORTS = {
 };
 
 export const STATUS_COLOR = {
-  "Exploration": ["rgba(144,148,165,0.15)", "#9094A5"],
-  "In review": ["rgba(141,164,184,0.13)", "#8DA4B8"],
-  "Handoff": ["rgba(196,168,121,0.13)", "#C4A879"],
-  "Shipped": ["rgba(143,180,154,0.13)", "#8FB49A"],
+  "Exploration": ["rgba(99,204,255,0.16)", "#63CCFF", "#0B6D91"],
+  "In review": ["rgba(114,167,255,0.17)", "#72A7FF", "#245FD1"],
+  "Handoff": ["rgba(255,179,79,0.17)", "#FFB34F", "#9A4A00"],
+  "Shipped": ["rgba(98,229,139,0.16)", "#62E58B", "#147A36"],
 };
 
 export const CANVAS_PRESETS = ["#FFFFFF", "#000000"];

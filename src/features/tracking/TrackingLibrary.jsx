@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle, BarChart3, Check, CheckCircle2, ChevronRight, ClipboardCheck,
-  Code2, Copy, ExternalLink, FileText, Info, LogOut, Menu, Moon, PanelLeftClose,
-  Shield, Sun, X,
+  AlertTriangle, BarChart3, Check, ChevronRight, ClipboardCheck,
+  Code2, Copy, ExternalLink, FileText, Menu, Moon, PanelLeftClose,
+  Sun, X,
 } from "lucide-react";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import EonMark from "@/components/EonMark";
+import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
+import HubSidebarFooter from "@/components/HubSidebarFooter";
 import { HUB } from "@/features/hub/prototypes";
 import { copyText, useStoredState } from "@/lib/uiState";
 import { MIXPANEL_TRACKING_EXAMPLE } from "./trackingExample";
@@ -24,6 +26,7 @@ export default function TrackingLibrary({
   const [narrow, setNarrow] = useState(() => window.innerWidth <= 900);
   const [copied, setCopied] = useState("");
   const [copyError, setCopyError] = useState("");
+  const changelog = useHubChangelog();
   const copiedTimer = useRef(null);
   const c = HUB[hubTheme];
   const example = MIXPANEL_TRACKING_EXAMPLE;
@@ -68,6 +71,7 @@ export default function TrackingLibrary({
           onOpenPrompts={onOpenPrompts}
           onOpenAdmin={onOpenAdmin}
           onSignOut={onSignOut}
+          changelog={changelog}
           isDrawer={narrow}
           onClose={() => setNavOpen(false)}
         />
@@ -106,17 +110,17 @@ export default function TrackingLibrary({
         <div className="eon-tracking-scroll">
           <div className="eon-tracking-layout">
             <article className="eon-tracking-article">
-              <header className="eon-prompt-hero">
-                <div className="eon-prompt-eyebrow" style={{ color: c.muted }}>
-                  <span style={{ background: c.active, color: c.brand }}>{example.platform}</span>
-                  <span className="eon-prompt-status"><CheckCircle2 size={13} aria-hidden="true" /> One reference</span>
+              <header className="eon-tracking-hero">
+                <div className="eon-tracking-hero-kicker" style={{ color: c.brand }}>
+                  <BarChart3 size={15} aria-hidden="true" />
+                  {example.platform} setup
                 </div>
                 <h1>{example.title}</h1>
                 <p style={{ color: c.secondary }}>{example.summary}</p>
-                <div className="eon-prompt-tags">
-                  <span style={{ background: c.raised, color: c.secondary }}>8 event contracts</span>
-                  <span style={{ background: c.raised, color: c.secondary }}>Web + iOS</span>
-                  <span style={{ background: c.raised, color: c.secondary }}>Linear-sourced</span>
+                <div className="eon-tracking-hero-stats" style={{ borderColor: c.border }}>
+                  <span><strong>8</strong> events</span>
+                  <span><strong>2</strong> Linear sources</span>
+                  <span><strong>Web + iOS</strong></span>
                 </div>
               </header>
 
@@ -149,10 +153,12 @@ export default function TrackingLibrary({
                     <section className="eon-tracking-flow" key={flow.id} aria-labelledby={`flow-${flow.id}`}>
                       <div className="eon-tracking-flow-head">
                         <div>
-                          <span style={{ color: c.brand }}>{flow.source} · {flow.status}</span>
+                          <span className={flow.status === "Draft contract" ? "is-draft" : "is-shipped"}>
+                            {flow.source} · {flow.status}
+                          </span>
                           <h3 id={`flow-${flow.id}`}>{flow.title}</h3>
                         </div>
-                        <span style={{ background: c.raised, color: c.muted }}>{flow.events.length} events</span>
+                        <span className="eon-tracking-event-count" style={{ color: c.secondary }}>{flow.events.length} events</span>
                       </div>
                       <div className="eon-tracking-event-stack">
                         {flow.events.map((event) => (
@@ -165,13 +171,13 @@ export default function TrackingLibrary({
               </DocSection>
 
               <DocSection c={c} kicker="Implementation" title="Guardrails">
-                <Checklist c={c} items={example.guardrails} Icon={Code2} />
+                <Checklist c={c} items={example.guardrails} Icon={Code2} tone="info" />
               </DocSection>
 
               <DocSection c={c} kicker="Before release" title="Open decisions">
                 <div className="eon-tracking-decision-stack">
                   {example.openDecisions.map((decision) => (
-                    <div className="eon-tracking-decision" key={decision.title} style={{ background: c.panel, boxShadow: hubShadow(c) }}>
+                    <div className="eon-tracking-decision" key={decision.title} style={{ background: c.panel }}>
                       <AlertTriangle size={16} aria-hidden="true" />
                       <div>
                         <strong>{decision.title}</strong>
@@ -183,18 +189,15 @@ export default function TrackingLibrary({
               </DocSection>
 
               <DocSection c={c} kicker="Validation" title="QA checklist">
-                <Checklist c={c} items={example.qa} Icon={ClipboardCheck} />
+                <Checklist c={c} items={example.qa} Icon={ClipboardCheck} tone="success" />
               </DocSection>
             </article>
 
             <aside className="eon-tracking-rail">
               <div className="eon-tracking-rail-card" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
                 <div className="eon-prompt-use-head">
-                  <span className="eon-prompt-use-icon" style={{ background: c.active, color: c.brand }}><BarChart3 size={17} /></span>
-                  <div>
-                    <h2>Use this setup</h2>
-                    <p style={{ color: c.muted }}>Copy the reusable prompt, then paste the relevant issue text and technical context.</p>
-                  </div>
+                  <span className="eon-tracking-rail-icon" style={{ background: c.active, color: c.brand }}><BarChart3 size={17} /></span>
+                  <h2>Setup prompt</h2>
                 </div>
                 <button
                   className="eon-buttonish eon-prompt-copy-primary"
@@ -215,27 +218,35 @@ export default function TrackingLibrary({
                   Open in Prompt Library
                 </button>
                 {copyError && <p className="eon-prompt-copy-error" role="alert">{copyError}</p>}
-                <div className="eon-tracking-rail-note" style={{ borderColor: c.border, color: c.muted }}>
-                  <Info size={14} aria-hidden="true" />
-                  <span>ENG-723 is the shipped reference. ENG-841 must stay marked draft until its open decisions are closed.</span>
+                <div className="eon-tracking-rail-statuses" style={{ borderColor: c.border }}>
+                  <div>
+                    <span className="eon-tracking-status-dot is-shipped" />
+                    <strong>ENG-723</strong>
+                    <em>Shipped reference</em>
+                  </div>
+                  <div>
+                    <span className="eon-tracking-status-dot is-draft" />
+                    <strong>ENG-841</strong>
+                    <em>Draft contract</em>
+                  </div>
                 </div>
-                <div className="eon-prompt-meta" style={{ borderColor: c.border }}>
+                <div className="eon-tracking-meta" style={{ borderColor: c.border }}>
                   <div><span>Platform</span><strong>Mixpanel</strong></div>
-                  <div><span>Primary events</span><strong>6</strong></div>
-                  <div><span>Page events</span><strong>2</strong></div>
-                  <div><span>Sources</span><strong>ENG-723, ENG-841</strong></div>
+                  <div><span>Events</span><strong>8</strong></div>
+                  <div><span>Coverage</span><strong>Web + iOS</strong></div>
                 </div>
               </div>
             </aside>
           </div>
         </div>
       </main>
+      <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
     </div>
   );
 }
 
 function TrackingSidebar({
-  c, logo, userEmail, isAdmin, onOpenPrototypes, onOpenPrompts, onOpenAdmin, onSignOut, isDrawer, onClose,
+  c, logo, userEmail, isAdmin, onOpenPrototypes, onOpenPrompts, onOpenAdmin, onSignOut, changelog, isDrawer, onClose,
 }) {
   return (
     <aside
@@ -281,23 +292,16 @@ function TrackingSidebar({
             <small style={{ color: c.muted }}>ENG-723 · ENG-841</small>
           </span>
         </button>
-        <div className="eon-tracking-sidebar-empty" style={{ borderColor: c.border, color: c.muted }}>
-          <Info size={15} aria-hidden="true" />
-          <span>This first version intentionally contains one end-to-end example.</span>
-        </div>
       </div>
 
-      <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
-        <span title={userEmail || ""} style={{ color: c.muted }}>{userEmail || "Team member"}</span>
-        {isAdmin && (
-          <button className="eon-buttonish eon-icon-button" type="button" onClick={onOpenAdmin} aria-label="Admin dashboard" title="Admin dashboard" style={{ color: c.muted, boxShadow: hubShadow(c) }}>
-            <Shield size={15} />
-          </button>
-        )}
-        <button className="eon-buttonish eon-icon-button" type="button" onClick={onSignOut} aria-label="Sign out" title="Sign out" style={{ color: c.muted, boxShadow: hubShadow(c) }}>
-          <LogOut size={15} />
-        </button>
-      </div>
+      <HubSidebarFooter
+        c={c}
+        userEmail={userEmail}
+        isAdmin={isAdmin}
+        onOpenAdmin={onOpenAdmin}
+        onSignOut={onSignOut}
+        changelog={changelog}
+      />
     </aside>
   );
 }
@@ -321,7 +325,7 @@ function EventContract({ c, event }) {
     <div className="eon-tracking-event" style={{ borderColor: c.border, background: c.panel }}>
       <div className="eon-tracking-event-head" style={{ borderColor: c.border }}>
         <div>
-          <code style={{ background: c.active, color: c.brand }}>{event.name}</code>
+          <code style={{ background: c.raised, color: c.text }}>{event.name}</code>
           <p style={{ color: c.secondary }}>{event.trigger}</p>
           {event.note && <small style={{ color: c.muted }}>{event.note}</small>}
         </div>
@@ -353,12 +357,12 @@ function EventContract({ c, event }) {
   );
 }
 
-function Checklist({ c, items, Icon }) {
+function Checklist({ c, items, Icon, tone }) {
   return (
     <div className="eon-tracking-checklist" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
       {items.map((item) => (
         <div key={item} style={{ borderColor: c.border }}>
-          <span style={{ background: c.active, color: c.brand }}><Icon size={14} aria-hidden="true" /></span>
+          <span className={`is-${tone}`}><Icon size={14} aria-hidden="true" /></span>
           <p style={{ color: c.secondary }}>{item}</p>
         </div>
       ))}

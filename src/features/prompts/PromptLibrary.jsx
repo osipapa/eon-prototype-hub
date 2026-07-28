@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlertCircle, AlertTriangle, BookOpen, Check, ChevronRight,
-  Copy, Edit3, FileCode2, Info, Loader2, LogOut, Menu, Moon, PanelLeftClose,
-  Plus, Save, Search, Shield, Sun, Trash2, X,
+  AlertCircle, AlertTriangle, BookOpen, Check, ChevronDown, ChevronRight,
+  Copy, Edit3, FileCode2, Info, Loader2, Menu, Moon, PanelLeftClose,
+  Plus, Save, Search, Sun, Trash2, X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import EonMark from "@/components/EonMark";
+import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
+import HubSidebarFooter from "@/components/HubSidebarFooter";
 import { HUB } from "@/features/hub/prototypes";
 import { copyText, useStoredState } from "@/lib/uiState";
 import {
@@ -40,25 +42,9 @@ export default function PromptLibrary({
   const [copyError, setCopyError] = useState("");
   const [editorPrompt, setEditorPrompt] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const changelog = useHubChangelog();
   const copiedTimer = useRef(null);
-  const baseColors = HUB[hubTheme];
-  const c = hubTheme === "dark"
-    ? {
-      ...baseColors,
-      active: "rgba(237,210,246,.12)",
-      brand: "#EDD2F6",
-      muted: "#C3C4CC",
-      secondary: "#E1E1E5",
-    }
-    : {
-      ...baseColors,
-      active: "#F3E4F7",
-      brand: "#633E6A",
-      primary: "#EDD2F6",
-      primaryText: "#171119",
-      muted: "#55565F",
-      secondary: "#2F3036",
-    };
+  const c = HUB[hubTheme];
 
   useEffect(() => {
     const update = () => {
@@ -148,6 +134,7 @@ export default function PromptLibrary({
           onOpenTracking={onOpenTracking}
           onOpenAdmin={onOpenAdmin}
           onSignOut={onSignOut}
+          changelog={changelog}
           onNewPrompt={canCreate ? () => setEditorPrompt(newPromptDraft()) : undefined}
           isDrawer={narrow}
           onClose={() => setNavOpen(false)}
@@ -259,6 +246,7 @@ export default function PromptLibrary({
           onDelete={() => onDeletePrompt(deleteCandidate)}
         />
       )}
+      <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
     </div>
   );
 }
@@ -278,10 +266,26 @@ function PromptSidebar({
   onOpenTracking,
   onOpenAdmin,
   onSignOut,
+  changelog,
   onNewPrompt,
   isDrawer,
   onClose,
 }) {
+  const [collapsedTopics, setCollapsedTopics] = useState({});
+  const groupedPrompts = useMemo(() => {
+    const byCategory = {};
+    filteredPrompts.forEach((prompt) => {
+      const category = prompt.category || "General";
+      (byCategory[category] ||= []).push(prompt);
+    });
+    const configuredOrder = new Map(PROMPT_CATEGORIES.map((category, index) => [category, index]));
+    return Object.entries(byCategory).sort(([left], [right]) => {
+      const leftIndex = configuredOrder.get(left) ?? Number.MAX_SAFE_INTEGER;
+      const rightIndex = configuredOrder.get(right) ?? Number.MAX_SAFE_INTEGER;
+      return leftIndex - rightIndex || left.localeCompare(right);
+    });
+  }, [filteredPrompts]);
+
   return (
     <aside
       className="eon-prompt-sidebar"
@@ -341,20 +345,42 @@ function PromptSidebar({
           <div className="eon-prompt-nav-label" id="eon-prompt-library-title" style={{ color: c.muted }}>
             Prompts <span>{prompts.length}</span>
           </div>
-          {filteredPrompts.length ? filteredPrompts.map((prompt) => {
-            const selected = prompt.id === activePrompt?.id;
+          {groupedPrompts.length ? groupedPrompts.map(([category, items]) => {
+            const collapsed = !query.trim() && Boolean(collapsedTopics[category]);
             return (
-              <button
-                className="eon-buttonish eon-prompt-nav-item"
-                key={prompt.id}
-                type="button"
-                onClick={() => onSelectPrompt(prompt)}
-                aria-current={selected ? "page" : undefined}
-                style={{ background: selected ? c.active : "transparent", color: selected ? c.text : c.secondary }}
-              >
-                <FileCode2 size={14} aria-hidden="true" style={{ color: selected ? c.brand : c.muted }} />
-                <span>{prompt.title}</span>
-              </button>
+              <div className="eon-prompt-topic-group" key={category}>
+                <div className="eon-group-label-row">
+                  <button
+                    className="eon-buttonish eon-group-toggle"
+                    type="button"
+                    onClick={() => setCollapsedTopics((current) => ({
+                      ...current,
+                      [category]: !current[category],
+                    }))}
+                    aria-expanded={!collapsed}
+                    style={{ color: c.muted }}
+                  >
+                    <ChevronDown size={13} className={collapsed ? "is-collapsed" : ""} />
+                    {category}
+                  </button>
+                </div>
+                {!collapsed && items.map((prompt) => {
+                  const selected = prompt.id === activePrompt?.id;
+                  return (
+                    <button
+                      className="eon-buttonish eon-prompt-nav-item"
+                      key={prompt.id}
+                      type="button"
+                      onClick={() => onSelectPrompt(prompt)}
+                      aria-current={selected ? "page" : undefined}
+                      style={{ background: selected ? c.active : "transparent", color: selected ? c.text : c.secondary }}
+                    >
+                      <FileCode2 size={14} aria-hidden="true" style={{ color: selected ? c.brand : c.muted }} />
+                      <span>{prompt.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
             );
           }) : (
             <div className="eon-prompt-nav-empty" style={{ color: c.muted }}>
@@ -365,17 +391,14 @@ function PromptSidebar({
         </section>
       </div>
 
-      <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
-        <span style={{ color: c.muted }}>{userEmail}</span>
-        {isAdmin && (
-          <button className="eon-buttonish eon-icon-button" type="button" onClick={onOpenAdmin} aria-label="Admin dashboard" title="Admin dashboard" style={{ color: c.muted, boxShadow: hubShadow(c) }}>
-            <Shield size={15} />
-          </button>
-        )}
-        <button className="eon-buttonish eon-icon-button" type="button" onClick={onSignOut} aria-label="Sign out" title="Sign out" style={{ color: c.muted, boxShadow: hubShadow(c) }}>
-          <LogOut size={15} />
-        </button>
-      </div>
+      <HubSidebarFooter
+        c={c}
+        userEmail={userEmail}
+        isAdmin={isAdmin}
+        onOpenAdmin={onOpenAdmin}
+        onSignOut={onSignOut}
+        changelog={changelog}
+      />
     </aside>
   );
 }
