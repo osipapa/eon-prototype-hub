@@ -80,6 +80,42 @@ export function subscribePrompts(cb) {
   return () => supabase.removeChannel(ch);
 }
 
+/* Prompt categories ---------------------------------------------------------*/
+export async function listPromptCategories() {
+  const { data, error } = await supabase
+    .from("prompt_categories")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function createPromptCategory(category) {
+  const { data, error } = await supabase
+    .from("prompt_categories")
+    .insert(category)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// The RPC keeps deletion atomic: prompts in the removed category are moved to
+// General before the category row disappears.
+export async function deletePromptCategory(id) {
+  const { error } = await supabase.rpc("delete_prompt_category", { p_category_id: id });
+  if (error) throw error;
+}
+
+export function subscribePromptCategories(cb) {
+  const ch = supabase
+    .channel("prompt-categories-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "prompt_categories" }, cb)
+    .subscribe();
+  return () => supabase.removeChannel(ch);
+}
+
 /* Comments ---------------------------------------------------------------*/
 const COMMENT_SELECT =
   "*, author:profiles!comments_author_id_fkey(id,email,full_name), reactions:comment_reactions(emoji,profile_id)";

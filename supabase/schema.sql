@@ -100,6 +100,62 @@ create table if not exists public.prompts (
 create index if not exists prompts_team_category_title_idx
   on public.prompts (team_id, category, title);
 
+-- Team-managed categories remain visible even when they contain no prompts.
+create table if not exists public.prompt_categories (
+  id uuid primary key default gen_random_uuid(),
+  team_id uuid not null references public.teams(id) on delete cascade,
+  name text not null check (char_length(btrim(name)) between 1 and 60),
+  sort_order int not null default 0,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (team_id, name)
+);
+
+create unique index if not exists prompt_categories_team_name_ci_idx
+  on public.prompt_categories (team_id, lower(name));
+
+-- Keep the standard library categories available for existing and new teams.
+insert into public.prompt_categories (team_id, name, sort_order)
+select teams.id, category.name, category.sort_order
+from public.teams
+cross join (values
+  ('General', 0),
+  ('Image generation', 10),
+  ('Research & discovery', 20),
+  ('UI & interaction', 30),
+  ('Prototyping', 40),
+  ('Critique & QA', 50),
+  ('Content & UX writing', 60),
+  ('Analytics & tracking', 70),
+  ('Handoff & documentation', 80)
+) as category(name, sort_order)
+on conflict (team_id, name) do nothing;
+
+create or replace function public.seed_prompt_categories_for_team()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.prompt_categories (team_id, name, sort_order)
+  values
+    (new.id, 'General', 0),
+    (new.id, 'Image generation', 10),
+    (new.id, 'Research & discovery', 20),
+    (new.id, 'UI & interaction', 30),
+    (new.id, 'Prototyping', 40),
+    (new.id, 'Critique & QA', 50),
+    (new.id, 'Content & UX writing', 60),
+    (new.id, 'Analytics & tracking', 70),
+    (new.id, 'Handoff & documentation', 80)
+  on conflict (team_id, name) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists teams_seed_prompt_categories on public.teams;
+create trigger teams_seed_prompt_categories
+  after insert on public.teams
+  for each row execute function public.seed_prompt_categories_for_team();
+
 -- Threaded-by-project team comments. Messages are immutable in the first
 -- version; authors (or admins) may remove their own messages.
 create table if not exists public.comments (
@@ -223,6 +279,39 @@ returns trigger language plpgsql set search_path = public as $$
 begin new.updated_at = now(); return new; end;
 $$;
 
+-- Deleting a category is one atomic operation: keep its prompts and move them
+-- to General before removing the category itself.
+create or replace function public.delete_prompt_category(p_category_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  target public.prompt_categories%rowtype;
+begin
+  select * into target
+  from public.prompt_categories
+  where id = p_category_id;
+
+  if target.id is null or target.team_id is distinct from public.current_team_id() then
+    raise exception 'Category not found';
+  end if;
+  if lower(target.name) = 'general' then
+    raise exception 'The General category cannot be deleted';
+  end if;
+  if not public.is_admin() and target.created_by is distinct from auth.uid() then
+    raise exception 'Only the category creator or an admin can delete it';
+  end if;
+
+  insert into public.prompt_categories (team_id, name, sort_order)
+  values (target.team_id, 'General', 0)
+  on conflict (team_id, name) do nothing;
+
+  update public.prompts
+  set category = 'General', updated_by = auth.uid()
+  where team_id = target.team_id and lower(category) = lower(target.name);
+
+  delete from public.prompt_categories where id = target.id;
+end;
+$$;
+
 -- The signed-out login can read only the logo URL, not the asset row or any
 -- other team media. The fixed search path keeps this security-definer helper
 -- from resolving attacker-controlled objects.
@@ -237,6 +326,9 @@ grant execute on function public.get_public_eon_logo() to anon, authenticated;
 revoke execute on function public.handle_new_user() from anon, authenticated;
 revoke execute on function public.guard_profile_privileges() from anon, authenticated;
 revoke execute on function public.touch_updated_at() from anon, authenticated;
+revoke execute on function public.seed_prompt_categories_for_team() from public, anon, authenticated;
+revoke all on function public.delete_prompt_category(uuid) from public;
+grant execute on function public.delete_prompt_category(uuid) to authenticated;
 
 drop trigger if exists projects_touch on public.projects;
 create trigger projects_touch before update on public.projects
@@ -244,6 +336,10 @@ create trigger projects_touch before update on public.projects
 
 drop trigger if exists prompts_touch on public.prompts;
 create trigger prompts_touch before update on public.prompts
+  for each row execute function public.touch_updated_at();
+
+drop trigger if exists prompt_categories_touch on public.prompt_categories;
+create trigger prompt_categories_touch before update on public.prompt_categories
   for each row execute function public.touch_updated_at();
 
 drop trigger if exists comments_touch on public.comments;
@@ -379,6 +475,7 @@ alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
 alter table public.assets   enable row level security;
 alter table public.prompts  enable row level security;
+alter table public.prompt_categories enable row level security;
 alter table public.comments enable row level security;
 alter table public.invites  enable row level security;
 alter table public.activity enable row level security;
@@ -443,6 +540,16 @@ create policy "creator or admin delete prompts" on public.prompts for delete
   using (
     team_id = public.current_team_id()
     and (public.is_admin() or created_by = auth.uid())
+  );
+
+-- prompt categories: teammates can add categories. Deletes intentionally have
+-- no table policy and must use the RPC that preserves prompts in General.
+create policy "team read prompt categories" on public.prompt_categories for select
+  using (team_id = public.current_team_id());
+create policy "team insert prompt categories" on public.prompt_categories for insert
+  with check (
+    team_id = public.current_team_id()
+    and created_by = auth.uid()
   );
 
 -- comments: teammates read and participate; authors or admins may clean up.
@@ -521,6 +628,7 @@ create policy "team read activity" on public.activity for select
 alter publication supabase_realtime add table public.projects;
 alter publication supabase_realtime add table public.assets;
 alter publication supabase_realtime add table public.prompts;
+alter publication supabase_realtime add table public.prompt_categories;
 alter publication supabase_realtime add table public.comments;
 alter publication supabase_realtime add table public.profiles;
 alter publication supabase_realtime add table public.activity;

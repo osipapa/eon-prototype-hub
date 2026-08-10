@@ -548,6 +548,21 @@ button.eon-save-state { cursor: pointer; }
   font-size: 11px;
   font-weight: 650;
 }
+.eon-prompt-category-button {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+}
 .eon-prompt-sidebar-scroll { min-height: 0; flex: 1; overflow-y: auto; padding: 12px 8px 20px; }
 .eon-prompt-library-nav { display: flex; flex-direction: column; }
 .eon-prompt-nav-label { display: flex; min-height: 28px; align-items: center; justify-content: space-between; padding: 0 9px; font-size: 11px; font-weight: 650; }
@@ -673,6 +688,32 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-editor-save:disabled, .eon-prompt-delete-confirm:disabled, .eon-prompt-editor-cancel:disabled { cursor: not-allowed; opacity: .55; }
 .eon-prompt-delete-confirm { background: #D98295; color: #210C12; }
 
+.eon-modal.eon-category-manager { width: min(580px, calc(100vw - 40px)); max-height: min(720px, calc(100vh - 40px)); min-height: 0; }
+.eon-category-manager-body { gap: 14px; }
+.eon-category-create { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.eon-category-add {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px 0 16px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+}
+.eon-category-add:disabled { cursor: not-allowed; opacity: .48; }
+.eon-category-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.eon-category-row { display: flex; min-height: 58px; align-items: center; gap: 10px; padding: 9px 9px 9px 11px; border-radius: 14px; }
+.eon-category-row-icon { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border-radius: 10px; }
+.eon-category-row-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.eon-category-row-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 650; }
+.eon-category-row-copy small { font-size: 10px; font-variant-numeric: tabular-nums; }
+.eon-category-delete { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; padding: 0; border: 0; border-radius: 10px; background: transparent; cursor: pointer; }
+.eon-category-manager-note { min-width: 0; flex: 1; font-size: 10px; line-height: 1.4; text-wrap: pretty; }
+
 @media (max-width: 1180px) {
   .eon-prompt-layout { grid-template-columns: minmax(0, 1fr); }
   .eon-prompt-use-card { position: static; }
@@ -707,6 +748,10 @@ button.eon-save-state { cursor: pointer; }
   .eon-prompt-editor .eon-modal-foot { align-items: stretch; flex-direction: column; }
   .eon-prompt-editor .eon-modal-foot > span { text-align: center; }
   .eon-prompt-editor-cancel, .eon-prompt-editor-save { width: 100%; }
+  .eon-category-create { grid-template-columns: minmax(0, 1fr); }
+  .eon-category-add { width: 100%; }
+  .eon-category-manager .eon-modal-foot { align-items: stretch; flex-direction: column; }
+  .eon-category-manager .eon-prompt-editor-cancel { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
