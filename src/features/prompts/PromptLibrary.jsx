@@ -150,6 +150,9 @@ export default function PromptLibrary({
           resize={sidebarResize}
           onNewPrompt={canCreate ? () => setEditorPrompt(newPromptDraft(categories)) : undefined}
           onManageCategories={canManageCategories ? () => setCategoryManagerOpen(true) : undefined}
+          onRequestDeleteCategory={canManageCategories ? (category) => {
+            setCategoryDeleteCandidate({ category, returnToManager: false });
+          } : undefined}
           isDrawer={narrow}
           onClose={() => setNavOpen(false)}
         />
@@ -254,20 +257,20 @@ export default function PromptLibrary({
           onCreate={onCreateCategory}
           onRequestDelete={(category) => {
             setCategoryManagerOpen(false);
-            setCategoryDeleteCandidate(category);
+            setCategoryDeleteCandidate({ category, returnToManager: true });
           }}
         />
       )}
       {categoryDeleteCandidate && (
         <CategoryDeleteModal
           c={c}
-          category={categoryDeleteCandidate}
-          promptCount={prompts.filter((prompt) => prompt.category === categoryDeleteCandidate.name).length}
+          category={categoryDeleteCandidate.category}
+          promptCount={prompts.filter((prompt) => prompt.category === categoryDeleteCandidate.category.name).length}
           onClose={() => {
+            if (categoryDeleteCandidate.returnToManager) setCategoryManagerOpen(true);
             setCategoryDeleteCandidate(null);
-            setCategoryManagerOpen(true);
           }}
-          onDelete={() => onDeleteCategory(categoryDeleteCandidate)}
+          onDelete={() => onDeleteCategory(categoryDeleteCandidate.category)}
         />
       )}
       <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
@@ -295,6 +298,7 @@ function PromptSidebar({
   resize,
   onNewPrompt,
   onManageCategories,
+  onRequestDeleteCategory,
   isDrawer,
   onClose,
 }) {
@@ -396,6 +400,10 @@ function PromptSidebar({
           </div>
           {groupedPrompts.length ? groupedPrompts.map(([category, items]) => {
             const collapsed = !query.trim() && Boolean(collapsedTopics[category]);
+            const categoryRecord = categories.find((item) => item.name === category);
+            const canDeleteCategory = Boolean(onRequestDeleteCategory)
+              && Boolean(categoryRecord?.id)
+              && category.toLowerCase() !== "general";
             return (
               <div className="eon-prompt-topic-group" key={category}>
                 <div className="eon-group-label-row">
@@ -412,6 +420,17 @@ function PromptSidebar({
                     <ChevronDown size={13} className={collapsed ? "is-collapsed" : ""} />
                     {category}
                   </button>
+                  {canDeleteCategory && (
+                    <button
+                      className="eon-buttonish eon-prompt-category-inline-delete"
+                      type="button"
+                      onClick={() => onRequestDeleteCategory(categoryRecord)}
+                      aria-label={`Delete ${category} category`}
+                      title={`Delete ${category}`}
+                    >
+                      <Trash2 size={15} aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
                 {!collapsed && items.map((prompt) => {
                   const selected = prompt.id === activePrompt?.id;

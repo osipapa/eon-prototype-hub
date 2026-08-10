@@ -499,10 +499,12 @@ button.eon-save-state { cursor: pointer; }
   .eon-secondary-button:hover:not(:disabled) { box-shadow: var(--shadow-surface-hover); }
   .eon-story-row:hover { background: rgba(144, 148, 165, .07) !important; }
   .eon-group-label-row:hover .eon-group-edit { opacity: 1; }
+  .eon-group-label-row:hover .eon-prompt-category-inline-delete { opacity: 1; }
   .eon-story-menu button:hover { background: rgba(144, 148, 165, .12); }
 }
 @media (hover: none) {
   .eon-group-edit { opacity: 1; }
+  .eon-prompt-category-inline-delete { opacity: 1; }
 }
 
 /* Design Hub: API-documentation-style Prompt Library. */
@@ -568,6 +570,22 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-nav-label { display: flex; min-height: 28px; align-items: center; justify-content: space-between; padding: 0 9px; font-size: 11px; font-weight: 650; }
 .eon-prompt-nav-label span { font-size: 10px; font-variant-numeric: tabular-nums; }
 .eon-prompt-topic-group { margin-bottom: 10px; }
+.eon-prompt-topic-group .eon-group-label-row, .eon-prompt-topic-group .eon-group-toggle { min-height: 40px; }
+.eon-prompt-category-inline-delete {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #D98295;
+  cursor: pointer;
+  opacity: 0;
+}
+.eon-group-label-row:focus-within .eon-prompt-category-inline-delete { opacity: 1; }
 .eon-prompt-nav-item { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 9px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; text-align: left; font-size: 12px; }
 .eon-prompt-nav-item svg { flex: 0 0 auto; }
 .eon-prompt-nav-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
