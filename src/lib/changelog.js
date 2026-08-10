@@ -8,7 +8,7 @@ export const CHANGELOG = [
     date: "2026-08-10",
     title: "Prompt library organization",
     items: [
-      "Create and delete team prompt categories from the Prompt Library sidebar.",
+      "Every teammate can create and delete prompt categories from the Prompt Library sidebar.",
       "Deleting a category keeps every prompt and moves it safely to General.",
       "Empty categories now stay visible, and prompt creation uses the team's shared category list.",
     ],

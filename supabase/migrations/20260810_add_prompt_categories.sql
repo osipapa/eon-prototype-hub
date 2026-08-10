@@ -118,10 +118,6 @@ begin
   if lower(target.name) = 'general' then
     raise exception 'The General category cannot be deleted';
   end if;
-  if not public.is_admin() and target.created_by is distinct from auth.uid() then
-    raise exception 'Only the category creator or an admin can delete it';
-  end if;
-
   insert into public.prompt_categories (team_id, name, sort_order)
   values (target.team_id, 'General', 0)
   on conflict (team_id, name) do nothing;

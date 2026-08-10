@@ -250,8 +250,6 @@ export default function PromptLibrary({
           c={c}
           categories={categories}
           prompts={prompts}
-          currentUserId={currentUserId}
-          isAdmin={isAdmin}
           onClose={() => setCategoryManagerOpen(false)}
           onCreate={onCreateCategory}
           onRequestDelete={(category) => {
@@ -742,7 +740,7 @@ function PromptDeleteModal({ c, prompt, onClose, onDelete }) {
 }
 
 function CategoryManagerModal({
-  c, categories, prompts, currentUserId, isAdmin, onClose, onCreate, onRequestDelete,
+  c, categories, prompts, onClose, onCreate, onRequestDelete,
 }) {
   const firstFieldRef = useRef(null);
   const [name, setName] = useState("");
@@ -839,9 +837,7 @@ function CategoryManagerModal({
             {categories.map((category) => {
               const promptCount = prompts.filter((prompt) => prompt.category === category.name).length;
               const isDefault = category.name.toLowerCase() === "general";
-              const canDelete = Boolean(category.id)
-                && !isDefault
-                && (isAdmin || category.created_by === currentUserId);
+              const canDelete = Boolean(category.id) && !isDefault;
               return (
                 <div className="eon-category-row" key={category.id || category.name} style={{ background: c.raised, boxShadow: hubShadow(c) }}>
                   <span className="eon-category-row-icon" style={{ background: c.active, color: c.brand }}>
