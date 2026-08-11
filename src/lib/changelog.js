@@ -8,8 +8,8 @@ export const CHANGELOG = [
     date: "2026-08-10",
     title: "Prompt library organization",
     items: [
-      "Every teammate can create categories and delete them from the trash icon beside each sidebar heading.",
-      "Deleting a category keeps every prompt and moves it safely to General.",
+      "Every shared category and prompt now has a visible trash icon directly in the sidebar.",
+      "Deleting a category keeps every prompt and moves it safely to another category.",
       "Empty categories now stay visible, and prompt creation uses the team's shared category list.",
     ],
   },

@@ -280,11 +280,12 @@ begin new.updated_at = now(); return new; end;
 $$;
 
 -- Deleting a category is one atomic operation: keep its prompts and move them
--- to General before removing the category itself.
+-- to the next available category before removing the category itself.
 create or replace function public.delete_prompt_category(p_category_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare
   target public.prompt_categories%rowtype;
+  fallback_name text;
 begin
   select * into target
   from public.prompt_categories
@@ -293,15 +294,18 @@ begin
   if target.id is null or target.team_id is distinct from public.current_team_id() then
     raise exception 'Category not found';
   end if;
-  if lower(target.name) = 'general' then
-    raise exception 'The General category cannot be deleted';
+  select name into fallback_name
+  from public.prompt_categories
+  where team_id = target.team_id and id <> target.id
+  order by sort_order asc, name asc
+  limit 1;
+
+  if fallback_name is null then
+    raise exception 'Create another category before deleting the last category';
   end if;
-  insert into public.prompt_categories (team_id, name, sort_order)
-  values (target.team_id, 'General', 0)
-  on conflict (team_id, name) do nothing;
 
   update public.prompts
-  set category = 'General', updated_by = auth.uid()
+  set category = fallback_name, updated_by = auth.uid()
   where team_id = target.team_id and lower(category) = lower(target.name);
 
   delete from public.prompt_categories where id = target.id;
@@ -539,7 +543,7 @@ create policy "creator or admin delete prompts" on public.prompts for delete
   );
 
 -- prompt categories: teammates can add categories. Deletes intentionally have
--- no table policy and must use the RPC that preserves prompts in General.
+-- no table policy and must use the RPC that preserves prompts in another category.
 create policy "team read prompt categories" on public.prompt_categories for select
   using (team_id = public.current_team_id());
 create policy "team insert prompt categories" on public.prompt_categories for insert

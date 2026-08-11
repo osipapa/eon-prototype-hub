@@ -102,7 +102,7 @@ export async function createPromptCategory(category) {
 }
 
 // The RPC keeps deletion atomic: prompts in the removed category are moved to
-// General before the category row disappears.
+// another team category before the category row disappears.
 export async function deletePromptCategory(id) {
   const { error } = await supabase.rpc("delete_prompt_category", { p_category_id: id });
   if (error) throw error;

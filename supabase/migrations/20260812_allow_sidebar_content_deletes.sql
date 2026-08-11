@@ -1,6 +1,5 @@
--- Category organization is shared team work. Any authenticated teammate may
--- remove a category from their own team when another category is available;
--- prompts are preserved in the same transaction.
+-- Category deletion remains atomic and never deletes prompts. General can be
+-- removed just like any other category when a fallback category is available.
 create or replace function public.delete_prompt_category(p_category_id uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare
@@ -14,6 +13,7 @@ begin
   if target.id is null or target.team_id is distinct from public.current_team_id() then
     raise exception 'Category not found';
   end if;
+
   select name into fallback_name
   from public.prompt_categories
   where team_id = target.team_id and id <> target.id

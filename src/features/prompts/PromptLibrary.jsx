@@ -72,10 +72,17 @@ export default function PromptLibrary({
   const canManageCategories = source === "shared"
     && Boolean(onCreateCategory)
     && Boolean(onDeleteCategory);
-  const canDelete = canEdit
+  const canDeletePrompt = (prompt) => source === "shared"
     && Boolean(onDeletePrompt)
-    && Boolean(activePrompt)
-    && (isAdmin || activePrompt.created_by === currentUserId);
+    && Boolean(prompt)
+    && (isAdmin || prompt.created_by === currentUserId);
+  const canDelete = canDeletePrompt(activePrompt);
+  const categoryDeleteFallback = categoryDeleteCandidate
+    ? categories.find((category) => (
+      category.id !== categoryDeleteCandidate.category.id
+      && category.name.toLowerCase() === "general"
+    )) || categories.find((category) => category.id !== categoryDeleteCandidate.category.id) || null
+    : null;
   const filteredPrompts = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return prompts.filter((prompt) => {
@@ -153,6 +160,10 @@ export default function PromptLibrary({
           onRequestDeleteCategory={canManageCategories ? (category) => {
             setCategoryDeleteCandidate({ category, returnToManager: false });
           } : undefined}
+          onRequestDeletePrompt={source === "shared" && onDeletePrompt
+            ? (prompt) => setDeleteCandidate(prompt)
+            : undefined}
+          canDeletePrompt={canDeletePrompt}
           isDrawer={narrow}
           onClose={() => setNavOpen(false)}
         />
@@ -266,11 +277,12 @@ export default function PromptLibrary({
           c={c}
           category={categoryDeleteCandidate.category}
           promptCount={prompts.filter((prompt) => prompt.category === categoryDeleteCandidate.category.name).length}
+          fallbackCategoryName={categoryDeleteFallback?.name}
           onClose={() => {
             if (categoryDeleteCandidate.returnToManager) setCategoryManagerOpen(true);
             setCategoryDeleteCandidate(null);
           }}
-          onDelete={() => onDeleteCategory(categoryDeleteCandidate.category)}
+          onDelete={() => onDeleteCategory(categoryDeleteCandidate.category, categoryDeleteFallback)}
         />
       )}
       <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
@@ -299,6 +311,8 @@ function PromptSidebar({
   onNewPrompt,
   onManageCategories,
   onRequestDeleteCategory,
+  onRequestDeletePrompt,
+  canDeletePrompt,
   isDrawer,
   onClose,
 }) {
@@ -402,8 +416,7 @@ function PromptSidebar({
             const collapsed = !query.trim() && Boolean(collapsedTopics[category]);
             const categoryRecord = categories.find((item) => item.name === category);
             const canDeleteCategory = Boolean(onRequestDeleteCategory)
-              && Boolean(categoryRecord?.id)
-              && category.toLowerCase() !== "general";
+              && Boolean(categoryRecord?.id);
             return (
               <div className="eon-prompt-topic-group" key={category}>
                 <div className="eon-group-label-row">
@@ -435,17 +448,29 @@ function PromptSidebar({
                 {!collapsed && items.map((prompt) => {
                   const selected = prompt.id === activePrompt?.id;
                   return (
-                    <button
-                      className="eon-buttonish eon-prompt-nav-item"
-                      key={prompt.id}
-                      type="button"
-                      onClick={() => onSelectPrompt(prompt)}
-                      aria-current={selected ? "page" : undefined}
-                      style={{ background: selected ? c.active : "transparent", color: selected ? c.text : c.secondary }}
-                    >
-                      <FileCode2 size={14} aria-hidden="true" style={{ color: selected ? c.brand : c.muted }} />
-                      <span>{prompt.title}</span>
-                    </button>
+                    <div className="eon-prompt-nav-row" key={prompt.id}>
+                      <button
+                        className="eon-buttonish eon-prompt-nav-item"
+                        type="button"
+                        onClick={() => onSelectPrompt(prompt)}
+                        aria-current={selected ? "page" : undefined}
+                        style={{ background: selected ? c.active : "transparent", color: selected ? c.text : c.secondary }}
+                      >
+                        <FileCode2 size={14} aria-hidden="true" style={{ color: selected ? c.brand : c.muted }} />
+                        <span>{prompt.title}</span>
+                      </button>
+                      {onRequestDeletePrompt && canDeletePrompt(prompt) && (
+                        <button
+                          className="eon-buttonish eon-prompt-inline-delete"
+                          type="button"
+                          onClick={() => onRequestDeletePrompt(prompt)}
+                          aria-label={`Delete ${prompt.title} prompt`}
+                          title={`Delete ${prompt.title}`}
+                        >
+                          <Trash2 size={15} aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -855,8 +880,7 @@ function CategoryManagerModal({
           <section className="eon-category-list" aria-label="Prompt categories">
             {categories.map((category) => {
               const promptCount = prompts.filter((prompt) => prompt.category === category.name).length;
-              const isDefault = category.name.toLowerCase() === "general";
-              const canDelete = Boolean(category.id) && !isDefault;
+              const canDelete = Boolean(category.id);
               return (
                 <div className="eon-category-row" key={category.id || category.name} style={{ background: c.raised, boxShadow: hubShadow(c) }}>
                   <span className="eon-category-row-icon" style={{ background: c.active, color: c.brand }}>
@@ -866,7 +890,6 @@ function CategoryManagerModal({
                     <strong>{category.name}</strong>
                     <small style={{ color: c.muted }}>
                       {promptCount} {promptCount === 1 ? "prompt" : "prompts"}
-                      {isDefault ? " · Default" : ""}
                     </small>
                   </span>
                   {canDelete && (
@@ -889,7 +912,7 @@ function CategoryManagerModal({
 
         <div className="eon-modal-foot" style={{ borderColor: c.border }}>
           <span className="eon-category-manager-note" style={{ color: c.muted }}>
-            Removing a category keeps its prompts in General.
+            Removing a category moves its prompts to another category.
           </span>
           <button className="eon-buttonish eon-prompt-editor-cancel" type="button" onClick={onClose} disabled={busy} style={{ color: c.secondary, borderColor: c.border }}>
             Done
@@ -900,7 +923,9 @@ function CategoryManagerModal({
   );
 }
 
-function CategoryDeleteModal({ c, category, promptCount, onClose, onDelete }) {
+function CategoryDeleteModal({
+  c, category, promptCount, fallbackCategoryName, onClose, onDelete,
+}) {
   const cancelRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -919,6 +944,7 @@ function CategoryDeleteModal({ c, category, promptCount, onClose, onDelete }) {
   }, [busy, onClose]);
 
   const remove = async () => {
+    if (!fallbackCategoryName) return;
     setBusy(true);
     setError("");
     try {
@@ -945,16 +971,18 @@ function CategoryDeleteModal({ c, category, promptCount, onClose, onDelete }) {
         <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><AlertTriangle size={18} /></div>
         <h2 id="eon-delete-category-title">Delete “{category.name}”?</h2>
         <p id="eon-delete-category-body" style={{ color: c.secondary }}>
-          {promptCount > 0
-            ? `${promptCount} ${promptCount === 1 ? "prompt" : "prompts"} will move to General. No prompts will be deleted.`
-            : "This empty category will be removed for everyone on the team."}
+          {!fallbackCategoryName
+            ? "Create another category before deleting the last category."
+            : promptCount > 0
+              ? `${promptCount} ${promptCount === 1 ? "prompt" : "prompts"} will move to ${fallbackCategoryName}. No prompts will be deleted.`
+              : "This empty category will be removed for everyone on the team."}
         </p>
         {error && <div className="eon-prompt-editor-error" role="alert"><AlertCircle size={14} />{error}</div>}
         <div className="eon-confirm-actions">
           <button ref={cancelRef} className="eon-buttonish eon-prompt-editor-cancel" type="button" onClick={onClose} disabled={busy} style={{ color: c.secondary, borderColor: c.border }}>
             Keep category
           </button>
-          <button className="eon-buttonish eon-prompt-delete-confirm" type="button" onClick={remove} disabled={busy}>
+          <button className="eon-buttonish eon-prompt-delete-confirm" type="button" onClick={remove} disabled={busy || !fallbackCategoryName}>
             {busy ? <Loader2 className="eon-spin" size={15} /> : <Trash2 size={15} />}
             {busy ? "Deleting…" : "Delete category"}
           </button>

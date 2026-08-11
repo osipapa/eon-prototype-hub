@@ -38,7 +38,7 @@ function sortPromptRows(rows, categories = []) {
 }
 
 function normalizedCategories(rows, prompts = []) {
-  const configured = ["General", ...PROMPT_CATEGORIES];
+  const configured = rows === null ? ["General", ...PROMPT_CATEGORIES] : [];
   const knownNames = new Set();
   const combined = [];
 
@@ -99,7 +99,7 @@ export default function Prompts() {
       if (!tableIsMissing(error)) {
         console.warn("Shared prompts are temporarily unavailable; using the bundled starter library.", error);
       }
-      const nextCategories = normalizedCategories([], STARTER_PROMPTS);
+      const nextCategories = normalizedCategories(null, STARTER_PROMPTS);
       setCategories(nextCategories);
       setPrompts(sortPromptRows(STARTER_PROMPTS, nextCategories));
       setAssets(assetMap(await assetsPromise));
@@ -117,13 +117,13 @@ export default function Prompts() {
         .then((rows) => {
           setPrompts(sortPromptRows(rows, categories));
           setCategories((current) => normalizedCategories(
-            current.filter((category) => category.id),
+            categorySource === "shared" ? current.filter((category) => category.id) : null,
             rows,
           ));
         })
         .catch((error) => console.warn("Couldn't refresh the Prompt Library.", error));
     });
-  }, [categories, source]);
+  }, [categories, categorySource, source]);
 
   useEffect(() => {
     if (categorySource !== "shared") return undefined;
@@ -175,7 +175,9 @@ export default function Prompts() {
     await deletePrompt(prompt.id);
     const remaining = prompts.filter((item) => item.id !== prompt.id);
     setPrompts(remaining);
-    navigate(remaining.length ? `/prompts/${remaining[0].slug}` : "/prompts", { replace: true });
+    if (prompt.slug === slug) {
+      navigate(remaining.length ? `/prompts/${remaining[0].slug}` : "/prompts", { replace: true });
+    }
   };
 
   const handleCreateCategory = async (name) => {
@@ -196,11 +198,12 @@ export default function Prompts() {
     return created;
   };
 
-  const handleDeleteCategory = async (category) => {
+  const handleDeleteCategory = async (category, fallbackCategory) => {
+    if (!fallbackCategory) throw new Error("Create another category before deleting the last category.");
     await deletePromptCategory(category.id);
     setCategories((current) => current.filter((item) => item.id !== category.id));
     setPrompts((current) => sortPromptRows(current.map((prompt) => (
-      prompt.category === category.name ? { ...prompt, category: "General" } : prompt
+      prompt.category === category.name ? { ...prompt, category: fallbackCategory.name } : prompt
     )), categories.filter((item) => item.id !== category.id)));
   };
 
