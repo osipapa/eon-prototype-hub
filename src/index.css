@@ -206,7 +206,15 @@
 .eon-product-switcher button:disabled { cursor: not-allowed; opacity: .48; }
 .eon-product-switcher button > span:not(.eon-product-soon) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eon-product-soon { position: absolute; top: 3px; right: 3px; font-size: 7px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; opacity: .72; }
+.eon-liquid-segment-shell { min-width: 0; border-radius: 11px; }
+.eon-liquid-segment { display: flex; min-width: 0; gap: 3px; padding: 3px; border-radius: inherit; }
+.eon-liquid-segment-indicator { position: absolute; top: 0; left: 0; display: block; border-radius: 8px; pointer-events: none; transition: width 180ms var(--ease-out), height 180ms var(--ease-out), transform 180ms var(--ease-out); will-change: transform; }
+.eon-liquid-segment-button { position: relative; z-index: 1; min-height: 32px; padding: 5px 10px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 500; text-transform: capitalize; white-space: nowrap; }
+.eon-liquid-segment-button[aria-pressed="true"] { font-weight: 650; }
+.eon-liquid-segment-shell.is-icon { border-radius: 11px; }
+.eon-liquid-segment-shell.is-icon .eon-liquid-segment-indicator { border-radius: 8px; }
 .eon-sidebar-switcher { display: flex; gap: 3px; margin-top: 10px; padding: 3px; border-radius: 10px; }
+.eon-sidebar-switcher .eon-liquid-segment-button { min-width: 0; min-height: 34px; flex: 1 1 0; font-size: 13px; }
 .eon-brand-row + .eon-sidebar-switcher { margin-top: 0; }
 .eon-sidebar-head > .eon-secondary-button { width: 100%; margin-top: 8px; }
 .eon-sidebar-search-row { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
@@ -416,12 +424,13 @@ button.eon-save-state { cursor: pointer; }
 @keyframes eon-pin-drop { from { translate: -50% -140%; opacity: 0; } to { translate: -50% -100%; opacity: 1; } }
 .eon-leader-line { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 60; }
 .eon-ring-backdrop { position: absolute; inset: 0; pointer-events: auto; }
-.eon-pin-ring { position: absolute; z-index: 5; pointer-events: auto; }
-.eon-pin-ring-item { position: absolute; display: grid; width: 40px; height: 40px; place-items: center; padding: 0; border: 1px solid; border-radius: 999px; translate: -50% -50%; font-size: 16px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.3); animation: eon-ring-in 160ms var(--ease-out) backwards; transition: transform 100ms var(--ease-out); }
+.eon-pin-ring { position: absolute !important; z-index: 5; pointer-events: auto; }
+.eon-pin-ring-liquid-item { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; }
+.eon-pin-ring-item { position: relative; display: grid; width: 40px; height: 40px; place-items: center; padding: 0; border: 1px solid; border-radius: 999px; background: transparent; font-size: 16px; cursor: pointer; transition: transform 100ms var(--ease-out); }
 .eon-pin-ring-item:hover { transform: scale(1.12); }
 .eon-pin-ring-item .eon-ring-label { position: absolute; top: calc(100% + 5px); left: 50%; padding: 3px 8px; border: 1px solid; border-radius: 7px; translate: -50%; white-space: nowrap; font-size: 10px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity 100ms linear; }
 .eon-pin-ring-item:hover .eon-ring-label, .eon-pin-ring-item:focus-visible .eon-ring-label { opacity: 1; }
-.eon-pin-ring-center { position: absolute; display: grid; width: 26px; height: 26px; place-items: center; padding: 0; border: 1px solid; border-radius: 999px; translate: -50% -50%; cursor: pointer; }
+.eon-pin-ring-center { position: absolute; top: 50%; left: 50%; display: grid; width: 26px; height: 26px; place-items: center; padding: 0; border: 1px solid; border-radius: 999px; translate: -50% -50%; cursor: pointer; }
 @keyframes eon-ring-in { from { scale: 0.4; opacity: 0; } to { scale: 1; opacity: 1; } }
 .eon-pin-composer { position: absolute; z-index: 6; padding: 8px; border: 1px solid; border-radius: 13px; translate: 0 -50%; box-shadow: 0 10px 34px rgba(0,0,0,.35); animation: eon-ring-in 140ms var(--ease-out) backwards; pointer-events: auto; }
 .eon-pin-composer-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
@@ -485,7 +494,7 @@ button.eon-save-state { cursor: pointer; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .eon-buttonish, .eon-comment, .eon-story-menu, .eon-inspector, .eon-sidebar, .eon-modal, .eon-controls-sheet { transition-duration: 0ms; }
+  .eon-buttonish, .eon-comment, .eon-story-menu, .eon-inspector, .eon-sidebar, .eon-modal, .eon-controls-sheet, .eon-liquid-segment-indicator { transition-duration: 0ms; }
   .eon-buttonish:active:not(:disabled) { transform: none; }
   .eon-story-menu, .eon-inspector, .eon-sidebar { transform: none; }
   .eon-drawer-scrim, .eon-controls-scrim { animation: none; }

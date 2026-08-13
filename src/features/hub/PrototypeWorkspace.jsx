@@ -10,7 +10,9 @@ import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import EonMark from "@/components/EonMark";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
+import LiquidSegmentedControl from "@/components/LiquidSegmentedControl";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
+import { Liquid } from "liquid-gooey";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
   ExternalLink, History, ImagePlus, LayoutGrid, Loader2,
@@ -661,17 +663,14 @@ export default function PrototypeWorkspace({
   };
 
   const segmented = (options, value, onPick, disabled = false) => (
-    <div className="eon-segmented" style={{ display: "flex", gap: 3, padding: 3, borderRadius: 10, background: c.raised, opacity: disabled ? 0.45 : 1 }}>
-      {options.map((option) => {
-        const selected = value === option;
-        return (
-          <button className="eon-buttonish" key={option} onClick={() => onPick(option)} aria-pressed={selected} disabled={disabled}
-            style={{ minHeight: 32, padding: "5px 10px", border: 0, borderRadius: 7, background: selected ? c.selected : "transparent", color: selected ? c.selectedText : c.secondary, cursor: disabled ? "not-allowed" : "pointer", fontSize: 12, fontWeight: selected ? 600 : 400, textTransform: "capitalize" }}>
-            {option}
-          </button>
-        );
-      })}
-    </div>
+    <LiquidSegmentedControl
+      options={options}
+      value={value}
+      onValueChange={onPick}
+      c={c}
+      className="eon-segmented"
+      disabled={disabled}
+    />
   );
 
   return (
@@ -897,17 +896,17 @@ function WorkspaceSidebar({
             if (product === "tracking") onOpenTracking?.();
           }}
         />
-        <div className="eon-sidebar-switcher" style={{ background: c.raised }}>
-          {["stories", "media"].map((item) => {
-            const selected = view === item;
-            return (
-              <button className="eon-buttonish" key={item} onClick={() => { setView(item); if (isDrawer) onClose(); }} aria-pressed={selected}
-                style={{ flex: 1, minHeight: 34, border: 0, borderRadius: 7, background: selected ? c.panel : "transparent", color: selected ? c.text : c.muted, cursor: "pointer", fontSize: 13, fontWeight: selected ? 600 : 400 }}>
-                {item === "stories" ? "Prototypes" : "Media"}
-              </button>
-            );
-          })}
-        </div>
+        <LiquidSegmentedControl
+          options={[
+            { value: "stories", label: "Prototypes" },
+            { value: "media", label: "Media" },
+          ]}
+          value={view}
+          onValueChange={(item) => { setView(item); if (isDrawer) onClose(); }}
+          c={{ ...c, selected: c.panel, selectedText: c.text }}
+          className="eon-sidebar-switcher"
+          ariaLabel="Prototype library view"
+        />
         {view === "stories" && (
           <>
             <div className="eon-sidebar-search-row">
@@ -1126,21 +1125,32 @@ function WorkspaceToolbar({
       {view === "stories" && (
         <div className="eon-toolbar-tools">
           <ToolGroup label="Viewport" c={c}>
-            <div className="eon-icon-segment" style={{ background: c.raised }}>
-              {Object.keys(VIEWPORTS).map((key) => {
-                const Icon = VP_ICON[key];
-                const selected = viewport === key;
-                return <button data-tutorial={key === "mobile" ? "viewport-mobile" : undefined} className="eon-buttonish eon-icon-button" key={key} onClick={() => setViewport(key)} title={VIEWPORTS[key].label} aria-label={`${VIEWPORTS[key].label} viewport`} aria-pressed={selected} style={{ color: selected ? c.selectedText : c.muted, background: selected ? c.selected : "transparent" }}><Icon size={16} /></button>;
-              })}
-            </div>
+            <LiquidSegmentedControl
+              options={Object.keys(VIEWPORTS).map((key) => ({
+                value: key,
+                Icon: VP_ICON[key],
+                title: VIEWPORTS[key].label,
+                ariaLabel: `${VIEWPORTS[key].label} viewport`,
+                tutorial: key === "mobile" ? "viewport-mobile" : undefined,
+              }))}
+              value={viewport}
+              onValueChange={setViewport}
+              c={c}
+              className="eon-icon-segment"
+              ariaLabel="Prototype viewport"
+              variant="icon"
+            />
           </ToolGroup>
           <ToolGroup label="View" c={c}>
-            <div className="eon-icon-segment" style={{ background: c.raised }}>
-              {[["single", Square, "Single view"], ["grid", LayoutGrid, "All states"]].map(([key, Icon, label]) => {
-                const selected = layout === key;
-                return <button className="eon-buttonish eon-icon-button" key={key} onClick={() => setLayout(key)} title={label} aria-label={label} aria-pressed={selected} style={{ color: selected ? c.selectedText : c.muted, background: selected ? c.selected : "transparent" }}><Icon size={16} /></button>;
-              })}
-            </div>
+            <LiquidSegmentedControl
+              options={[["single", Square, "Single view"], ["grid", LayoutGrid, "All states"]].map(([key, Icon, label]) => ({ value: key, Icon, title: label, ariaLabel: label }))}
+              value={layout}
+              onValueChange={setLayout}
+              c={c}
+              className="eon-icon-segment"
+              ariaLabel="Canvas layout"
+              variant="icon"
+            />
           </ToolGroup>
           <div className="eon-tool-compare">
             <ToolGroup label="Compare with Figma" c={c}>
@@ -1688,25 +1698,53 @@ const QUICK_PIN_OPTIONS = [
 
 function PinRing({ c, x, y, onPick, onWrite, onCancel }) {
   const radius = 74;
+  const size = 188;
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setExpanded(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   return (
-    <div className="eon-pin-ring" style={{ left: x, top: y }} role="menu" aria-label="Quick comment">
+    <Liquid
+      className="eon-pin-ring"
+      style={{ left: x - size / 2, top: y - size / 2, width: size, height: size }}
+      role="menu"
+      aria-label="Quick comment"
+      blur={8}
+      contrast={20}
+      fill={c.panel}
+      shadow="0 4px 14px rgba(0,0,0,.3)"
+      filterPadding={28}
+    >
       {QUICK_PIN_OPTIONS.map((option, index) => {
         const angle = ((index * 360) / QUICK_PIN_OPTIONS.length - 90) * (Math.PI / 180);
+        const targetX = Math.cos(angle) * radius;
+        const targetY = Math.sin(angle) * radius;
         return (
-          <button key={option.key} type="button" role="menuitem" className="eon-buttonish eon-pin-ring-item"
-            style={{ left: Math.cos(angle) * radius, top: Math.sin(angle) * radius, background: c.panel, borderColor: c.border, color: c.text, animationDelay: `${index * 18}ms` }}
-            onClick={() => (option.write ? onWrite() : onPick(option.body))}
-            aria-label={option.label}>
-            {option.icon || <MessageSquare size={15} />}
-            <span className="eon-ring-label" style={{ background: c.panel, borderColor: c.border, color: c.secondary }}>{option.label}</span>
-          </button>
+          <Liquid.Item
+            key={option.key}
+            className="eon-pin-ring-liquid-item"
+            x={expanded ? targetX : 0}
+            y={expanded ? targetY : 0}
+            transition={{ stiffness: 430, damping: 24, mass: 0.82 }}
+            delay={index * 22}
+            radius={20}
+          >
+            <button type="button" role="menuitem" className="eon-buttonish eon-pin-ring-item"
+              style={{ borderColor: c.border, color: c.text }}
+              onClick={() => (option.write ? onWrite() : onPick(option.body))}
+              aria-label={option.label}>
+              {option.icon || <MessageSquare size={15} />}
+              <span className="eon-ring-label" style={{ background: c.panel, borderColor: c.border, color: c.secondary }}>{option.label}</span>
+            </button>
+          </Liquid.Item>
         );
       })}
       <button type="button" className="eon-buttonish eon-pin-ring-center" onClick={onCancel} aria-label="Cancel pin"
         style={{ background: c.raised, borderColor: c.border, color: c.secondary }}>
         <X size={13} />
       </button>
-    </div>
+    </Liquid>
   );
 }
 
