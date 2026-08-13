@@ -5,7 +5,10 @@ import { AuthProvider } from "./lib/auth";
 import WorkspacePreview from "./dev/WorkspacePreview";
 import PromptLibraryPreview from "./dev/PromptLibraryPreview";
 import TrackingPreview from "./dev/TrackingPreview";
+import { startAnimatedFavicon } from "./lib/animatedFavicon";
 import "./index.css";
+
+startAnimatedFavicon();
 
 const previewParams = new URLSearchParams(window.location.search);
 const isWorkspacePreview = import.meta.env.DEV && previewParams.has("workspace-preview");
