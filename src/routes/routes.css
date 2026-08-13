@@ -444,65 +444,7 @@
 .auth-layout {
   position: relative;
   z-index: 1;
-  display: grid;
-  width: min(100%, 1060px);
-  align-items: center;
-  gap: clamp(48px, 8vw, 112px);
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
-}
-
-.auth-intro {
-  display: flex;
-  min-width: 0;
-  min-height: 480px;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 10px 0;
-}
-
-.auth-intro-copy {
-  max-width: 560px;
-}
-
-.auth-intro-copy h1 {
-  max-width: 540px;
-  margin-top: 14px;
-  font-size: clamp(38px, 4.6vw, 64px);
-  font-weight: 500;
-  letter-spacing: -0.052em;
-  line-height: 0.99;
-}
-
-.auth-intro-copy p {
-  max-width: 500px;
-  margin-top: 22px;
-  color: var(--route-secondary);
-  font-size: clamp(15px, 1.6vw, 18px);
-  line-height: 1.6;
-}
-
-.auth-proof {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 18px;
-  color: var(--route-muted);
-  font-size: 12px;
-}
-
-.auth-proof span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-.auth-proof span::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--route-brand);
-  box-shadow: 0 0 8px rgba(169, 155, 174, 0.28);
+  width: min(100%, 420px);
 }
 
 .auth-card {
@@ -511,7 +453,7 @@
 }
 
 .auth-card-brand {
-  display: none;
+  display: inline-flex;
   margin-bottom: 32px;
 }
 
@@ -1091,19 +1033,6 @@
 }
 
 @media (max-width: 940px) {
-  .auth-layout {
-    width: min(100%, 440px);
-    grid-template-columns: 1fr;
-  }
-
-  .auth-intro {
-    display: none;
-  }
-
-  .auth-card-brand {
-    display: inline-flex;
-  }
-
   .admin-create-form {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }

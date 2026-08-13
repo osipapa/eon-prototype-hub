@@ -75,23 +75,6 @@ export default function Login() {
   return (
     <main className="route-shell auth-shell">
       <div className="auth-layout">
-        <section className="auth-intro" aria-labelledby="auth-intro-title">
-          <div className="route-brand route-brand--large">
-            <EonMark src={logoUrl} />
-            <span>Eon Design Hub</span>
-          </div>
-          <div className="auth-intro-copy">
-            <span className="route-eyebrow">One design workspace</span>
-            <h1 id="auth-intro-title">Turn product ideas into shared decisions.</h1>
-            <p>Review prototypes, reuse approved prompts, and keep design decisions connected to the work.</p>
-          </div>
-          <div className="auth-proof" aria-label="Product benefits">
-            <span>Prototype reviews</span>
-            <span>Shared prompt library</span>
-            <span>Figma + Linear context</span>
-          </div>
-        </section>
-
         <section className="route-card auth-card" aria-labelledby="login-title">
           <div className="auth-card-brand route-brand">
             <EonMark src={logoUrl} />
