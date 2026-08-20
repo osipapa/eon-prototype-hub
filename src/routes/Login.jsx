@@ -1,34 +1,11 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import EonMark from "../components/EonMark";
 import { useAuth } from "../lib/auth";
-import { cacheEonLogo, readCachedEonLogo, safeBrandLogoUrl } from "../lib/branding";
+import { cacheEonLogo, readCachedEonLogo } from "../lib/branding";
 import { getPublicEonLogo } from "../lib/data";
 import "./routes.css";
-
-function EonMark({ src }) {
-  const [failed, setFailed] = useState(false);
-  const safeSrc = safeBrandLogoUrl(src);
-
-  useEffect(() => setFailed(false), [safeSrc]);
-
-  if (safeSrc && !failed) {
-    return <img className="route-brand-mark route-brand-logo" src={safeSrc} alt="Eon" onError={() => setFailed(true)} />;
-  }
-
-  return (
-    <svg className="route-brand-mark" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="eon-login-accent" x1="5" y1="4" x2="19" y2="20" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#DD0EFF" />
-          <stop offset="1" stopColor="#F19DFF" />
-        </linearGradient>
-      </defs>
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-      <path d="M12 4 A8 8 0 0 1 12 20" stroke="url(#eon-login-accent)" strokeWidth="2" />
-    </svg>
-  );
-}
 
 function PasswordVisibilityIcon({ visible }) {
   return (
@@ -41,7 +18,10 @@ function PasswordVisibilityIcon({ visible }) {
 
 export default function Login() {
   const { user, configured, signInWithPassword } = useAuth();
-  const [logoUrl, setLogoUrl] = useState(readCachedEonLogo);
+  const [branding, setBranding] = useState(() => {
+    const url = readCachedEonLogo();
+    return { url, loading: !url };
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -53,9 +33,9 @@ export default function Login() {
     let active = true;
     getPublicEonLogo().then((url) => {
       if (!active) return;
-      setLogoUrl(cacheEonLogo(url));
+      setBranding({ url: cacheEonLogo(url), loading: false });
     }).catch(() => {
-      // Keep the cached logo or fallback mark when branding is temporarily unavailable.
+      if (active) setBranding((current) => ({ ...current, loading: false }));
     });
     return () => { active = false; };
   }, [configured]);
@@ -83,7 +63,7 @@ export default function Login() {
       <div className="auth-layout">
         <section className="route-card auth-card" aria-labelledby="login-title">
           <div className="auth-card-brand route-brand">
-            <EonMark src={logoUrl} />
+            <EonMark src={branding.url} className="route-brand-mark route-brand-logo" size={28} loading={configured && branding.loading} />
             <span>Eon</span>
           </div>
           <div className="auth-card-heading">

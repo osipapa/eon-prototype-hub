@@ -8,12 +8,12 @@ export const HUB = {
   // stays a supporting brand cue, while primary actions use high-contrast ink.
   dark: { bg: "#000000", nav: "#000000", panel: "#151515", raised: "#252525", border: "rgba(255,255,255,0.10)",
     text: "#FAFAFA", muted: "#A1A1AA", secondary: "rgba(250,250,250,0.72)",
-    hover: "#252525", active: "rgba(241,157,255,0.105)", brand: "#F19DFF",
+    hover: "#252525", active: "#202020", brand: "#F19DFF",
     primary: "#E8E8E8", primaryText: "#141414",
     selected: "#151515", selectedText: "#FAFAFA" },
   light: { bg: "#FAFAFA", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F2F2F2", border: "rgba(0,0,0,0.10)",
     text: "#171717", muted: "#737373", secondary: "rgba(23,23,23,0.72)",
-    hover: "#F2F2F2", active: "rgba(221,14,255,0.09)", brand: "#B400CF",
+    hover: "#F2F2F2", active: "#ECECEC", brand: "#B400CF",
     primary: "#171717", primaryText: "#FAFAFA",
     selected: "#FFFFFF", selectedText: "#171717" },
 };

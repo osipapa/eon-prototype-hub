@@ -14,6 +14,7 @@ import { MIXPANEL_TRACKING_EXAMPLE } from "./trackingExample";
 
 export default function TrackingLibrary({
   assets = {},
+  logoLoading = false,
   userEmail,
   isAdmin,
   onOpenDesign,
@@ -67,6 +68,7 @@ export default function TrackingLibrary({
         <TrackingSidebar
           c={c}
           logo={assets.eonLogo}
+          logoLoading={logoLoading}
           userEmail={userEmail}
           isAdmin={isAdmin}
           onOpenDesign={onOpenDesign}
@@ -107,7 +109,7 @@ export default function TrackingLibrary({
             <article className="eon-tracking-article">
               <header className="eon-tracking-hero">
                 <div className="eon-tracking-hero-kicker" style={{ color: c.brand }}>
-                  <BarChart3 size={15} aria-hidden="true" />
+                  <BarChart3 className="eon-accent-icon" size={15} aria-hidden="true" />
                   {example.platform} setup
                 </div>
                 <h1>{example.title}</h1>
@@ -149,7 +151,7 @@ export default function TrackingLibrary({
             <aside className="eon-tracking-rail">
               <div className="eon-tracking-rail-card" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
                 <div className="eon-prompt-use-head">
-                  <span className="eon-tracking-rail-icon" style={{ background: c.active, color: c.brand }}><BarChart3 size={17} /></span>
+                  <span className="eon-tracking-rail-icon eon-accent-icon" style={{ background: c.active, color: c.brand }}><BarChart3 size={17} /></span>
                   <h2>Setup prompt</h2>
                 </div>
                 <button
@@ -187,7 +189,7 @@ export default function TrackingLibrary({
 }
 
 function TrackingSidebar({
-  c, logo, userEmail, isAdmin, onOpenDesign, onOpenPrototypes, onOpenPrompts, onOpenAdmin, onSignOut, changelog, resize, isDrawer, onClose,
+  c, logo, logoLoading, userEmail, isAdmin, onOpenDesign, onOpenPrototypes, onOpenPrompts, onOpenAdmin, onSignOut, changelog, resize, isDrawer, onClose,
 }) {
   return (
     <aside
@@ -208,6 +210,7 @@ function TrackingSidebar({
             active="tracking"
             c={c}
             logo={logo}
+            logoLoading={logoLoading}
             onSelect={(product) => {
               if (product === "design") onOpenDesign?.();
               if (product === "prototypes") onOpenPrototypes?.();
@@ -230,7 +233,7 @@ function TrackingSidebar({
           aria-current="page"
           style={{ background: c.active, color: c.text }}
         >
-          <BarChart3 size={15} aria-hidden="true" style={{ color: c.brand }} />
+          <BarChart3 className="eon-accent-icon" size={15} aria-hidden="true" style={{ color: c.brand }} />
           <span>
             <strong>Mixpanel tracking setup</strong>
             <small style={{ color: c.muted }}>General setup guide</small>

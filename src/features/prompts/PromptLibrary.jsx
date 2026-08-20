@@ -225,7 +225,7 @@ export default function PromptLibrary({
           </div>
         ) : (
           <div className="eon-prompt-empty" style={{ color: c.muted }}>
-            <span style={{ background: c.panel, color: c.brand }}><BookOpen size={21} /></span>
+            <span className="eon-accent-icon" style={{ background: c.panel, color: c.brand }}><BookOpen size={21} /></span>
             <h1 style={{ color: c.text }}>No prompts yet</h1>
             <p>Create the first reusable prompt for your team.</p>
             {canCreate && (
@@ -704,7 +704,7 @@ function PromptEditorModal({ c, prompt, categories, onClose, onSave }) {
       >
         <div className="eon-modal-head" style={{ borderColor: c.border }}>
           <div className="eon-prompt-editor-heading">
-            <span style={{ background: c.active, color: c.brand }}>
+            <span className="eon-accent-icon" style={{ background: c.active, color: c.brand }}>
               {isNew ? <Plus size={16} /> : <Edit3 size={15} />}
             </span>
             <strong id="eon-prompt-editor-title">{isNew ? "New prompt" : "Edit prompt"}</strong>
@@ -921,7 +921,7 @@ function CategoryManagerModal({
       >
         <div className="eon-modal-head" style={{ borderColor: c.border }}>
           <div className="eon-prompt-editor-heading">
-            <span style={{ background: c.active, color: c.brand }}><FolderCog size={16} /></span>
+            <span className="eon-accent-icon" style={{ background: c.active, color: c.brand }}><FolderCog size={16} /></span>
             <strong id="eon-category-manager-title">Manage categories</strong>
           </div>
           <button className="eon-buttonish eon-icon-button" type="button" onClick={onClose} disabled={busy} aria-label="Close category manager" style={{ color: c.muted }}>
@@ -957,7 +957,7 @@ function CategoryManagerModal({
               const canDelete = Boolean(category.id);
               return (
                 <div className="eon-category-row" key={category.id || category.name} style={{ background: c.raised, boxShadow: hubShadow(c) }}>
-                  <span className="eon-category-row-icon" style={{ background: c.active, color: c.brand }}>
+                  <span className="eon-category-row-icon eon-accent-icon" style={{ background: c.active, color: c.brand }}>
                     <FolderCog size={15} aria-hidden="true" />
                   </span>
                   <span className="eon-category-row-copy">

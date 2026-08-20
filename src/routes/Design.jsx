@@ -9,22 +9,26 @@ export default function Design() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const { slug = "overview" } = useParams();
-  const [assets, setAssets] = useState({});
+  const [assets, setAssets] = useState(null);
 
   useEffect(() => {
     listAssets()
       .then((rows) => {
         const nextAssets = Object.fromEntries((rows || []).map((item) => [item.key, item.url]));
         cacheEonLogo(nextAssets.eonLogo);
-        setAssets(nextAssets);
+        setAssets({ ...nextAssets, eonLogo: nextAssets.eonLogo || null });
       })
-      .catch((error) => console.warn("Eon Design branding could not be loaded.", error));
+      .catch((error) => {
+        console.warn("Eon Design branding could not be loaded.", error);
+        setAssets({ eonLogo: null });
+      });
   }, []);
 
   return (
     <DesignGuide
       activeSlug={slug}
-      assets={assets}
+      assets={assets || {}}
+      logoLoading={assets === null}
       userEmail={user?.email}
       isAdmin={isAdmin}
       onSelectPage={(page) => navigate(`/design/${page.slug}`)}

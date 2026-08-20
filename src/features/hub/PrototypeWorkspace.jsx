@@ -552,7 +552,7 @@ export default function PrototypeWorkspace({
     return (
       <div className={`${hubTheme === "dark" ? "" : "light"} eon-empty-workspace`} style={{ background: c.bg, color: c.text }}>
         <div className="eon-empty-workspace-card" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
-          <span className="eon-empty-workspace-icon" style={{ background: c.active, color: c.brand }}><Plus size={20} /></span>
+          <span className="eon-empty-workspace-icon eon-accent-icon" style={{ background: c.active, color: c.brand }}><Plus size={20} /></span>
           <h1>No prototypes yet</h1>
           <p style={{ color: c.muted }}>Create the first shared review space for your team.</p>
           <Button className="eon-buttonish" onClick={(event) => { newDialogReturnFocusRef.current = event.currentTarget; setShowNewDialog(true); }} style={{ minHeight: 40, background: c.primary, color: c.primaryText }}>New prototype</Button>
@@ -1030,7 +1030,7 @@ function WorkspaceSidebar({
           ))}
         </> : (
           <div className="eon-sidebar-mode-info" style={{ color: c.muted }}>
-            <span className="eon-sidebar-mode-icon" style={{ background: c.active, color: c.brand }}><Upload size={18} /></span>
+            <span className="eon-sidebar-mode-icon eon-accent-icon" style={{ background: c.active, color: c.brand }}><Upload size={18} /></span>
             <strong style={{ color: c.text }}>Shared media</strong>
             <span>Logos, images, and tokens stay in sync across every prototype.</span>
           </div>
@@ -1518,7 +1518,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
       <div ref={scrollRef} className="eon-comment-list" aria-live="polite">
         {shown.length === 0 ? (
           <div className="eon-comment-empty" style={{ color: c.muted }}>
-            <span className="eon-comment-empty-icon" style={{ background: c.raised, color: c.brand }}>
+            <span className="eon-comment-empty-icon eon-accent-icon" style={{ background: c.raised, color: c.brand }}>
               {filter === "resolved" ? <Check size={20} /> : <MessageSquare size={20} />}
             </span>
             <strong style={{ color: c.text }}>{filter === "resolved" ? "Nothing resolved yet" : "Start the conversation"}</strong>
@@ -1926,7 +1926,7 @@ function HistoryTimeline({ c, activity, currentUserId }) {
   if (!activity.length) {
     return (
       <div className="eon-comment-empty" style={{ color: c.muted }}>
-        <span className="eon-comment-empty-icon" style={{ background: c.raised, color: c.brand }}><History size={20} /></span>
+        <span className="eon-comment-empty-icon eon-accent-icon" style={{ background: c.raised, color: c.brand }}><History size={20} /></span>
         <strong style={{ color: c.text }}>No history yet</strong>
         <span style={{ fontSize: 12 }}>Uploads, status changes, and link edits show up here.</span>
       </div>
@@ -1940,7 +1940,7 @@ function HistoryTimeline({ c, activity, currentUserId }) {
         const name = item.actor_id === currentUserId ? "You" : (item.actor_name || "A teammate");
         return (
           <article key={item.id} className="eon-history-item">
-            <span className="eon-history-icon" style={{ background: c.raised, color: isDangerAction(item.action) ? "#D98295" : c.brand }}>
+            <span className={`eon-history-icon${isDangerAction(item.action) ? "" : " eon-accent-icon"}`} style={{ background: c.raised, color: isDangerAction(item.action) ? "#D98295" : c.brand }}>
               <Icon size={13} />
             </span>
             <div className="eon-history-body">
@@ -1998,7 +1998,7 @@ function Toast({ c, toast, onDismiss }) {
   const Icon = meta.icon;
   return (
     <div className="eon-toast" style={{ background: c.panel, borderColor: c.border, boxShadow: hubShadow(c) }}>
-      <span className="eon-toast-icon" style={{ background: c.raised, color: isDangerAction(toast.action) ? "#D98295" : c.brand }}>
+      <span className={`eon-toast-icon${isDangerAction(toast.action) ? "" : " eon-accent-icon"}`} style={{ background: c.raised, color: isDangerAction(toast.action) ? "#D98295" : c.brand }}>
         <Icon size={14} />
       </span>
       <div className="eon-toast-body">

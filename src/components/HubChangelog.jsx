@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { Check, Sparkles, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   CHANGELOG, CHANGELOG_SEEN_KEY, latestChangelogDate, markChangelogSeen, readSeenChangelogDate,
 } from "@/lib/changelog";
@@ -43,7 +44,7 @@ export function HubChangelogButton({ c, hasNew, onOpen }) {
       title="What's new"
       style={{ color: hasNew ? c.brand : c.muted, boxShadow: "var(--shadow-surface)" }}
     >
-      <Sparkles size={15} />
+      <Sparkles className="eon-accent-icon" size={15} />
       {hasNew && <span className="eon-changelog-dot" style={{ background: c.brand }} aria-hidden="true" />}
     </button>
   );
@@ -68,8 +69,17 @@ export function HubChangelogDialog({ c, open, onClose }) {
 
   if (!open) return null;
 
-  const formatDate = (value) => new Date(`${value}T00:00:00`)
-    .toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+  const formatDate = (value) => {
+    const date = new Date(`${value}T00:00:00`);
+    return {
+      month: date.toLocaleDateString(undefined, { month: "short" }),
+      day: date.toLocaleDateString(undefined, { day: "2-digit" }),
+      year: date.toLocaleDateString(undefined, { year: "numeric" }),
+      full: date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" }),
+    };
+  };
+
+  const updateCount = CHANGELOG.reduce((total, entry) => total + entry.items.length, 0);
 
   return (
     <div className="eon-modal-overlay" onMouseDown={(event) => {
@@ -79,35 +89,76 @@ export function HubChangelogDialog({ c, open, onClose }) {
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="What's new"
+        aria-labelledby="eon-changelog-title"
+        aria-describedby="eon-changelog-summary"
         className="eon-modal eon-changelog-dialog"
-        style={{ background: c.nav, borderColor: c.border }}
+        style={{ background: c.nav, borderColor: c.border, "--changelog-accent": c.brand }}
       >
         <div className="eon-modal-head" style={{ borderColor: c.border }}>
-          <span className="eon-changelog-mark" style={{ background: c.active, color: c.brand }}>
+          <span className="eon-changelog-mark eon-accent-icon" style={{ background: c.active, color: c.brand }}>
             <Sparkles size={15} />
           </span>
-          <strong style={{ color: c.text }}>What's new</strong>
+          <div className="eon-changelog-heading">
+            <strong id="eon-changelog-title" style={{ color: c.text }}>What's new</strong>
+            <span id="eon-changelog-summary" style={{ color: c.muted }}>
+              {CHANGELOG.length} releases · {updateCount} improvements
+            </span>
+          </div>
           <button
-            className="eon-buttonish eon-icon-button"
+            className="eon-buttonish eon-icon-button eon-changelog-close"
             type="button"
             onClick={onClose}
             aria-label="Close changelog"
-            style={{ color: c.muted }}
+            style={{ background: c.raised, color: c.muted, boxShadow: "var(--shadow-surface)" }}
           >
             <X size={16} />
           </button>
         </div>
         <div className="eon-modal-body eon-changelog-body">
-          {CHANGELOG.map((entry) => (
-            <section key={entry.date} className="eon-changelog-entry">
-              <time dateTime={entry.date} style={{ color: c.muted }}>{formatDate(entry.date)}</time>
-              <strong style={{ color: c.text }}>{entry.title}</strong>
-              <ul>
-                {entry.items.map((item) => <li key={item} style={{ color: c.secondary }}>{item}</li>)}
-              </ul>
-            </section>
-          ))}
+          {CHANGELOG.map((entry, index) => {
+            const date = formatDate(entry.date);
+            const isLatest = index === 0;
+            return (
+              <section
+                key={entry.date}
+                className={`eon-changelog-entry${isLatest ? " is-latest" : ""}`}
+                style={{ "--entry-index": index }}
+              >
+                <time className="eon-changelog-date" dateTime={entry.date} aria-label={date.full} style={{ color: c.muted }}>
+                  <span>{date.month}</span>
+                  <strong style={{ color: isLatest ? c.text : c.secondary }}>{date.day}</strong>
+                  <em>{date.year}</em>
+                </time>
+                <div className="eon-changelog-rail" aria-hidden="true">
+                  <span style={{ background: isLatest ? c.brand : c.muted }} />
+                  <i style={{ background: c.border }} />
+                </div>
+                <article className="eon-changelog-card" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+                  <header>
+                    <div>
+                      {isLatest && (
+                        <Badge className="eon-changelog-latest" style={{ background: c.active, color: c.brand }}>
+                          Latest
+                        </Badge>
+                      )}
+                      <span style={{ color: c.muted }}>{entry.items.length} updates</span>
+                    </div>
+                    <h2 style={{ color: c.text }}>{entry.title}</h2>
+                  </header>
+                  <ul>
+                    {entry.items.map((item) => (
+                      <li key={item} style={{ background: c.raised, color: c.secondary }}>
+                        <span className="eon-changelog-check eon-accent-icon" style={{ background: c.panel, color: c.brand }} aria-hidden="true">
+                          <Check size={12} />
+                        </span>
+                        <p>{item}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              </section>
+            );
+          })}
         </div>
       </div>
     </div>

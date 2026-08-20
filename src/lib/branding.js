@@ -30,7 +30,7 @@ export function cacheEonLogo(value) {
     if (safeUrl) window.localStorage.setItem(PUBLIC_EON_LOGO_CACHE_KEY, safeUrl);
     else window.localStorage.removeItem(PUBLIC_EON_LOGO_CACHE_KEY);
   } catch {
-    // The fixed-size fallback mark keeps layouts stable in private mode.
+    // The logo slot's skeleton keeps layouts stable when storage is unavailable.
   }
   return safeUrl;
 }

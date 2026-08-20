@@ -8,21 +8,25 @@ import { listAssets } from "@/lib/data";
 export default function Tracking() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const [assets, setAssets] = useState({});
+  const [assets, setAssets] = useState(null);
 
   useEffect(() => {
     listAssets()
       .then((rows) => {
         const nextAssets = Object.fromEntries((rows || []).map((item) => [item.key, item.url]));
         cacheEonLogo(nextAssets.eonLogo);
-        setAssets(nextAssets);
+        setAssets({ ...nextAssets, eonLogo: nextAssets.eonLogo || null });
       })
-      .catch((error) => console.warn("Tracking branding could not be loaded.", error));
+      .catch((error) => {
+        console.warn("Tracking branding could not be loaded.", error);
+        setAssets({ eonLogo: null });
+      });
   }, []);
 
   return (
     <TrackingLibrary
-      assets={assets}
+      assets={assets || {}}
+      logoLoading={assets === null}
       userEmail={user?.email}
       isAdmin={isAdmin}
       onOpenDesign={() => navigate("/design")}

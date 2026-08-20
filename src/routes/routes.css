@@ -397,6 +397,12 @@
   color: var(--route-brand);
 }
 
+.route-state:not(.route-state--error) .route-state-icon svg,
+.route-section-icon svg,
+.admin-tutorial-persona > span svg {
+  stroke: url(#eon-icon-gradient);
+}
+
 .route-state--error .route-state-icon {
   background: rgba(255, 107, 138, 0.12);
   color: var(--route-danger);

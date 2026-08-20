@@ -12,6 +12,9 @@ export const CHANGELOG = [
       "A new Eon Design home documents principles, product design process, review practices, Linear handoff, and shared resources.",
       "Prompt edit and delete actions now use the same ellipsis menu and confirmation behavior as prototypes.",
       "Custom media can now be permanently deleted; resetting a logo or preset removes its saved override.",
+      "What's new now uses a release timeline with scannable dates, update counts, and grouped change summaries.",
+      "Selected surfaces now stay monochrome while icons and active indicators use the Eon accent gradient.",
+      "Logo loading no longer flashes a placeholder mark; size-matched skeletons hold the space until the real asset is ready.",
     ],
   },
   {

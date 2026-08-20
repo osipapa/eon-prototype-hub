@@ -11,7 +11,7 @@ const PRODUCTS = [
   { id: "tracking", label: "Mixpanel", description: "Instrument and validate", Icon: BarChart3 },
 ];
 
-export default function DesignHubSwitcher({ active, c, logo, onSelect }) {
+export default function DesignHubSwitcher({ active, c, logo, logoLoading = false, onSelect }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -45,7 +45,7 @@ export default function DesignHubSwitcher({ active, c, logo, onSelect }) {
         aria-expanded={open}
         style={{ color: c.text, background: open ? c.raised : "transparent" }}
       >
-        <span className="eon-design-switcher-logo" aria-hidden="true"><EonMark src={logo} /></span>
+        <span className="eon-design-switcher-logo"><EonMark src={logo} loading={logoLoading} /></span>
         <span className="eon-design-switcher-label">Eon Design</span>
         <ChevronDown className={open ? "is-open" : ""} size={15} aria-hidden="true" style={{ color: c.muted }} />
       </button>
@@ -67,7 +67,7 @@ export default function DesignHubSwitcher({ active, c, logo, onSelect }) {
                 }}
                 style={{ background: selected ? c.active : "transparent", color: c.text }}
               >
-                <span className="eon-design-switcher-icon" style={{ background: selected ? c.raised : "transparent", color: selected ? c.brand : c.muted }}>
+                <span className={`eon-design-switcher-icon${selected ? " eon-accent-icon" : ""}`} style={{ background: selected ? c.panel : "transparent", color: selected ? c.brand : c.muted }}>
                   <Icon size={16} aria-hidden="true" />
                 </span>
                 <span className="eon-design-switcher-copy">

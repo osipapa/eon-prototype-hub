@@ -140,6 +140,11 @@
 .eon-buttonish:active:not(:disabled) { transform: scale(.96); }
 .eon-buttonish:disabled { cursor: not-allowed; }
 
+.eon-accent-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.eon-accent-icon { color: var(--eon-accent-solid) !important; }
+svg.eon-accent-icon,
+.eon-accent-icon svg { stroke: url(#eon-icon-gradient) !important; }
+
 /* Gradient accents stay on emphasis details; copy and structural controls keep
    solid colors for predictable contrast in both themes. */
 .eon-design-hero > span,
@@ -229,6 +234,15 @@
 .eon-brand { display: flex; min-width: 0; flex: 1; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; letter-spacing: -.015em; }
 .eon-brand-logo { display: block; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 7px; object-fit: cover; outline: 1px solid rgba(255, 255, 255, .1); outline-offset: -1px; }
 .light .eon-brand-logo { outline-color: rgba(0, 0, 0, .1); }
+.eon-brand-slot { position: relative; display: grid; overflow: hidden; object-fit: initial; }
+.eon-brand-image, .eon-brand-skeleton { position: absolute; inset: 0; width: 100%; height: 100%; }
+.eon-brand-image { display: block; object-fit: cover; opacity: 0; transition-property: opacity; transition-duration: 180ms; transition-timing-function: var(--ease-out); }
+.eon-brand-skeleton { border-radius: inherit; opacity: 1; transition-property: opacity; transition-duration: 140ms; transition-timing-function: var(--ease-out); }
+.eon-brand-slot.is-loaded .eon-brand-image { opacity: 1; }
+.eon-brand-slot.is-loaded .eon-brand-skeleton { opacity: 0; pointer-events: none; }
+.eon-skeleton { background: linear-gradient(100deg, rgba(255, 255, 255, .055) 20%, rgba(255, 255, 255, .12) 40%, rgba(255, 255, 255, .055) 60%); background-size: 220% 100%; animation: eon-skeleton-shimmer 1.45s ease-in-out infinite; }
+.light .eon-skeleton { background-image: linear-gradient(100deg, rgba(0, 0, 0, .055) 20%, rgba(0, 0, 0, .1) 40%, rgba(0, 0, 0, .055) 60%); }
+@keyframes eon-skeleton-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 .eon-design-switcher { position: relative; min-width: 0; flex: 1; }
 .eon-design-switcher-trigger { display: flex; width: 100%; min-height: 42px; align-items: center; gap: 9px; padding: 5px 8px 5px 6px; border: 0; border-radius: 12px; cursor: pointer; text-align: left; }
 .eon-design-switcher-logo { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; }
@@ -262,8 +276,8 @@
 .eon-sidebar-library-heading > div + div { min-height: 22px; font-size: 10px; font-variant-numeric: tabular-nums; }
 .eon-sidebar-tabs { width: 100%; justify-content: flex-start; margin-top: 7px; }
 .eon-sidebar-tabs > button { flex: 0 0 auto; font-size: 11px; }
-.eon-sidebar-tabs > button[data-state="active"] { border-color: var(--eon-accent-end); }
-.light .eon-sidebar-tabs > button[data-state="active"] { border-color: var(--eon-accent-start); }
+.eon-sidebar-tabs > button[data-state="active"] { border-color: transparent; }
+.eon-sidebar-tabs > button[data-state="active"]::after { content: ""; position: absolute; right: 0; bottom: -2px; left: 0; height: 2px; border-radius: 2px 2px 0 0; background: var(--eon-accent-gradient); }
 .eon-sidebar-library-controls { margin-top: 10px; }
 .eon-sidebar-head > .eon-secondary-button { width: 100%; margin-top: 8px; }
 .eon-sidebar-search-row { display: flex; align-items: center; gap: 7px; }
@@ -445,14 +459,53 @@ button.eon-save-state { cursor: pointer; }
 .eon-comment-body p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .eon-changelog-button { position: relative; }
 .eon-changelog-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 999px; }
-.eon-changelog-dialog { width: min(520px, 100%); }
-.eon-changelog-mark { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; }
-.eon-changelog-body { gap: 22px; }
-.eon-changelog-entry { display: flex; flex-direction: column; gap: 6px; }
-.eon-changelog-entry time { font-size: 11px; font-variant-numeric: tabular-nums; text-transform: uppercase; letter-spacing: .05em; }
-.eon-changelog-entry strong { font-size: 14px; letter-spacing: -.01em; }
-.eon-changelog-entry ul { display: flex; flex-direction: column; gap: 7px; margin: 2px 0 0; padding-left: 4px; list-style: none; }
-.eon-changelog-entry li { font-size: 13px; line-height: 1.5; }
+.eon-modal.eon-changelog-dialog { width: min(760px, 100%); max-height: min(820px, calc(100vh - 40px)); overflow: hidden; }
+.eon-changelog-dialog .eon-modal-head { min-height: 72px; padding: 12px 16px 12px 20px; }
+.eon-changelog-mark { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: 12px; }
+.eon-changelog-heading { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.eon-changelog-heading strong { flex: none; font-size: 16px; letter-spacing: -.015em; text-wrap: balance; }
+.eon-changelog-heading span { font-size: 11px; font-variant-numeric: tabular-nums; }
+.eon-changelog-close { border-radius: 10px; }
+.eon-changelog-body { gap: 0; padding: 24px 26px 32px 22px; overscroll-behavior: contain; }
+.eon-changelog-entry { display: grid; grid-template-columns: 54px 18px minmax(0, 1fr); gap: 12px; align-items: stretch; animation: eon-changelog-entry-in 360ms var(--ease-out) both; animation-delay: calc(var(--entry-index) * 70ms); }
+.eon-changelog-date { display: flex; align-items: flex-end; flex-direction: column; padding-top: 14px; font-style: normal; font-variant-numeric: tabular-nums; line-height: 1; text-transform: uppercase; }
+.eon-changelog-date span { font-size: 9px; font-weight: 700; letter-spacing: .08em; }
+.eon-changelog-date strong { margin-top: 4px; font-size: 24px; font-weight: 650; letter-spacing: -.045em; }
+.eon-changelog-date em { margin-top: 5px; font-size: 9px; font-style: normal; letter-spacing: .04em; }
+.eon-changelog-rail { display: flex; align-items: center; flex-direction: column; }
+.eon-changelog-rail span { width: 10px; height: 10px; flex: 0 0 10px; margin-top: 19px; border: 3px solid color-mix(in srgb, var(--changelog-accent) 15%, transparent); border-radius: 999px; background-clip: padding-box !important; box-sizing: content-box; }
+.eon-changelog-rail i { width: 1px; min-height: 28px; flex: 1; margin: 7px 0; }
+.eon-changelog-entry:last-child .eon-changelog-rail i { background: linear-gradient(to bottom, hsl(var(--border)), transparent) !important; opacity: .55; }
+.eon-changelog-card { min-width: 0; margin-bottom: 18px; padding: 16px 16px 6px; border-radius: 18px; }
+.eon-changelog-card > header { padding: 0 2px 13px; }
+.eon-changelog-card > header > div { display: flex; min-height: 24px; align-items: center; justify-content: space-between; gap: 10px; }
+.eon-changelog-card > header > div > span { margin-left: auto; font-size: 10px; font-variant-numeric: tabular-nums; }
+.eon-changelog-latest { min-height: 22px; border: 0; padding: 0 8px; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.eon-changelog-card h2 { margin: 7px 0 0; font-size: 17px; font-weight: 650; letter-spacing: -.025em; line-height: 1.3; text-wrap: balance; }
+.eon-changelog-card ul { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 6px; list-style: none; }
+.eon-changelog-card li { display: flex; min-height: 48px; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 12px; font-size: 12px; line-height: 1.5; }
+.eon-changelog-check { display: grid; width: 22px; height: 22px; flex: 0 0 22px; margin-top: 1px; place-items: center; border-radius: 7px; }
+.eon-changelog-card p { margin: 1px 0 0; text-wrap: pretty; }
+@keyframes eon-changelog-entry-in { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
+@media (max-width: 560px) {
+  .eon-modal-overlay:has(.eon-changelog-dialog) { align-items: end; padding: 10px; }
+  .eon-modal.eon-changelog-dialog { max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); border-radius: 20px; }
+  .eon-changelog-dialog .eon-modal-head { min-height: 68px; padding: 10px 12px 10px 14px; }
+  .eon-changelog-mark { width: 38px; height: 38px; flex-basis: 38px; border-radius: 11px; }
+  .eon-changelog-heading span { font-size: 10px; }
+  .eon-changelog-body { padding: 20px 14px 26px 10px; }
+  .eon-changelog-entry { grid-template-rows: auto auto; grid-template-columns: 14px minmax(0, 1fr); gap: 0 10px; }
+  .eon-changelog-date { grid-row: 1; grid-column: 2; align-items: center; flex-direction: row; gap: 4px; padding: 0 3px 8px; }
+  .eon-changelog-date strong { order: -1; margin: 0; font-size: 12px; font-weight: 650; letter-spacing: 0; }
+  .eon-changelog-date span, .eon-changelog-date em { margin: 0; font-size: 9px; }
+  .eon-changelog-rail { grid-row: 1 / span 2; grid-column: 1; }
+  .eon-changelog-rail span { margin-top: 30px; }
+  .eon-changelog-card { grid-row: 2; grid-column: 2; margin-bottom: 14px; padding: 14px 12px 5px; border-radius: 16px; }
+  .eon-changelog-card > header { padding-bottom: 11px; }
+  .eon-changelog-card h2 { font-size: 15px; }
+  .eon-changelog-card li { min-height: 44px; padding: 9px 10px; border-radius: 10px; }
+}
 .eon-comment-filter { display: flex; gap: 2px; flex: 0 0 auto; padding: 0 12px; border-bottom: 1px solid; }
 .eon-comment-filter-tab { padding: 9px 10px; border: 0; border-bottom: 2px solid transparent; background: none; font-size: 12px; font-weight: 600; cursor: pointer; }
 .eon-comment-filter-tab span { margin-left: 3px; font-weight: 400; font-variant-numeric: tabular-nums; }
@@ -547,10 +600,10 @@ button.eon-save-state { cursor: pointer; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .eon-buttonish, .eon-comment, .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar, .eon-modal, .eon-controls-sheet, .eon-liquid-segment-indicator { transition-duration: 0ms; }
+  .eon-buttonish, .eon-comment, .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar, .eon-modal, .eon-controls-sheet, .eon-liquid-segment-indicator, .eon-brand-image, .eon-brand-skeleton { transition-duration: 0ms; }
   .eon-buttonish:active:not(:disabled) { transform: none; }
   .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar { transform: none; }
-  .eon-drawer-scrim, .eon-controls-scrim { animation: none; }
+  .eon-drawer-scrim, .eon-controls-scrim, .eon-skeleton { animation: none; }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -926,6 +979,7 @@ button.eon-save-state { cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   .eon-modal { transition-duration: 0ms; transform: none; }
+  .eon-changelog-entry { animation: none; }
   .eon-spin, .eon-app-spinner, .eon-loading-mark, .eon-loading-mark::before, .eon-loading-bar span { animation: none; }
   .eon-toast { animation: none; }
   .eon-live-dot { animation: none; }

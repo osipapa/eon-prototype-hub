@@ -278,6 +278,7 @@ const PAGE_CONTENT = {
 export default function DesignGuide({
   activeSlug,
   assets = {},
+  logoLoading = false,
   userEmail,
   isAdmin,
   onSelectPage,
@@ -331,7 +332,7 @@ export default function DesignGuide({
           {!narrow && <SidebarResizeHandle resize={sidebarResize} label="Resize Eon Design navigation" />}
           <div className="eon-design-sidebar-head" style={{ borderColor: c.border }}>
             <div className="eon-brand-row">
-              <DesignHubSwitcher active="design" c={c} logo={assets.eonLogo} onSelect={navigateProduct} />
+              <DesignHubSwitcher active="design" c={c} logo={assets.eonLogo} logoLoading={logoLoading} onSelect={navigateProduct} />
               {narrow && <button className="eon-buttonish eon-icon-button" type="button" onClick={() => setNavOpen(false)} aria-label="Close Eon Design navigation" style={{ color: c.muted }}><X size={17} /></button>}
             </div>
           </div>
@@ -410,7 +411,7 @@ function DesignSection({ section, c, onSelectPage, navigateProduct }) {
         <div className="eon-design-card-grid">
           {section.cards.map((card) => (
             <button key={card.title} className="eon-buttonish eon-design-card" type="button" disabled={!card.to} onClick={() => card.to && onSelectPage(ALL_PAGES.find((page) => page.slug === card.to))} style={{ background: c.panel, boxShadow: "var(--shadow-surface)", color: c.text }}>
-              <span style={{ background: c.active, color: c.brand }}><card.icon size={18} aria-hidden="true" /></span>
+              <span className="eon-accent-icon" style={{ background: c.active, color: c.brand }}><card.icon size={18} aria-hidden="true" /></span>
               <strong>{card.title}</strong>
               <p style={{ color: c.secondary }}>{card.body}</p>
               {card.to && <ArrowRight size={16} aria-hidden="true" style={{ color: c.muted }} />}
@@ -430,14 +431,14 @@ function DesignSection({ section, c, onSelectPage, navigateProduct }) {
       )}
       {section.checklist && (
         <ul className="eon-design-checklist" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
-          {section.checklist.map((item) => <li key={item}><span style={{ background: c.active, color: c.brand }}><Check size={14} /></span><p>{item}</p></li>)}
+          {section.checklist.map((item) => <li key={item}><span className="eon-accent-icon" style={{ background: c.active, color: c.brand }}><Check size={14} /></span><p>{item}</p></li>)}
         </ul>
       )}
       {section.resources && (
         <div className="eon-design-resources">
           {section.resources.map((resource) => (
             <button key={resource.title} className="eon-buttonish" type="button" disabled={resource.pending} onClick={() => resource.to && navigateProduct(resource.to)} style={{ background: c.panel, boxShadow: "var(--shadow-surface)", color: c.text }}>
-              <span className="eon-design-resource-icon" style={{ background: c.active, color: c.brand }}><BookOpen size={17} /></span>
+              <span className="eon-design-resource-icon eon-accent-icon" style={{ background: c.active, color: c.brand }}><BookOpen size={17} /></span>
               <span><strong>{resource.title}</strong><small style={{ color: c.secondary }}>{resource.body}</small></span>
               {resource.pending ? <em style={{ color: c.muted }}>Link needed</em> : <ExternalLink size={15} style={{ color: c.muted }} />}
             </button>
@@ -455,7 +456,7 @@ function LinearHandoffFlow({ flow, c }) {
     <div className="eon-linear-flow" aria-label="Linear handoff board flow">
       <section className="eon-linear-example" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
         <header>
-          <span style={{ background: c.active, color: c.brand }}><ListChecks size={17} aria-hidden="true" /></span>
+          <span className="eon-accent-icon" style={{ background: c.active, color: c.brand }}><ListChecks size={17} aria-hidden="true" /></span>
           <div>
             <small style={{ color: c.brand }}>Example ticket · {flow.ticket.template}</small>
             <h3>{flow.ticket.id} · {flow.ticket.title}</h3>
@@ -467,14 +468,14 @@ function LinearHandoffFlow({ flow, c }) {
             {flow.ticket.meta.map((item) => <span key={item} style={{ background: c.active, color: c.secondary }}>{item}</span>)}
           </div>
           <ul>
-            {flow.ticket.context.map((item) => <li key={item}><Check size={12} aria-hidden="true" style={{ color: c.brand }} />{item}</li>)}
+            {flow.ticket.context.map((item) => <li key={item}><Check className="eon-accent-icon" size={12} aria-hidden="true" style={{ color: c.brand }} />{item}</li>)}
           </ul>
         </div>
       </section>
 
       <div className="eon-linear-board-heading">
         <div>
-          <GitBranch size={16} aria-hidden="true" style={{ color: c.brand }} />
+          <GitBranch className="eon-accent-icon" size={16} aria-hidden="true" style={{ color: c.brand }} />
           <strong>Ticket path</strong>
           <span style={{ color: c.muted }}>{flow.source}</span>
         </div>
@@ -546,10 +547,10 @@ function QaCommentProtocol({ c }) {
             <div><strong>Design QA findings</strong><small style={{ color: c.muted }}>Original comment · keep this thread open</small></div>
           </header>
           <ul>
-            {findings.map((finding) => <li key={finding}><span style={{ color: c.brand }}><Check size={12} /></span><p>{finding}</p></li>)}
+            {findings.map((finding) => <li key={finding}><span className="eon-accent-icon" style={{ color: c.brand }}><Check size={12} /></span><p>{finding}</p></li>)}
           </ul>
           <div className="eon-qa-reply" style={{ background: c.active }}>
-            <MessageSquareText size={15} aria-hidden="true" style={{ color: c.brand }} />
+            <MessageSquareText className="eon-accent-icon" size={15} aria-hidden="true" style={{ color: c.brand }} />
             <div><strong>Round 2 reply</strong><p style={{ color: c.secondary }}>Add the next QA pass here as a reply—do not open another top-level comment.</p></div>
           </div>
         </article>

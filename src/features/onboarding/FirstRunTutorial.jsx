@@ -255,7 +255,7 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
         <div className="eon-persona-scrim" />
         <section ref={coachRef} className="eon-persona-card" role="dialog" aria-labelledby="eon-persona-title" aria-describedby="eon-persona-description">
           <header className="eon-persona-header">
-            <span className="eon-coach-icon" aria-hidden="true"><Sparkles size={15} /></span>
+            <span className="eon-coach-icon eon-accent-icon" aria-hidden="true"><Sparkles size={15} /></span>
             <span>Personalize your walkthrough</span>
             {isQa && <span className="eon-coach-qa" aria-label="QA preview. Completion state will not change.">QA</span>}
             <button className="eon-coach-close" type="button" onClick={() => requestExit("dismiss")} aria-label="Close walkthrough"><X size={17} /></button>
@@ -270,7 +270,7 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
               const PersonaIcon = PERSONA_ICONS[key] || Sparkles;
               return (
                 <button key={key} data-tutorial-autofocus={index === 0 || undefined} className="eon-persona-option" type="button" onClick={() => selectPersona(key)}>
-                  <span className="eon-persona-option-icon" aria-hidden="true"><PersonaIcon size={18} /></span>
+                  <span className="eon-persona-option-icon eon-accent-icon" aria-hidden="true"><PersonaIcon size={18} /></span>
                   <span><strong>{item.label}</strong><small>{item.description}</small></span>
                   <ArrowRight size={16} aria-hidden="true" />
                 </button>
@@ -308,7 +308,7 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
         aria-describedby="eon-coach-description"
       >
         <header className="eon-coach-header">
-          <span className="eon-coach-icon" aria-hidden="true"><Icon size={15} /></span>
+          <span className="eon-coach-icon eon-accent-icon" aria-hidden="true"><Icon size={15} /></span>
           <span className="eon-coach-eyebrow">{step.eyebrow}</span>
           {isQa && <span className="eon-coach-qa" aria-label="QA preview. Completion state will not change.">QA</span>}
           <button className="eon-coach-close" type="button" onClick={() => requestExit("dismiss")} aria-label="Close walkthrough">

@@ -5,6 +5,7 @@ import { AuthProvider } from "./lib/auth";
 import WorkspacePreview from "./dev/WorkspacePreview";
 import PromptLibraryPreview from "./dev/PromptLibraryPreview";
 import TrackingPreview from "./dev/TrackingPreview";
+import EonAccentDefs from "./components/EonAccentDefs";
 import { startAnimatedFavicon } from "./lib/animatedFavicon";
 import "./index.css";
 
@@ -20,6 +21,7 @@ const isDesignPreview = import.meta.env.DEV && previewParams.has("design-preview
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
+    <EonAccentDefs />
     {isDesignPreview ? (
       <React.Suspense fallback={null}><DesignGuidePreview /></React.Suspense>
     ) : isTrackingPreview ? (

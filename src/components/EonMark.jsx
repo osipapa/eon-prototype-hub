@@ -1,43 +1,43 @@
-import { useEffect, useId, useState } from "react";
+import { useState } from "react";
 import { safeBrandLogoUrl } from "@/lib/branding";
 
-export default function EonMark({ src, className = "eon-brand-logo", size = 24 }) {
-  const [failed, setFailed] = useState(false);
-  const gradientId = `eon-accent-${useId().replaceAll(":", "")}`;
+export default function EonMark({ src, className = "eon-brand-logo", size = 24, loading = false }) {
+  const [failedSrc, setFailedSrc] = useState("");
+  const [loadedSrc, setLoadedSrc] = useState("");
   const safeSrc = safeBrandLogoUrl(src);
-
-  useEffect(() => setFailed(false), [safeSrc]);
+  const failed = Boolean(safeSrc) && failedSrc === safeSrc;
+  const loaded = Boolean(safeSrc) && loadedSrc === safeSrc;
 
   if (safeSrc && !failed) {
     return (
-      <img
-        className={className}
-        src={safeSrc}
-        width={size}
-        height={size}
-        alt="Eon"
-        onError={() => setFailed(true)}
-      />
+      <span
+        className={`${className} eon-brand-slot${loaded ? " is-loaded" : ""}`}
+        style={{ width: size, height: size }}
+        aria-busy={!loaded || undefined}
+      >
+        <span className="eon-brand-skeleton eon-skeleton" aria-hidden="true" />
+        <img
+          className="eon-brand-image"
+          src={safeSrc}
+          width={size}
+          height={size}
+          alt="Eon"
+          onLoad={() => setLoadedSrc(safeSrc)}
+          onError={() => setFailedSrc(safeSrc)}
+        />
+      </span>
     );
   }
 
+  if (!loading) return null;
+
   return (
-    <svg
-      className={className}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-label="Eon"
+    <span
+      className={`${className} eon-brand-slot is-loading`}
+      style={{ width: size, height: size }}
+      aria-hidden="true"
     >
-      <defs>
-        <linearGradient id={gradientId} x1="5" y1="4" x2="19" y2="20" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#DD0EFF" />
-          <stop offset="1" stopColor="#F19DFF" />
-        </linearGradient>
-      </defs>
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-      <path d="M12 4 A8 8 0 0 1 12 20" stroke={`url(#${gradientId})`} strokeWidth="2" />
-    </svg>
+      <span className="eon-brand-skeleton eon-skeleton" aria-hidden="true" />
+    </span>
   );
 }
