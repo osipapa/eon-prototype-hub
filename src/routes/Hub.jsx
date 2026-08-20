@@ -238,7 +238,7 @@ export default function Hub() {
             // Ignore an older server snapshot, while still applying local drafts.
             if (currentTime > incomingTime) return withLocalDraft(item);
             // Merge, don't replace: realtime UPDATE payloads omit large
-            // (TOASTed) columns that didn't change — e.g. prototype_html when
+            // Keep TOASTed columns that did not change, such as prototype_html when
             // only issue_url was edited. An absent key means "unchanged";
             // a present key (even null) is a real change.
             return withLocalDraft({ ...item, ...row });

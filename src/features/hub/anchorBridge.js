@@ -1,4 +1,4 @@
-/* Anchor bridge — the hub's link into the sandboxed prototype iframe.
+/* Anchor bridge connects the hub to the sandboxed prototype iframe.
 
    Prototypes render in an iframe without allow-same-origin, so the hub can
    never touch their DOM. But the hub composes the srcDoc, so it appends this
@@ -15,8 +15,8 @@
      { eon:1, type:"eon-anchor-rects", rects, scroll } selector → {x,y,w,h} | {hidden} | null
 
    Multi-screen prototypes (stepped flows toggling [hidden] or display:none)
-   report anchors on inactive screens as {hidden:true} — the hub draws no pin
-   for them — and reveal switches the screen before scrolling.
+   report anchors on inactive screens as {hidden:true}. The hub draws no pin
+   for them. Reveal switches the screen before scrolling.
 
    Rects are iframe CSS pixels (the viewport space); the hub scales them by the
    canvas frame scale. The script is inert until the hub speaks to it. */
@@ -47,7 +47,7 @@ function sendRects(){
   post({type:"eon-anchor-rects",rects:rects,scroll:{x:pageXOffset,y:pageYOffset}});
 }
 /* Walk hidden ancestors and show them, hiding whichever sibling "screen" was
-   visible instead — supports stepped flows that switch screens with [hidden]
+   visible instead. This supports stepped flows that switch screens with [hidden]
    or inline display:none. */
 function forceShow(el){
   for(var a=el;a&&a.nodeType===1;a=a.parentElement){
@@ -137,7 +137,7 @@ export function anchorMatchesState(anchor, viewport, args, theme) {
 // Pin position in iframe CSS pixels: tracked element rect + stored offset,
 // else the stored document point shifted by the prototype's current scroll,
 // else the stored viewport percentages (pre-scroll-capture pins).
-// An anchor on a hidden screen ({hidden:true}) gets no pin at all — jumping
+// An anchor on a hidden screen with {hidden:true} gets no pin. Jumping
 // to its comment switches the prototype to that screen first.
 export function anchorPoint(anchor, rects, vpWidth, vpHeight, scroll) {
   const rect = anchor?.selector ? rects?.[anchor.selector] : null;

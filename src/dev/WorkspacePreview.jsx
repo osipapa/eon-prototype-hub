@@ -65,7 +65,7 @@ const initialComments = [
     id: "comment-2",
     project_id: "preview-dashboard",
     author_id: "preview-user",
-    body: "Yes — I’ll add the narrow viewport to this review pass.",
+    body: "Yes. I'll add the narrow viewport to this review pass.",
     created_at: new Date(Date.now() - 19 * 60 * 1000).toISOString(),
     author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
   },
@@ -91,8 +91,8 @@ const initialComments = [
     id: "comment-anchored-mobile",
     project_id: "preview-dashboard",
     author_id: "teammate-2",
-    body: "Canceled rows read as disabled — can we soften this pill?",
-    // Pinned to the Hooli table row in the mobile layout — clicking this
+    body: "Canceled rows read as disabled. Can we soften this pill?",
+    // Pinned to the Hooli table row in the mobile layout. Clicking this
     // comment exercises the jump's state restore across viewport + theme.
     anchor: {
       selector: "div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > table:nth-of-type(1) > tbody:nth-of-type(1) > tr:nth-of-type(5)",
@@ -106,7 +106,7 @@ const initialComments = [
     id: "comment-resolved",
     project_id: "preview-dashboard",
     author_id: "preview-user",
-    body: "Logo was fuzzy on retina — swapped the asset.",
+    body: "The logo was fuzzy on Retina displays. I swapped the asset.",
     resolved_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     resolved_by: "teammate-1",
     created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
@@ -134,7 +134,7 @@ const initialActivity = [
 
 export default function WorkspacePreview() {
   const tutorialParams = new URLSearchParams(window.location.search);
-  // ?workspace-preview&loading — QA view of the app loading screen.
+  // ?workspace-preview&loading opens the QA view of the app loading screen.
   if (tutorialParams.has("loading")) return <LoadingScreen>Loading prototypes…</LoadingScreen>;
   const [projects, setProjects] = useState(initialProjects);
   const [comments, setComments] = useState(initialComments);

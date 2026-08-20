@@ -183,7 +183,7 @@ function dashboard({ theme, plan, state, media = {} }) {
     </div>`;
   const firstCard = pro ? stat("MRR", "$48,200", "+12.4% MoM")
     : `<div style="background:${p.primary};border-radius:12px;padding:16px;color:#fff"><div style="font-size:13px;opacity:.9">You're on Free</div><div style="font-size:16px;font-weight:600;margin-top:4px">Upgrade to Pro</div><div style="font-size:12px;opacity:.85;margin-top:2px">Unlock revenue analytics</div></div>`;
-  const rows = [["Northwind Traders","Pro","active",pro?"$1,200":"—","2h ago"],["Globex Corp","Pro","trialing",pro?"$0":"—","5m ago"],["Initech","Starter","past_due",pro?"$240":"—","1d ago"],["Umbrella Inc","Pro","active",pro?"$980":"—","just now"],["Hooli","Starter","canceled",pro?"$0":"—","6d ago"]];
+  const rows = [["Northwind Traders","Pro","active",pro?"$1,200":"N/A","2h ago"],["Globex Corp","Pro","trialing",pro?"$0":"N/A","5m ago"],["Initech","Starter","past_due",pro?"$240":"N/A","1d ago"],["Umbrella Inc","Pro","active",pro?"$980":"N/A","just now"],["Hooli","Starter","canceled",pro?"$0":"N/A","6d ago"]];
   const pillMap = { active:[p.gFill,p.gText,"Active"], trialing:[p.bFill,p.bText,"Trialing"], past_due:[p.rFill,p.rText,"Past due"], canceled:[p.nFill,p.nText,"Canceled"] };
   const tableInner = empty
     ? `<div style="padding:56px 24px;text-align:center"><div style="width:44px;height:44px;border-radius:12px;background:${p.hover};margin:0 auto"></div><div style="font-size:15px;font-weight:600;margin-top:14px">No customers yet</div><div style="font-size:13px;color:${p.muted};margin-top:4px">Invite your first customer.</div><button class="btn" style="margin-top:16px">Add customer</button></div>`
@@ -230,7 +230,7 @@ export function renderStory(project, theme, media = {}, args) {
        <div style="font-size:13px;margin-top:6px">Add prototype_html to this project or match a built-in builder.</div></div></div>`, p);
 }
 
-// Uploaded HTML is arbitrary, so we can't restyle it — but we can drive the
+// Uploaded HTML is arbitrary, so we cannot restyle it. We can still drive the
 // theming/state hooks it's most likely to read. This prepends a script (runs
 // before the prototype's own scripts) that reflects the hub's theme + args onto
 // the document: `.dark`/`.light` class, data-theme / data-color-mode, CSS

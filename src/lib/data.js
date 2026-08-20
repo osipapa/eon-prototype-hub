@@ -286,7 +286,7 @@ export async function requestProfileTutorial(id, persona) {
 }
 
 /* Account management (admin) --------------------------------------------------
-   Accounts are created and managed by admins only — there is no self-signup.
+   Admins create and manage accounts. The app has no self-signup.
    The admin-users edge function holds the service_role key server-side. */
 async function adminUsers(body) {
   const { data, error } = await supabase.functions.invoke("admin-users", { body });

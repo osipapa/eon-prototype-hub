@@ -47,7 +47,7 @@ const PAGE_CONTENT = {
       {
         id: "purpose",
         title: "One place for the work around the work",
-        body: "Eon Design connects the standards and operating practices that sit around individual files. It gives product, design, engineering, and operations a shared view of what good collaboration looks like.",
+        body: "Eon Design keeps team standards, review rules, handoff steps, and common links in one place. Product, design, engineering, and operations can work from the same instructions.",
         cards: [
           { title: "Principles", body: "The qualities we want every Eon experience to express.", icon: Sparkles, to: "principles" },
           { title: "Ways of working", body: "A practical path from framing through learning.", icon: Workflow, to: "product-process" },
@@ -58,7 +58,7 @@ const PAGE_CONTENT = {
       {
         id: "path",
         title: "A shared path from idea to learning",
-        body: "The process is intentionally lightweight. Use the parts that improve clarity for the work; do not turn it into a ceremony checklist.",
+        body: "Use each step when it answers a real question or records a decision. Skip steps that add no useful information.",
         steps: [
           ["Frame", "Align on the customer problem, evidence, constraints, and decision owner."],
           ["Explore", "Compare credible directions and make tradeoffs visible early."],
@@ -77,18 +77,18 @@ const PAGE_CONTENT = {
       {
         id: "principles",
         title: "What our experiences should feel like",
-        body: "These principles are broad enough to travel across products while remaining concrete enough to guide critiques and tradeoffs.",
+        body: "Use these principles in briefs and critiques. If two principles point to different choices, name the tradeoff.",
         cards: [
           { title: "Make the next step clear", body: "Prioritize the decision or action in front of the customer. Reveal depth as it becomes useful.", icon: MousePointer2 },
           { title: "Earn confidence", body: "Show status, consequences, and recovery paths. Never make people guess whether important work was saved.", icon: Check },
-          { title: "Design the whole journey", body: "Include empty, loading, error, permission, and return states—not only the ideal path.", icon: Boxes },
+          { title: "Design the whole journey", body: "Include empty, loading, error, permission, and return states. The ideal path is only one part of the work.", icon: Boxes },
           { title: "Prefer useful momentum", body: "Reduce handoffs and repeated work while keeping people in control of consequential actions.", icon: Milestone },
         ],
       },
       {
         id: "using-principles",
         title: "Use principles to resolve a tradeoff",
-        body: "Name the tension, identify which principle matters most for this moment, and explain what the decision optimizes. Principles should sharpen judgment—not replace it.",
+        body: "Name the tension and the principle that matters most. Record what the decision prioritizes. Principles guide judgment but do not replace it.",
         checklist: [
           "Describe the customer and the decision they are trying to make.",
           "State the competing needs or constraints in plain language.",
@@ -101,7 +101,7 @@ const PAGE_CONTENT = {
   "product-process": {
     kicker: "How we work",
     title: "Product design process",
-    summary: "A flexible operating model for moving from an unclear opportunity to an observable customer outcome.",
+    summary: "Five steps for turning an unclear opportunity into a shipped change the team can measure.",
     sections: [
       {
         id: "shape",
@@ -117,7 +117,7 @@ const PAGE_CONTENT = {
       {
         id: "make",
         title: "Make, test, and narrow",
-        body: "Explore enough range to understand the trade space, then use the smallest realistic artifact that answers the riskiest question.",
+        body: "Compare distinct approaches, then build the smallest realistic prototype that answers the riskiest question.",
         steps: [
           ["Diverge", "Create meaningfully different approaches, not cosmetic variants."],
           ["Critique", "Review against the brief, principles, evidence, and technical constraints."],
@@ -137,9 +137,9 @@ const PAGE_CONTENT = {
         id: "review-types",
         title: "Match the review to the maturity of the work",
         cards: [
-          { title: "Direction review", body: "Early: align on the problem, options, and the riskiest assumptions.", icon: Lightbulb },
-          { title: "Interaction review", body: "Middle: inspect flows, system behavior, states, and content together.", icon: MousePointer2 },
-          { title: "Delivery review", body: "Late: confirm responsive behavior, accessibility, edge cases, and handoff readiness.", icon: FileCheck2 },
+          { title: "Direction review", body: "Use this early to align on the problem, options, and riskiest assumptions.", icon: Lightbulb },
+          { title: "Interaction review", body: "Use this while shaping the work to inspect flows, system behavior, states, and content together.", icon: MousePointer2 },
+          { title: "Delivery review", body: "Use this before handoff to check responsive behavior, accessibility, and edge cases.", icon: FileCheck2 },
         ],
       },
       {
@@ -231,7 +231,7 @@ const PAGE_CONTENT = {
         title: "The assignee owns the quality of the card",
         body: "Whoever is working on the card must use the Feature template and complete every required field. The card should let the next person understand the outcome, behavior, decisions, and validation criteria without reconstructing the project history.",
         checklist: [
-          "Start from the Feature template—do not create an unstructured delivery card.",
+          "Start from the Feature template. Do not create an unstructured delivery card.",
           "Fill every required field, including outcome, scope, design links, states, analytics, and acceptance criteria.",
           "Keep decisions and scope changes on the card as the work moves through review and implementation.",
           "Stay accountable after handoff: follow the card until it reaches Engineering QA.",
@@ -249,7 +249,7 @@ const PAGE_CONTENT = {
   "common-files": {
     kicker: "Resources",
     title: "Common files & tools",
-    summary: "The stable entry points the team returns to. Add workspace-specific URLs here as shared destinations become canonical.",
+    summary: "Links to the files and tools the team uses most.",
     sections: [
       {
         id: "live-tools",
@@ -263,7 +263,7 @@ const PAGE_CONTENT = {
       {
         id: "shared-destinations",
         title: "Shared destinations to connect",
-        body: "These slots define the intended information architecture without inventing team URLs. Replace each slot when its canonical destination is agreed.",
+        body: "Replace each placeholder when the team agrees on the destination URL.",
         resources: [
           { title: "Figma libraries", body: "Published product libraries, foundations, and shared components.", pending: true },
           { title: "Linear workspace", body: "Initiatives, product projects, delivery cycles, and issue templates.", pending: true },
@@ -460,7 +460,7 @@ function LinearHandoffFlow({ flow, c }) {
           <div>
             <small style={{ color: c.brand }}>Example ticket · {flow.ticket.template}</small>
             <h3>{flow.ticket.id} · {flow.ticket.title}</h3>
-            <p style={{ color: c.secondary }}>The same complete ticket moves through every column below—context is never recreated at handoff.</p>
+            <p style={{ color: c.secondary }}>The complete ticket moves through every column below. Keep its context in one place.</p>
           </div>
         </header>
         <div className="eon-linear-example-body">
@@ -551,7 +551,7 @@ function QaCommentProtocol({ c }) {
           </ul>
           <div className="eon-qa-reply" style={{ background: c.active }}>
             <MessageSquareText className="eon-accent-icon" size={15} aria-hidden="true" style={{ color: c.brand }} />
-            <div><strong>Round 2 reply</strong><p style={{ color: c.secondary }}>Add the next QA pass here as a reply—do not open another top-level comment.</p></div>
+            <div><strong>Round 2 reply</strong><p style={{ color: c.secondary }}>Add the next QA pass as a reply here. Do not open another top-level comment.</p></div>
           </div>
         </article>
       </div>

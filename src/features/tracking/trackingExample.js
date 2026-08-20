@@ -53,7 +53,7 @@ export const MIXPANEL_TRACKING_EXAMPLE = {
   ],
   eventExample: {
     name: "Feature Action Completed",
-    trigger: "The product confirms that the user’s primary action completed successfully.",
+    trigger: "The product confirms that the user's primary action completed successfully.",
     properties: [
       { name: "Feature Name", type: "string", values: "Stable feature identifier", required: true },
       { name: "Action", type: "enum", values: "Approved action value", required: true },

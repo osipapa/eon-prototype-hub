@@ -224,7 +224,7 @@ export default function Admin() {
             <h1>Team members</h1>
             <p>Manage who can access, edit, and administer your shared design workspace.</p>
           </div>
-          <span className="admin-member-count"><Users size={15} aria-hidden="true" /><strong>{loading ? "—" : rows.length}</strong> {!loading && rows.length === 1 ? "member" : "members"}</span>
+          <span className="admin-member-count"><Users size={15} aria-hidden="true" /><strong>{loading ? "..." : rows.length}</strong> {!loading && rows.length === 1 ? "member" : "members"}</span>
         </header>
 
         {message && (
@@ -453,7 +453,7 @@ export default function Admin() {
                   );
                 })}
               </div>
-              <p className="admin-tutorial-help">If they’re online, the walkthrough starts immediately. Otherwise it opens on their next login.</p>
+              <p className="admin-tutorial-help">If they're online, the walkthrough starts immediately. Otherwise it opens on their next login.</p>
             </div>
             <div className="route-modal-footer">
               <button className="route-button route-button--secondary route-pressable" type="button" onClick={() => setTutorialTarget(null)} disabled={Boolean(pending[`tutorial-${tutorialTarget.id}`])}>Cancel</button>

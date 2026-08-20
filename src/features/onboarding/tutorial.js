@@ -104,7 +104,7 @@ const OPERATIONS_STEPS = [
     key: "review-status",
     eyebrow: "Current status",
     title: "See what needs attention now.",
-    body: "The workspace status is the team’s shared signal—not a private checklist.",
+    body: "The workspace status tells the whole team what needs attention.",
     icon: "status",
     targets: ['[data-tutorial="review-status"]'],
     placement: "bottom",
@@ -137,7 +137,7 @@ const OPERATIONS_STEPS = [
   {
     key: "share-review",
     eyebrow: "Share exact context",
-    title: "Send the view—not instructions.",
+    title: "Send the exact view.",
     body: "Copy a review link with the current device, theme, state, and tab included.",
     icon: "prompt",
     targets: ['[data-tutorial="share-review"]'],

@@ -15,7 +15,7 @@ export const STARTER_PROMPTS = [
   {
     id: "starter-open-road-image",
     slug: "open-road-side-view",
-    title: "Open road — side view",
+    title: "Open road, side view",
     summary: "Generate a clean, sunlit side-view road scene with a subtle sense of motion.",
     category: "Image generation",
     status: "published",

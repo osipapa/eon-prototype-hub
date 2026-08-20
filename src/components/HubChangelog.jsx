@@ -40,7 +40,7 @@ export function HubChangelogButton({ c, hasNew, onOpen }) {
       className="eon-buttonish eon-icon-button eon-changelog-button"
       type="button"
       onClick={onOpen}
-      aria-label={hasNew ? "What's new — unread updates" : "What's new"}
+      aria-label={hasNew ? "What's new. Unread updates" : "What's new"}
       title="What's new"
       style={{ color: hasNew ? c.brand : c.muted, boxShadow: "var(--shadow-surface)" }}
     >

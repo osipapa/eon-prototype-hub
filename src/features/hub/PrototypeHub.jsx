@@ -522,7 +522,7 @@ export default function PrototypeHub({
               <div style={{ width: 46, height: 5, borderRadius: 3, background: resizeHover ? c.brand : "transparent", transition: "background .15s" }} />
             </div>
             </div>
-            {/* notes side panel — matches the canvas height */}
+            {/* The notes side panel matches the canvas height. */}
             <div style={{ width: 320, flexShrink: 0, borderLeft: `1px solid ${c.border}`, background: c.nav, display: "flex", flexDirection: "column" }}>
               <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 500, borderBottom: `1px solid ${c.border}`, flexShrink: 0 }}><FileText style={{ width: 15, height: 15, color: c.muted }} /> Notes</div>
               <Textarea value={story.notes || ""} onChange={(e) => patch("notes", e.target.value)} placeholder="Notes, goals, open questions…"
@@ -628,7 +628,7 @@ const StatePreviewTile = memo(function StatePreviewTile({ c, story, media, tile 
     [shouldRender, story, tile.theme, tile.args, media],
   );
   const scale = Math.min(previewWidth / tvp.w, 1);
-  const title = `${story.title} — ${tile.label}${tile.sub ? ` (${tile.sub})` : ""}`;
+  const title = `${story.title}: ${tile.label}${tile.sub ? `, ${tile.sub}` : ""}`;
 
   return (
     <div style={{ display: "flex", minWidth: 0, width: "100%", maxWidth: 360, flex: "1 1 280px", flexDirection: "column", gap: 8 }}>
@@ -651,7 +651,7 @@ const StatePreviewTile = memo(function StatePreviewTile({ c, story, media, tile 
 });
 
 /* ---- All-states grid. `by` fans out over control states, light/dark themes,
-   or every viewport — each combination rendered in its own labeled tile. ---- */
+   or every viewport. Each combination renders in its own labeled tile. ------ */
 export function StateGrid({ c, story, sourceProject = story, currentArgs: selectedArgs, controlSource, media, theme, viewport, by }) {
   const tiles = useMemo(() => {
     const base = currentArgs(story);
@@ -805,7 +805,7 @@ export function LinearCard({ c, story, live, identifier, issueUrl }) {
         )}
       </div>
       <div style={{ fontSize: 15, fontWeight: 500, marginTop: 12, flexShrink: 0 }}>
-        {live ? live.title : `${story.title} — design + build`}
+        {live ? live.title : `${story.title}: design and build`}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, flexShrink: 0, flexWrap: "wrap" }}>
         {live?.assignee && <span style={{ fontSize: 12, color: c.muted }}>Assigned to {live.assignee.displayName || live.assignee.name}</span>}
@@ -818,7 +818,7 @@ export function LinearCard({ c, story, live, identifier, issueUrl }) {
         : <div style={{ fontSize: 13, color: c.muted, marginTop: 10, flex: 1 }}>{live ? "No description in Linear." : ""}</div>}
       <div style={{ fontSize: 11, color: c.muted, paddingTop: 12, marginTop: 8, borderTop: `1px solid ${c.border}`, flexShrink: 0 }}>
         {live
-          ? `Live from Linear — updated ${new Date(live.updatedAt).toLocaleDateString()}`
+          ? `Live from Linear. Updated ${new Date(live.updatedAt).toLocaleDateString()}`
           : identifier
             ? (live === undefined ? "Connecting to Linear…" : "Linear could not be reached. Check the integration and issue link.")
             : "Linear is not connected. Paste an issue URL above."}
@@ -846,7 +846,7 @@ export function UploadPanel({
   const readFile = (file) => {
     if (!file) return;
     if (!/\.html?$/i.test(file.name) && file.type !== "text/html") {
-      setErr("Drop a .html file — other formats aren't supported.");
+      setErr("Drop an HTML file. Other formats aren't supported.");
       return;
     }
     setErr("");
@@ -863,7 +863,7 @@ export function UploadPanel({
     <div className="eon-upload-panel" style={{ borderBottom: `1px solid ${c.border}`, background: c.nav }}>
       <div className="eon-upload-head" style={{ color: c.text }}>
         <Upload style={{ width: 14, height: 14, color: c.muted }} aria-hidden="true" />
-        <span>Upload prototype HTML for “{story.title}”</span>
+        <span>Upload prototype HTML for "{story.title}"</span>
         <span style={{ fontSize: 12, fontWeight: 400, color: c.muted }}>
           {story.prototype_html ? "This prototype renders uploaded HTML." : "Renders a built-in builder or placeholder until HTML is uploaded."}
         </span>
@@ -878,7 +878,7 @@ export function UploadPanel({
               <code>{fileLink.name}</code> is live
             </strong>
             <span style={{ color: c.muted }}>
-              {autoPublish ? "Every save publishes to your team" : "Rendering locally — publish when ready"}
+              {autoPublish ? "Every save publishes to your team" : "Rendering locally. Publish when ready"}
               {fileLink.lastSyncAt ? ` · synced ${new Date(fileLink.lastSyncAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : ""}
             </span>
           </div>
@@ -914,7 +914,7 @@ export function UploadPanel({
           {hasHtml ? "Re-upload" : "Browse files"}
         </button>
         {canLinkFile && (
-          <button type="button" onClick={onLinkFile} title="Render this prototype straight from a file on disk — every editor save syncs automatically"
+          <button type="button" onClick={onLinkFile} title="Render this prototype from a file on disk. Every editor save syncs automatically"
             style={{ minHeight: 32, padding: "0 12px", border: `1px solid ${c.border}`, borderRadius: 8, background: c.bg, color: c.brand, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
             Link local file
           </button>
@@ -939,7 +939,7 @@ export function UploadPanel({
             aria-label="Prototype HTML source"
             style={{ minHeight: 150, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 20 }} />
           <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5, margin: 0 }}>
-            Theme tip: the hub sets <code style={{ color: c.text }}>class="dark"/"light"</code> and <code style={{ color: c.text }}>data-theme</code> on <code style={{ color: c.text }}>&lt;html&gt;</code>, and exposes <code style={{ color: c.text }}>window.__story</code> — style against those so the Theme toggle drives your prototype.
+            The hub sets <code style={{ color: c.text }}>class="dark"/"light"</code> and <code style={{ color: c.text }}>data-theme</code> on <code style={{ color: c.text }}>&lt;html&gt;</code>. It also exposes <code style={{ color: c.text }}>window.__story</code>. Use those values so the Theme toggle controls your prototype.
           </p>
           <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5, margin: 0 }}>
             Media tip: <code style={{ color: c.text }}>{'{{eonLogo}}'}</code>, <code style={{ color: c.text }}>{'{{heroImage}}'}</code>, any saved media key, or <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> as an image <code style={{ color: c.text }}>src</code> map to the Media library.
@@ -1182,7 +1182,7 @@ function DeleteMediaDialog({ c, item, busy, error, onClose, onConfirm }) {
     <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <div ref={dialogRef} className="eon-modal eon-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="eon-delete-media-title" aria-describedby="eon-delete-media-body" style={{ background: c.panel, borderColor: c.border }}>
         <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
-        <h2 id="eon-delete-media-title">Delete “{item.label}”?</h2>
+        <h2 id="eon-delete-media-title">Delete "{item.label}"?</h2>
         <p id="eon-delete-media-body" style={{ color: c.muted }}>This removes the shared token and image for everyone. Prototypes that use <code>{`{{${item.key}}}`}</code> will no longer resolve it.</p>
         {error && <p role="alert" className="eon-copy-error"><AlertCircle size={14} />{error}</p>}
         <div className="eon-confirm-actions">

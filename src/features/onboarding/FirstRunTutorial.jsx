@@ -263,7 +263,7 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
           <div className="eon-persona-copy">
             <span className="eon-persona-kicker">Hey {firstName}</span>
             <h1 id="eon-persona-title">What do you do most?</h1>
-            <p id="eon-persona-description">Pick a track and I’ll show only the workflow that matters to you.</p>
+            <p id="eon-persona-description">Pick a track and I'll show only the workflow that matters to you.</p>
           </div>
           <div className="eon-persona-options">
             {Object.entries(TUTORIAL_PERSONAS).map(([key, item], index) => {

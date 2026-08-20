@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-/* Live presence — who's viewing what, tied to users -------------------------
+/* Live presence shows which signed-in users are viewing each project. -------
    One realtime presence channel per team. Each client tracks its identity plus
    the prototype it's currently looking at; switching prototypes re-tracks. The
    caller gets a flat list of everyone present (self included) on every sync and
@@ -30,7 +30,7 @@ export function joinTeamPresence(teamId, me, onSync) {
   const emit = () => {
     const state = channel.presenceState();
     // Supabase keys presence by our chosen key and stores an array of metas per
-    // key (one per open tab). Flatten to one entry per person — most recent tab.
+    // key, one per open tab. Keep the most recent tab for each person.
     const viewers = Object.values(state)
       .map((metas) => metas[metas.length - 1])
       .filter(Boolean);

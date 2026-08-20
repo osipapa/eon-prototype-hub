@@ -4,7 +4,7 @@
    into the workspace (and, with auto-publish, through the normal Supabase
    save path to the whole team). Chromium-only; callers feature-detect with
    supportsFileLink() and hide the UI elsewhere. Handles don't survive a page
-   reload — the link is session-scoped by design. */
+   reload. The link lasts for the current session. */
 
 export function supportsFileLink() {
   return typeof window.showOpenFilePicker === "function";

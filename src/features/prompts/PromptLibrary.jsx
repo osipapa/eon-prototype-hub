@@ -838,7 +838,7 @@ function PromptDeleteModal({ c, prompt, restoreFocus, onClose, onDelete }) {
         style={{ background: c.panel, borderColor: c.border }}
       >
         <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
-        <h2 id="eon-delete-prompt-title">Delete “{prompt.title}”?</h2>
+        <h2 id="eon-delete-prompt-title">Delete "{prompt.title}"?</h2>
         <p id="eon-delete-prompt-body" style={{ color: c.secondary }}>
           This removes the prompt and its reusable template for everyone on the team. This can't be undone.
         </p>
@@ -1043,7 +1043,7 @@ function CategoryDeleteModal({
         style={{ background: c.panel, borderColor: c.border }}
       >
         <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><AlertTriangle size={18} /></div>
-        <h2 id="eon-delete-category-title">Delete “{category.name}”?</h2>
+        <h2 id="eon-delete-category-title">Delete "{category.name}"?</h2>
         <p id="eon-delete-category-body" style={{ color: c.secondary }}>
           {!fallbackCategoryName
             ? "Create another category before deleting the last category."

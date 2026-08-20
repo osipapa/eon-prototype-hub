@@ -135,7 +135,7 @@ export default function PrototypeWorkspace({
   const seenStorageKey = `eon-review-seen:${profile?.id || "anonymous"}`;
   const [seenComments, setSeenComments] = useState(() => readStoredJson(seenStorageKey));
   // Live local file link: one at a time, tied to the prototype it was linked
-  // from. Session-scoped — file handles can't be restored after a reload.
+  // from. File handles last for the current session and cannot survive a reload.
   const [fileLink, setFileLink] = useState(null); // {handle, name, projectId, lastModified, lastSyncAt}
   const [autoPublish, setAutoPublish] = useState(true);
   const [localHtml, setLocalHtml] = useState(null);
@@ -345,7 +345,7 @@ export default function PrototypeWorkspace({
     setPinWriteOpen(false);
     setPendingAnchor(null);
     Promise.resolve(onCreateComment(story.id, body, null, anchor)).catch(() => {
-      // Couldn't post — keep the pin and fall back to the composer, which has error UI.
+      // Keep the pin and fall back to the composer so it can show the posting error.
       setPendingAnchor(anchor);
       setInspectorTab("comments");
       setInspectorOpen(true);
@@ -379,8 +379,8 @@ export default function PrototypeWorkspace({
     if (anchor.args && story) setLiveArgs((current) => ({ ...current, [story.id]: { ...current[story.id], ...anchor.args } }));
     setActiveAnchorId(comment.id);
     const reveal = { type: "eon-anchor-reveal", selector: anchor.selector || null, doc_x: anchor.doc_x, doc_y: anchor.doc_y };
-    // Theme/args changes remount the iframe (its key includes both) — the
-    // reveal has to wait for the new frame's "ready". Otherwise post now.
+    // Theme and argument changes remount the iframe because its key includes both.
+    // Wait for the new frame's "ready" before revealing. Otherwise post now.
     const willRemount = (anchor.theme && anchor.theme !== protoTheme)
       || Object.entries(anchor.args || {}).some(([key, value]) => String(value) !== String(args[key]));
     if (willRemount) pendingRevealRef.current = reveal;
@@ -517,7 +517,7 @@ export default function PrototypeWorkspace({
         if (autoPublishRef.current) patchProjectRef.current(projectId, { prototype_html: content });
       },
       () => {
-        setFileLinkError("Lost access to the linked file — it may have been moved or deleted. Link it again to resume.");
+        setFileLinkError("The linked file moved or was deleted. Link it again to resume.");
         setFileLink(null);
         setLocalHtml(null);
       },
@@ -1543,7 +1543,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
         onDrop={onDrop}>
         {anchors.pendingAnchor && (
           <div className="eon-composer-pin" style={{ borderColor: c.border, background: c.raised, color: c.secondary }}>
-            <span className="eon-pin-dot" style={{ background: c.brand, color: "#fff" }}><Pin size={11} /></span>
+            <span className="eon-pin-dot" style={{ background: c.brand, color: "var(--eon-accent-foreground)" }}><Pin size={11} /></span>
             <span>Pinned · {anchorStateLabel(anchors.pendingAnchor)}</span>
             <button type="button" className="eon-buttonish eon-text-button" onClick={() => anchors.clearPendingAnchor?.()}
               aria-label="Remove pin" style={{ color: c.muted }}><X size={13} /></button>
@@ -1623,8 +1623,8 @@ function CommentBubble({
         <div className="eon-comment-meta">
           {comment.anchor && (
             <button type="button" className="eon-buttonish eon-pin-dot" onClick={onSelect}
-              aria-label={`Pin ${pinNumber || ""} — show on the prototype`} aria-pressed={active}
-              style={{ background: active ? c.brand : c.raised, color: active ? "#fff" : c.brand, border: `1px solid ${active ? c.brand : c.border}` }}>
+              aria-label={`Show pin ${pinNumber || ""} on the prototype`} aria-pressed={active}
+              style={{ background: active ? c.brand : c.raised, color: active ? "var(--eon-accent-foreground)" : c.brand, border: `1px solid ${active ? c.brand : c.border}` }}>
               {pinNumber || <Pin size={10} />}
             </button>
           )}
@@ -1658,7 +1658,7 @@ function CommentBubble({
             {reactionGroups.map((group) => (
               <button key={group.emoji} type="button" className="eon-buttonish eon-reaction-chip"
                 onClick={onToggleReaction ? () => onToggleReaction(group.emoji) : undefined}
-                aria-pressed={group.mine} aria-label={`${group.emoji} ${group.count} — toggle reaction`}
+                aria-pressed={group.mine} aria-label={`Toggle ${group.emoji} reaction. ${group.count} total`}
                 style={{ borderColor: group.mine ? c.brand : c.border, background: group.mine ? c.active : c.raised, color: c.secondary }}>
                 {group.emoji} <span style={{ color: group.mine ? c.brand : c.muted }}>{group.count}</span>
               </button>
@@ -1693,7 +1693,7 @@ function CommentBubble({
    through to the composer. ---- */
 const QUICK_PIN_OPTIONS = [
   { key: "copy",  icon: "✏️", label: "Change copy", body: "✏️ Change copy" },
-  { key: "slop",  icon: "🤖", label: "AI slop", body: "🤖 AI slop — needs a human pass" },
+  { key: "slop",  icon: "🤖", label: "AI slop", body: "This reads like AI. Give it a human pass." },
   { key: "up",    icon: "👍", label: "Like", body: "👍" },
   { key: "love",  icon: "❤️", label: "Love", body: "❤️" },
   { key: "fire",  icon: "🔥", label: "Fire", body: "🔥" },
@@ -1785,7 +1785,7 @@ function PinComposer({ c, x, y, frameWidth, onSubmit, onCancel }) {
   );
 }
 
-// A body that is just one emoji (a ring quick-take) — the pin wears it directly.
+// A comment containing one emoji uses that emoji as its pin.
 function emojiOnlyBody(body) {
   const text = (body || "").trim();
   if (!text || /\s/.test(text) || [...text].length > 3) return null;
@@ -1822,7 +1822,7 @@ function PinOverlay({
             className={`eon-buttonish eon-canvas-pin${emoji ? " eon-canvas-pin-emoji" : ""}`}
             onClick={() => onPickPin(comment)}
             aria-label={`Comment pin ${number} by ${name}: ${comment.body || "image"}`} aria-pressed={active}
-            style={{ left: point.left, top: point.top, background: active ? c.brand : c.panel, color: active ? "#fff" : c.brand, borderColor: c.brand, transform: active ? "scale(1.15)" : undefined }}>
+            style={{ left: point.left, top: point.top, background: active ? c.brand : c.panel, color: active ? "var(--eon-accent-foreground)" : c.brand, borderColor: c.brand, transform: active ? "scale(1.15)" : undefined }}>
             {emoji || number}
             <span className="eon-pin-card" data-below={point.top < 130 || undefined} aria-hidden="true"
               style={{ background: c.panel, borderColor: c.border, boxShadow: "0 10px 30px rgba(0,0,0,.35)" }}>
@@ -1834,7 +1834,7 @@ function PinOverlay({
         );
       })}
       {pendingPoint && (
-        <span className="eon-canvas-pin eon-canvas-pin-pending" style={{ left: pendingPoint.left, top: pendingPoint.top, background: c.brand, color: "#fff", borderColor: c.brand }}>
+        <span className="eon-canvas-pin eon-canvas-pin-pending" style={{ left: pendingPoint.left, top: pendingPoint.top, background: c.brand, color: "var(--eon-accent-foreground)", borderColor: c.brand }}>
           <Pin size={12} />
         </span>
       )}
@@ -1860,9 +1860,8 @@ function AnchorLeaderLine({ c, commentId }) {
   const [line, setLine] = useState(null);
   useEffect(() => {
     if (!commentId) { setLine(null); return undefined; }
-    // Both endpoints move independently (pin tracks its element, card scrolls
-    // in the thread), so measure every frame while a comment is selected —
-    // two getBoundingClientRect calls, only while a line is on screen.
+    // The pin tracks its element while the card scrolls in the thread.
+    // Measure both endpoints every frame while a comment is selected.
     let frame = 0;
     const measure = () => {
       const pin = document.querySelector(`[data-pin-id="${commentId}"]`);
@@ -1903,11 +1902,11 @@ const ACTIVITY_META = {
   updated_html:   { icon: Upload,        text: () => "updated the prototype HTML" },
   removed_html:   { icon: Trash2,        text: () => "removed the uploaded HTML" },
   status_changed: { icon: Circle,        text: (d) => (d?.to ? `set status to ${d.to}` : "changed the status") },
-  renamed:        { icon: Pencil,        text: (d) => (d?.to ? `renamed it to “${d.to}”` : "renamed the prototype") },
+  renamed:        { icon: Pencil,        text: (d) => (d?.to ? `renamed it to "${d.to}"` : "renamed the prototype") },
   edited_figma:   { icon: FigmaIcon,     text: (d) => (d?.to ? "updated the Figma link" : "cleared the Figma link") },
   edited_linear:  { icon: LinearIcon,    text: (d) => (d?.to ? "updated the Linear link" : "cleared the Linear link") },
   edited_notes:   { icon: MessageSquare, text: () => "edited the notes" },
-  moved_group:    { icon: LayoutGrid,    text: (d) => (d?.to ? `moved it to “${d.to}”` : "moved it to another group") },
+  moved_group:    { icon: LayoutGrid,    text: (d) => (d?.to ? `moved it to "${d.to}"` : "moved it to another group") },
 };
 
 function activityMeta(action) {
@@ -2047,7 +2046,7 @@ function DeletePrototypeDialog({ c, project, restoreFocus, onClose, onConfirm })
     <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <div ref={dialogRef} className="eon-modal eon-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="eon-delete-title" aria-describedby="eon-delete-body" style={{ background: c.panel, borderColor: c.border }}>
         <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
-        <h2 id="eon-delete-title">Delete “{project.title}”?</h2>
+        <h2 id="eon-delete-title">Delete "{project.title}"?</h2>
         <p id="eon-delete-body" style={{ color: c.muted }}>This removes the prototype, its shared feedback, and linked review context for everyone. This can't be undone.</p>
         {error && <p role="alert" className="eon-copy-error">{error}</p>}
         <div className="eon-confirm-actions">
@@ -2061,10 +2060,9 @@ function DeletePrototypeDialog({ c, project, restoreFocus, onClose, onConfirm })
   );
 }
 
-/* ---- New-prototype dialog: replaces the old window.prompt flow with proper
-   setup steps — name, group, and optional prototype HTML (drop / browse /
-   paste). Creation is delegated to onCreate({title, group, html}); errors
-   surface inline. ---- */
+/* ---- New-prototype dialog replaces the old window.prompt flow.
+   It collects a name, group, and optional prototype HTML by drop, browse, or
+   paste. onCreate handles creation and the dialog shows errors inline. ------ */
 function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   const [title, setTitle] = useState("");
   const [group, setGroup] = useState("General");
@@ -2102,7 +2100,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   const readFile = (file) => {
     if (!file) return;
     if (!/\.html?$/i.test(file.name) && file.type !== "text/html") {
-      setError("Drop a .html file — other formats aren't supported.");
+      setError("Drop an HTML file. Other formats aren't supported.");
       return;
     }
     setError("");
@@ -2152,7 +2150,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
             </datalist>
           </div>
           <div className="eon-modal-step">
-            <div style={stepHead}><span style={stepBadge}>3</span> Add the prototype HTML <span style={{ fontSize: 11, fontWeight: 400, color: c.muted }}>optional — you can upload it later</span></div>
+            <div style={stepHead}><span style={stepBadge}>3</span> Add the prototype HTML <span style={{ fontSize: 11, fontWeight: 400, color: c.muted }}>optional, you can upload it later</span></div>
             <div className="eon-dropzone"
               onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
@@ -2174,7 +2172,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
               aria-label="Prototype HTML source"
               style={{ minHeight: 96, maxHeight: 220, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 20 }} />
             <span style={{ fontSize: 11, color: c.muted, lineHeight: 1.5 }}>
-              Tip: “Copy setup prompt” in the sidebar gives an AI the full contract — theming, states, and media tokens like <code style={{ color: c.text }}>{"{{heroImage}}"}</code>.
+              "Copy setup prompt" gives an AI the theming rules, states, and media tokens such as <code style={{ color: c.text }}>{"{{heroImage}}"}</code>.
             </span>
           </div>
         </div>

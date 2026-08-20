@@ -9,6 +9,7 @@
     --eon-accent-start: #DD0EFF;
     --eon-accent-end: #F19DFF;
     --eon-accent-solid: #F19DFF;
+    --eon-accent-foreground: #160018;
     --eon-accent-gradient: linear-gradient(135deg, var(--eon-accent-start) 0%, var(--eon-accent-end) 100%);
     --eon-accent-soft: rgba(221, 14, 255, .14);
     --background: 0 0% 0%;
@@ -162,6 +163,11 @@ svg.eon-accent-icon,
 .eon-pin-dot,
 .eon-canvas-pin-pending {
   background: var(--eon-accent-gradient) !important;
+}
+.eon-unread-count,
+.eon-pin-dot,
+.eon-canvas-pin-pending {
+  color: var(--eon-accent-foreground) !important;
 }
 
 .eon-icon-button {

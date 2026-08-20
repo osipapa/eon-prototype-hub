@@ -118,7 +118,7 @@ export function buildSetupPrompt({
 
   return `Build or update one polished, interactive UI prototype for the Eon Prototype Hub. Return a single self-contained HTML document that works both standalone and inside the hub's sandboxed iframe.
 
-CURRENT WORKSPACE CONTEXT — generated at copy time
+CURRENT WORKSPACE CONTEXT, GENERATED AT COPY TIME
 Treat this JSON as the source of truth for hub integration. Product requirements in reviewBrief are intentional; do not reinterpret media revisions as URLs or hardcode them.
 ${JSON.stringify(context, null, 2)}${combinationWarning}
 
@@ -140,7 +140,7 @@ ${JSON.stringify(context, null, 2)}${combinationWarning}
 
 3) CONTROLS AND STATES
 - Preserve the effective control keys/options shown in the generated context when updating the active prototype.
-- For a new prototype, declare meaningful visual variants with strict JSON—no comments or trailing commas:
+- For a new prototype, declare meaningful visual variants with strict JSON. Do not add comments or trailing commas:
     <script type="application/json" id="eon-config">
     { "controls": [{ "key": "state", "label": "State", "options": ["default", "loading", "empty", "error"] }], "defaults": { "state": "default" } }
     </script>
