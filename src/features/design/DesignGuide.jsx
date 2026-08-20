@@ -1,8 +1,8 @@
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight, BookOpen, Boxes, Check, ChevronDown, ChevronRight, ExternalLink,
   FileCheck2, FolderOpen, GitBranch, Lightbulb, ListChecks, Menu,
-  MessageSquareText, Milestone, MousePointer2, Shapes, ShieldCheck, Sparkles,
+  MessageSquareText, Milestone, MousePointer2, ShieldCheck, Sparkles,
   Workflow, X,
 } from "lucide-react";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
@@ -16,22 +16,22 @@ const PAGE_GROUPS = [
   {
     label: "Get started",
     pages: [
-      { slug: "overview", title: "Overview", Icon: Shapes },
-      { slug: "principles", title: "Design principles", Icon: Sparkles },
+      { slug: "overview", title: "Overview" },
+      { slug: "principles", title: "Design principles" },
     ],
   },
   {
     label: "How we work",
     pages: [
-      { slug: "product-process", title: "Product design process", Icon: Workflow },
-      { slug: "design-review", title: "Design review", Icon: MessageSquareText },
+      { slug: "product-process", title: "Product design process" },
+      { slug: "design-review", title: "Design review" },
     ],
   },
   {
     label: "Resources",
     pages: [
-      { slug: "linear-handoff", title: "Linear handoff", Icon: FileCheck2 },
-      { slug: "common-files", title: "Common files & tools", Icon: FolderOpen },
+      { slug: "linear-handoff", title: "Linear handoff" },
+      { slug: "common-files", title: "Common files & tools" },
     ],
   },
 ];
@@ -164,26 +164,65 @@ const PAGE_CONTENT = {
       {
         id: "board-flow",
         title: "From idea to Engineering QA",
-        body: "The card remains the source of truth throughout the process. Ownership changes at explicit gates, but the designer stays connected until the implemented experience is approved in Engineering QA.",
+        body: "The columns below mirror the live Design and Engineering workflows. The card remains the source of truth throughout the process; ownership changes at explicit gates, but the designer stays connected through Engineering QA.",
         linearFlow: {
-          intake: [
-            { board: "Design board", status: "Ideas or Backlog", owner: "Team leads", body: "Add incoming work with enough context for the team to understand the opportunity." },
-            { board: "Design board", status: "Backlog", owner: "Team leaders", body: "Organize and prioritize the work so the next candidates are clear." },
-            { board: "Design board", status: "To Do", owner: "Rei", body: "Move committed work into To Do when it is ready for design execution." },
-            { board: "Design board", status: "Design cycle", owner: "Assigned designer", body: "Work through the regular design, critique, prototype, and validation cycles." },
-          ],
-          review: {
-            status: "Needs Review",
-            body: "The card stays here until every required review is approved.",
-            gates: [
-              { label: "Design review", owner: "Mate", body: "Reviews design quality, interaction, states, and readiness." },
-              { label: "Operations review", owner: "Ops team", body: "Reviews operational impact, process, and support implications." },
-              { label: "Engineering review", owner: "Engineering", body: "Reviews feasibility, system behavior, and implementation risk." },
-            ],
+          source: "Live Eon Linear workflows · Design + Engineering",
+          ticket: {
+            id: "DES-###",
+            template: "Feature template",
+            title: "Add a clear scroll affordance to the vehicle carousel",
+            meta: ["High", "1 point", "Customer app"],
+            context: ["Problem + evidence", "Scope + non-goals", "Figma + prototype", "States + analytics", "Acceptance criteria"],
           },
-          delivery: [
-            { board: "Engineering board", status: "Ready for Engineering", owner: "Design team lead", body: "Move the card only after all three Needs Review approvals are clear." },
-            { board: "Engineering board", status: "Engineering QA", owner: "Original designer", body: "The designer who created the work checks the implementation and gives design approval." },
+          columns: [
+            {
+              board: "Design", status: "Ideas", type: "Backlog", color: "#bec2c8", owner: "Team leads",
+              state: "Opportunity captured",
+              action: "Add early work with the customer problem, evidence, and expected outcome.",
+              exit: "The opportunity is clear enough to prioritize.",
+            },
+            {
+              board: "Design", status: "Backlog", type: "Backlog", color: "#bec2c8", owner: "Team leaders",
+              state: "Prioritized",
+              action: "Organize, compare, and sequence the work against current priorities.",
+              exit: "The team has committed to design the work next.",
+            },
+            {
+              board: "Design", status: "Todo", type: "Unstarted", color: "#e2e2e2", owner: "Rei",
+              state: "Committed",
+              action: "Move the selected card into Todo and confirm the assignee and required context.",
+              exit: "A designer is ready to begin execution.",
+            },
+            {
+              board: "Design", status: "In Progress", type: "Started", color: "#f2c94c", owner: "Assigned designer",
+              state: "Design active",
+              action: "Run the regular design, critique, prototype, and validation cycles.",
+              exit: "The design is ready for cross-functional approval.",
+            },
+            {
+              board: "Design", status: "Needs Review", type: "Started", color: "#f2c94c", owner: "Designer + reviewers",
+              state: "Approval gate",
+              action: "Apply every required review label. Keep the card here until all approvals are recorded.",
+              exit: "DES, OPS, and ENG reviews are approved.",
+              reviews: [
+                { label: "DES review", owner: "Mate", color: "#bec2c8" },
+                { label: "OPS review", owner: "Ops team", color: "#ff6eff" },
+                { label: "ENG review", owner: "Engineering", color: "#43fc11" },
+                { label: "Approved", owner: "All clear", color: "#4cb782" },
+              ],
+            },
+            {
+              board: "Engineering", status: "Todo", type: "Unstarted", color: "#e2e2e2", owner: "Design team lead",
+              state: "Handoff cleared",
+              action: "Move the approved card to the Engineering board without splitting its context.",
+              exit: "Engineering accepts the card for implementation.",
+            },
+            {
+              board: "Engineering", status: "QA 👀", type: "Started", color: "#f2c94c", owner: "Original designer",
+              state: "Design QA",
+              action: "Check the implemented behavior against the approved design and acceptance criteria.",
+              exit: "The designer records approval in the original QA thread.",
+            },
           ],
         },
       },
@@ -354,7 +393,6 @@ function DesignNavGroup({ group, activeSlug, c, onSelect }) {
         const selected = page.slug === activeSlug;
         return (
           <button key={page.slug} className="eon-buttonish eon-design-nav-item" type="button" onClick={() => onSelect(page)} aria-current={selected ? "page" : undefined} style={{ background: selected ? c.active : "transparent", color: selected ? c.text : c.secondary }}>
-            <page.Icon size={15} aria-hidden="true" style={{ color: selected ? c.brand : c.muted }} />
             <span>{page.title}</span>
           </button>
         );
@@ -415,61 +453,80 @@ function DesignSection({ section, c, onSelectPage, navigateProduct }) {
 function LinearHandoffFlow({ flow, c }) {
   return (
     <div className="eon-linear-flow" aria-label="Linear handoff board flow">
-      <FlowTrack stages={flow.intake} c={c} />
-      <FlowConnector vertical c={c} />
-      <section className="eon-linear-review" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+      <section className="eon-linear-example" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
         <header>
-          <span style={{ background: c.active, color: c.brand }}><GitBranch size={17} aria-hidden="true" /></span>
+          <span style={{ background: c.active, color: c.brand }}><ListChecks size={17} aria-hidden="true" /></span>
           <div>
-            <small style={{ color: c.brand }}>Review gate</small>
-            <h3>{flow.review.status}</h3>
-            <p style={{ color: c.secondary }}>{flow.review.body}</p>
+            <small style={{ color: c.brand }}>Example ticket · {flow.ticket.template}</small>
+            <h3>{flow.ticket.id} · {flow.ticket.title}</h3>
+            <p style={{ color: c.secondary }}>The same complete ticket moves through every column below—context is never recreated at handoff.</p>
           </div>
         </header>
-        <div className="eon-linear-review-gates">
-          {flow.review.gates.map((gate) => (
-            <article key={gate.label} style={{ background: c.raised }}>
-              <ShieldCheck size={17} aria-hidden="true" style={{ color: c.brand }} />
-              <strong>{gate.label}</strong>
-              <p style={{ color: c.secondary }}>{gate.body}</p>
-              <footer><span style={{ color: c.muted }}>Reviewer</span><b>{gate.owner}</b></footer>
-            </article>
-          ))}
-        </div>
-        <div className="eon-linear-review-clear" style={{ background: c.active, color: c.secondary }}>
-          <span style={{ background: c.brand, color: c.primaryText }}><Check size={13} aria-hidden="true" /></span>
-          <strong>All three approvals cleared</strong>
-          <span style={{ color: c.muted }}>The design team lead can now move the card.</span>
+        <div className="eon-linear-example-body">
+          <div className="eon-linear-example-meta">
+            {flow.ticket.meta.map((item) => <span key={item} style={{ background: c.active, color: c.secondary }}>{item}</span>)}
+          </div>
+          <ul>
+            {flow.ticket.context.map((item) => <li key={item}><Check size={12} aria-hidden="true" style={{ color: c.brand }} />{item}</li>)}
+          </ul>
         </div>
       </section>
-      <FlowConnector vertical c={c} />
-      <FlowTrack stages={flow.delivery} c={c} />
-    </div>
-  );
-}
 
-function FlowTrack({ stages, c }) {
-  return (
-    <div className="eon-linear-flow-track" role="list">
-      {stages.map((stage, index) => (
-        <Fragment key={`${stage.board}-${stage.status}`}>
-          <article className="eon-linear-flow-node" role="listitem" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
-            <header><span style={{ background: c.active, color: c.brand }}>{stage.board}</span><em style={{ color: c.muted }}>{String(index + 1).padStart(2, "0")}</em></header>
-            <strong>{stage.status}</strong>
-            <p style={{ color: c.secondary }}>{stage.body}</p>
-            <footer style={{ background: c.active }}><span style={{ color: c.muted }}>Owner</span><b>{stage.owner}</b></footer>
+      <div className="eon-linear-board-heading">
+        <div>
+          <GitBranch size={16} aria-hidden="true" style={{ color: c.brand }} />
+          <strong>Ticket path</strong>
+          <span style={{ color: c.muted }}>{flow.source}</span>
+        </div>
+        <small style={{ color: c.muted }}>Scroll horizontally →</small>
+      </div>
+
+      <div className="eon-linear-board" role="list" tabIndex="0" aria-label="Linear workflow columns">
+        {flow.columns.map((column, index) => (
+          <article
+            className="eon-linear-column"
+            key={`${column.board}-${column.status}`}
+            role="listitem"
+            style={{ background: c.panel, boxShadow: "var(--shadow-surface)", "--linear-status": column.color }}
+          >
+            <header>
+              <div>
+                <span className="eon-linear-status-dot" aria-hidden="true" />
+                <strong>{column.status}</strong>
+                <em style={{ color: c.muted }}>{String(index + 1).padStart(2, "0")}</em>
+              </div>
+              <p><span style={{ color: c.muted }}>{column.board} board</span><b style={{ color: column.color }}>{column.type}</b></p>
+            </header>
+
+            <div className="eon-linear-column-owner" style={{ background: c.active }}>
+              <span style={{ color: c.muted }}>Moved by</span>
+              <strong>{column.owner}</strong>
+            </div>
+
+            <div className="eon-linear-ticket" style={{ background: c.raised }}>
+              <div><span style={{ color: c.muted }}>{index < 5 ? flow.ticket.id : "ENG-###"}</span><b style={{ background: `${column.color}20`, color: column.color }}>{column.state}</b></div>
+              <strong>{flow.ticket.title}</strong>
+              <p style={{ color: c.secondary }}>{column.action}</p>
+              {column.reviews && (
+                <ul className="eon-linear-review-labels" aria-label="Required approval labels">
+                  {column.reviews.map((review) => (
+                    <li key={review.label} style={{ "--review-color": review.color }}>
+                      <span aria-hidden="true" />
+                      <div><strong>{review.label}</strong><small style={{ color: c.muted }}>{review.owner}</small></div>
+                      {review.label === "Approved" ? <Check size={13} aria-hidden="true" /> : <ShieldCheck size={13} aria-hidden="true" />}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <footer>
+              <span style={{ color: c.muted }}>Move on when</span>
+              <p style={{ color: c.secondary }}>{column.exit}</p>
+            </footer>
           </article>
-          {index < stages.length - 1 && <FlowConnector c={c} />}
-        </Fragment>
-      ))}
-    </div>
-  );
-}
-
-function FlowConnector({ vertical = false, c }) {
-  return (
-    <div className={`eon-linear-flow-connector${vertical ? " is-vertical" : ""}`} aria-hidden="true" style={{ color: c.brand }}>
-      <span style={{ background: c.border }} /><ArrowRight size={16} style={{ background: c.bg }} />
+        ))}
+      </div>
     </div>
   );
 }

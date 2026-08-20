@@ -4,16 +4,16 @@
    seed works before any HTML is uploaded. */
 
 export const HUB = {
-  // Neutral shadcn-style surfaces do the structural work. Eon lavender stays
-  // available as a brand cue, while primary actions use high-contrast ink.
+  // Neutral shadcn-style surfaces do the structural work. The vivid Eon accent
+  // stays a supporting brand cue, while primary actions use high-contrast ink.
   dark: { bg: "#000000", nav: "#000000", panel: "#151515", raised: "#252525", border: "rgba(255,255,255,0.10)",
     text: "#FAFAFA", muted: "#A1A1AA", secondary: "rgba(250,250,250,0.72)",
-    hover: "#252525", active: "rgba(255,255,255,0.075)", brand: "#B9AABF",
+    hover: "#252525", active: "rgba(241,157,255,0.105)", brand: "#F19DFF",
     primary: "#E8E8E8", primaryText: "#141414",
     selected: "#151515", selectedText: "#FAFAFA" },
   light: { bg: "#FAFAFA", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F2F2F2", border: "rgba(0,0,0,0.10)",
     text: "#171717", muted: "#737373", secondary: "rgba(23,23,23,0.72)",
-    hover: "#F2F2F2", active: "rgba(0,0,0,0.055)", brand: "#77637D",
+    hover: "#F2F2F2", active: "rgba(221,14,255,0.09)", brand: "#B400CF",
     primary: "#171717", primaryText: "#FAFAFA",
     selected: "#FFFFFF", selectedText: "#171717" },
 };
@@ -85,7 +85,7 @@ function boundedDimension(value, fallback) {
 
 export const MEDIA = {
   logos: {
-    eon: (stroke = "#FFFFFF", brand = "#A99BAE", img) => {
+    eon: (stroke = "#FFFFFF", brand = "#F19DFF", img) => {
       const src = safeMediaUrl(img);
       return src
         ? `<img src="${escapeMarkup(src)}" alt="logo" style="width:24px;height:24px;border-radius:6px;object-fit:cover"/>`

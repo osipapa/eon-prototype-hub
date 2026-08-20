@@ -7,7 +7,8 @@
   --route-text: #fafafa;
   --route-secondary: rgba(250, 250, 250, 0.72);
   --route-muted: #a1a1aa;
-  --route-brand: #b9aabf;
+  --route-brand: #f19dff;
+  --route-brand-gradient: linear-gradient(135deg, #dd0eff 0%, #f19dff 100%);
   --route-primary: #e8e8e8;
   --route-primary-hover: #f5f5f5;
   --route-danger: #d98295;
@@ -124,7 +125,11 @@
 
 .route-eyebrow {
   display: block;
-  color: var(--route-brand);
+  width: fit-content;
+  background: var(--route-brand-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -186,7 +191,7 @@
 .route-input:focus,
 .route-select:focus {
   border-color: var(--route-brand);
-  box-shadow: 0 0 0 3px rgba(169, 155, 174, 0.12);
+  box-shadow: 0 0 0 3px rgba(221, 14, 255, 0.16);
 }
 
 .route-input:disabled,
@@ -426,7 +431,7 @@
   overflow: hidden;
   padding: clamp(24px, 5vw, 64px);
   background:
-    radial-gradient(circle at 18% 12%, rgba(169, 155, 174, 0.045), transparent 30%),
+    radial-gradient(circle at 18% 12%, rgba(221, 14, 255, 0.055), transparent 30%),
     radial-gradient(circle at 84% 82%, rgba(255, 255, 255, 0.028), transparent 26%),
     #000000;
 }
@@ -495,7 +500,7 @@
 
 .admin-shell {
   background:
-    radial-gradient(circle at 50% -18%, rgba(169, 155, 174, 0.035), transparent 31%),
+    radial-gradient(circle at 50% -18%, rgba(221, 14, 255, 0.045), transparent 31%),
     var(--route-bg);
 }
 
@@ -968,9 +973,9 @@
   transition-duration: 150ms;
   transition-timing-function: cubic-bezier(.23, 1, .32, 1);
 }
-.admin-tutorial-persona:hover { background: #27272d; box-shadow: inset 0 0 0 1px rgba(169, 155, 174, .18), 0 10px 28px rgba(0, 0, 0, .2); }
+.admin-tutorial-persona:hover { background: #27272d; box-shadow: inset 0 0 0 1px rgba(221, 14, 255, .2), 0 10px 28px rgba(0, 0, 0, .2); }
 .admin-tutorial-persona:active { transform: scale(.96); }
-.admin-tutorial-persona.is-selected { background: rgba(255, 255, 255, .055); box-shadow: inset 0 0 0 2px rgba(169, 155, 174, .42), 0 10px 30px rgba(0, 0, 0, .22); }
+.admin-tutorial-persona.is-selected { background: rgba(255, 255, 255, .055); box-shadow: inset 0 0 0 2px rgba(221, 14, 255, .46), 0 10px 30px rgba(0, 0, 0, .22); }
 .admin-tutorial-persona > span { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: rgba(255, 255, 255, .065); color: var(--route-brand); }
 .admin-tutorial-persona strong { font-size: 13px; font-weight: 650; }
 .admin-tutorial-persona small { color: var(--route-muted); font-size: 10px; line-height: 1.45; text-wrap: pretty; }

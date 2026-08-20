@@ -18,8 +18,14 @@ function EonMark({ src }) {
 
   return (
     <svg className="route-brand-mark" width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="eon-login-accent" x1="5" y1="4" x2="19" y2="20" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#DD0EFF" />
+          <stop offset="1" stopColor="#F19DFF" />
+        </linearGradient>
+      </defs>
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-      <path d="M12 4 A8 8 0 0 1 12 20" stroke="#EDD2F6" strokeWidth="2" />
+      <path d="M12 4 A8 8 0 0 1 12 20" stroke="url(#eon-login-accent)" strokeWidth="2" />
     </svg>
   );
 }

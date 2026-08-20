@@ -862,6 +862,8 @@ function WorkspaceSidebar({
   isDrawer, onClose,
 }) {
   const hasResults = Object.keys(groups).length > 0;
+  const visiblePrototypeCount = Object.values(groups).reduce((total, items) => total + items.length, 0);
+  const libraryCount = view === "stories" ? visiblePrototypeCount : Object.keys(media || {}).length;
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
@@ -893,40 +895,46 @@ function WorkspaceSidebar({
           />
           {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close prototype navigation" style={{ color: c.muted }}><X size={17} /></button>}
         </div>
-        <LiquidSegmentedControl
-          options={[
-            { value: "stories", label: "Prototypes" },
-            { value: "media", label: "Media" },
-          ]}
-          value={view}
-          onValueChange={(item) => { setView(item); if (isDrawer) onClose(); }}
-          c={{ ...c, selected: c.panel, selectedText: c.text }}
-          className="eon-sidebar-switcher"
-          ariaLabel="Prototype library view"
-        />
+        <div className="eon-sidebar-library-heading">
+          <div>
+            <span style={{ color: c.muted }}>Library</span>
+            <strong>{view === "stories" ? "Prototypes" : "Shared media"}</strong>
+          </div>
+          <Badge variant="secondary" style={{ background: c.raised, color: c.secondary }}>{libraryCount}</Badge>
+        </div>
+        <Tabs value={view} onValueChange={(item) => { setView(item); if (isDrawer) onClose(); }}>
+          <TabsList variant="line" className="eon-sidebar-tabs" aria-label="Prototype library view" style={{ borderColor: c.border }}>
+            <TabsTrigger variant="line" value="stories">Prototypes</TabsTrigger>
+            <TabsTrigger variant="line" value="media">Media</TabsTrigger>
+          </TabsList>
+        </Tabs>
         {view === "stories" && (
-          <>
+          <div className="eon-sidebar-library-controls">
             <div className="eon-sidebar-search-row">
               <div className="eon-sidebar-search">
                 <Search aria-hidden="true" />
                 <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" aria-label="Search prototypes"
-                  style={{ minHeight: 40, paddingLeft: 34, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 10 }} />
+                  style={{ minHeight: 40, paddingLeft: 34, background: c.raised, borderColor: c.border, color: c.text }} />
               </div>
             </div>
-            <button data-tutorial="setup-prompt" className="eon-buttonish eon-secondary-button" onClick={copySetupPrompt}
-              title="Includes the current controls, selected values, viewports, and shared media variables" style={{ borderColor: c.border, background: c.raised, color: copiedPrompt ? c.brand : c.secondary }}>
-              {copiedPrompt ? <Check size={14} /> : <Copy size={14} />}
-              {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
-            </button>
-          </>
+            <div className="eon-sidebar-action-row">
+              <Button className="eon-buttonish eon-sidebar-primary-action" type="button" onClick={onNewProject} style={{ background: c.primary, color: c.primaryText }}>
+                <Plus size={15} aria-hidden="true" />
+                New prototype
+              </Button>
+              <Button data-tutorial="setup-prompt" className="eon-buttonish eon-sidebar-setup-action" variant="outline" type="button" onClick={copySetupPrompt}
+                title="Copy the complete prototype setup prompt" aria-label={copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
+                style={{ borderColor: c.border, background: "transparent", color: copiedPrompt ? c.brand : c.secondary }}>
+                {copiedPrompt ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copiedPrompt ? "Copied" : "Setup"}</span>
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 
       <div className="eon-story-list">
         {view === "stories" ? <>
-          <button className="eon-buttonish eon-new-story" onClick={onNewProject} style={{ borderColor: c.border, color: c.secondary }}>
-            <Plus size={17} /> New prototype
-          </button>
           {!hasResults && (
             <div className="eon-sidebar-empty" style={{ color: c.muted }}>
               <Search size={18} />

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle, AlertTriangle, BookOpen, Check, ChevronDown, ChevronRight,
-  Copy, Edit3, FileCode2, FolderCog, FolderPlus, Loader2, Menu, MoreHorizontal,
+  Copy, Edit3, FolderCog, FolderPlus, Loader2, Menu, MoreHorizontal,
   Pencil, Plus, Save, Search, Trash2, X,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
@@ -385,6 +386,13 @@ function PromptSidebar({
             </button>
           )}
         </div>
+        <div className="eon-sidebar-library-heading">
+          <div>
+            <span style={{ color: c.muted }}>Library</span>
+            <strong>Prompts</strong>
+          </div>
+          <Badge variant="secondary" style={{ background: c.raised, color: c.secondary }}>{filteredPrompts.length}</Badge>
+        </div>
         <div className="eon-prompt-search">
           <Search size={15} aria-hidden="true" style={{ color: c.muted }} />
           <Input
@@ -395,33 +403,37 @@ function PromptSidebar({
             style={{ background: c.raised, borderColor: c.border, color: c.text }}
           />
         </div>
-        {onNewPrompt && (
-          <button
-            className="eon-buttonish eon-prompt-new-button"
-            type="button"
-            onClick={() => {
-              onNewPrompt();
-              if (isDrawer) onClose();
-            }}
-            style={{ background: c.primary, color: c.primaryText }}
-          >
-            <Plus size={15} aria-hidden="true" />
-            New prompt
-          </button>
-        )}
-        {onManageCategories && (
-          <button
-            className="eon-buttonish eon-prompt-category-button"
-            type="button"
-            onClick={() => {
-              onManageCategories();
-              if (isDrawer) onClose();
-            }}
-            style={{ background: c.raised, color: c.secondary, boxShadow: hubShadow(c) }}
-          >
-            <FolderCog size={15} aria-hidden="true" />
-            Manage categories
-          </button>
+        {(onNewPrompt || onManageCategories) && (
+          <div className="eon-prompt-actions">
+            {onNewPrompt && (
+              <button
+                className="eon-buttonish eon-prompt-new-button"
+                type="button"
+                onClick={() => {
+                  onNewPrompt();
+                  if (isDrawer) onClose();
+                }}
+                style={{ background: c.primary, color: c.primaryText }}
+              >
+                <Plus size={15} aria-hidden="true" />
+                New prompt
+              </button>
+            )}
+            {onManageCategories && (
+              <button
+                className="eon-buttonish eon-prompt-category-button"
+                type="button"
+                onClick={() => {
+                  onManageCategories();
+                  if (isDrawer) onClose();
+                }}
+                style={{ background: "transparent", color: c.secondary, boxShadow: hubShadow(c) }}
+              >
+                <FolderCog size={15} aria-hidden="true" />
+                Categories
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -474,7 +486,6 @@ function PromptSidebar({
                         aria-current={selected ? "page" : undefined}
                         style={{ background: selected ? c.active : "transparent", color: selected ? c.text : c.secondary }}
                       >
-                        <FileCode2 size={14} aria-hidden="true" style={{ color: selected ? c.brand : c.muted }} />
                         <span>{prompt.title}</span>
                       </button>
                       {(onRequestEditPrompt || (onRequestDeletePrompt && canDeletePrompt(prompt))) && (
