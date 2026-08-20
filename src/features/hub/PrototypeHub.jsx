@@ -9,7 +9,7 @@ import { useSystemTheme } from "@/lib/systemTheme";
 import {
   Search, Monitor, Laptop, Tablet, Smartphone, Maximize2, ExternalLink,
   Circle, ChevronDown, Link2, FileText, Plus, Minus, Shield, LogOut, Upload, Trash2,
-  Square, LayoutGrid, Copy, Check,
+  Square, LayoutGrid, Copy, Check, AlertCircle, Loader2,
 } from "lucide-react";
 import { HUB, VIEWPORTS, CANVAS_PRESETS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, parsePrototypeConfig, safeMediaUrl } from "./prototypes";
 import { buildSetupPrompt } from "./setupPrompt";
@@ -973,11 +973,13 @@ export function UploadPanel({
 
 /* ---- Media manager. Assets persist via onSetAsset(key,url) and map into every
    prototype through {{key}} tokens (logos, placeholders). ---- */
-export function MediaManager({ c, assets, onSetAsset }) {
+export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
   const [ph, setPh] = useState({ w: 320, h: 180, label: "", bg: "#E5E7EB", fg: "#94A3B8", name: "" });
   const [img, setImg] = useState({ name: "", url: "" });
   const [copied, setCopied] = useState("");
   const [mediaError, setMediaError] = useState("");
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [deletingKey, setDeletingKey] = useState("");
   const field = { height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 };
   const panel = { background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 };
   const btn = { height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", fontSize: 12 };
@@ -996,7 +998,10 @@ export function MediaManager({ c, assets, onSetAsset }) {
     const candidate = value.trim();
     if (!candidate) {
       setMediaError("");
-      onSetAsset(key, "");
+      if (onDeleteAsset) onDeleteAsset(key).catch((error) => {
+        setMediaError(error?.message || "The media item could not be removed.");
+      });
+      else onSetAsset(key, "");
       return true;
     }
     const safe = safeMediaUrl(candidate);
@@ -1019,6 +1024,20 @@ export function MediaManager({ c, assets, onSetAsset }) {
     const key = cleanKey(img.name);
     if (!key || !img.url.trim()) return;
     if (saveAssetUrl(key, img.url)) setImg({ name: "", url: "" });
+  };
+  const removeAsset = async (key) => {
+    setDeletingKey(key);
+    setMediaError("");
+    try {
+      if (onDeleteAsset) await onDeleteAsset(key);
+      else await onSetAsset(key, "");
+      setDeleteCandidate(null);
+    } catch (error) {
+      setMediaError(error?.message || "The media item could not be deleted. Try again.");
+      throw error;
+    } finally {
+      setDeletingKey("");
+    }
   };
 
   // One flat list: team logos, the always-available preset photos, then
@@ -1061,8 +1080,18 @@ export function MediaManager({ c, assets, onSetAsset }) {
         <Token name={item.key} available={Boolean(item.linkUrl)} />
         <button onClick={() => copy(item.linkUrl, `link-${item.key}`)} disabled={!item.linkUrl} style={{ ...btn, height: 26, padding: "0 8px", opacity: item.linkUrl ? 1 : 0.5 }}>{copied === `link-${item.key}` ? "Copied" : "Link"}</button>
         {(item.url || item.removable) && (
-          <button onClick={() => onSetAsset(item.key, "")} title={item.removable ? "Remove from library" : "Reset to default"} style={{ ...btn, height: 26, padding: "0 8px", marginLeft: "auto" }}>
-            {item.removable ? "Remove" : "Reset"}
+          <button
+            className="eon-buttonish"
+            onClick={() => item.removable ? setDeleteCandidate(item) : removeAsset(item.key).catch(() => {})}
+            disabled={deletingKey === item.key}
+            title={item.removable ? "Delete from library" : "Reset to default"}
+            aria-label={`${item.removable ? "Delete" : "Reset"} ${item.label}`}
+            style={{ ...btn, height: 30, minWidth: 40, padding: "0 8px", marginLeft: "auto", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, color: item.removable ? "#D98295" : c.muted }}
+          >
+            {deletingKey === item.key
+              ? <Loader2 className="eon-spin" size={13} aria-hidden="true" />
+              : item.removable && <Trash2 size={13} aria-hidden="true" />}
+            {item.removable ? "Delete" : "Reset"}
           </button>
         )}
       </div>
@@ -1072,6 +1101,7 @@ export function MediaManager({ c, assets, onSetAsset }) {
   );
 
   return (
+    <>
     <div style={{ flex: 1 }}>
       <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
         <p style={{ margin: 0, color: c.muted, fontSize: 12, lineHeight: 1.5 }}>Use any shared image as {"{{name}}"}. Replacing its URL updates every prototype that references it.</p>
@@ -1112,6 +1142,55 @@ export function MediaManager({ c, assets, onSetAsset }) {
             </div>
           </div>
         </details>
+      </div>
+    </div>
+    {deleteCandidate && (
+      <DeleteMediaDialog
+        c={c}
+        item={deleteCandidate}
+        busy={deletingKey === deleteCandidate.key}
+        error={mediaError}
+        onClose={() => { if (!deletingKey) setDeleteCandidate(null); }}
+        onConfirm={() => removeAsset(deleteCandidate.key).catch(() => {})}
+      />
+    )}
+    </>
+  );
+}
+
+function DeleteMediaDialog({ c, item, busy, error, onClose, onConfirm }) {
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && !busy) onClose();
+      if (event.key !== "Tab") return;
+      const controls = [...(dialogRef.current?.querySelectorAll("button:not(:disabled)") || [])];
+      if (!controls.length) return;
+      if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
+      else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      previousFocus?.focus?.();
+    };
+  }, [busy, onClose]);
+
+  return (
+    <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+      <div ref={dialogRef} className="eon-modal eon-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="eon-delete-media-title" aria-describedby="eon-delete-media-body" style={{ background: c.panel, borderColor: c.border }}>
+        <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
+        <h2 id="eon-delete-media-title">Delete “{item.label}”?</h2>
+        <p id="eon-delete-media-body" style={{ color: c.muted }}>This removes the shared token and image for everyone. Prototypes that use <code>{`{{${item.key}}}`}</code> will no longer resolve it.</p>
+        {error && <p role="alert" className="eon-copy-error"><AlertCircle size={14} />{error}</p>}
+        <div className="eon-confirm-actions">
+          <button autoFocus className="eon-buttonish eon-secondary-button" type="button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, color: c.secondary }}>Cancel</button>
+          <Button className="eon-buttonish" type="button" onClick={onConfirm} disabled={busy} style={{ minHeight: 40, background: "#D98295", color: "#210C12", borderRadius: 10, fontWeight: 650 }}>
+            {busy ? <><Loader2 className="eon-spin" size={15} />Deleting…</> : <><Trash2 size={15} />Delete media</>}
+          </Button>
+        </div>
       </div>
     </div>
   );

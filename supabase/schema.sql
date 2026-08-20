@@ -522,8 +522,8 @@ create policy "team upsert assets" on public.assets for insert
   with check (team_id = public.current_team_id());
 create policy "team update assets" on public.assets for update
   using (team_id = public.current_team_id());
-create policy "admin delete assets" on public.assets for delete
-  using (public.is_admin() and team_id = public.current_team_id());
+create policy "team delete assets" on public.assets for delete
+  using (team_id = public.current_team_id());
 
 -- prompts: every teammate reads and contributes; creators/admins delete.
 create policy "team read prompts" on public.prompts for select

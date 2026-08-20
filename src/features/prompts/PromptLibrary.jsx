@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle, AlertTriangle, BookOpen, Check, ChevronDown, ChevronRight,
-  Copy, Edit3, FileCode2, FolderCog, FolderPlus, Loader2, Menu,
-  Plus, Save, Search, Trash2, X,
+  Copy, Edit3, FileCode2, FolderCog, FolderPlus, Loader2, Menu, MoreHorizontal,
+  Pencil, Plus, Save, Search, Trash2, X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
-import EonMark from "@/components/EonMark";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
@@ -28,6 +27,7 @@ export default function PromptLibrary({
   currentUserId,
   activeSlug,
   onSelectPrompt,
+  onOpenDesign,
   onOpenPrototypes,
   onOpenTracking,
   onOpenAdmin,
@@ -149,6 +149,7 @@ export default function PromptLibrary({
           userEmail={userEmail}
           isAdmin={isAdmin}
           onSelectPrompt={selectPrompt}
+          onOpenDesign={onOpenDesign}
           onOpenPrototypes={onOpenPrototypes}
           onOpenTracking={onOpenTracking}
           onOpenAdmin={onOpenAdmin}
@@ -156,12 +157,13 @@ export default function PromptLibrary({
           changelog={changelog}
           resize={sidebarResize}
           onNewPrompt={canCreate ? () => setEditorPrompt(newPromptDraft(categories)) : undefined}
+          onRequestEditPrompt={canEdit ? (prompt) => setEditorPrompt(prompt) : undefined}
           onManageCategories={canManageCategories ? () => setCategoryManagerOpen(true) : undefined}
           onRequestDeleteCategory={canManageCategories ? (category) => {
             setCategoryDeleteCandidate({ category, returnToManager: false });
           } : undefined}
           onRequestDeletePrompt={source === "shared" && onDeletePrompt
-            ? (prompt) => setDeleteCandidate(prompt)
+            ? (prompt, restoreFocus) => setDeleteCandidate({ prompt, restoreFocus })
             : undefined}
           canDeletePrompt={canDeletePrompt}
           isDrawer={narrow}
@@ -207,7 +209,7 @@ export default function PromptLibrary({
                 canEdit={canEdit}
                 canDelete={canDelete}
                 onEdit={() => setEditorPrompt(activePrompt)}
-                onDelete={() => setDeleteCandidate(activePrompt)}
+                onDelete={() => setDeleteCandidate({ prompt: activePrompt, restoreFocus: document.activeElement })}
               />
               {activePrompt.variables?.length > 0 && (
                 <PromptUseRail
@@ -254,9 +256,10 @@ export default function PromptLibrary({
       {deleteCandidate && (
         <PromptDeleteModal
           c={c}
-          prompt={deleteCandidate}
+          prompt={deleteCandidate.prompt}
+          restoreFocus={deleteCandidate.restoreFocus}
           onClose={() => setDeleteCandidate(null)}
-          onDelete={() => onDeletePrompt(deleteCandidate)}
+          onDelete={() => onDeletePrompt(deleteCandidate.prompt)}
         />
       )}
       {categoryManagerOpen && (
@@ -302,6 +305,7 @@ function PromptSidebar({
   userEmail,
   isAdmin,
   onSelectPrompt,
+  onOpenDesign,
   onOpenPrototypes,
   onOpenTracking,
   onOpenAdmin,
@@ -309,6 +313,7 @@ function PromptSidebar({
   changelog,
   resize,
   onNewPrompt,
+  onRequestEditPrompt,
   onManageCategories,
   onRequestDeleteCategory,
   onRequestDeletePrompt,
@@ -317,6 +322,7 @@ function PromptSidebar({
   onClose,
 }) {
   const [collapsedTopics, setCollapsedTopics] = useState({});
+  const [promptMenuId, setPromptMenuId] = useState(null);
   const groupedPrompts = useMemo(() => {
     const byCategory = Object.create(null);
     if (!query.trim()) {
@@ -334,6 +340,20 @@ function PromptSidebar({
     });
   }, [categories, filteredPrompts, query]);
 
+  useEffect(() => {
+    if (!promptMenuId) return undefined;
+    const close = (event) => {
+      if (event.key === "Escape") setPromptMenuId(null);
+      if (event.type === "mousedown" && !event.target.closest(`[data-prompt-menu="${promptMenuId}"]`)) setPromptMenuId(null);
+    };
+    window.addEventListener("keydown", close);
+    window.addEventListener("mousedown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("mousedown", close);
+    };
+  }, [promptMenuId]);
+
   return (
     <aside
       className="eon-prompt-sidebar"
@@ -349,24 +369,22 @@ function PromptSidebar({
       {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize prompt navigation" />}
       <div className="eon-prompt-sidebar-head" style={{ borderColor: c.border }}>
         <div className="eon-brand-row">
-          <div className="eon-brand" style={{ color: c.text }}>
-            <EonMark src={logo} />
-            <span>Eon Design Hub</span>
-          </div>
+          <DesignHubSwitcher
+            active="prompts"
+            c={c}
+            logo={logo}
+            onSelect={(product) => {
+              if (product === "design") onOpenDesign?.();
+              if (product === "prototypes") onOpenPrototypes?.();
+              if (product === "tracking") onOpenTracking?.();
+            }}
+          />
           {isDrawer && (
             <button className="eon-buttonish eon-icon-button" type="button" onClick={onClose} aria-label="Close prompt navigation" style={{ color: c.muted }}>
               <X size={17} />
             </button>
           )}
         </div>
-        <DesignHubSwitcher
-          active="prompts"
-          c={c}
-          onSelect={(product) => {
-            if (product === "prototypes") onOpenPrototypes?.();
-            if (product === "tracking") onOpenTracking?.();
-          }}
-        />
         <div className="eon-prompt-search">
           <Search size={15} aria-hidden="true" style={{ color: c.muted }} />
           <Input
@@ -448,7 +466,7 @@ function PromptSidebar({
                 {!collapsed && items.map((prompt) => {
                   const selected = prompt.id === activePrompt?.id;
                   return (
-                    <div className="eon-prompt-nav-row" key={prompt.id}>
+                    <div className="eon-prompt-nav-row" key={prompt.id} data-prompt-menu={prompt.id}>
                       <button
                         className="eon-buttonish eon-prompt-nav-item"
                         type="button"
@@ -459,16 +477,37 @@ function PromptSidebar({
                         <FileCode2 size={14} aria-hidden="true" style={{ color: selected ? c.brand : c.muted }} />
                         <span>{prompt.title}</span>
                       </button>
-                      {onRequestDeletePrompt && canDeletePrompt(prompt) && (
-                        <button
-                          className="eon-buttonish eon-prompt-inline-delete"
-                          type="button"
-                          onClick={() => onRequestDeletePrompt(prompt)}
-                          aria-label={`Delete ${prompt.title} prompt`}
-                          title={`Delete ${prompt.title}`}
-                        >
-                          <Trash2 size={15} aria-hidden="true" />
-                        </button>
+                      {(onRequestEditPrompt || (onRequestDeletePrompt && canDeletePrompt(prompt))) && (
+                        <div className="eon-prompt-row-actions">
+                          <button
+                            className="eon-buttonish eon-icon-button"
+                            type="button"
+                            onClick={() => setPromptMenuId((current) => current === prompt.id ? null : prompt.id)}
+                            aria-label={`Actions for ${prompt.title}`}
+                            aria-expanded={promptMenuId === prompt.id}
+                            style={{ color: c.muted }}
+                          >
+                            <MoreHorizontal size={16} aria-hidden="true" />
+                          </button>
+                          {promptMenuId === prompt.id && (
+                            <div className="eon-story-menu" role="menu" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
+                              {onRequestEditPrompt && (
+                                <button className="eon-buttonish" type="button" role="menuitem" onClick={() => { setPromptMenuId(null); onRequestEditPrompt(prompt); }} style={{ color: c.text }}>
+                                  <Pencil size={14} aria-hidden="true" /> Edit
+                                </button>
+                              )}
+                              {onRequestDeletePrompt && canDeletePrompt(prompt) && (
+                                <button className="eon-buttonish" type="button" role="menuitem" onClick={(event) => {
+                                  const restoreFocus = event.currentTarget.closest("[data-prompt-menu]")?.querySelector('button[aria-label^="Actions for"]');
+                                  setPromptMenuId(null);
+                                  onRequestDeletePrompt(prompt, restoreFocus);
+                                }} style={{ color: "#D98295" }}>
+                                  <Trash2 size={14} aria-hidden="true" /> Delete
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   );
@@ -499,31 +538,44 @@ function PromptSidebar({
 function PromptArticle({
   c, prompt, body, copied, copyError, onCopy, canEdit, canDelete, onEdit, onDelete,
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const actionsRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const close = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+      if (event.type === "mousedown" && !actionsRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    window.addEventListener("keydown", close);
+    window.addEventListener("mousedown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("mousedown", close);
+    };
+  }, [menuOpen]);
+
   return (
     <article className="eon-prompt-article">
       <header className="eon-prompt-hero">
         <h1>{prompt.title}</h1>
-        {canEdit && (
-          <div className="eon-prompt-hero-actions">
+        {(canEdit || canDelete) && (
+          <div className="eon-prompt-hero-actions" ref={actionsRef}>
             <button
-              className="eon-buttonish eon-prompt-manage-button"
+              className="eon-buttonish eon-icon-button"
               type="button"
-              onClick={onEdit}
+              onClick={() => setMenuOpen((value) => !value)}
+              aria-label={`Actions for ${prompt.title}`}
+              aria-expanded={menuOpen}
               style={{ background: c.panel, color: c.secondary, boxShadow: hubShadow(c) }}
             >
-              <Edit3 size={14} aria-hidden="true" />
-              Edit prompt
+              <MoreHorizontal size={17} aria-hidden="true" />
             </button>
-            {canDelete && (
-              <button
-                className="eon-buttonish eon-prompt-manage-button eon-prompt-delete-button"
-                type="button"
-                onClick={onDelete}
-                style={{ background: c.panel, color: "#D98295", boxShadow: hubShadow(c) }}
-              >
-                <Trash2 size={14} aria-hidden="true" />
-                Delete
-              </button>
+            {menuOpen && (
+              <div className="eon-story-menu" role="menu" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
+                {canEdit && <button className="eon-buttonish" type="button" role="menuitem" onClick={() => { setMenuOpen(false); onEdit(); }} style={{ color: c.text }}><Pencil size={14} /> Edit</button>}
+                {canDelete && <button className="eon-buttonish" type="button" role="menuitem" onClick={() => { setMenuOpen(false); onDelete(); }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>}
+              </div>
             )}
           </div>
         )}
@@ -727,17 +779,27 @@ function PromptEditorModal({ c, prompt, categories, onClose, onSave }) {
   );
 }
 
-function PromptDeleteModal({ c, prompt, onClose, onDelete }) {
+function PromptDeleteModal({ c, prompt, restoreFocus, onClose, onDelete }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const dialogRef = useRef(null);
 
   useEffect(() => {
+    const previous = restoreFocus || document.activeElement;
     const closeOnEscape = (event) => {
       if (event.key === "Escape" && !busy) onClose();
+      if (event.key !== "Tab") return;
+      const controls = [...(dialogRef.current?.querySelectorAll("button:not(:disabled)") || [])];
+      if (!controls.length) return;
+      if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
+      else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [busy, onClose]);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      previous?.focus?.();
+    };
+  }, [busy, onClose, restoreFocus]);
 
   const remove = async () => {
     setBusy(true);
@@ -756,6 +818,7 @@ function PromptDeleteModal({ c, prompt, onClose, onDelete }) {
       if (event.target === event.currentTarget && !busy) onClose();
     }}>
       <div
+        ref={dialogRef}
         className="eon-modal eon-confirm-modal"
         role="dialog"
         aria-modal="true"
@@ -763,15 +826,15 @@ function PromptDeleteModal({ c, prompt, onClose, onDelete }) {
         aria-describedby="eon-delete-prompt-body"
         style={{ background: c.panel, borderColor: c.border }}
       >
-        <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><AlertTriangle size={18} /></div>
-        <h2 id="eon-delete-prompt-title">Delete this prompt?</h2>
+        <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
+        <h2 id="eon-delete-prompt-title">Delete “{prompt.title}”?</h2>
         <p id="eon-delete-prompt-body" style={{ color: c.secondary }}>
-          <strong style={{ color: c.text }}>{prompt.title}</strong> will be removed for everyone on the team.
+          This removes the prompt and its reusable template for everyone on the team. This can't be undone.
         </p>
         {error && <div className="eon-prompt-editor-error" role="alert"><AlertCircle size={14} />{error}</div>}
         <div className="eon-confirm-actions">
-          <button className="eon-buttonish eon-prompt-editor-cancel" type="button" onClick={onClose} disabled={busy} style={{ color: c.secondary, borderColor: c.border }}>
-            Keep prompt
+          <button autoFocus className="eon-buttonish eon-secondary-button" type="button" onClick={onClose} disabled={busy} style={{ color: c.secondary, borderColor: c.border }}>
+            Cancel
           </button>
           <button className="eon-buttonish eon-prompt-delete-confirm" type="button" onClick={remove} disabled={busy}>
             {busy ? <Loader2 className="eon-spin" size={15} /> : <Trash2 size={15} />}

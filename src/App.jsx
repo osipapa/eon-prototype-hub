@@ -5,6 +5,7 @@ import LoadingScreen from "./components/LoadingScreen";
 
 const Login = lazy(() => import("./routes/Login"));
 const Hub = lazy(() => import("./routes/Hub"));
+const Design = lazy(() => import("./routes/Design"));
 const Prompts = lazy(() => import("./routes/Prompts"));
 const Tracking = lazy(() => import("./routes/Tracking"));
 const Admin = lazy(() => import("./routes/Admin"));
@@ -50,6 +51,8 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<RequireAuth><Hub /></RequireAuth>} />
             <Route path="/p/:slug" element={<RequireAuth><Hub /></RequireAuth>} />
+            <Route path="/design" element={<RequireAuth><Design /></RequireAuth>} />
+            <Route path="/design/:slug" element={<RequireAuth><Design /></RequireAuth>} />
             <Route path="/prompts" element={<RequireAuth><Prompts /></RequireAuth>} />
             <Route path="/prompts/:slug" element={<RequireAuth><Prompts /></RequireAuth>} />
             <Route path="/tracking" element={<RequireAuth><Tracking /></RequireAuth>} />

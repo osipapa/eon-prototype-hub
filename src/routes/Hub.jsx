@@ -10,7 +10,7 @@ import {
 } from "../features/onboarding/tutorial";
 import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
-  listAssets, upsertAsset, subscribeAssets, listComments, createComment, subscribeComments,
+  listAssets, upsertAsset, deleteAsset, subscribeAssets, listComments, createComment, subscribeComments,
   setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
 } from "../lib/data";
 import { joinTeamPresence } from "../lib/presence";
@@ -375,6 +375,21 @@ export default function Hub() {
     }
   }
 
+  async function onDeleteAsset(key) {
+    const previous = assets[key];
+    setAssets((current) => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+    try {
+      await deleteAsset(key);
+    } catch (error) {
+      setAssets((current) => ({ ...current, [key]: previous }));
+      throw error;
+    }
+  }
+
   // Called by the workspace's new-prototype dialog; errors propagate back to
   // it so they show inline instead of an alert.
   async function onNewProject({ title, group, html }) {
@@ -535,12 +550,14 @@ export default function Hub() {
         onSelectStory={(project) => navigate(project?.slug ? `/p/${project.slug}` : "/")}
         onPatchProject={onPatchProject}
         onSetAsset={onSetAsset}
+        onDeleteAsset={onDeleteAsset}
         onNewProject={onNewProject}
         onDeleteProject={onDeleteProject}
         onReorder={onReorder}
         onCreateComment={onCreateComment}
         onResolveComment={onResolveComment}
         onToggleReaction={onToggleReaction}
+        onOpenDesign={() => navigate("/design")}
         onOpenPrompts={() => navigate("/prompts")}
         onOpenTracking={() => navigate("/tracking")}
         onOpenAdmin={() => navigate("/admin")}

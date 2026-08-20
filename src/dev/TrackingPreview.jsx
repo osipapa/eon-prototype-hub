@@ -5,6 +5,7 @@ export default function TrackingPreview() {
     <TrackingLibrary
       userEmail="mate@example.com"
       isAdmin
+      onOpenDesign={() => {}}
       onOpenPrototypes={() => {}}
       onOpenPrompts={() => {}}
       onOpenAdmin={() => {}}

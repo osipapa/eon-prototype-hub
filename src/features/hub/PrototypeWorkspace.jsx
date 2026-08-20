@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
-import EonMark from "@/components/EonMark";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
 import LiquidSegmentedControl from "@/components/LiquidSegmentedControl";
@@ -83,8 +82,8 @@ export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], activity = [], coViewers = [],
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
-  onPatchProject, onSetAsset, onNewProject, onDeleteProject, onReorder,
-  onCreateComment, onResolveComment, onToggleReaction, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
+  onPatchProject, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder,
+  onCreateComment, onResolveComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
 }) {
   const hubTheme = useSystemTheme();
@@ -697,7 +696,7 @@ export default function PrototypeWorkspace({
           }}
           moveStory={moveStory} projectOrder={projects.map((item) => item.id)}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
-          onOpenPrompts={onOpenPrompts} onOpenTracking={onOpenTracking} onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
+          onOpenDesign={onOpenDesign} onOpenPrompts={onOpenPrompts} onOpenTracking={onOpenTracking} onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
           changelog={changelog}
           linearByProject={linearByProject}
           unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
@@ -750,7 +749,7 @@ export default function PrototypeWorkspace({
         )}
 
         {view === "media" ? (
-          <div className="eon-media-scroll"><MediaManager c={c} assets={assets} onSetAsset={onSetAsset} /></div>
+          <div className="eon-media-scroll"><MediaManager c={c} assets={assets} onSetAsset={onSetAsset} onDeleteAsset={onDeleteAsset} /></div>
         ) : (
           <div ref={compareRef} className={`eon-compare${splitDragging ? " is-dragging" : ""}`}>
             <div className="eon-canvas-zone" style={{ flex: effCompare ? `${splitRatio} 1 0%` : undefined }}>
@@ -855,7 +854,7 @@ function WorkspaceSidebar({
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
   onDeleteProject, moveStory, projectOrder, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
-  onOpenPrompts, onOpenTracking,
+  onOpenDesign, onOpenPrompts, onOpenTracking,
   changelog,
   linearByProject,
   unreadByProject, commentCountByProject,
@@ -882,20 +881,18 @@ function WorkspaceSidebar({
       {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize prototype navigation" />}
       <div className="eon-sidebar-head" style={{ borderColor: c.border }}>
         <div className="eon-brand-row">
-          <div className="eon-brand">
-            <EonMark src={media.eonLogo} />
-            <span>Eon Design Hub</span>
-          </div>
+          <DesignHubSwitcher
+            active="prototypes"
+            c={c}
+            logo={media.eonLogo}
+            onSelect={(product) => {
+              if (product === "design") onOpenDesign?.();
+              if (product === "prompts") onOpenPrompts?.();
+              if (product === "tracking") onOpenTracking?.();
+            }}
+          />
           {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close prototype navigation" style={{ color: c.muted }}><X size={17} /></button>}
         </div>
-        <DesignHubSwitcher
-          active="prototypes"
-          c={c}
-          onSelect={(product) => {
-            if (product === "prompts") onOpenPrompts?.();
-            if (product === "tracking") onOpenTracking?.();
-          }}
-        />
         <LiquidSegmentedControl
           options={[
             { value: "stories", label: "Prototypes" },

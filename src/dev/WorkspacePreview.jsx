@@ -172,6 +172,11 @@ export default function WorkspacePreview() {
         onSelectStory={(project) => setActiveId(project?.id)}
         onPatchProject={patchProject}
         onSetAsset={(key, url) => setAssets((current) => ({ ...current, [key]: url }))}
+        onDeleteAsset={(key) => setAssets((current) => {
+          const next = { ...current };
+          delete next[key];
+          return next;
+        })}
         onNewProject={async () => {}}
         onDeleteProject={(id) => setProjects((items) => items.filter((item) => item.id !== id))}
         onReorder={() => {}}
@@ -204,6 +209,7 @@ export default function WorkspacePreview() {
             };
           }));
         }}
+        onOpenDesign={() => {}}
         onOpenPrompts={() => {}}
         onOpenTracking={() => {}}
         onOpenAdmin={() => {}}

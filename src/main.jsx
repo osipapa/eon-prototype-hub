@@ -8,16 +8,21 @@ import TrackingPreview from "./dev/TrackingPreview";
 import { startAnimatedFavicon } from "./lib/animatedFavicon";
 import "./index.css";
 
+const DesignGuidePreview = React.lazy(() => import("./dev/DesignGuidePreview"));
+
 startAnimatedFavicon();
 
 const previewParams = new URLSearchParams(window.location.search);
 const isWorkspacePreview = import.meta.env.DEV && previewParams.has("workspace-preview");
 const isPromptPreview = import.meta.env.DEV && previewParams.has("prompts-preview");
 const isTrackingPreview = import.meta.env.DEV && previewParams.has("tracking-preview");
+const isDesignPreview = import.meta.env.DEV && previewParams.has("design-preview");
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {isTrackingPreview ? (
+    {isDesignPreview ? (
+      <React.Suspense fallback={null}><DesignGuidePreview /></React.Suspense>
+    ) : isTrackingPreview ? (
       <TrackingPreview />
     ) : isPromptPreview ? (
       <PromptLibraryPreview />

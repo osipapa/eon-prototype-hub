@@ -4,7 +4,6 @@ import {
   Code2, Copy, FileText, Menu, X,
 } from "lucide-react";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
-import EonMark from "@/components/EonMark";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
@@ -17,6 +16,7 @@ export default function TrackingLibrary({
   assets = {},
   userEmail,
   isAdmin,
+  onOpenDesign,
   onOpenPrototypes,
   onOpenPrompts,
   onOpenAdmin,
@@ -69,6 +69,7 @@ export default function TrackingLibrary({
           logo={assets.eonLogo}
           userEmail={userEmail}
           isAdmin={isAdmin}
+          onOpenDesign={onOpenDesign}
           onOpenPrototypes={onOpenPrototypes}
           onOpenPrompts={onOpenPrompts}
           onOpenAdmin={onOpenAdmin}
@@ -186,7 +187,7 @@ export default function TrackingLibrary({
 }
 
 function TrackingSidebar({
-  c, logo, userEmail, isAdmin, onOpenPrototypes, onOpenPrompts, onOpenAdmin, onSignOut, changelog, resize, isDrawer, onClose,
+  c, logo, userEmail, isAdmin, onOpenDesign, onOpenPrototypes, onOpenPrompts, onOpenAdmin, onSignOut, changelog, resize, isDrawer, onClose,
 }) {
   return (
     <aside
@@ -203,24 +204,22 @@ function TrackingSidebar({
       {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize tracking navigation" />}
       <div className="eon-prompt-sidebar-head" style={{ borderColor: c.border }}>
         <div className="eon-brand-row">
-          <div className="eon-brand" style={{ color: c.text }}>
-            <EonMark src={logo} />
-            <span>Eon Design Hub</span>
-          </div>
+          <DesignHubSwitcher
+            active="tracking"
+            c={c}
+            logo={logo}
+            onSelect={(product) => {
+              if (product === "design") onOpenDesign?.();
+              if (product === "prototypes") onOpenPrototypes?.();
+              if (product === "prompts") onOpenPrompts?.();
+            }}
+          />
           {isDrawer && (
             <button className="eon-buttonish eon-icon-button" type="button" onClick={onClose} aria-label="Close tracking navigation" style={{ color: c.muted }}>
               <X size={17} />
             </button>
           )}
         </div>
-        <DesignHubSwitcher
-          active="tracking"
-          c={c}
-          onSelect={(product) => {
-            if (product === "prototypes") onOpenPrototypes?.();
-            if (product === "prompts") onOpenPrompts?.();
-          }}
-        />
       </div>
 
       <div className="eon-tracking-sidebar-body">

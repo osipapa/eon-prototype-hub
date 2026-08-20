@@ -218,6 +218,7 @@ export default function Prompts() {
       currentUserId={profile?.id}
       activeSlug={slug}
       onSelectPrompt={(prompt) => navigate(`/prompts/${prompt.slug}`)}
+      onOpenDesign={() => navigate("/design")}
       onOpenPrototypes={() => navigate("/")}
       onOpenTracking={() => navigate("/tracking")}
       onOpenAdmin={() => navigate("/admin")}

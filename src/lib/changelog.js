@@ -5,6 +5,16 @@
 
 export const CHANGELOG = [
   {
+    date: "2026-08-20",
+    title: "Eon Design grows beyond tabs",
+    items: [
+      "The Eon logo now opens one compact area switcher for Eon Design, Prototypes, Prompts, and Mixpanel.",
+      "A new Eon Design home documents principles, product design process, review practices, Linear handoff, and shared resources.",
+      "Prompt edit and delete actions now use the same ellipsis menu and confirmation behavior as prototypes.",
+      "Custom media can now be permanently deleted; resetting a logo or preset removes its saved override.",
+    ],
+  },
+  {
     date: "2026-08-10",
     title: "Prompt library organization",
     items: [

@@ -216,6 +216,11 @@ export async function upsertAsset(teamId, asset) {
   return data;
 }
 
+export async function deleteAsset(key) {
+  const { error } = await supabase.from("assets").delete().eq("key", key);
+  if (error) throw error;
+}
+
 // Keep every open workspace in sync when a teammate changes shared media.
 export function subscribeAssets(cb) {
   const ch = supabase

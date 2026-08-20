@@ -15,6 +15,7 @@ export default function PromptLibraryPreview() {
       currentUserId="preview-user"
       activeSlug={activeSlug}
       onSelectPrompt={(prompt) => setActiveSlug(prompt.slug)}
+      onOpenDesign={() => {}}
       onOpenPrototypes={() => {}}
       onOpenTracking={() => {}}
       onOpenAdmin={() => {}}
