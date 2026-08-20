@@ -945,7 +945,7 @@ function WorkspaceSidebar({
                     if (event.key === "Enter") event.currentTarget.blur();
                     if (event.key === "Escape") setRenamingGroup(null);
                   }}
-                  style={{ background: c.bg, borderColor: c.brand, color: c.text }} />
+                  style={{ background: c.raised, borderColor: c.brand, color: c.text }} />
               </div>
             ) : (
               <div className="eon-group-label-row">
@@ -983,7 +983,7 @@ function WorkspaceSidebar({
                           if (event.key === "Enter") event.currentTarget.blur();
                           if (event.key === "Escape") setRenamingId(null);
                         }}
-                        style={{ background: c.bg, borderColor: c.brand, color: c.text }} />
+                        style={{ background: c.raised, borderColor: c.brand, color: c.text }} />
                     </div>
                   ) : (
                     <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose(); }}
@@ -1286,7 +1286,7 @@ function ReviewInspector({
         <TabsContent data-tutorial="linear-content" value="linear" className="eon-inspector-content eon-reference-content">
           <ReviewReadiness c={c} story={story} comments={comments} />
           <ReferenceHeader c={c} icon={LinearIcon} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
-          {(!story.issue_url || editLinear) && <Input aria-label="Linear issue URL" value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />}
+          {(!story.issue_url || editLinear) && <Input aria-label="Linear issue URL" value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 999 }} />}
           <LinearCard c={c} story={story} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
         </TabsContent>
       </Tabs>
@@ -1323,7 +1323,7 @@ function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
   const meta = figmaMeta(story.figma_url || "");
   const linkInput = (
     <Input aria-label="Figma share URL" value={story.figma_url || ""} onChange={(event) => patch("figma_url", event.target.value)} placeholder="Paste a Figma share URL"
-      style={{ minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10 }} />
+      style={{ minHeight: 40, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 999 }} />
   );
   return (
     <div className="eon-compare-pane" style={{ flex: `${1 - ratio} 1 0%`, background: c.nav, borderColor: c.border }}>
@@ -1553,7 +1553,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
         <Textarea value={draft} maxLength={4000} onChange={(event) => setDraft(event.target.value)} onPaste={onPaste}
           onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }}
           placeholder={anchors.pendingAnchor ? "Describe what the pin points at…" : "Write a comment…"} aria-label="Write a comment"
-          style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.bg, borderColor: error ? "#D98295" : dragging ? c.brand : c.border, color: c.text, borderRadius: 12, fontSize: 14, lineHeight: 1.5 }} />
+          style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.raised, borderColor: error ? "#D98295" : dragging ? c.brand : c.border, color: c.text, borderRadius: 20, fontSize: 14, lineHeight: 1.5 }} />
         <div className="eon-composer-meta">
           <input ref={fileInputRef} type="file" accept="image/*" hidden
             onChange={(event) => { attach(event.target.files?.[0]); event.target.value = ""; }} />
@@ -1764,7 +1764,7 @@ function PinComposer({ c, x, y, frameWidth, onSubmit, onCancel }) {
           }
         }}
         placeholder="Comment…" aria-label="Write a pinned comment"
-        style={{ minHeight: 54, maxHeight: 120, resize: "none", background: c.bg, borderColor: c.border, color: c.text, borderRadius: 9, fontSize: 13, lineHeight: 1.45 }} />
+        style={{ minHeight: 54, maxHeight: 120, resize: "none", background: c.raised, borderColor: c.border, color: c.text, borderRadius: 18, fontSize: 13, lineHeight: 1.45 }} />
       <div className="eon-pin-composer-meta">
         <span style={{ color: c.muted }}>Enter to send</span>
         <button type="button" className="eon-buttonish eon-pin-composer-send" onClick={() => draft.trim() && onSubmit(draft.trim())}
@@ -2116,7 +2116,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
     }
   };
 
-  const fieldStyle = { minHeight: 40, background: c.bg, borderColor: c.border, color: c.text, borderRadius: 10, fontSize: 13 };
+  const fieldStyle = { minHeight: 40, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 999, fontSize: 13 };
   const stepBadge = { display: "grid", width: 22, height: 22, flexShrink: 0, placeItems: "center", borderRadius: 100, background: c.active, color: c.brand, fontSize: 11, fontWeight: 700 };
   const stepHead = { display: "flex", alignItems: "center", gap: 9, fontSize: 13, fontWeight: 600 };
 
@@ -2164,7 +2164,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
             <Textarea value={html} onChange={(event) => { setHtml(event.target.value); setFileName(""); }} spellCheck={false}
               placeholder="…or paste a self-contained HTML document here"
               aria-label="Prototype HTML source"
-              style={{ minHeight: 96, maxHeight: 220, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 10 }} />
+              style={{ minHeight: 96, maxHeight: 220, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 20 }} />
             <span style={{ fontSize: 11, color: c.muted, lineHeight: 1.5 }}>
               Tip: “Copy setup prompt” in the sidebar gives an AI the full contract — theming, states, and media tokens like <code style={{ color: c.text }}>{"{{heroImage}}"}</code>.
             </span>
@@ -2174,7 +2174,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
           <span role="alert" style={{ flex: 1, fontSize: 12, color: "#D98295" }}>{error}</span>
           <button className="eon-buttonish eon-secondary-button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, background: "transparent", color: c.secondary }}>Cancel</button>
           <Button className="eon-buttonish" onClick={submit} disabled={!title.trim() || busy}
-            style={{ minHeight: 40, padding: "0 16px", borderRadius: 10, background: c.primary, color: c.primaryText, fontSize: 13, fontWeight: 600, opacity: !title.trim() || busy ? 0.5 : 1 }}>
+            style={{ minHeight: 40, padding: "0 16px", borderRadius: 999, background: c.primary, color: c.primaryText, fontSize: 13, fontWeight: 600, opacity: !title.trim() || busy ? 0.5 : 1 }}>
             {busy ? "Creating…" : "Create prototype"}
           </Button>
         </div>
@@ -2262,8 +2262,6 @@ function relativeTime(value) {
   return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function hubShadow(c) {
-  return c.bg === "#000000"
-    ? "0 0 0 1px rgba(255,255,255,.08)"
-    : "0 0 0 1px rgba(0,0,0,.06), 0 2px 4px rgba(0,0,0,.05)";
+function hubShadow() {
+  return "var(--shadow-surface)";
 }

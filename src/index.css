@@ -2,70 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* shadcn tokens. Dark is the default for this app. Values approximate the Eon
-   design system (near-black surfaces, pinkling brand). */
+/* shadcn-style neutral tokens. Dark is the default for this app; Eon lavender
+   remains a supporting brand accent rather than the primary control color. */
 @layer base {
   :root {
-    --background: 240 6% 5%;
-    --foreground: 0 0% 100%;
-    --card: 240 8% 8%;
-    --card-foreground: 0 0% 100%;
-    --popover: 240 8% 8%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 288 79% 89%;         /* baby elephant #EDD2F6 */
-    --primary-foreground: 0 0% 0%;
-    --secondary: 240 5% 12%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 240 5% 12%;
-    --muted-foreground: 230 8% 61%; /* #9094A5 */
-    --accent: 288 79% 89%;          /* baby-elephant #EDD2F6 */
-    --accent-foreground: 240 6% 8%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 91%;
+    --primary-foreground: 0 0% 8%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 347 78% 66%;
-    --destructive-foreground: 240 6% 8%;
-    --border: 240 6% 12%;
-    --input: 240 6% 18%;
-    --ring: 288 79% 89%;
-    --radius: 0.5rem;
+    --destructive-foreground: 0 0% 8%;
+    --border: 0 0% 16%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 83%;
+    --brand: 286 13% 71%;
+    --radius: 0.75rem;
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
     --shadow-surface:
-      0 0 0 1px rgba(255, 255, 255, .08),
-      0 1px 2px rgba(0, 0, 0, .24),
-      0 12px 34px rgba(0, 0, 0, .18);
+      0 0 0 1px rgba(255, 255, 255, .1),
+      0 1px 3px rgba(0, 0, 0, .1),
+      0 1px 2px -1px rgba(0, 0, 0, .1);
     --shadow-surface-hover:
-      0 0 0 1px rgba(255, 255, 255, .13),
-      0 1px 2px rgba(0, 0, 0, .28),
-      0 16px 40px rgba(0, 0, 0, .22);
+      0 0 0 1px rgba(255, 255, 255, .15),
+      0 2px 5px rgba(0, 0, 0, .16),
+      0 1px 2px -1px rgba(0, 0, 0, .14);
   }
   .light {
-    --background: 240 8% 97%;
-    --foreground: 240 6% 12%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 240 6% 12%;
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 6% 12%;
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 7% 94%;
-    --secondary-foreground: 240 6% 12%;
-    --muted: 240 7% 94%;
-    --muted-foreground: 240 5% 38%;
-    --accent: 288 79% 89%;          /* baby-elephant #EDD2F6 */
-    --accent-foreground: 240 6% 8%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 95%;
+    --accent-foreground: 0 0% 9%;
     --destructive: 347 68% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 7% 85%;
-    --input: 240 7% 85%;
-    --ring: 287 17% 34%;
+    --border: 0 0% 90%;
+    --input: 0 0% 92%;
+    --ring: 0 0% 44%;
+    --brand: 287 12% 44%;
     --shadow-surface:
-      0 0 0 1px rgba(0, 0, 0, .06),
-      0 1px 2px -1px rgba(0, 0, 0, .08),
-      0 8px 24px rgba(34, 27, 44, .08);
+      0 0 0 1px rgba(0, 0, 0, .08),
+      0 1px 3px rgba(0, 0, 0, .08),
+      0 1px 2px -1px rgba(0, 0, 0, .08);
     --shadow-surface-hover:
-      0 0 0 1px rgba(0, 0, 0, .09),
-      0 2px 4px -1px rgba(0, 0, 0, .1),
-      0 12px 30px rgba(34, 27, 44, .1);
+      0 0 0 1px rgba(0, 0, 0, .12),
+      0 2px 5px rgba(0, 0, 0, .1),
+      0 1px 2px -1px rgba(0, 0, 0, .1);
   }
 }
 
@@ -140,7 +142,7 @@
   flex: 0 0 40px;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   background: transparent;
   cursor: pointer;
 }
@@ -153,7 +155,7 @@
   min-height: 40px;
   padding: 0 12px;
   border: 1px solid;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -217,13 +219,13 @@
 .eon-design-switcher-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
 .eon-design-switcher-check { flex: 0 0 auto; opacity: 0; filter: blur(4px); scale: .25; transition-property: opacity, filter, scale; transition-duration: 300ms; transition-timing-function: cubic-bezier(.2, 0, 0, 1); }
 .eon-design-switcher-check[data-visible] { opacity: 1; filter: blur(0); scale: 1; }
-.eon-liquid-segment-shell { min-width: 0; border-radius: 11px; }
+.eon-liquid-segment-shell { min-width: 0; border-radius: 999px; }
 .eon-liquid-segment { display: flex; min-width: 0; gap: 3px; padding: 3px; border-radius: inherit; }
-.eon-liquid-segment-indicator { position: absolute; top: 0; left: 0; display: block; border-radius: 8px; pointer-events: none; transition: width 180ms var(--ease-out), height 180ms var(--ease-out), transform 180ms var(--ease-out); will-change: transform; }
-.eon-liquid-segment-button { position: relative; z-index: 1; min-height: 32px; padding: 5px 10px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 500; text-transform: capitalize; white-space: nowrap; }
+.eon-liquid-segment-indicator { position: absolute; top: 0; left: 0; display: block; border-radius: 999px; pointer-events: none; transition: width 180ms var(--ease-out), height 180ms var(--ease-out), transform 180ms var(--ease-out); will-change: transform; }
+.eon-liquid-segment-button { position: relative; z-index: 1; min-height: 32px; padding: 5px 10px; border: 0; border-radius: 999px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 500; text-transform: capitalize; white-space: nowrap; }
 .eon-liquid-segment-button[aria-pressed="true"] { font-weight: 650; }
-.eon-liquid-segment-shell.is-icon { border-radius: 11px; }
-.eon-liquid-segment-shell.is-icon .eon-liquid-segment-indicator { border-radius: 8px; }
+.eon-liquid-segment-shell.is-icon { border-radius: 999px; }
+.eon-liquid-segment-shell.is-icon .eon-liquid-segment-indicator { border-radius: 999px; }
 .eon-sidebar-switcher { display: flex; gap: 3px; margin-top: 10px; padding: 3px; border-radius: 10px; }
 .eon-sidebar-switcher .eon-liquid-segment-button { min-width: 0; min-height: 34px; flex: 1 1 0; font-size: 13px; }
 .eon-brand-row + .eon-sidebar-switcher { margin-top: 0; }
@@ -367,7 +369,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-readiness-heading > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
 .eon-readiness-heading strong { font-size: 13px; }
 .eon-readiness-heading span { font-size: 11px; line-height: 1.4; }
-.eon-readiness-card { display: flex; flex-direction: column; gap: 11px; padding: 14px; border-radius: 15px; box-shadow: var(--shadow-surface); }
+.eon-readiness-card { display: flex; flex-direction: column; gap: 11px; padding: 14px; border-radius: 20px; box-shadow: var(--shadow-surface); }
 .eon-readiness-list { display: flex; flex-direction: column; gap: 7px; }
 .eon-readiness-item { display: flex; min-height: 28px; align-items: center; gap: 8px; font-size: 12px; }
 .eon-readiness-item > span { display: grid; width: 22px; height: 22px; flex: 0 0 22px; place-items: center; border-radius: 8px; }
@@ -552,7 +554,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-sidebar-head .eon-brand-row { margin-bottom: 10px; }
 .eon-prompt-search { position: relative; margin-top: 10px; }
 .eon-prompt-search > svg { position: absolute; z-index: 1; top: 13px; left: 12px; pointer-events: none; }
-.eon-prompt-search input { min-height: 40px; padding-left: 35px; border-radius: 10px; }
+.eon-prompt-search input { min-height: 40px; padding-left: 35px; border-radius: 999px; }
 .eon-prompt-new-button {
   display: flex;
   width: 100%;
@@ -563,7 +565,7 @@ button.eon-save-state { cursor: pointer; }
   margin-top: 8px;
   padding: 0 13px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 650;
@@ -578,7 +580,7 @@ button.eon-save-state { cursor: pointer; }
   margin-top: 8px;
   padding: 0 13px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 650;
@@ -628,7 +630,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-hero h1 { margin: 0; font-size: clamp(30px, 3.5vw, 40px); font-weight: 650; letter-spacing: -.04em; line-height: 1.08; text-wrap: balance; }
 .eon-prompt-hero-actions { position: relative; display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 8px; }
 .eon-prompt-hero-actions .eon-story-menu { top: 46px; right: 0; }
-.eon-prompt-manage-button { display: inline-flex; min-height: 40px; align-items: center; gap: 7px; padding: 0 12px; border: 0; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 650; }
+.eon-prompt-manage-button { display: inline-flex; min-height: 40px; align-items: center; gap: 7px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer; font-size: 11px; font-weight: 650; }
 
 .eon-prompt-doc-section { margin-top: 46px; scroll-margin-top: 24px; }
 .eon-prompt-doc-section:first-of-type { margin-top: 0; }
@@ -639,12 +641,12 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-section-head .eon-secondary-button { flex: 0 0 auto; min-height: 40px; }
 .eon-prompt-code-shell { position: relative; }
 .eon-prompt-code-copy { position: absolute; z-index: 2; top: 12px; right: 26px; display: grid; width: 40px; height: 40px; place-items: center; padding: 0; border: 0; border-radius: 10px; cursor: pointer; }
-.eon-prompt-code { min-height: 220px; max-height: 620px; margin: 0; overflow: auto; padding: 24px 72px 24px 24px; border-radius: 18px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12.5px; line-height: 1.72; tab-size: 2; white-space: pre-wrap; overflow-wrap: anywhere; }
+.eon-prompt-code { min-height: 220px; max-height: 620px; margin: 0; overflow: auto; padding: 24px 72px 24px 24px; border-radius: 24px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12.5px; line-height: 1.72; tab-size: 2; white-space: pre-wrap; overflow-wrap: anywhere; }
 .eon-prompt-code code { font: inherit; }
 .eon-prompt-code mark { padding: 0; font: inherit; }
 
 .eon-prompt-use-rail { min-width: 0; }
-.eon-prompt-use-card { position: sticky; top: 24px; padding: 18px; border-radius: 18px; }
+.eon-prompt-use-card { position: sticky; top: 24px; padding: 18px; border-radius: 24px; }
 .eon-prompt-use-head h2 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -.015em; }
 .eon-prompt-variables { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
 .eon-prompt-variable { display: flex; flex-direction: column; gap: 6px; }
@@ -652,13 +654,15 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-variable strong { min-width: 0; flex: 1; font-size: 12px; font-weight: 650; }
 .eon-required-star { color: #EDD2F6; }
 .light .eon-required-star { color: #633E6A; }
-.eon-prompt-variable input, .eon-prompt-variable textarea { border-radius: 10px; font-size: 12px; line-height: 1.5; }
+.eon-prompt-variable input, .eon-prompt-variable textarea { font-size: 12px; line-height: 1.5; }
+.eon-prompt-variable input { border-radius: 999px; }
+.eon-prompt-variable textarea { border-radius: 20px; }
 .eon-prompt-variable input { min-height: 40px; }
 .eon-prompt-variable textarea { min-height: 82px; resize: vertical; }
 .eon-prompt-missing { display: flex; align-items: flex-start; gap: 7px; margin-top: 16px; font-size: 10px; line-height: 1.45; }
 .eon-prompt-missing svg { flex: 0 0 auto; margin-top: 1px; }
 .eon-prompt-copy-error { margin-top: 12px; color: #D98295; font-size: 11px; line-height: 1.45; }
-.eon-prompt-copy-primary, .eon-prompt-copy-secondary { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border-radius: 11px; cursor: pointer; font-size: 12px; font-weight: 650; }
+.eon-prompt-copy-primary, .eon-prompt-copy-secondary { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; cursor: pointer; font-size: 12px; font-weight: 650; }
 .eon-prompt-copy-primary { margin-top: 18px; border: 0; padding: 0 14px 0 16px; }
 .eon-prompt-copy-primary:disabled { cursor: not-allowed; opacity: .42; }
 .eon-prompt-copy-secondary { margin-top: 8px; border: 1px solid; background: transparent; padding: 0 12px 0 14px; }
@@ -669,7 +673,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-empty > span { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 15px; }
 .eon-prompt-empty h1 { margin: 5px 0 0; font-size: 19px; }
 .eon-prompt-empty p { max-width: 360px; margin: 0; font-size: 13px; line-height: 1.55; text-wrap: pretty; }
-.eon-prompt-empty-create { display: inline-flex; min-height: 42px; align-items: center; gap: 7px; margin-top: 8px; padding: 0 14px; border: 0; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 650; }
+.eon-prompt-empty-create { display: inline-flex; min-height: 42px; align-items: center; gap: 7px; margin-top: 8px; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; font-size: 11px; font-weight: 650; }
 
 .eon-modal.eon-prompt-editor { width: min(680px, calc(100vw - 40px)); max-height: calc(100vh - 40px); min-height: 0; }
 .eon-prompt-editor-heading { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
@@ -687,14 +691,14 @@ button.eon-save-state { cursor: pointer; }
   width: 100%;
   min-height: 42px;
   border: 1px solid;
-  border-radius: 10px;
+  border-radius: 999px;
   outline: 0;
   font-size: 12px;
   line-height: 1.5;
 }
 .eon-prompt-editor-field select { padding: 0 34px 0 11px; color-scheme: dark; }
 .light .eon-prompt-editor-field select { color-scheme: light; }
-.eon-prompt-editor-field textarea { min-height: 82px; resize: vertical; }
+.eon-prompt-editor-field textarea { min-height: 82px; border-radius: 20px; resize: vertical; }
 .eon-prompt-editor-field .eon-prompt-template-editor { min-height: 210px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; }
 .eon-prompt-editor-variables { display: flex; flex-direction: column; gap: 10px; }
 .eon-prompt-editor-variables > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -718,7 +722,7 @@ button.eon-save-state { cursor: pointer; }
   justify-content: center;
   gap: 7px;
   padding: 0 14px;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 650;
@@ -813,7 +817,7 @@ button.eon-save-state { cursor: pointer; }
 
 /* New-prototype dialog */
 .eon-modal-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .62); backdrop-filter: blur(8px); }
-.eon-modal { display: flex; width: min(600px, 100%); max-height: 100%; flex-direction: column; border: 1px solid; border-radius: 18px; box-shadow: 0 24px 80px rgba(0, 0, 0, .45); transition: transform 180ms var(--ease-out), opacity 140ms var(--ease-out); }
+.eon-modal { display: flex; width: min(600px, 100%); max-height: 100%; flex-direction: column; border: 1px solid; border-radius: 24px; box-shadow: var(--shadow-surface), 0 24px 80px rgba(0, 0, 0, .32); transition: transform 180ms var(--ease-out), opacity 140ms var(--ease-out); }
 @starting-style { .eon-modal { opacity: 0; transform: scale(.97) translateY(6px); } }
 .eon-modal-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px 20px; border-bottom: 1px solid; }
 .eon-modal-head strong { flex: 1; font-size: 15px; letter-spacing: -.01em; }
@@ -950,7 +954,7 @@ button.eon-save-state { cursor: pointer; }
   flex-direction: column;
   gap: 10px;
   padding: 20px;
-  border-radius: 18px;
+  border-radius: 24px;
   color: inherit;
   text-decoration: none;
   transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
@@ -991,7 +995,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-tracking-flow-head h3 { margin: 4px 0 0; font-size: 17px; font-weight: 650; letter-spacing: -.02em; }
 .eon-tracking-flow-head > .eon-tracking-event-count { display: inline-flex; min-height: 25px; flex: 0 0 auto; align-items: center; font-size: 10px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .eon-tracking-event-stack { display: flex; flex-direction: column; gap: 12px; }
-.eon-tracking-event { overflow: hidden; border: 0 !important; border-radius: 18px; box-shadow: var(--shadow-surface); }
+.eon-tracking-event { overflow: hidden; border: 0 !important; border-radius: 24px; box-shadow: var(--shadow-surface); }
 .eon-tracking-event-head { padding: 18px 20px 16px; border-bottom: 1px solid; }
 .eon-tracking-event-head code {
   display: inline-flex;
@@ -1031,7 +1035,7 @@ button.eon-save-state { cursor: pointer; }
 .light .eon-tracking-table em { color: #9A4A00; }
 .eon-tracking-table em svg { flex: 0 0 auto; margin-top: 1px; }
 
-.eon-tracking-checklist { overflow: hidden; border-radius: 18px; }
+.eon-tracking-checklist { overflow: hidden; border-radius: 24px; }
 .eon-tracking-checklist > div { display: flex; align-items: flex-start; gap: 12px; padding: 15px 18px; border-top: 1px solid; }
 .eon-tracking-checklist > div:first-child { border-top: 0; }
 .eon-tracking-checklist > div > span { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; }
@@ -1048,7 +1052,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-tracking-decision p { margin: 5px 0 0; font-size: 11px; line-height: 1.55; }
 
 .eon-tracking-rail { min-width: 0; }
-.eon-tracking-rail-card { position: sticky; top: 24px; padding: 18px; border-radius: 18px; }
+.eon-tracking-rail-card { position: sticky; top: 24px; padding: 18px; border-radius: 24px; }
 .eon-tracking-rail-card .eon-prompt-use-head { display: flex; align-items: center; gap: 10px; }
 .eon-tracking-rail-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: 10px; }
 .eon-tracking-rail-statuses { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; padding-top: 16px; border-top: 1px solid; }
@@ -1087,7 +1091,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-design-section h2 { max-width: 720px; margin: 0; font-size: clamp(26px, 3vw, 36px); font-weight: 650; letter-spacing: -.04em; line-height: 1.15; text-wrap: balance; }
 .eon-design-section-intro { max-width: 760px; margin: 16px 0 0; font-size: 15px; line-height: 1.72; text-wrap: pretty; }
 .eon-design-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
-.eon-design-card { position: relative; display: grid; min-height: 204px; grid-template-rows: auto auto 1fr; gap: 12px; padding: 22px; border: 0; border-radius: 20px; cursor: pointer; text-align: left; }
+.eon-design-card { position: relative; display: grid; min-height: 204px; grid-template-rows: auto auto 1fr; gap: 12px; padding: 22px; border: 0; border-radius: 24px; cursor: pointer; text-align: left; }
 .eon-design-card:disabled { cursor: default; opacity: 1; }
 .eon-design-card:hover:not(:disabled) { box-shadow: var(--shadow-surface-hover) !important; }
 .eon-design-card > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; }
@@ -1101,13 +1105,13 @@ button.eon-save-state { cursor: pointer; }
 .eon-design-steps li > div { padding: 5px 0 24px; }
 .eon-design-steps strong { font-size: 14px; font-weight: 650; }
 .eon-design-steps p { max-width: 680px; margin: 6px 0 0; font-size: 12px; line-height: 1.58; }
-.eon-design-checklist { display: flex; overflow: hidden; margin: 28px 0 0; padding: 0; flex-direction: column; border-radius: 20px; list-style: none; }
+.eon-design-checklist { display: flex; overflow: hidden; margin: 28px 0 0; padding: 0; flex-direction: column; border-radius: 24px; list-style: none; }
 .eon-design-checklist li { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; border-top: 1px solid rgba(144, 148, 165, .15); }
 .eon-design-checklist li:first-child { border-top: 0; }
 .eon-design-checklist li > span { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; }
 .eon-design-checklist p { margin: 3px 0 0; font-size: 12px; line-height: 1.6; text-wrap: pretty; }
 .eon-design-resources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
-.eon-design-resources > button { display: grid; min-height: 98px; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px; border: 0; border-radius: 17px; cursor: pointer; text-align: left; }
+.eon-design-resources > button { display: grid; min-height: 98px; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px; border: 0; border-radius: 24px; cursor: pointer; text-align: left; }
 .eon-design-resources > button:disabled { cursor: default; opacity: 1; }
 .eon-design-resources > button:hover:not(:disabled) { box-shadow: var(--shadow-surface-hover) !important; }
 .eon-design-resource-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; }
@@ -1115,6 +1119,65 @@ button.eon-save-state { cursor: pointer; }
 .eon-design-resources strong { font-size: 13px; font-weight: 650; }
 .eon-design-resources small { font-size: 10px; line-height: 1.45; text-wrap: pretty; }
 .eon-design-resources em { font-size: 9px; font-style: normal; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+
+/* Linear handoff flow — board ownership, parallel review gates, and QA. */
+.eon-linear-flow { display: flex; margin-top: 32px; flex-direction: column; }
+.eon-linear-flow-track { display: flex; min-width: 0; align-items: stretch; }
+.eon-linear-flow-node { display: flex; min-width: 0; min-height: 220px; flex: 1 1 0; flex-direction: column; padding: 16px; border-radius: 24px; }
+.eon-linear-flow-node > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.eon-linear-flow-node > header span { display: inline-flex; min-width: 0; min-height: 24px; align-items: center; padding: 0 8px; border-radius: 999px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; font-weight: 700; }
+.eon-linear-flow-node > header em { flex: 0 0 auto; font-size: 9px; font-style: normal; font-variant-numeric: tabular-nums; }
+.eon-linear-flow-node > strong { margin-top: 18px; font-size: 15px; font-weight: 650; letter-spacing: -.015em; line-height: 1.3; text-wrap: balance; }
+.eon-linear-flow-node > p { flex: 1; margin: 8px 0 18px; font-size: 11px; line-height: 1.55; text-wrap: pretty; }
+.eon-linear-flow-node > footer { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 8px; }
+.eon-linear-flow-node > footer span { font-size: 9px; }
+.eon-linear-flow-node > footer b { font-size: 10px; font-weight: 650; text-align: right; }
+.eon-linear-flow-connector { position: relative; display: grid; flex: 0 0 38px; place-items: center; overflow: hidden; }
+.eon-linear-flow-connector > span { position: absolute; top: 50%; right: 0; left: 0; height: 1px; }
+.eon-linear-flow-connector > svg { position: relative; z-index: 1; width: 24px; height: 24px; padding: 4px; border-radius: 999px; }
+.eon-linear-flow-connector.is-vertical { width: 100%; height: 52px; flex-basis: 52px; }
+.eon-linear-flow-connector.is-vertical > span { top: 0; bottom: 0; left: 50%; width: 1px; height: auto; }
+.eon-linear-flow-connector.is-vertical > svg { rotate: 90deg; }
+.eon-linear-review { padding: 16px; border-radius: 24px; }
+.eon-linear-review > header { display: flex; align-items: flex-start; gap: 12px; padding: 2px 2px 16px; }
+.eon-linear-review > header > span { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: 12px; }
+.eon-linear-review > header > div { min-width: 0; }
+.eon-linear-review > header small { display: block; margin-bottom: 3px; font-size: 9px; font-weight: 750; letter-spacing: .075em; text-transform: uppercase; }
+.eon-linear-review > header h3 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -.025em; }
+.eon-linear-review > header p { margin: 5px 0 0; font-size: 11px; line-height: 1.5; }
+.eon-linear-review-gates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.eon-linear-review-gates article { display: flex; min-width: 0; min-height: 180px; flex-direction: column; padding: 14px; border-radius: 8px; }
+.eon-linear-review-gates article > strong { margin-top: 14px; font-size: 12px; font-weight: 650; }
+.eon-linear-review-gates article > p { flex: 1; margin: 6px 0 16px; font-size: 10px; line-height: 1.5; text-wrap: pretty; }
+.eon-linear-review-gates article > footer { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid hsl(var(--border)); }
+.eon-linear-review-gates article > footer span { font-size: 8px; }
+.eon-linear-review-gates article > footer b { font-size: 10px; font-weight: 650; text-align: right; }
+.eon-linear-review-clear { display: grid; min-height: 48px; grid-template-columns: auto auto 1fr; align-items: center; gap: 9px; margin-top: 8px; padding: 8px 12px; border-radius: 8px; }
+.eon-linear-review-clear > span:first-child { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 999px; }
+.eon-linear-review-clear strong { font-size: 11px; font-weight: 650; }
+.eon-linear-review-clear > span:last-child { font-size: 9px; text-align: right; }
+.eon-qa-protocol { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(220px, .65fr); align-items: start; gap: 28px; margin-top: 28px; }
+.eon-qa-thread { padding: 12px; border-radius: 24px; }
+.eon-qa-comment { padding: 16px; border-radius: 12px; }
+.eon-qa-comment > header { display: flex; align-items: center; gap: 10px; }
+.eon-qa-comment > header > span { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.eon-qa-comment > header > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.eon-qa-comment > header strong { font-size: 12px; font-weight: 650; }
+.eon-qa-comment > header small { font-size: 9px; }
+.eon-qa-comment > ul { display: flex; margin: 18px 0 0; padding: 0; flex-direction: column; gap: 10px; list-style: none; }
+.eon-qa-comment > ul li { display: flex; align-items: flex-start; gap: 9px; }
+.eon-qa-comment > ul li > span { display: grid; width: 20px; height: 20px; flex: 0 0 20px; place-items: center; border-radius: 6px; box-shadow: inset 0 0 0 1px currentColor; }
+.eon-qa-comment > ul p { margin: 1px 0 0; font-size: 10px; line-height: 1.5; text-wrap: pretty; }
+.eon-qa-reply { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0 0 28px; padding: 12px; border-radius: 10px; }
+.eon-qa-reply > svg { flex: 0 0 auto; margin-top: 1px; }
+.eon-qa-reply strong { font-size: 10px; font-weight: 650; }
+.eon-qa-reply p { margin: 4px 0 0; font-size: 9px; line-height: 1.5; text-wrap: pretty; }
+.eon-qa-rules { display: flex; margin: 0; padding: 0; flex-direction: column; list-style: none; }
+.eon-qa-rules li { display: flex; align-items: flex-start; gap: 10px; padding: 15px 0; border-top: 1px solid hsl(var(--border)); }
+.eon-qa-rules li:first-child { padding-top: 2px; border-top: 0; }
+.eon-qa-rules li > span { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; font-size: 10px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.eon-qa-rules strong { font-size: 11px; font-weight: 650; }
+.eon-qa-rules p { margin: 4px 0 0; font-size: 9px; line-height: 1.5; text-wrap: pretty; }
 .eon-design-toc { min-width: 0; padding-top: 260px; }
 .eon-design-toc > div { position: sticky; top: 28px; display: flex; flex-direction: column; gap: 10px; padding-left: 18px; border-left: 1px solid; }
 .eon-design-toc strong { margin-bottom: 3px; font-size: 11px; font-weight: 700; }
@@ -1153,4 +1216,15 @@ button.eon-save-state { cursor: pointer; }
   .eon-design-section { padding: 42px 0; }
   .eon-design-card-grid, .eon-design-resources { grid-template-columns: minmax(0, 1fr); }
   .eon-design-card { min-height: 180px; }
+  .eon-linear-flow-track { flex-direction: column; }
+  .eon-linear-flow-track > .eon-linear-flow-connector { width: 100%; height: 42px; flex-basis: 42px; }
+  .eon-linear-flow-track > .eon-linear-flow-connector > span { top: 0; bottom: 0; left: 50%; width: 1px; height: auto; }
+  .eon-linear-flow-track > .eon-linear-flow-connector > svg { rotate: 90deg; }
+  .eon-linear-flow-node { min-height: 190px; }
+  .eon-linear-review-gates { grid-template-columns: minmax(0, 1fr); }
+  .eon-linear-review-gates article { min-height: 148px; }
+  .eon-linear-review-clear { grid-template-columns: auto 1fr; }
+  .eon-linear-review-clear > span:last-child { grid-column: 2; text-align: left; }
+  .eon-qa-protocol { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .eon-qa-reply { margin-left: 16px; }
 }

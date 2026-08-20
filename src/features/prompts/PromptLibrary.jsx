@@ -1087,7 +1087,7 @@ function PromptUseRail({
             const longField = /(material|constraints|behavior|context|source|dependencies|outcome|goal)/i.test(variable.key)
               && String(variable.example || variable.default || "").length > 44;
             const fieldStyle = {
-              background: c.bg,
+              background: c.raised,
               borderColor: c.border,
               color: c.text,
             };
@@ -1155,10 +1155,8 @@ function CopyGlyph({ copied }) {
   );
 }
 
-function hubShadow(c) {
-  return c.bg === "#000000"
-    ? "0 0 0 1px rgba(255,255,255,.08)"
-    : "0 0 0 1px rgba(0,0,0,.06), 0 2px 4px rgba(0,0,0,.05)";
+function hubShadow() {
+  return "var(--shadow-surface)";
 }
 
 function promptTokens(body) {
@@ -1173,7 +1171,7 @@ function humanizeKey(key) {
 }
 
 function editorControl(c) {
-  return { background: c.bg, borderColor: c.border, color: c.text };
+  return { background: c.raised, borderColor: c.border, color: c.text };
 }
 
 function newPromptDraft(categories = []) {

@@ -545,8 +545,8 @@ export default function PrototypeHub({
                   {(!story.figma_url || editFigma) && (
                     <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
                       <Input value={story.figma_url || ""} onChange={(e) => patch("figma_url", e.target.value)} placeholder="Paste a Figma URL" aria-label="Figma frame URL"
-                        style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
-                      {editFigma && <button onClick={() => setEditFigma(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
+                        style={{ height: 34, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 999 }} />
+                      {editFigma && <button onClick={() => setEditFigma(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 999, border: `1px solid ${c.border}`, background: c.raised, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
                     </div>
                   )}
                   {story.figma_url
@@ -566,8 +566,8 @@ export default function PrototypeHub({
                   </div>
                   {(!story.issue_url || editLinear) && (
                     <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                      <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/…/issue/DES-418/…" aria-label="Linear issue URL" style={{ height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 }} />
-                      {editLinear && <button onClick={() => setEditLinear(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
+                      <Input value={story.issue_url || ""} onChange={(e) => patch("issue_url", e.target.value)} placeholder="https://linear.app/…/issue/DES-418/…" aria-label="Linear issue URL" style={{ height: 34, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 999 }} />
+                      {editLinear && <button onClick={() => setEditLinear(false)} style={{ height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 999, border: `1px solid ${c.border}`, background: c.raised, color: c.text, cursor: "pointer", fontSize: 12 }}>Done</button>}
                     </div>
                   )}
                   <LinearCard c={c} story={story} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
@@ -937,7 +937,7 @@ export function UploadPanel({
           <Textarea value={html} onChange={(e) => { setHtml(e.target.value); setFileName(""); }} spellCheck={false}
             placeholder="…paste a self-contained HTML document here"
             aria-label="Prototype HTML source"
-            style={{ minHeight: 150, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 8 }} />
+            style={{ minHeight: 150, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 20 }} />
           <p style={{ fontSize: 11, color: c.muted, lineHeight: 1.5, margin: 0 }}>
             Theme tip: the hub sets <code style={{ color: c.text }}>class="dark"/"light"</code> and <code style={{ color: c.text }}>data-theme</code> on <code style={{ color: c.text }}>&lt;html&gt;</code>, and exposes <code style={{ color: c.text }}>window.__story</code> — style against those so the Theme toggle drives your prototype.
           </p>
@@ -980,9 +980,9 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
   const [mediaError, setMediaError] = useState("");
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [deletingKey, setDeletingKey] = useState("");
-  const field = { height: 34, background: c.bg, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 8 };
+  const field = { height: 34, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 999 };
   const panel = { background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 };
-  const btn = { height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg, color: c.muted, cursor: "pointer", fontSize: 12 };
+  const btn = { height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 999, border: `1px solid ${c.border}`, background: c.raised, color: c.muted, cursor: "pointer", fontSize: 12 };
   const copy = async (text, id) => { try { await navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(""), 1200); } catch (e) { /* clipboard blocked */ } };
   const Token = ({ name, available = true }) => (
     <button onClick={() => available && copy(`{{${name}}}`, `tok-${name}`)} disabled={!available}

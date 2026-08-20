@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   ArrowRight, BookOpen, Boxes, Check, ChevronDown, ChevronRight, ExternalLink,
-  FileCheck2, FolderOpen, Lightbulb, Menu, MessageSquareText, Milestone,
-  MousePointer2, Shapes, Sparkles, Workflow, X,
+  FileCheck2, FolderOpen, GitBranch, Lightbulb, ListChecks, Menu,
+  MessageSquareText, Milestone, MousePointer2, Shapes, ShieldCheck, Sparkles,
+  Workflow, X,
 } from "lucide-react";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
@@ -24,12 +25,12 @@ const PAGE_GROUPS = [
     pages: [
       { slug: "product-process", title: "Product design process", Icon: Workflow },
       { slug: "design-review", title: "Design review", Icon: MessageSquareText },
-      { slug: "linear-handoff", title: "Linear handoff", Icon: FileCheck2 },
     ],
   },
   {
     label: "Resources",
     pages: [
+      { slug: "linear-handoff", title: "Linear handoff", Icon: FileCheck2 },
       { slug: "common-files", title: "Common files & tools", Icon: FolderOpen },
     ],
   },
@@ -156,34 +157,53 @@ const PAGE_CONTENT = {
     ],
   },
   "linear-handoff": {
-    kicker: "Delivery",
+    kicker: "Resources",
     title: "Linear handoff",
-    summary: "A shared contract for turning design intent into work that engineering can confidently plan, build, and verify.",
+    summary: "The board flow, ownership rules, and review gates that carry design work from an idea through Engineering QA.",
     sections: [
       {
-        id: "ready",
-        title: "Definition of ready for design handoff",
-        body: "Linking a Figma file is not the handoff. The issue should preserve intent, behavior, decisions, and validation criteria in one connected package.",
+        id: "board-flow",
+        title: "From idea to Engineering QA",
+        body: "The card remains the source of truth throughout the process. Ownership changes at explicit gates, but the designer stays connected until the implemented experience is approved in Engineering QA.",
+        linearFlow: {
+          intake: [
+            { board: "Design board", status: "Ideas or Backlog", owner: "Team leads", body: "Add incoming work with enough context for the team to understand the opportunity." },
+            { board: "Design board", status: "Backlog", owner: "Team leaders", body: "Organize and prioritize the work so the next candidates are clear." },
+            { board: "Design board", status: "To Do", owner: "Rei", body: "Move committed work into To Do when it is ready for design execution." },
+            { board: "Design board", status: "Design cycle", owner: "Assigned designer", body: "Work through the regular design, critique, prototype, and validation cycles." },
+          ],
+          review: {
+            status: "Needs Review",
+            body: "The card stays here until every required review is approved.",
+            gates: [
+              { label: "Design review", owner: "Mate", body: "Reviews design quality, interaction, states, and readiness." },
+              { label: "Operations review", owner: "Ops team", body: "Reviews operational impact, process, and support implications." },
+              { label: "Engineering review", owner: "Engineering", body: "Reviews feasibility, system behavior, and implementation risk." },
+            ],
+          },
+          delivery: [
+            { board: "Engineering board", status: "Ready for Engineering", owner: "Design team lead", body: "Move the card only after all three Needs Review approvals are clear." },
+            { board: "Engineering board", status: "Engineering QA", owner: "Original designer", body: "The designer who created the work checks the implementation and gives design approval." },
+          ],
+        },
+      },
+      {
+        id: "card-ownership",
+        title: "The assignee owns the quality of the card",
+        body: "Whoever is working on the card must use the Feature template and complete every required field. The card should let the next person understand the outcome, behavior, decisions, and validation criteria without reconstructing the project history.",
         checklist: [
-          "Outcome: explain the customer or business result this work should produce.",
-          "Scope: list included behavior and explicitly name what is out of scope.",
-          "Design: link the canonical Figma frame and the relevant interactive prototype.",
-          "States: cover loading, empty, error, permission, responsive, and recovery behavior.",
-          "Content: mark final copy and note any localization or dynamic-content constraints.",
-          "Analytics: link the event contract or explain why no tracking change is needed.",
-          "Acceptance: describe observable behavior that design and engineering can verify together.",
+          "Start from the Feature template—do not create an unstructured delivery card.",
+          "Fill every required field, including outcome, scope, design links, states, analytics, and acceptance criteria.",
+          "Keep decisions and scope changes on the card as the work moves through review and implementation.",
+          "Stay accountable after handoff: follow the card until it reaches Engineering QA.",
+          "If you designed it, you QA the implemented experience and record your approval.",
         ],
       },
       {
-        id: "ownership",
-        title: "Handoff is a conversation",
-        body: "Walk the issue together before implementation starts. Keep design available for questions, review the built behavior in its real environment, and update the issue when decisions change.",
-        steps: [
-          ["Prepare", "Designer brings the issue, canonical frames, prototype, and open questions."],
-          ["Walk through", "Design and engineering inspect behavior, constraints, and implementation risks."],
-          ["Commit", "The issue owner records decisions and splits follow-up work where needed."],
-          ["Review build", "Verify the integrated experience against acceptance criteria and principles."],
-        ],
+        id: "qa-comments",
+        title: "Keep QA findings in one comment thread",
+        body: "QA should read as one continuous record. Open one top-level comment, capture findings as a checklist, and use replies on that original comment for every follow-up round.",
+        qaProtocol: true,
       },
     ],
   },
@@ -386,6 +406,102 @@ function DesignSection({ section, c, onSelectPage, navigateProduct }) {
           ))}
         </div>
       )}
+      {section.linearFlow && <LinearHandoffFlow flow={section.linearFlow} c={c} />}
+      {section.qaProtocol && <QaCommentProtocol c={c} />}
     </section>
+  );
+}
+
+function LinearHandoffFlow({ flow, c }) {
+  return (
+    <div className="eon-linear-flow" aria-label="Linear handoff board flow">
+      <FlowTrack stages={flow.intake} c={c} />
+      <FlowConnector vertical c={c} />
+      <section className="eon-linear-review" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+        <header>
+          <span style={{ background: c.active, color: c.brand }}><GitBranch size={17} aria-hidden="true" /></span>
+          <div>
+            <small style={{ color: c.brand }}>Review gate</small>
+            <h3>{flow.review.status}</h3>
+            <p style={{ color: c.secondary }}>{flow.review.body}</p>
+          </div>
+        </header>
+        <div className="eon-linear-review-gates">
+          {flow.review.gates.map((gate) => (
+            <article key={gate.label} style={{ background: c.raised }}>
+              <ShieldCheck size={17} aria-hidden="true" style={{ color: c.brand }} />
+              <strong>{gate.label}</strong>
+              <p style={{ color: c.secondary }}>{gate.body}</p>
+              <footer><span style={{ color: c.muted }}>Reviewer</span><b>{gate.owner}</b></footer>
+            </article>
+          ))}
+        </div>
+        <div className="eon-linear-review-clear" style={{ background: c.active, color: c.secondary }}>
+          <span style={{ background: c.brand, color: c.primaryText }}><Check size={13} aria-hidden="true" /></span>
+          <strong>All three approvals cleared</strong>
+          <span style={{ color: c.muted }}>The design team lead can now move the card.</span>
+        </div>
+      </section>
+      <FlowConnector vertical c={c} />
+      <FlowTrack stages={flow.delivery} c={c} />
+    </div>
+  );
+}
+
+function FlowTrack({ stages, c }) {
+  return (
+    <div className="eon-linear-flow-track" role="list">
+      {stages.map((stage, index) => (
+        <Fragment key={`${stage.board}-${stage.status}`}>
+          <article className="eon-linear-flow-node" role="listitem" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+            <header><span style={{ background: c.active, color: c.brand }}>{stage.board}</span><em style={{ color: c.muted }}>{String(index + 1).padStart(2, "0")}</em></header>
+            <strong>{stage.status}</strong>
+            <p style={{ color: c.secondary }}>{stage.body}</p>
+            <footer style={{ background: c.active }}><span style={{ color: c.muted }}>Owner</span><b>{stage.owner}</b></footer>
+          </article>
+          {index < stages.length - 1 && <FlowConnector c={c} />}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+function FlowConnector({ vertical = false, c }) {
+  return (
+    <div className={`eon-linear-flow-connector${vertical ? " is-vertical" : ""}`} aria-hidden="true" style={{ color: c.brand }}>
+      <span style={{ background: c.border }} /><ArrowRight size={16} style={{ background: c.bg }} />
+    </div>
+  );
+}
+
+function QaCommentProtocol({ c }) {
+  const findings = [
+    "Check the implemented behavior against the approved design and acceptance criteria.",
+    "List every finding as a checklist item under this one comment.",
+    "Resolve or update each item as engineering addresses it.",
+  ];
+  return (
+    <div className="eon-qa-protocol">
+      <div className="eon-qa-thread" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+        <article className="eon-qa-comment" style={{ background: c.raised }}>
+          <header>
+            <span style={{ background: c.active, color: c.brand }}>You</span>
+            <div><strong>Design QA findings</strong><small style={{ color: c.muted }}>Original comment · keep this thread open</small></div>
+          </header>
+          <ul>
+            {findings.map((finding) => <li key={finding}><span style={{ color: c.brand }}><Check size={12} /></span><p>{finding}</p></li>)}
+          </ul>
+          <div className="eon-qa-reply" style={{ background: c.active }}>
+            <MessageSquareText size={15} aria-hidden="true" style={{ color: c.brand }} />
+            <div><strong>Round 2 reply</strong><p style={{ color: c.secondary }}>Add the next QA pass here as a reply—do not open another top-level comment.</p></div>
+          </div>
+        </article>
+      </div>
+      <ol className="eon-qa-rules">
+        <li><span style={{ background: c.active, color: c.brand }}>1</span><div><strong>Open one comment</strong><p style={{ color: c.secondary }}>Use a single top-level comment for the complete QA record.</p></div></li>
+        <li><span style={{ background: c.active, color: c.brand }}>2</span><div><strong>Use a checklist</strong><p style={{ color: c.secondary }}>Add every finding beneath that comment with checkmarks.</p></div></li>
+        <li><span style={{ background: c.active, color: c.brand }}>3</span><div><strong>Reply for the next round</strong><p style={{ color: c.secondary }}>Continue under the original comment instead of creating duplicates.</p></div></li>
+      </ol>
+    </div>
   );
 }

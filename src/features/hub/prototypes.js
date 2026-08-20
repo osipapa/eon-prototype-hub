@@ -4,19 +4,18 @@
    seed works before any HTML is uploaded. */
 
 export const HUB = {
-  // Baby elephant is the only brand accent. Semantic colors are reserved for
-  // statuses, warnings, and validation so the interface stays expressive
-  // without returning to the previous bright-purple treatment.
-  dark: { bg: "#000000", nav: "#000000", panel: "#121216", raised: "#1E1E22", border: "#1E1E22",
-    text: "#FFFFFF", muted: "#9094A5", secondary: "rgba(255,255,255,0.7)",
-    hover: "#1E1E22", active: "rgba(255,255,255,0.065)", brand: "#EDD2F6",
-    primary: "#EDD2F6", primaryText: "#000000",
-    selected: "#121216", selectedText: "#FFFFFF" },
-  light: { bg: "#F7F7F8", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F2F2F4", border: "#DFE0E4",
-    text: "#1E1E22", muted: "#565B6C", secondary: "rgba(18,18,22,0.75)",
-    hover: "#F2F2F4", active: "rgba(30,30,34,0.055)", brand: "#665D6B",
-    primary: "#EDD2F6", primaryText: "#171119",
-    selected: "#FFFFFF", selectedText: "#1E1E22" },
+  // Neutral shadcn-style surfaces do the structural work. Eon lavender stays
+  // available as a brand cue, while primary actions use high-contrast ink.
+  dark: { bg: "#000000", nav: "#000000", panel: "#151515", raised: "#252525", border: "rgba(255,255,255,0.10)",
+    text: "#FAFAFA", muted: "#A1A1AA", secondary: "rgba(250,250,250,0.72)",
+    hover: "#252525", active: "rgba(255,255,255,0.075)", brand: "#B9AABF",
+    primary: "#E8E8E8", primaryText: "#141414",
+    selected: "#151515", selectedText: "#FAFAFA" },
+  light: { bg: "#FAFAFA", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F2F2F2", border: "rgba(0,0,0,0.10)",
+    text: "#171717", muted: "#737373", secondary: "rgba(23,23,23,0.72)",
+    hover: "#F2F2F2", active: "rgba(0,0,0,0.055)", brand: "#77637D",
+    primary: "#171717", primaryText: "#FAFAFA",
+    selected: "#FFFFFF", selectedText: "#171717" },
 };
 
 export const VIEWPORTS = {

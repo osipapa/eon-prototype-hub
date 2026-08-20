@@ -1,20 +1,20 @@
 .route-shell {
   --route-bg: #000000;
-  --route-surface: #121216;
-  --route-surface-raised: #1e1e22;
-  --route-border: rgba(255, 255, 255, 0.09);
-  --route-border-strong: #3a3d4a;
-  --route-text: #ffffff;
-  --route-secondary: rgba(255, 255, 255, 0.72);
-  --route-muted: #9094a5;
-  --route-brand: #a99bae;
-  --route-primary: #edd2f6;
-  --route-primary-hover: #f3ddfa;
+  --route-surface: #151515;
+  --route-surface-raised: #252525;
+  --route-border: rgba(255, 255, 255, 0.1);
+  --route-border-strong: rgba(255, 255, 255, 0.14);
+  --route-text: #fafafa;
+  --route-secondary: rgba(250, 250, 250, 0.72);
+  --route-muted: #a1a1aa;
+  --route-brand: #b9aabf;
+  --route-primary: #e8e8e8;
+  --route-primary-hover: #f5f5f5;
   --route-danger: #d98295;
   --route-danger-soft: rgba(217, 130, 149, 0.09);
   --route-success: #8fb49a;
   --route-success-soft: rgba(143, 180, 154, 0.09);
-  --route-card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.085), 0 24px 72px rgba(0, 0, 0, 0.36);
+  --route-card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
@@ -88,8 +88,8 @@
 }
 
 .route-card {
-  border-radius: 20px;
-  background: rgba(18, 18, 22, 0.96);
+  border-radius: 24px;
+  background: rgba(21, 21, 21, 0.98);
   box-shadow: var(--route-card-shadow);
 }
 
@@ -151,12 +151,12 @@
 .route-input,
 .route-select {
   width: 100%;
-  height: 46px;
+  height: 42px;
   min-width: 0;
   border: 1px solid var(--route-border-strong);
-  border-radius: 10px;
+  border-radius: 999px;
   outline: none;
-  background: #050506;
+  background: rgba(255, 255, 255, 0.075);
   color: var(--route-text);
   font-size: 14px;
   transition-property: border-color, box-shadow, background-color;
@@ -180,7 +180,7 @@
 
 .route-input:hover:not(:disabled),
 .route-select:hover:not(:disabled) {
-  border-color: #505463;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .route-input:focus,
@@ -214,7 +214,7 @@
   justify-content: center;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 999px;
   background: transparent;
   color: var(--route-muted);
   cursor: pointer;
@@ -266,7 +266,7 @@
   gap: 8px;
   padding: 0 15px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
@@ -275,13 +275,13 @@
 
 .route-button--primary {
   background: var(--route-primary);
-  color: #000000;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.24) inset, 0 8px 24px rgba(237, 210, 246, 0.08);
+  color: #141414;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 .route-button--primary:hover:not(:disabled) {
   background: var(--route-primary-hover);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 10px 28px rgba(237, 210, 246, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
 }
 
 .route-button--secondary,
@@ -293,7 +293,7 @@
 
 .route-button--secondary:hover:not(:disabled),
 .route-button--quiet:hover:not(:disabled) {
-  background: #28282e;
+  background: #2b2b2b;
   color: var(--route-text);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.13);
 }
@@ -331,7 +331,7 @@
   justify-content: center;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   background: transparent;
   color: var(--route-muted);
   box-shadow: 0 0 0 1px var(--route-border);

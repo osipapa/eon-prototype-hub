@@ -314,6 +314,6 @@ function Checklist({ c, items, Icon, tone }) {
   );
 }
 
-function hubShadow(c) {
-  return c.bg === "#000000" ? "var(--shadow-surface)" : "var(--shadow-surface)";
+function hubShadow() {
+  return "var(--shadow-surface)";
 }
