@@ -6,11 +6,19 @@
 export const HUB = {
   // Neutral shadcn-style surfaces do the structural work. The vivid Eon accent
   // stays a supporting brand cue, while primary actions use high-contrast ink.
-  dark: { bg: "#000000", nav: "#000000", panel: "#151515", raised: "#252525", border: "rgba(255,255,255,0.10)",
+  //
+  // Dark elevation ladder, deepest first. Every surface picks the rung that
+  // matches how far it sits from the page, so borders stop carrying the whole
+  // structure on their own:
+  //   bg      base       the canvas well and inset cards
+  //   nav     primary    chrome: sidebar, toolbar, context panel
+  //   panel   elevated   floating bars, menus, sheets, cards
+  //   raised  control    inputs, segment tracks, counters inside a panel
+  dark: { bg: "#000000", nav: "#0D0D0D", panel: "#1A1A1A", raised: "#262626", border: "rgba(255,255,255,0.10)",
     text: "#FAFAFA", muted: "#A1A1AA", secondary: "rgba(250,250,250,0.72)",
-    hover: "#252525", active: "#202020", brand: "#F19DFF",
+    hover: "#262626", active: "#1F1F1F", brand: "#F19DFF",
     primary: "#E8E8E8", primaryText: "#141414",
-    selected: "#151515", selectedText: "#FAFAFA" },
+    selected: "#1A1A1A", selectedText: "#FAFAFA" },
   light: { bg: "#FAFAFA", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F2F2F2", border: "rgba(0,0,0,0.10)",
     text: "#171717", muted: "#737373", secondary: "rgba(23,23,23,0.72)",
     hover: "#F2F2F2", active: "#ECECEC", brand: "#B400CF",

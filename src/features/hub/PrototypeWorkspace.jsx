@@ -13,9 +13,9 @@ import LiquidSegmentedControl from "@/components/LiquidSegmentedControl";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { Liquid } from "liquid-gooey";
 import {
-  AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
+  AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle,
   ExternalLink, History, ImagePlus, LayoutGrid, Loader2,
-  Pin, Maximize2, MessageSquare, Minus, Monitor, Laptop,
+  Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2, FileText,
   Menu, MoreHorizontal, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
@@ -120,6 +120,12 @@ export default function PrototypeWorkspace({
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [splitDragging, setSplitDragging] = useState(false);
   const [inspectorTab, setInspectorTab] = useState("comments");
+  // Which context row is unfurled. One at a time keeps the panel a list.
+  const [openContextRow, setOpenContextRow] = useState(null);
+  // Full view keeps the prototype and drops the chrome. The panels are still
+  // there; they slide back in when the pointer reaches an edge.
+  const [focusMode, setFocusMode] = useState(false);
+  const [peek, setPeek] = useState(null); // "nav" | "inspector" | null
   const [reviewLocationKey, setReviewLocationKey] = useState(() => window.location.hash);
   const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false, compactControls: false });
   const [anchorMode, setAnchorMode] = useState(false);
@@ -154,6 +160,9 @@ export default function PrototypeWorkspace({
   const media = assets;
 
   useEffect(() => {
+    // Only the moment a panel *becomes* a drawer should close it. Reacting to
+    // every resize would slam the drawer shut as mobile browser chrome moves.
+    const wasDrawer = { nav: false, inspector: false };
     const update = () => {
       const navDrawer = window.matchMedia("(max-width: 900px)").matches;
       const inspectorDrawer = window.matchMedia("(max-width: 1180px)").matches;
@@ -164,7 +173,11 @@ export default function PrototypeWorkspace({
         compactControls: window.matchMedia("(max-width: 680px)").matches,
       });
       if (!navDrawer) setNavOpen(true);
+      else if (!wasDrawer.nav) setNavOpen(false);
       if (!inspectorDrawer) setInspectorOpen(true);
+      else if (!wasDrawer.inspector) setInspectorOpen(false);
+      wasDrawer.nav = navDrawer;
+      wasDrawer.inspector = inspectorDrawer;
     };
     update();
     window.addEventListener("resize", update);
@@ -196,6 +209,7 @@ export default function PrototypeWorkspace({
       defaults: { ...(cfg.defaults || {}), ...(story.defaults || {}) },
     };
   }, [story, cfg, isLiveLinked, localHtml]);
+  const isBuiltIn = ["signin", "dashboard"].includes(story?.slug);
   const setupControlSource = story?.controls?.length
     ? "stored project controls (these override embedded eon-config controls)"
     : cfg.controls?.length ? "embedded eon-config" : "none";
@@ -413,6 +427,17 @@ export default function PrototypeWorkspace({
   }, [storyMenuId]);
 
   useEffect(() => {
+    if (!focusMode) return undefined;
+    const exit = (event) => { if (event.key === "Escape") { setFocusMode(false); setPeek(null); } };
+    window.addEventListener("keydown", exit);
+    return () => window.removeEventListener("keydown", exit);
+  }, [focusMode]);
+
+  // Full view is about one prototype, so switching prototypes leaves it.
+  useEffect(() => { setFocusMode(false); setPeek(null); }, [story?.id]);
+  useEffect(() => { if (view !== "stories") { setFocusMode(false); setPeek(null); } }, [view]);
+
+  useEffect(() => {
     if (!(breakpoints.navDrawer || breakpoints.inspectorDrawer)) return undefined;
     const closeOnEscape = (event) => {
       if (event.key !== "Escape") return;
@@ -434,8 +459,8 @@ export default function PrototypeWorkspace({
         setInspectorOpen(true);
         if (breakpoints.inspectorDrawer) setNavOpen(false);
       }
-      if (tab === "details") setInspectorTab("linear");
-      else if (["comments", "linear"].includes(tab)) setInspectorTab(tab);
+      if (["details", "linear"].includes(tab)) setOpenContextRow("linear");
+      else if (["comments", "history"].includes(tab)) setInspectorTab(tab);
     };
     window.addEventListener("eon:tutorial:reveal", revealTutorialTarget);
     return () => window.removeEventListener("eon:tutorial:reveal", revealTutorialTarget);
@@ -465,8 +490,8 @@ export default function PrototypeWorkspace({
     if (["states", "themes", "screens"].includes(nextGrid)) setGridBy(nextGrid);
     if (/^#[0-9a-f]{6}$/i.test(nextCanvas || "")) setCanvasBg(nextCanvas);
     if (Number.isFinite(nextZoom) && nextZoom >= 0.25 && nextZoom <= 4) setZoom(nextZoom);
-    if (nextTab === "details") setInspectorTab("linear");
-    else if (["comments", "linear"].includes(nextTab)) setInspectorTab(nextTab);
+    if (["details", "linear"].includes(nextTab)) { setOpenContextRow("linear"); setInspectorOpen(true); }
+    else if (["comments", "history"].includes(nextTab)) { setInspectorTab(nextTab); setInspectorOpen(true); }
     const linkedArgs = {};
     params.forEach((value, key) => {
       if (!key.startsWith("arg.")) return;
@@ -499,6 +524,8 @@ export default function PrototypeWorkspace({
     setStoryMenuId(null);
     setEditFigma(false);
     setEditLinear(false);
+    setOpenContextRow(null);
+    setShowUpload(false);
   }, [story?.id]);
 
   // Watch the linked file. Keeps running (and publishing) even while another
@@ -523,6 +550,12 @@ export default function PrototypeWorkspace({
       },
     );
   }, [fileLink?.handle]);
+
+  const openLinearContext = () => {
+    setOpenContextRow("linear");
+    setInspectorOpen(true);
+    if (breakpoints.inspectorDrawer) setNavOpen(false);
+  };
 
   const linkLocalFile = async () => {
     setFileLinkError("");
@@ -580,10 +613,8 @@ export default function PrototypeWorkspace({
   }));
   const patch = (field, value) => onPatchProject(story.id, { [field]: value });
   const openFull = () => {
-    const wrapper = sandboxedFullView(html, story.title);
-    const url = URL.createObjectURL(new Blob([wrapper], { type: "text/html" }));
-    window.open(url, "_blank", "noopener,noreferrer");
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    setFocusMode(true);
+    setPeek(null);
   };
 
   const commitRename = (id, value) => {
@@ -673,7 +704,18 @@ export default function PrototypeWorkspace({
   );
 
   return (
-    <div data-tutorial="workspace" className={`${hubTheme === "dark" ? "" : "light"} eon-workspace`} style={{ background: c.bg, color: c.text }}>
+    <div data-tutorial="workspace" className={`${hubTheme === "dark" ? "" : "light"} eon-workspace${focusMode ? " is-focus" : ""}`} style={{ background: c.bg, color: c.text }}>
+      {focusMode && (
+        <>
+          <div className="eon-peek-zone is-left" onMouseEnter={() => setPeek("nav")} aria-hidden="true" />
+          <div className="eon-peek-zone is-right" onMouseEnter={() => setPeek("inspector")} aria-hidden="true" />
+          <button className="eon-buttonish eon-focus-exit" onClick={() => { setFocusMode(false); setPeek(null); }}
+            aria-label="Exit full view" title="Exit full view (Esc)"
+            style={{ background: c.panel, borderColor: c.border, color: c.secondary, boxShadow: hubShadow(c) }}>
+            <Minimize2 size={15} aria-hidden="true" /> <span>Exit full view</span>
+          </button>
+        </>
+      )}
       {((breakpoints.navDrawer && navOpen) || (breakpoints.inspectorDrawer && inspectorOpen)) && (
         <button className="eon-drawer-scrim" aria-label="Close open panel" onClick={() => {
           if (breakpoints.inspectorDrawer && inspectorOpen) setInspectorOpen(false);
@@ -681,7 +723,7 @@ export default function PrototypeWorkspace({
         }} />
       )}
 
-      {navOpen && (
+      {(navOpen || focusMode) && (
         <WorkspaceSidebar
           c={c} media={media} view={view} setView={setView} query={query} setQuery={setQuery}
           groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin} currentUserId={profile?.id}
@@ -701,13 +743,14 @@ export default function PrototypeWorkspace({
           linearByProject={linearByProject}
           unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
           resize={sidebarResize}
-          isDrawer={breakpoints.navDrawer} onClose={() => setNavOpen(false)}
+          isDrawer={breakpoints.navDrawer && !focusMode} onClose={() => setNavOpen(false)}
+          peeking={focusMode ? peek === "nav" : null} onPeekEnd={() => setPeek(null)} onPeekStart={() => setPeek("nav")}
         />
       )}
 
       <main className="eon-workspace-main">
-        <WorkspaceToolbar
-          c={c} view={view} story={story} liveLinear={liveLinear} linearId={linearId} coViewers={coViewers} liveLinked={isLiveLinked}
+        {!focusMode && <WorkspaceToolbar
+          c={c} view={view} story={story} liveLinear={liveLinear} linearId={linearId} coViewers={coViewers}
           navDrawer={breakpoints.navDrawer} navOpen={navOpen} onOpenNav={() => {
             setNavOpen(true);
             setInspectorOpen(false);
@@ -718,15 +761,11 @@ export default function PrototypeWorkspace({
             setInspectorOpen(opening);
             if (opening) setNavOpen(false);
           }}
-          showUpload={showUpload} setShowUpload={setShowUpload} openFull={openFull}
+          openFull={openFull}
           viewport={viewport} setViewport={setViewport} layout={layout} setLayout={setLayout}
-          compare={effCompare} setCompare={setCompare} saveState={saveState} onRetrySave={onRetrySave}
-          onOpenLinear={() => {
-            setInspectorTab("linear");
-            setInspectorOpen(true);
-            if (breakpoints.inspectorDrawer) setNavOpen(false);
-          }}
-        />
+          saveState={saveState} onRetrySave={onRetrySave}
+          onOpenLinear={openLinearContext}
+        />}
 
         {loadError && (
           <div className="eon-inline-alert" role="alert" style={{ background: c.panel, color: c.secondary, borderColor: c.border }}>
@@ -734,18 +773,6 @@ export default function PrototypeWorkspace({
             <span>{loadError}</span>
             {onRetryLoad && <button className="eon-buttonish eon-text-button" onClick={onRetryLoad} style={{ color: c.brand }}>Retry</button>}
           </div>
-        )}
-
-        {showUpload && view === "stories" && (
-          <UploadPanel key={story.id} c={c} story={story}
-            onSave={(source) => { patch("prototype_html", source); setShowUpload(false); }}
-            onClear={() => { patch("prototype_html", null); setShowUpload(false); }}
-            onCancel={() => setShowUpload(false)}
-            canLinkFile={supportsFileLink()}
-            fileLink={fileLink?.projectId === story.id ? fileLink : null}
-            fileLinkError={fileLinkError}
-            autoPublish={autoPublish} onToggleAutoPublish={() => setAutoPublish((value) => !value)}
-            onLinkFile={linkLocalFile} onUnlinkFile={unlinkLocalFile} onPublishFile={publishLocalFile} />
         )}
 
         {view === "media" ? (
@@ -788,7 +815,14 @@ export default function PrototypeWorkspace({
                 protoTheme={protoTheme} setProtoTheme={setProtoTheme} canvasBg={canvasBg}
                 setCanvasBg={setCanvasBg} segmented={segmented} compact={breakpoints.compactControls}
               />
-              {layout === "single" && (
+              {!breakpoints.compactControls && (
+                <CanvasViewControls
+                  c={c} scale={scale} zoom={zoom} setZoom={setZoom} layout={layout} effGridBy={effGridBy}
+                  protoTheme={protoTheme} setProtoTheme={setProtoTheme}
+                  canvasBg={canvasBg} setCanvasBg={setCanvasBg} segmented={segmented}
+                />
+              )}
+              {breakpoints.compactControls && layout === "single" && (
                 <div className="eon-zoom eon-zoom-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
                   <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out" style={{ color: c.muted }}><Minus size={15} /></button>
                   <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" style={{ color: c.text }}>{Math.round(scale * zoom * 100)}%</button>
@@ -801,14 +835,14 @@ export default function PrototypeWorkspace({
                 <div className="eon-compare-divider" role="separator" tabIndex={0} onPointerDown={startSplitDrag} onKeyDown={nudgeSplit}
                   aria-orientation="vertical" aria-label="Resize the Figma comparison"
                   style={{ color: c.border }} />
-                <FigmaPane c={c} story={story} ratio={splitRatio} patch={patch} editing={editFigma} setEditing={setEditFigma} />
+                <FigmaPane c={c} story={story} ratio={splitRatio} />
               </>
             )}
           </div>
         )}
       </main>
 
-      {view === "stories" && inspectorOpen && (
+      {view === "stories" && (inspectorOpen || focusMode) && (
         <ReviewInspector
           c={c} story={story} comments={storyComments} activity={storyActivity} profile={profile}
           tab={inspectorTab} setTab={setInspectorTab}
@@ -821,14 +855,34 @@ export default function PrototypeWorkspace({
             currentUserId: profile?.id,
           }}
           editLinear={editLinear} setEditLinear={setEditLinear}
+          editFigma={editFigma} setEditFigma={setEditFigma}
           liveLinear={liveLinear} linearId={linearId}
+          isLiveLinked={isLiveLinked} fileLink={fileLink?.projectId === story.id ? fileLink : null} isBuiltIn={isBuiltIn}
+          compare={effCompare} setCompare={setCompare} canCompare={!breakpoints.noCompare}
+          onOpenSource={() => setShowUpload(true)}
+          openRow={openContextRow} setOpenRow={setOpenContextRow}
           resize={inspectorResize}
-          isDrawer={breakpoints.inspectorDrawer} onClose={() => setInspectorOpen(false)}
+          isDrawer={breakpoints.inspectorDrawer && !focusMode} onClose={() => setInspectorOpen(false)}
+          peeking={focusMode ? peek === "inspector" : null} onPeekEnd={() => setPeek(null)} onPeekStart={() => setPeek("inspector")}
         />
       )}
 
       {activeAnchorId && view === "stories" && layout === "single" && (
         <AnchorLeaderLine c={c} commentId={activeAnchorId} />
+      )}
+
+      {showUpload && view === "stories" && (
+        <SourceSheet c={c} story={story} onClose={() => setShowUpload(false)}>
+          <UploadPanel key={story.id} c={c} story={story}
+            onSave={(source) => { patch("prototype_html", source); setShowUpload(false); }}
+            onClear={() => { patch("prototype_html", null); setShowUpload(false); }}
+            onCancel={() => setShowUpload(false)}
+            canLinkFile={supportsFileLink()}
+            fileLink={fileLink?.projectId === story.id ? fileLink : null}
+            fileLinkError={fileLinkError}
+            autoPublish={autoPublish} onToggleAutoPublish={() => setAutoPublish((value) => !value)}
+            onLinkFile={linkLocalFile} onUnlinkFile={unlinkLocalFile} onPublishFile={publishLocalFile} />
+        </SourceSheet>
       )}
 
       {showNewDialog && (
@@ -859,21 +913,24 @@ function WorkspaceSidebar({
   linearByProject,
   unreadByProject, commentCountByProject,
   resize,
-  isDrawer, onClose,
+  isDrawer, onClose, peeking = null, onPeekStart, onPeekEnd,
 }) {
   const hasResults = Object.keys(groups).length > 0;
-  const visiblePrototypeCount = Object.values(groups).reduce((total, items) => total + items.length, 0);
-  const libraryCount = view === "stories" ? visiblePrototypeCount : Object.keys(media || {}).length;
+  const prototypeCount = Object.values(groups).reduce((total, items) => total + items.length, 0);
+  const mediaCount = Object.keys(media || {}).length;
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   return (
     <aside
       data-tutorial="prototype-library"
       ref={drawerRef}
-      className="eon-sidebar"
+      className={`eon-sidebar${peeking === null ? "" : peeking ? " is-peeking" : " is-peek"}`}
       role={isDrawer ? "dialog" : "navigation"}
       aria-modal={isDrawer || undefined}
       aria-label="Prototype navigation"
+      onMouseEnter={peeking === null ? undefined : onPeekStart}
+      onMouseLeave={peeking === null ? undefined : onPeekEnd}
+      onFocusCapture={peeking === null ? undefined : onPeekStart}
       style={{
         background: c.nav,
         borderColor: c.border,
@@ -895,40 +952,28 @@ function WorkspaceSidebar({
           />
           {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close prototype navigation" style={{ color: c.muted }}><X size={17} /></button>}
         </div>
-        <div className="eon-sidebar-library-heading">
-          <div>
-            <span style={{ color: c.muted }}>Library</span>
-            <strong>{view === "stories" ? "Prototypes" : "Shared media"}</strong>
-          </div>
-          <Badge variant="secondary" style={{ background: c.raised, color: c.secondary }}>{libraryCount}</Badge>
-        </div>
         <Tabs value={view} onValueChange={(item) => { setView(item); if (isDrawer) onClose(); }}>
           <TabsList variant="line" className="eon-sidebar-tabs" aria-label="Prototype library view" style={{ borderColor: c.border }}>
-            <TabsTrigger variant="line" value="stories">Prototypes</TabsTrigger>
-            <TabsTrigger variant="line" value="media">Media</TabsTrigger>
+            <TabsTrigger variant="line" value="stories">
+              Prototypes <span className="eon-count" style={{ background: c.raised, color: c.muted }}>{prototypeCount}</span>
+            </TabsTrigger>
+            <TabsTrigger variant="line" value="media">
+              Media <span className="eon-count" style={{ background: c.raised, color: c.muted }}>{mediaCount}</span>
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         {view === "stories" && (
-          <div className="eon-sidebar-library-controls">
-            <div className="eon-sidebar-search-row">
-              <div className="eon-sidebar-search">
-                <Search aria-hidden="true" />
-                <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" aria-label="Search prototypes"
-                  style={{ minHeight: 40, paddingLeft: 34, background: c.raised, borderColor: c.border, color: c.text }} />
-              </div>
+          <div className="eon-sidebar-search-row">
+            <div className="eon-sidebar-search">
+              <Search aria-hidden="true" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" aria-label="Search prototypes"
+                style={{ minHeight: 40, paddingLeft: 34, background: c.raised, borderColor: c.border, color: c.text }} />
             </div>
-            <div className="eon-sidebar-action-row">
-              <Button className="eon-buttonish eon-sidebar-primary-action" type="button" onClick={onNewProject} style={{ background: c.primary, color: c.primaryText }}>
-                <Plus size={15} aria-hidden="true" />
-                New prototype
-              </Button>
-              <Button data-tutorial="setup-prompt" className="eon-buttonish eon-sidebar-setup-action" variant="outline" type="button" onClick={copySetupPrompt}
-                title="Copy the complete prototype setup prompt" aria-label={copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
-                style={{ borderColor: c.border, background: "transparent", color: copiedPrompt ? c.brand : c.secondary }}>
-                {copiedPrompt ? <Check size={14} /> : <Copy size={14} />}
-                <span>{copiedPrompt ? "Copied" : "Setup"}</span>
-              </Button>
-            </div>
+            <Button className="eon-buttonish eon-sidebar-new" type="button" onClick={onNewProject}
+              title="New prototype" aria-label="New prototype"
+              style={{ background: c.primary, color: c.primaryText }}>
+              <Plus size={16} aria-hidden="true" />
+            </Button>
           </div>
         )}
       </div>
@@ -1000,7 +1045,11 @@ function WorkspaceSidebar({
                       <span className="eon-status-dot" aria-hidden="true" style={{ "--status-color": connection.color, background: connection.color }} />
                       <span>{item.title}</span>
                       {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}
-                      {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && <span className="eon-comment-count" style={{ color: c.muted }}>{commentCountByProject[item.id]}</span>}
+                      {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && (
+                        <span className="eon-comment-count" style={{ color: c.muted }} title={`${commentCountByProject[item.id]} comments`}>
+                          <MessageSquare size={11} aria-hidden="true" />{commentCountByProject[item.id]}
+                        </span>
+                      )}
                     </button>
                   )}
                   {canDelete && renamingId !== item.id && (
@@ -1039,6 +1088,8 @@ function WorkspaceSidebar({
 
       <HubSidebarFooter
         c={c}
+        copiedPrompt={copiedPrompt}
+        onCopySetupPrompt={copySetupPrompt}
         userEmail={userEmail}
         isAdmin={isAdmin}
         onOpenAdmin={onOpenAdmin}
@@ -1049,11 +1100,13 @@ function WorkspaceSidebar({
   );
 }
 
+/* ---- One row. Identity on the left, how-you-are-looking on the right.
+   Anything that edits the prototype's source or its links lives in the
+   context panel, not up here. ---- */
 function WorkspaceToolbar({
-  c, view, story, liveLinear, linearId, coViewers = [], liveLinked = false,
+  c, view, story, liveLinear, linearId, coViewers = [],
   navDrawer, navOpen, onOpenNav, inspectorDrawer, inspectorOpen, onToggleInspector,
-  showUpload, setShowUpload, openFull,
-  viewport, setViewport, layout, setLayout, compare, setCompare,
+  openFull, viewport, setViewport, layout, setLayout,
   saveState, onRetrySave, onOpenLinear,
 }) {
   const linearConnection = linearConnectionState(liveLinear, linearId, c);
@@ -1072,13 +1125,13 @@ function WorkspaceToolbar({
           </button>
         )}
         <div data-tutorial="prototype-title" className="eon-toolbar-title">
-          <span>{view === "media" ? "Media library" : story.title}</span>
+          <span>{view === "media" ? "Shared media" : story.title}</span>
           {view === "stories" && (
             <button
               data-tutorial="review-status"
               className="eon-buttonish eon-status-button"
               onClick={onOpenLinear}
-              aria-label={`${linearConnection.label}. Open Linear context`}
+              aria-label={`${linearConnection.label}. Open the Linear issue in the context panel`}
             >
               <Badge
                 className="eon-story-status"
@@ -1099,25 +1152,47 @@ function WorkspaceToolbar({
         </div>
         {view === "stories" && <PresenceAvatars c={c} viewers={coViewers} />}
         <div style={{ flex: 1 }} />
-        {view === "stories" && <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} />}
         {view === "stories" && (
           <>
-            <button data-tutorial="prototype-upload" className="eon-buttonish eon-secondary-button eon-upload-button" onClick={() => setShowUpload((open) => !open)} aria-expanded={showUpload} aria-label={liveLinked ? "Upload prototype HTML (live file sync active)" : "Upload prototype HTML"} title={liveLinked ? "Live file sync active" : "Upload prototype HTML"}
-              style={{ borderColor: showUpload ? c.brand : c.border, background: c.panel, color: showUpload ? c.brand : c.secondary }}>
-              <Upload size={15} /> <span>Upload HTML</span>
-              {liveLinked && <span className="eon-live-badge" style={{ background: c.active, color: c.brand }}><span className="eon-live-dot" aria-hidden="true" />Live</span>}
+            <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} />
+            <div className="eon-toolbar-views">
+              <LiquidSegmentedControl
+                options={Object.keys(VIEWPORTS).map((key) => ({
+                  value: key,
+                  Icon: VP_ICON[key],
+                  title: VIEWPORTS[key].label,
+                  ariaLabel: `${VIEWPORTS[key].label} viewport`,
+                  tutorial: key === "mobile" ? "viewport-mobile" : undefined,
+                }))}
+                value={viewport}
+                onValueChange={setViewport}
+                c={c}
+                className="eon-icon-segment"
+                ariaLabel="Prototype viewport"
+                variant="icon"
+              />
+              <LiquidSegmentedControl
+                options={[["single", Square, "One screen"], ["grid", LayoutGrid, "Every state"]].map(([key, Icon, label]) => ({ value: key, Icon, title: label, ariaLabel: label }))}
+                value={layout}
+                onValueChange={setLayout}
+                c={c}
+                className="eon-icon-segment"
+                ariaLabel="Canvas layout"
+                variant="icon"
+              />
+            </div>
+            <button className="eon-buttonish eon-secondary-button eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view"
+              style={{ borderColor: c.border, background: c.panel, color: c.secondary }}>
+              <Maximize2 size={15} /> <span>Full view</span>
             </button>
-            <Button className="eon-buttonish eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view" style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 10, gap: 7, fontSize: 13, fontWeight: 600 }}>
-              <Maximize2 size={15} /> <span>Open full view</span>
-            </Button>
             {inspectorDrawer && (
               <button
                 data-tutorial="review-toggle"
                 className="eon-buttonish eon-icon-button"
                 onClick={onToggleInspector}
-                aria-label={inspectorOpen ? "Close review tools" : "Open review tools"}
+                aria-label={inspectorOpen ? "Close the context panel" : "Open the context panel"}
                 aria-pressed={inspectorOpen}
-                title="Review tools"
+                title="Context panel"
                 style={{ color: inspectorOpen ? c.brand : c.muted, boxShadow: hubShadow(c) }}
               >
                 <MessageSquare size={16} />
@@ -1126,53 +1201,10 @@ function WorkspaceToolbar({
           </>
         )}
       </div>
-
-      {view === "stories" && (
-        <div className="eon-toolbar-tools">
-          <ToolGroup label="Viewport" c={c}>
-            <LiquidSegmentedControl
-              options={Object.keys(VIEWPORTS).map((key) => ({
-                value: key,
-                Icon: VP_ICON[key],
-                title: VIEWPORTS[key].label,
-                ariaLabel: `${VIEWPORTS[key].label} viewport`,
-                tutorial: key === "mobile" ? "viewport-mobile" : undefined,
-              }))}
-              value={viewport}
-              onValueChange={setViewport}
-              c={c}
-              className="eon-icon-segment"
-              ariaLabel="Prototype viewport"
-              variant="icon"
-            />
-          </ToolGroup>
-          <ToolGroup label="View" c={c}>
-            <LiquidSegmentedControl
-              options={[["single", Square, "Single view"], ["grid", LayoutGrid, "All states"]].map(([key, Icon, label]) => ({ value: key, Icon, title: label, ariaLabel: label }))}
-              value={layout}
-              onValueChange={setLayout}
-              c={c}
-              className="eon-icon-segment"
-              ariaLabel="Canvas layout"
-              variant="icon"
-            />
-          </ToolGroup>
-          <div className="eon-tool-compare">
-            <ToolGroup label="Compare with Figma" c={c}>
-              <div className="eon-icon-segment" style={{ background: c.raised }}>
-                <button data-tutorial="figma-compare" className="eon-buttonish eon-icon-button" onClick={() => setCompare((value) => !value)}
-                  title="Compare with the linked Figma frame" aria-label="Compare with Figma" aria-pressed={compare}
-                  style={{ color: compare ? c.selectedText : c.muted, background: compare ? c.selected : "transparent" }}>
-                  <FigmaIcon size={16} />
-                </button>
-              </div>
-            </ToolGroup>
-          </div>
-        </div>
-      )}
     </header>
   );
 }
+
 
 /* ---- Floating pill bar over the canvas: prototype state pills, grid fan-out,
    prototype theme, canvas background. Zoom floats separately, bottom-right. ---- */
@@ -1184,14 +1216,21 @@ function CanvasControlBar({
   const sheetRef = useDrawerFocus(compact && open, () => setOpen(false));
   const firstControl = layout === "single" ? (effStory.controls || [])[0] : null;
   const activeSummary = firstControl ? args[firstControl.key] : (layout === "grid" ? effGridBy : protoTheme);
-  const controlContent = (
+  const stateControls = layout === "single" ? (effStory.controls || []) : [];
+  const hasStateControls = layout === "grid" || stateControls.length > 0;
+
+  const stateContent = (
     <>
-      {layout === "single" && (effStory.controls || []).map((control) => (
+      {stateControls.map((control) => (
         <ToolGroup key={control.key} label={control.label} c={c}>{segmented(control.options, args[control.key], (value) => setArg(control.key, value))}</ToolGroup>
       ))}
       {layout === "grid" && <ToolGroup label="Lay out by" c={c}>{segmented(gridOptions, effGridBy, setGridBy)}</ToolGroup>}
-      {!(layout === "grid" && effGridBy === "themes") && <ToolGroup label="Prototype" c={c}>{segmented(["light", "dark"], protoTheme, setProtoTheme)}</ToolGroup>}
-      <ToolGroup label="Canvas" c={c}>
+    </>
+  );
+  const appearanceContent = (
+    <>
+      {!(layout === "grid" && effGridBy === "themes") && <ToolGroup label="Theme" c={c}>{segmented(["light", "dark"], protoTheme, setProtoTheme)}</ToolGroup>}
+      <ToolGroup label="Background" c={c}>
         <div className="eon-swatches">
           {CANVAS_PRESETS.map((background) => (
             <button className="eon-buttonish eon-swatch-hit" key={background} onClick={() => setCanvasBg(background)} title={background === "#FFFFFF" ? "White canvas" : "Black canvas"} aria-label={`Canvas background ${background}`} aria-pressed={canvasBg === background}>
@@ -1211,6 +1250,7 @@ function CanvasControlBar({
     if (!compact) setOpen(false);
   }, [compact]);
 
+  // Narrow screens have no room for two clusters, so one sheet carries both.
   if (compact) {
     return (
       <div className="eon-mobile-controls">
@@ -1228,12 +1268,12 @@ function CanvasControlBar({
               style={{ background: c.panel, color: c.text, boxShadow: "0 -20px 60px rgba(0,0,0,.32)" }}>
               <div className="eon-controls-sheet-head" style={{ borderColor: c.border }}>
                 <div>
-                  <strong id="eon-mobile-controls-title">Prototype controls</strong>
-                  <span style={{ color: c.muted }}>Adjust the state and appearance</span>
+                  <strong id="eon-mobile-controls-title">Controls</strong>
+                  <span style={{ color: c.muted }}>Prototype state and canvas appearance</span>
                 </div>
                 <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={() => setOpen(false)} aria-label="Close prototype controls" style={{ color: c.muted }}><X size={17} /></button>
               </div>
-              <div className="eon-controls-sheet-body">{controlContent}</div>
+              <div className="eon-controls-sheet-body">{stateContent}{appearanceContent}</div>
             </section>
           </>
         )}
@@ -1241,49 +1281,236 @@ function CanvasControlBar({
     );
   }
 
+  // Nothing to show when the prototype declares no states: an empty pill bar
+  // reads as a broken control, not as an absent one.
+  if (!hasStateControls) return null;
+
   return (
     <div data-tutorial="canvas-controls" className="eon-ctlbar eon-ctlbar-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
-      {controlContent}
+      {stateContent}
     </div>
   );
 }
+
+/* ---- Bottom-right cluster: how you are looking at the prototype. Zoom is
+   always out, theme and background sit one tap behind it. ---- */
+function CanvasViewControls({
+  c, scale, zoom, setZoom, layout, effGridBy, protoTheme, setProtoTheme,
+  canvasBg, setCanvasBg, segmented,
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const dismiss = (event) => {
+      if (event.key === "Escape") { setOpen(false); return; }
+      if (event.type === "pointerdown" && !wrapRef.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("keydown", dismiss);
+    document.addEventListener("pointerdown", dismiss);
+    return () => {
+      document.removeEventListener("keydown", dismiss);
+      document.removeEventListener("pointerdown", dismiss);
+    };
+  }, [open]);
+
+  const surface = {
+    background: c.panel,
+    border: `1px solid ${c.border}`,
+    boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)",
+  };
+
+  return (
+    <div ref={wrapRef} className="eon-viewctl-float">
+      {open && (
+        <div className="eon-viewctl-popover" role="group" aria-label="Canvas appearance" style={surface}>
+          {!(layout === "grid" && effGridBy === "themes") && (
+            <ToolGroup label="Theme" c={c}>{segmented(["light", "dark"], protoTheme, setProtoTheme)}</ToolGroup>
+          )}
+          <ToolGroup label="Background" c={c}>
+            <div className="eon-swatches">
+              {CANVAS_PRESETS.map((background) => (
+                <button className="eon-buttonish eon-swatch-hit" key={background} onClick={() => setCanvasBg(background)} title={background === "#FFFFFF" ? "White canvas" : "Black canvas"} aria-label={`Canvas background ${background}`} aria-pressed={canvasBg === background}>
+                  <span style={{ background, boxShadow: canvasBg === background ? `0 0 0 2px ${c.brand}` : `0 0 0 1px ${c.border}` }} />
+                </button>
+              ))}
+              <label className="eon-swatch-hit" title="Custom canvas color">
+                <span className="eon-color-swatch" />
+                <input type="color" value={canvasBg} onChange={(event) => setCanvasBg(event.target.value)} aria-label="Custom canvas background color" />
+              </label>
+            </div>
+          </ToolGroup>
+        </div>
+      )}
+      <div className="eon-zoom" style={surface}>
+        {layout === "single" && (
+          <>
+            <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out" style={{ color: c.muted }}><Minus size={15} /></button>
+            <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" style={{ color: c.text }}>{Math.round(scale * zoom * 100)}%</button>
+            <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in" style={{ color: c.muted }}><Plus size={15} /></button>
+            <span className="eon-viewctl-divider" style={{ background: c.border }} aria-hidden="true" />
+          </>
+        )}
+        <button className="eon-buttonish eon-icon-button" onClick={() => setOpen((value) => !value)}
+          aria-label="Theme and background" aria-expanded={open} title="Theme and background"
+          style={{ color: open ? c.brand : c.muted }}>
+          <SlidersHorizontal size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 function ToolGroup({ label, c, children }) {
   return <div className="eon-tool-group"><span style={{ color: c.muted }}>{label}</span>{children}</div>;
 }
 
+/* ---- Context panel: everything that is true about this prototype. Readiness
+   and the three links stay visible without a tab; the tabs below hold only the
+   two things that stream in over time. ---- */
 function ReviewInspector({
   c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
-  anchors, editLinear, setEditLinear, liveLinear, linearId,
-  resize, isDrawer, onClose,
+  anchors, editLinear, setEditLinear, editFigma, setEditFigma,
+  liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn,
+  compare, setCompare, canCompare, onOpenSource,
+  openRow, setOpenRow,
+  resize, isDrawer, onClose, peeking = null, onPeekStart, onPeekEnd,
 }) {
   const drawerRef = useDrawerFocus(isDrawer, onClose);
+  const figma = figmaMeta(story.figma_url || "");
+  const linearConnection = linearConnectionState(liveLinear, linearId, c);
+  const toggleRow = (key) => setOpenRow((current) => (current === key ? null : key));
+
+  const sourceValue = isLiveLinked ? fileLink?.name
+    : story.prototype_html ? "Uploaded HTML"
+    : isBuiltIn ? "Built-in demo"
+    : "Nothing uploaded";
+  const notes = (story.notes || "").trim();
+
   return (
     <aside
       data-tutorial="review-panel"
       ref={drawerRef}
-      className="eon-inspector"
+      className={`eon-inspector${peeking === null ? "" : peeking ? " is-peeking" : " is-peek"}`}
       role={isDrawer ? "dialog" : undefined}
       aria-modal={isDrawer || undefined}
-      aria-label="Review panel"
+      aria-label="Prototype context"
+      onMouseEnter={peeking === null ? undefined : onPeekStart}
+      onMouseLeave={peeking === null ? undefined : onPeekEnd}
+      onFocusCapture={peeking === null ? undefined : onPeekStart}
       style={{
         background: c.nav,
         borderColor: c.border,
         ...(!isDrawer ? { width: resize.width, flexBasis: resize.width } : {}),
       }}
     >
-      {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize review tools" />}
+      {!isDrawer && <SidebarResizeHandle resize={resize} label="Resize the context panel" />}
       {isDrawer && (
         <div className="eon-inspector-mobile-head" style={{ borderColor: c.border }}>
-          <strong>Review tools</strong>
-          <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close review tools" style={{ color: c.muted }}><X size={17} /></button>
+          <strong>{story.title}</strong>
+          <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close the context panel" style={{ color: c.muted }}><X size={17} /></button>
         </div>
       )}
+
+      <div className="eon-context" style={{ borderColor: c.border }}>
+        <ReviewReadiness c={c} story={story} comments={comments} isLiveLinked={isLiveLinked} isBuiltIn={isBuiltIn} />
+
+        <ContextRow
+          c={c} rowKey="source" icon={Upload} label="Source" value={sourceValue}
+          valueTone={isLiveLinked ? c.brand : undefined} live={isLiveLinked}
+          open={openRow === "source"} onToggle={() => toggleRow("source")}
+          actions={(
+            <button className="eon-buttonish eon-context-action" onClick={onOpenSource} style={{ borderColor: c.border, color: c.secondary }}>
+              {story.prototype_html || isLiveLinked ? "Replace" : "Upload"}
+            </button>
+          )}
+        >
+          <p className="eon-context-note" style={{ color: c.muted }}>
+            {isLiveLinked
+              ? `Rendering from ${fileLink?.name} on your machine. The link lasts for this session.`
+              : story.prototype_html
+                ? "Rendering the HTML saved on this prototype. Your team sees the same file."
+                : isBuiltIn
+                  ? "Rendering the built-in demo for this slug. Upload HTML to replace it."
+                  : "Upload an HTML file to render this prototype."}
+          </p>
+        </ContextRow>
+
+        <ContextRow
+          c={c} rowKey="figma" icon={FigmaIcon} label="Figma" value={figma.valid ? figma.title : "Not linked"}
+          valueTone={figma.valid ? undefined : c.muted}
+          open={openRow === "figma"} onToggle={() => toggleRow("figma")}
+          actions={(
+            <>
+              {canCompare && figma.valid && (
+                <button data-tutorial="figma-compare" className="eon-buttonish eon-icon-button eon-context-icon" onClick={() => setCompare((value) => !value)}
+                  aria-label="Compare with Figma side by side" aria-pressed={compare} title="Compare side by side"
+                  style={{ color: compare ? c.brand : c.muted, background: compare ? c.active : "transparent" }}>
+                  <Columns2 size={15} />
+                </button>
+              )}
+              {figma.valid && (
+                <a className="eon-buttonish eon-icon-button eon-context-icon" href={story.figma_url} target="_blank" rel="noreferrer"
+                  aria-label="Open in Figma" title="Open in Figma" style={{ color: c.muted }}>
+                  <ExternalLink size={14} />
+                </a>
+              )}
+            </>
+          )}
+        >
+          {figma.node && <p className="eon-context-note" style={{ color: c.muted }}>Node {figma.node}</p>}
+          <ContextLinkField
+            c={c} label="Figma share URL" value={story.figma_url || ""} placeholder="Paste a Figma share URL"
+            hasValue={figma.valid} editing={editFigma} setEditing={setEditFigma}
+            onChange={(value) => patch("figma_url", value)}
+          />
+        </ContextRow>
+
+        <ContextRow
+          c={c} rowKey="linear" icon={LinearIcon} label="Linear" value={linearId || "Not linked"}
+          valueTone={linearId ? undefined : c.muted}
+          open={openRow === "linear"} onToggle={() => toggleRow("linear")}
+          actions={story.issue_url ? (
+            <a className="eon-buttonish eon-icon-button eon-context-icon" href={story.issue_url} target="_blank" rel="noreferrer"
+              aria-label="Open in Linear" title="Open in Linear" style={{ color: c.muted }}>
+              <ExternalLink size={14} />
+            </a>
+          ) : null}
+        >
+          <ContextLinkField
+            c={c} label="Linear issue URL" value={story.issue_url || ""} placeholder="Paste a Linear issue URL"
+            hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear}
+            onChange={(value) => patch("issue_url", value)}
+          />
+          {linearId && <LinearCard c={c} story={story} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />}
+          {!linearId && (
+            <p className="eon-context-note" style={{ color: c.muted }}>
+              {linearConnection.kind === "error" ? "Paste an issue URL to pull its status, assignee, and description." : linearConnection.label}
+            </p>
+          )}
+        </ContextRow>
+
+        <ContextRow
+          c={c} rowKey="notes" icon={FileText} label="Notes" value={notes ? notes.split("\n")[0] : "None"}
+          valueTone={notes ? undefined : c.muted}
+          open={openRow === "notes"} onToggle={() => toggleRow("notes")}
+        >
+          <Textarea
+            value={story.notes || ""}
+            onChange={(event) => patch("notes", event.target.value)}
+            placeholder="Goals, open questions, what to look at"
+            aria-label="Prototype notes"
+            style={{ minHeight: 96, background: c.raised, borderColor: c.border, color: c.text, fontSize: 13, borderRadius: 14, resize: "vertical" }}
+          />
+        </ContextRow>
+      </div>
+
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
         <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
           <TabsTrigger data-tutorial="comments-tab" value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
-          <TabsTrigger data-tutorial="history-tab" value="history"><History size={14} /> History</TabsTrigger>
-          <TabsTrigger data-tutorial="linear-tab" value="linear"><LinearIcon size={14} /> Linear</TabsTrigger>
+          <TabsTrigger data-tutorial="history-tab" value="history"><History size={14} /> History <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{activity.length}</span></TabsTrigger>
         </TabsList>
         <TabsContent data-tutorial="comments-thread" value="comments" className="eon-inspector-content">
           <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} anchors={anchors} />
@@ -1291,29 +1518,102 @@ function ReviewInspector({
         <TabsContent data-tutorial="history-thread" value="history" className="eon-inspector-content">
           <HistoryTimeline c={c} activity={activity} currentUserId={profile?.id} />
         </TabsContent>
-        <TabsContent data-tutorial="linear-content" value="linear" className="eon-inspector-content eon-reference-content">
-          <ReviewReadiness c={c} story={story} comments={comments} />
-          <ReferenceHeader c={c} icon={LinearIcon} label="Linear issue" hasValue={Boolean(story.issue_url)} editing={editLinear} setEditing={setEditLinear} />
-          {(!story.issue_url || editLinear) && <Input aria-label="Linear issue URL" value={story.issue_url || ""} onChange={(event) => patch("issue_url", event.target.value)} placeholder="Paste a Linear issue URL" style={{ minHeight: 40, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 999 }} />}
-          <LinearCard c={c} story={story} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />
-        </TabsContent>
       </Tabs>
     </aside>
   );
 }
 
-function ReviewReadiness({ c, story, comments }) {
+/* ---- Prototype source lives behind a sheet: it is a setup task, and setup
+   tasks must not permanently shrink the thing under review. ---- */
+function SourceSheet({ c, story, onClose, children }) {
+  const sheetRef = useDrawerFocus(true, onClose);
+  return (
+    <>
+      <button className="eon-sheet-scrim" aria-label="Close prototype source" onClick={onClose} />
+      <section ref={sheetRef} className="eon-sheet" role="dialog" aria-modal="true" aria-labelledby="eon-source-title"
+        style={{ background: c.nav, borderColor: c.border, color: c.text, boxShadow: hubShadow(c) }}>
+        <div className="eon-sheet-head" style={{ borderColor: c.border }}>
+          <div>
+            <strong id="eon-source-title">Prototype source</strong>
+            <span style={{ color: c.muted }}>{story.title}</span>
+          </div>
+          <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close prototype source" style={{ color: c.muted }}><X size={17} /></button>
+        </div>
+        <div className="eon-sheet-body">{children}</div>
+      </section>
+    </>
+  );
+}
+
+/* ---- One fact about the prototype: label, current value, the actions that
+   change it. Collapsed by default so the panel reads as a list, not a form. ---- */
+function ContextRow({ c, rowKey, icon: Icon, label, value, valueTone, live, open, onToggle, actions, children }) {
+  const bodyId = `eon-context-${rowKey}`;
+  return (
+    <div className="eon-context-row">
+      <div className="eon-context-row-head">
+        <button className="eon-buttonish eon-context-row-main" onClick={onToggle} aria-expanded={open} aria-controls={bodyId} aria-label={`${label}: ${value}`}>
+          <Icon size={14} style={{ color: c.muted }} aria-hidden="true" />
+          <span className="eon-context-row-label" style={{ color: c.muted }}>{label}</span>
+          <span className="eon-context-row-value" style={{ color: valueTone || c.text }}>
+            {live && <span className="eon-live-dot" aria-hidden="true" />}
+            {value}
+          </span>
+          <ChevronDown size={13} className={open ? "" : "is-collapsed"} style={{ color: c.muted }} aria-hidden="true" />
+        </button>
+        {actions && <div className="eon-context-row-actions">{actions}</div>}
+      </div>
+      {open && <div id={bodyId} className="eon-context-row-body">{children}</div>}
+    </div>
+  );
+}
+
+/* ---- A link is either shown with an Edit affordance or being edited. ---- */
+function ContextLinkField({ c, label, value, placeholder, hasValue, editing, setEditing, onChange }) {
+  if (hasValue && !editing) {
+    return (
+      <button className="eon-buttonish eon-text-button eon-context-edit" onClick={() => setEditing(true)} style={{ color: c.secondary }}>
+        <Pencil size={12} aria-hidden="true" /> Edit link
+      </button>
+    );
+  }
+  return (
+    <div className="eon-context-field">
+      <Input aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder}
+        style={{ minHeight: 40, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 999 }} />
+      {hasValue && (
+        <button className="eon-buttonish eon-text-button" onClick={() => setEditing(false)} style={{ color: c.brand }}>Done</button>
+      )}
+    </div>
+  );
+}
+
+/* ---- Four signals, one line. Expands only when someone wants the detail. ---- */
+function ReviewReadiness({ c, story, comments, isLiveLinked, isBuiltIn }) {
+  const [open, setOpen] = useState(false);
   const checklist = [
-    { label: "Prototype uploaded", done: Boolean(story.prototype_html || ["signin", "dashboard"].includes(story.slug)) },
+    { label: "Prototype uploaded", done: Boolean(story.prototype_html || isLiveLinked || isBuiltIn) },
     { label: "Figma source linked", done: Boolean(story.figma_url) },
     { label: "Linear issue linked", done: Boolean(story.issue_url || story.issue_id) },
     { label: "Team feedback started", done: comments.length > 0 },
   ];
+  const done = checklist.filter((item) => item.done).length;
 
   return (
-      <section className="eon-readiness-card" style={{ color: c.secondary, background: c.panel }}>
-        <div className="eon-readiness-heading"><div><strong style={{ color: c.text }}>Review readiness</strong><span style={{ color: c.muted }}>{checklist.filter((item) => item.done).length} of {checklist.length} signals ready</span></div></div>
-        <div className="eon-readiness-list">
+    <div className="eon-readiness">
+      <button className="eon-buttonish eon-readiness-summary" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-controls="eon-readiness-list"
+        aria-label={`Ready to review: ${done} of ${checklist.length} signals`}>
+        <span className="eon-readiness-meter" aria-hidden="true">
+          {checklist.map((item) => (
+            <span key={item.label} style={{ background: item.done ? c.brand : c.raised }} />
+          ))}
+        </span>
+        <strong style={{ color: c.text }}>Ready to review</strong>
+        <span style={{ color: c.muted }}>{done} of {checklist.length}</span>
+        <ChevronDown size={13} className={open ? "" : "is-collapsed"} style={{ color: c.muted }} aria-hidden="true" />
+      </button>
+      {open && (
+        <div id="eon-readiness-list" className="eon-readiness-list">
           {checklist.map((item) => (
             <div key={item.label} className="eon-readiness-item" style={{ color: item.done ? c.secondary : c.muted }}>
               <span style={{ background: item.done ? c.active : c.raised, color: item.done ? c.brand : c.muted }}>{item.done ? <Check size={12} /> : <Circle size={10} />}</span>
@@ -1321,18 +1621,16 @@ function ReviewReadiness({ c, story, comments }) {
             </div>
           ))}
         </div>
-      </section>
+      )}
+    </div>
   );
 }
 
+
 /* ---- Large Figma pane for the side-by-side compare: slim unfurl header over
-   the full-bleed embed. The Figma link is edited here, not in the panel. ---- */
-function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
+   the full-bleed embed. Looking only; the link is owned by the context panel. ---- */
+function FigmaPane({ c, story, ratio }) {
   const meta = figmaMeta(story.figma_url || "");
-  const linkInput = (
-    <Input aria-label="Figma share URL" value={story.figma_url || ""} onChange={(event) => patch("figma_url", event.target.value)} placeholder="Paste a Figma share URL"
-      style={{ minHeight: 40, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 999 }} />
-  );
   return (
     <div className="eon-compare-pane" style={{ flex: `${1 - ratio} 1 0%`, background: c.nav, borderColor: c.border }}>
       {meta.valid ? (
@@ -1343,32 +1641,18 @@ function FigmaPane({ c, story, ratio, patch, editing, setEditing }) {
               <strong>{meta.title}</strong>
               {meta.node && <span style={{ color: c.muted }}>Node {meta.node}</span>}
             </div>
-            <button className="eon-buttonish eon-text-button" onClick={() => setEditing((value) => !value)} style={{ color: editing ? c.brand : c.secondary }}>
-              {editing ? "Done" : "Edit link"}
-            </button>
             <a className="eon-buttonish eon-secondary-button" href={story.figma_url} target="_blank" rel="noreferrer"
               style={{ borderColor: c.border, background: c.raised, color: c.secondary, textDecoration: "none" }}>
               <ExternalLink size={13} aria-hidden="true" /> Open in Figma
             </a>
           </div>
-          {editing && <div className="eon-compare-edit">{linkInput}</div>}
           <div className="eon-compare-embed"><FigmaEmbed url={story.figma_url} /></div>
         </>
       ) : (
         <div className="eon-compare-empty">
-          <ReferenceEmpty c={c} icon={FigmaIcon} title="No Figma frame linked" body="Paste a share URL to compare the source design here." />
-          {linkInput}
+          <ReferenceEmpty c={c} icon={FigmaIcon} title="No Figma frame linked" body="Add a share URL under Figma in the context panel to compare here." />
         </div>
       )}
-    </div>
-  );
-}
-
-function ReferenceHeader({ c, icon: Icon, label, hasValue, editing, setEditing }) {
-  return (
-    <div className="eon-reference-head">
-      <div>{Icon && <Icon size={15} style={{ color: c.secondary }} />}<strong>{label}</strong></div>
-      {hasValue && <button className="eon-buttonish eon-text-button" onClick={() => setEditing((value) => !value)} style={{ color: editing ? c.brand : c.secondary }}>{editing ? "Done" : "Edit link"}</button>}
     </div>
   );
 }
@@ -2242,12 +2526,6 @@ function SaveIndicator({ c, state, onRetry, compact = false }) {
       {content.icon}<span>{content.label}</span>{state === "error" && onRetry && !compact ? <span>· Retry</span> : null}
     </Tag>
   );
-}
-
-function sandboxedFullView(source, title) {
-  const escapedSource = String(source).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-  const escapedTitle = String(title || "Prototype").replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]);
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapedTitle}</title><style>*{box-sizing:border-box}html,body,iframe{width:100%;height:100%;margin:0}iframe{display:block;border:0}</style></head><body><iframe title="${escapedTitle}" sandbox="${PROTOTYPE_SANDBOX}" referrerpolicy="no-referrer" allow="clipboard-read; clipboard-write" srcdoc="${escapedSource}"></iframe></body></html>`;
 }
 
 function readStoredJson(key) {

@@ -5,6 +5,24 @@
 
 export const CHANGELOG = [
   {
+    date: "2026-08-27",
+    title: "The workspace gets a hierarchy",
+    items: [
+      "The prototype screen is now three regions: pick one on the left, view it in the middle, everything about it on the right.",
+      "Two toolbar rows collapsed into one, so the canvas gets back roughly 240px of height.",
+      "Uploading prototype HTML opens as a sheet instead of a band that pushed the canvas down and stayed open.",
+      "The context panel now shows readiness, source, Figma, Linear, and notes as always-visible rows above Comments and History.",
+      "A Figma link can finally be pasted without turning on side-by-side compare first.",
+      "Notes are editable again, in the context panel.",
+      "Issue status is stated once in the title bar, and \"saved\" is stated once instead of six times.",
+      "Zoom, theme, and canvas background merged into one cluster in the bottom-right corner.",
+      "Control labels dropped their shouting capitals, and sidebar comment counts now carry an icon that says what they count.",
+      "New prototype and the setup prompt moved to the search row and the sidebar footer.",
+      "Full view now happens inside the app instead of a new tab: the chrome drops away, and the library or context panel slides back in when the pointer reaches a screen edge. Esc leaves.",
+      "Dark mode gained a real elevation ladder, so chrome, panels, and controls no longer all sit on the same black.",
+    ],
+  },
+  {
     date: "2026-08-20",
     title: "Eon Design grows beyond tabs",
     items: [
