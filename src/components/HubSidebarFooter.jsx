@@ -1,10 +1,8 @@
-import { Check, Copy, LogOut, Shield } from "lucide-react";
+import { LogOut, Shield } from "lucide-react";
 import { HubChangelogButton } from "@/components/HubChangelog";
 
 export default function HubSidebarFooter({
   c,
-  copiedPrompt,
-  onCopySetupPrompt,
   userEmail,
   isAdmin,
   onOpenAdmin,
@@ -15,19 +13,6 @@ export default function HubSidebarFooter({
     <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
       <span title={userEmail || ""} style={{ color: c.muted }}>{userEmail || "Team member"}</span>
       <HubChangelogButton c={c} hasNew={changelog.hasNew} onOpen={changelog.open} />
-      {onCopySetupPrompt && (
-        <button
-          data-tutorial="setup-prompt"
-          className="eon-buttonish eon-icon-button"
-          type="button"
-          onClick={onCopySetupPrompt}
-          aria-label={copiedPrompt ? "Setup prompt copied" : "Copy setup prompt"}
-          title={copiedPrompt ? "Copied" : "Copy setup prompt"}
-          style={{ color: copiedPrompt ? c.brand : c.muted, boxShadow: "var(--shadow-surface)" }}
-        >
-          {copiedPrompt ? <Check size={15} /> : <Copy size={15} />}
-        </button>
-      )}
       {isAdmin && (
         <button
           className="eon-buttonish eon-icon-button"

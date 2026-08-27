@@ -288,6 +288,7 @@ svg.eon-accent-icon,
 .eon-sidebar-search { position: relative; min-width: 0; flex: 1; }
 .eon-sidebar-search > svg { position: absolute; z-index: 1; top: 12px; left: 12px; width: 15px; height: 15px; pointer-events: none; color: hsl(var(--muted-foreground)); }
 .eon-sidebar-new { width: 40px; min-width: 40px; height: 40px; flex: 0 0 40px; padding: 0; justify-content: center; }
+.eon-sidebar-setup { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; margin-top: 8px; padding: 0 6px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; }
 .eon-story-list { flex: 1; overflow-y: auto; padding: 12px 8px 18px; }
 .eon-new-story { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; margin-bottom: 12px; padding: 0 12px; border: 1.5px dashed; border-radius: 12px; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; }
 .eon-group-label { display: flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .045em; text-transform: uppercase; }
@@ -301,7 +302,7 @@ svg.eon-accent-icon,
 .eon-story-select { display: flex; min-width: 0; min-height: 40px; flex: 1; align-items: center; gap: 9px; padding: 0 8px 0 12px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; text-align: left; font-size: 13px; }
 .eon-story-select span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eon-story-select > span:nth-child(2) { min-width: 0; flex: 1; }
-.eon-status-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-color) 14%, transparent); transition: background-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out); }
+.eon-status-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; transition: background-color 160ms var(--ease-out); }
 .eon-unread-count { display: inline-flex; min-width: 19px; height: 19px; flex: 0 0 auto; align-items: center; justify-content: center; padding: 0 5px; border-radius: 10px; font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .eon-comment-count { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; font-size: 10px; font-variant-numeric: tabular-nums; }
 .eon-story-rename { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; padding: 0 8px 0 12px; }
@@ -421,21 +422,10 @@ button.eon-save-state { cursor: pointer; }
 .eon-inspector-content { min-height: 0; flex: 1; margin: 0; overflow: hidden; }
 .eon-inspector-content[data-state="inactive"] { display: none; }
 
-/* Context panel: readiness and the links stay above the tabs, one line each. */
+/* Context panel: the links stay above the tabs, one line each. */
 .eon-context { display: flex; flex: 0 0 auto; flex-direction: column; max-height: 52%; overflow-y: auto; border-bottom: 1px solid; }
-.eon-readiness { padding: 6px 8px 4px; }
-.eon-readiness-summary { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 9px; padding: 0 8px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; text-align: left; }
-.eon-readiness-summary strong { font-size: 13px; letter-spacing: -.01em; }
-.eon-readiness-summary > span:not(.eon-readiness-meter) { font-size: 11px; font-variant-numeric: tabular-nums; }
-.eon-readiness-summary > svg:last-child { margin-left: auto; transition: transform 160ms var(--ease-out); }
-.eon-readiness-summary > svg.is-collapsed { transform: rotate(-90deg); }
-.eon-readiness-meter { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; }
-.eon-readiness-meter > span { display: block; width: 12px; height: 4px; border-radius: 2px; }
-.eon-readiness-list { display: flex; flex-direction: column; gap: 7px; padding: 6px 8px 10px 16px; }
-.eon-readiness-item { display: flex; align-items: center; gap: 9px; font-size: 12px; }
-.eon-readiness-item > span { display: grid; width: 20px; height: 20px; flex: 0 0 20px; place-items: center; border-radius: 7px; }
 
-.eon-context-row { border-top: 1px solid rgba(144, 148, 165, .12); }
+.eon-context-row + .eon-context-row { border-top: 1px solid rgba(144, 148, 165, .12); }
 .eon-context-row-head { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
 .eon-context-row-main { display: flex; min-width: 0; min-height: 42px; flex: 1; align-items: center; gap: 9px; padding: 0 4px 0 16px; border: 0; background: transparent; cursor: pointer; text-align: left; }
 .eon-context-row-label { flex: 0 0 auto; font-size: 12px; }
@@ -466,14 +456,6 @@ button.eon-save-state { cursor: pointer; }
 .eon-reference-empty { display: flex; min-height: 260px; align-items: center; justify-content: center; flex-direction: column; gap: 8px; padding: 24px; border-radius: 14px; text-align: center; }
 .eon-reference-empty strong { margin-top: 4px; font-size: 14px; }
 .eon-reference-empty span { max-width: 240px; font-size: 13px; line-height: 1.5; }
-.eon-readiness-heading { display: flex; align-items: flex-start; gap: 8px; }
-.eon-readiness-heading > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
-.eon-readiness-heading strong { font-size: 13px; }
-.eon-readiness-heading span { font-size: 11px; line-height: 1.4; }
-.eon-readiness-card { display: flex; flex-direction: column; gap: 11px; padding: 14px; border-radius: 20px; box-shadow: var(--shadow-surface); }
-.eon-readiness-list { display: flex; flex-direction: column; gap: 7px; }
-.eon-readiness-item { display: flex; min-height: 28px; align-items: center; gap: 8px; font-size: 12px; }
-.eon-readiness-item > span { display: grid; width: 22px; height: 22px; flex: 0 0 22px; place-items: center; border-radius: 8px; }
 .eon-linear-open { display: grid; width: 40px; height: 40px; margin: -10px -10px -10px auto; place-items: center; border-radius: 9px; text-decoration: none; }
 .eon-linear-description { min-height: 0; flex: 1; margin-top: 12px; overflow: auto; font-size: 13px; line-height: 1.58; overflow-wrap: anywhere; }
 .eon-linear-markdown { padding-right: 4px; }
@@ -523,16 +505,15 @@ button.eon-save-state { cursor: pointer; }
 .eon-changelog-rail span { width: 10px; height: 10px; flex: 0 0 10px; margin-top: 19px; border: 3px solid color-mix(in srgb, var(--changelog-accent) 15%, transparent); border-radius: 999px; background-clip: padding-box !important; box-sizing: content-box; }
 .eon-changelog-rail i { width: 1px; min-height: 28px; flex: 1; margin: 7px 0; }
 .eon-changelog-entry:last-child .eon-changelog-rail i { background: linear-gradient(to bottom, hsl(var(--border)), transparent) !important; opacity: .55; }
-.eon-changelog-card { min-width: 0; margin-bottom: 18px; padding: 16px 16px 6px; border-radius: 18px; }
+.eon-changelog-card { min-width: 0; margin-bottom: 18px; padding: 16px 18px 4px; border-radius: 18px; }
 .eon-changelog-card > header { padding: 0 2px 13px; }
 .eon-changelog-card > header > div { display: flex; min-height: 24px; align-items: center; justify-content: space-between; gap: 10px; }
 .eon-changelog-card > header > div > span { margin-left: auto; font-size: 10px; font-variant-numeric: tabular-nums; }
 .eon-changelog-latest { min-height: 22px; border: 0; padding: 0 8px; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .eon-changelog-card h2 { margin: 7px 0 0; font-size: 17px; font-weight: 650; letter-spacing: -.025em; line-height: 1.3; text-wrap: balance; }
-.eon-changelog-card ul { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 6px; list-style: none; }
-.eon-changelog-card li { display: flex; min-height: 48px; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 12px; font-size: 12px; line-height: 1.5; }
-.eon-changelog-check { display: grid; width: 22px; height: 22px; flex: 0 0 22px; margin-top: 1px; place-items: center; border-radius: 7px; }
-.eon-changelog-card p { margin: 1px 0 0; text-wrap: pretty; }
+.eon-changelog-card ul { display: flex; margin: 0; padding: 0 0 12px; flex-direction: column; gap: 9px; list-style: none; }
+.eon-changelog-card li { position: relative; padding-left: 17px; font-size: 13px; line-height: 1.55; text-wrap: pretty; }
+.eon-changelog-card li::before { content: ""; position: absolute; top: .6em; left: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--bullet); }
 @keyframes eon-changelog-entry-in { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
 
 @media (max-width: 560px) {
@@ -551,7 +532,7 @@ button.eon-save-state { cursor: pointer; }
   .eon-changelog-card { grid-row: 2; grid-column: 2; margin-bottom: 14px; padding: 14px 12px 5px; border-radius: 16px; }
   .eon-changelog-card > header { padding-bottom: 11px; }
   .eon-changelog-card h2 { font-size: 15px; }
-  .eon-changelog-card li { min-height: 44px; padding: 9px 10px; border-radius: 10px; }
+  .eon-changelog-card li { font-size: 12px; }
 }
 .eon-comment-filter { display: flex; gap: 2px; flex: 0 0 auto; padding: 0 12px; border-bottom: 1px solid; }
 .eon-comment-filter-tab { padding: 9px 10px; border: 0; border-bottom: 2px solid transparent; background: none; font-size: 12px; font-weight: 600; cursor: pointer; }

@@ -13,9 +13,9 @@ import LiquidSegmentedControl from "@/components/LiquidSegmentedControl";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { Liquid } from "liquid-gooey";
 import {
-  AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle,
+  AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
   ExternalLink, History, ImagePlus, LayoutGrid, Loader2,
-  Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2, FileText,
+  Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
   Menu, MoreHorizontal, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
@@ -293,6 +293,7 @@ export default function PrototypeWorkspace({
     return [...selectors];
   }, [visiblePins, pendingAnchor?.selector]);
   const postToFrame = (message) => frameRef.current?.contentWindow?.postMessage({ eon: 1, ...message }, "*");
+  const pinchZoom = (delta) => setZoom((value) => Math.min(4, Math.max(0.25, +(value * Math.exp(-delta / 240)).toFixed(3))));
 
   // One listener covers the bridge's whole vocabulary. The iframe remounts on
   // state changes, so "ready" re-syncs mode + watched selectors every time.
@@ -307,6 +308,8 @@ export default function PrototypeWorkspace({
           postToFrame(pendingRevealRef.current);
           pendingRevealRef.current = null;
         }
+      } else if (message.type === "eon-anchor-zoom") {
+        if (layout === "single") pinchZoom(message.delta);
       } else if (message.type === "eon-anchor-rects") {
         setAnchorRects(message.rects || {});
         setAnchorScroll(message.scroll || { x: 0, y: 0 });
@@ -329,7 +332,21 @@ export default function PrototypeWorkspace({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [anchorMode, watchedSelectors, viewport, args, protoTheme]);
+  }, [anchorMode, watchedSelectors, viewport, args, protoTheme, layout]);
+
+  // Pinching over the canvas around the frame. The prototype iframe swallows
+  // its own wheel events, so the bridge forwards those separately.
+  useEffect(() => {
+    const node = canvasRef.current;
+    if (!node || layout !== "single") return undefined;
+    const onWheel = (event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      pinchZoom(event.deltaY);
+    };
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
+  }, [layout, view]);
 
   useEffect(() => { postToFrame({ type: "eon-anchor-mode", on: anchorMode }); }, [anchorMode]);
   useEffect(() => { postToFrame({ type: "eon-anchor-query", selectors: watchedSelectors }); }, [watchedSelectors]);
@@ -976,6 +993,14 @@ function WorkspaceSidebar({
             </Button>
           </div>
         )}
+        {view === "stories" && (
+          <button data-tutorial="setup-prompt" className="eon-buttonish eon-sidebar-setup" type="button" onClick={copySetupPrompt}
+            title="Copy the prompt that teaches an AI how to build for this hub"
+            style={{ color: copiedPrompt ? c.brand : c.muted }}>
+            {copiedPrompt ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+            {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
+          </button>
+        )}
       </div>
 
       <div className="eon-story-list">
@@ -1088,8 +1113,6 @@ function WorkspaceSidebar({
 
       <HubSidebarFooter
         c={c}
-        copiedPrompt={copiedPrompt}
-        onCopySetupPrompt={copySetupPrompt}
         userEmail={userEmail}
         isAdmin={isAdmin}
         onOpenAdmin={onOpenAdmin}
@@ -1387,7 +1410,6 @@ function ReviewInspector({
     : story.prototype_html ? "Uploaded HTML"
     : isBuiltIn ? "Built-in demo"
     : "Nothing uploaded";
-  const notes = (story.notes || "").trim();
 
   return (
     <aside
@@ -1415,8 +1437,6 @@ function ReviewInspector({
       )}
 
       <div className="eon-context" style={{ borderColor: c.border }}>
-        <ReviewReadiness c={c} story={story} comments={comments} isLiveLinked={isLiveLinked} isBuiltIn={isBuiltIn} />
-
         <ContextRow
           c={c} rowKey="source" icon={Upload} label="Source" value={sourceValue}
           valueTone={isLiveLinked ? c.brand : undefined} live={isLiveLinked}
@@ -1492,19 +1512,6 @@ function ReviewInspector({
           )}
         </ContextRow>
 
-        <ContextRow
-          c={c} rowKey="notes" icon={FileText} label="Notes" value={notes ? notes.split("\n")[0] : "None"}
-          valueTone={notes ? undefined : c.muted}
-          open={openRow === "notes"} onToggle={() => toggleRow("notes")}
-        >
-          <Textarea
-            value={story.notes || ""}
-            onChange={(event) => patch("notes", event.target.value)}
-            placeholder="Goals, open questions, what to look at"
-            aria-label="Prototype notes"
-            style={{ minHeight: 96, background: c.raised, borderColor: c.border, color: c.text, fontSize: 13, borderRadius: 14, resize: "vertical" }}
-          />
-        </ContextRow>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
@@ -1583,44 +1590,6 @@ function ContextLinkField({ c, label, value, placeholder, hasValue, editing, set
         style={{ minHeight: 40, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 999 }} />
       {hasValue && (
         <button className="eon-buttonish eon-text-button" onClick={() => setEditing(false)} style={{ color: c.brand }}>Done</button>
-      )}
-    </div>
-  );
-}
-
-/* ---- Four signals, one line. Expands only when someone wants the detail. ---- */
-function ReviewReadiness({ c, story, comments, isLiveLinked, isBuiltIn }) {
-  const [open, setOpen] = useState(false);
-  const checklist = [
-    { label: "Prototype uploaded", done: Boolean(story.prototype_html || isLiveLinked || isBuiltIn) },
-    { label: "Figma source linked", done: Boolean(story.figma_url) },
-    { label: "Linear issue linked", done: Boolean(story.issue_url || story.issue_id) },
-    { label: "Team feedback started", done: comments.length > 0 },
-  ];
-  const done = checklist.filter((item) => item.done).length;
-
-  return (
-    <div className="eon-readiness">
-      <button className="eon-buttonish eon-readiness-summary" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-controls="eon-readiness-list"
-        aria-label={`Ready to review: ${done} of ${checklist.length} signals`}>
-        <span className="eon-readiness-meter" aria-hidden="true">
-          {checklist.map((item) => (
-            <span key={item.label} style={{ background: item.done ? c.brand : c.raised }} />
-          ))}
-        </span>
-        <strong style={{ color: c.text }}>Ready to review</strong>
-        <span style={{ color: c.muted }}>{done} of {checklist.length}</span>
-        <ChevronDown size={13} className={open ? "" : "is-collapsed"} style={{ color: c.muted }} aria-hidden="true" />
-      </button>
-      {open && (
-        <div id="eon-readiness-list" className="eon-readiness-list">
-          {checklist.map((item) => (
-            <div key={item.label} className="eon-readiness-item" style={{ color: item.done ? c.secondary : c.muted }}>
-              <span style={{ background: item.done ? c.active : c.raised, color: item.done ? c.brand : c.muted }}>{item.done ? <Check size={12} /> : <Circle size={10} />}</span>
-              {item.label}
-            </div>
-          ))}
-        </div>
       )}
     </div>
   );
@@ -2189,7 +2158,6 @@ const ACTIVITY_META = {
   renamed:        { icon: Pencil,        text: (d) => (d?.to ? `renamed it to "${d.to}"` : "renamed the prototype") },
   edited_figma:   { icon: FigmaIcon,     text: (d) => (d?.to ? "updated the Figma link" : "cleared the Figma link") },
   edited_linear:  { icon: LinearIcon,    text: (d) => (d?.to ? "updated the Linear link" : "cleared the Linear link") },
-  edited_notes:   { icon: MessageSquare, text: () => "edited the notes" },
   moved_group:    { icon: LayoutGrid,    text: (d) => (d?.to ? `moved it to "${d.to}"` : "moved it to another group") },
 };
 

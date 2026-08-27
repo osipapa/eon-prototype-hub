@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   CHANGELOG, CHANGELOG_SEEN_KEY, latestChangelogDate, markChangelogSeen, readSeenChangelogDate,
@@ -145,14 +145,9 @@ export function HubChangelogDialog({ c, open, onClose }) {
                     </div>
                     <h2 style={{ color: c.text }}>{entry.title}</h2>
                   </header>
-                  <ul>
+                  <ul style={{ color: c.secondary }}>
                     {entry.items.map((item) => (
-                      <li key={item} style={{ background: c.raised, color: c.secondary }}>
-                        <span className="eon-changelog-check eon-accent-icon" style={{ background: c.panel, color: c.brand }} aria-hidden="true">
-                          <Check size={12} />
-                        </span>
-                        <p>{item}</p>
-                      </li>
+                      <li key={item} style={{ "--bullet": c.muted }}>{item}</li>
                     ))}
                   </ul>
                 </article>

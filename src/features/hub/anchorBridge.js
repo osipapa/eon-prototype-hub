@@ -13,6 +13,7 @@
      { eon:1, type:"eon-anchor-click", selector, rel_x, rel_y, x_pct, y_pct, doc_x, doc_y }
      { eon:1, type:"eon-anchor-cancel" }           Esc pressed inside the iframe
      { eon:1, type:"eon-anchor-rects", rects, scroll } selector → {x,y,w,h} | {hidden} | null
+     { eon:1, type:"eon-anchor-zoom", delta }      trackpad pinch over the prototype
 
    Multi-screen prototypes (stepped flows toggling [hidden] or display:none)
    report anchors on inactive screens as {hidden:true}. The hub draws no pin
@@ -104,6 +105,12 @@ addEventListener("message",function(e){
     queueRects();
   }
 });
+function onWheel(e){
+  if(!e.ctrlKey&&!e.metaKey)return;
+  e.preventDefault();
+  post({type:"eon-anchor-zoom",delta:e.deltaY});
+}
+addEventListener("wheel",onWheel,{passive:false,capture:true});
 addEventListener("click",onClick,true);
 addEventListener("mousemove",onMove,true);
 addEventListener("keydown",onKey,true);

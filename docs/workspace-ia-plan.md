@@ -250,3 +250,18 @@ Two fixes found while verifying:
   They now close on the transition into drawer mode only, not on every resize.
 - With Figma compare on, the canvas gets narrow enough that the state pills sat under
   the zoom cluster. A container query lifts the pills a row when that happens.
+
+### Trimmed after review
+
+- **Readiness row removed.** It re-encoded four facts that the rows beneath it already
+  showed: Source, Figma, Linear, and the Comments count. By its own de-duplication rule
+  it had to go.
+- **Notes row removed**, and `edited_notes` dropped from the History timeline with it,
+  so nothing logs an event no surface can produce.
+- **Copy setup prompt moved back into the sidebar body** with its label. Icon-only in
+  the footer was undiscoverable; the first question asked about it was "where is it".
+- **Status dots lost their halo**, so one dot reads as one dot.
+- **What's new lists plain bullets.** A rounded card and a check badge per item turned a
+  13-line release into a wall.
+- **Trackpad pinch zooms the canvas.** The anchor bridge forwards ctrl-wheel out of the
+  sandboxed iframe, so pinching over the prototype itself works too.
