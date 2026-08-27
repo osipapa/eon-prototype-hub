@@ -243,15 +243,15 @@ const PAGE_CONTENT = {
       {
         id: "point-scale",
         title: "What a point is worth",
-        body: "Our board uses Linear's doubling scale. Points describe effort, not calendar time: use them to place a card against the others, not to promise a date. 4, 8, and 16 are the anchors the team agreed; the rest follow the same doubling.",
-        scale: [
-          { points: "1", size: 26, meaning: "A couple of hours", note: "A small, well understood change with nothing to investigate first." },
-          { points: "2", size: 32, meaning: "Half a day", note: "Clear scope and a handful of states." },
-          { points: "4", size: 38, anchor: true, meaning: "About a day", note: "One focused day of work with the shape already clear." },
-          { points: "8", size: 46, anchor: true, meaning: "About half a week", note: "A few days. Usually several states or a dependency to resolve." },
-          { points: "16", size: 54, anchor: true, meaning: "About a week", note: "The largest a card should normally get." },
-          { points: "32", size: 62, oversized: true, meaning: "About two weeks", note: "Too big to estimate honestly. Split it into cards that each ship something." },
-          { points: "64", size: 70, oversized: true, meaning: "About a month", note: "A project, not a card. Break it down before it reaches the board." },
+        body: "Our board uses Linear's doubling scale. Each calendar below is four working weeks, Monday to Friday, with the estimate filled in from the first day. Points describe effort, not a delivery date: use them to place a card against the others. The accent fill marks 4, 8, and 16, the anchors the team agreed; 1 and 2 follow the same doubling, and the greyed calendars are sizes a card should be split before it reaches.",
+        calendar: [
+          { points: "1", days: 0.25, meaning: "A couple of hours", note: "A small, well understood change with nothing to investigate first." },
+          { points: "2", days: 0.5, meaning: "Half a day", note: "Clear scope and a handful of states." },
+          { points: "4", days: 1, anchor: true, meaning: "About a day", note: "One focused day with the shape already clear." },
+          { points: "8", days: 2.5, anchor: true, meaning: "About half a week", note: "Several states, or a dependency to resolve." },
+          { points: "16", days: 5, anchor: true, meaning: "About a week", note: "The largest a card should normally get." },
+          { points: "32", days: 10, oversized: true, meaning: "About two weeks", note: "Too big to estimate honestly. Split it into cards that each ship something." },
+          { points: "64", days: 20, oversized: true, meaning: "About a month", note: "A project, not a card. Break it down before it reaches the board." },
         ],
       },
       {
@@ -492,33 +492,34 @@ function DesignSection({ section, c, onSelectPage, navigateProduct }) {
           ))}
         </div>
       )}
-      {section.scale && (
-        <ol className="eon-design-scale" aria-label="Estimate scale">
-          {section.scale.map((step) => (
-            <li
-              key={step.points}
-              className={step.oversized ? "is-oversized" : ""}
-              style={{ "--dot": `${step.size}px`, "--rail": c.border }}
-            >
-              <span
-                className="eon-design-scale-dot"
-                aria-hidden="true"
-                style={step.oversized
-                  ? { background: c.raised, color: c.muted, boxShadow: `inset 0 0 0 1px ${c.border}` }
-                  : { background: step.anchor ? c.active : c.raised, color: step.anchor ? c.brand : c.secondary }}
-              >
-                {step.points}
-              </span>
-              <div>
-                <strong style={{ color: step.oversized ? c.muted : c.text }}>
-                  {step.points} · {step.meaning}
-                  {step.anchor && <em style={{ color: c.brand }}>Team anchor</em>}
-                </strong>
-                <p style={{ color: c.secondary }}>{step.note}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+      {section.calendar && (
+        <div className="eon-design-calendar">
+          {section.calendar.map((step) => {
+            const fill = step.oversized ? c.muted : step.anchor ? c.brand : c.secondary;
+            return (
+              <figure key={step.points} className={`eon-cal-card${step.oversized ? " is-oversized" : ""}`} style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+                <div className="eon-cal-head">
+                  <strong style={{ color: c.text }}>{step.points}</strong>
+                  <span style={{ color: c.secondary }}>{step.meaning}</span>
+                </div>
+                <div className="eon-cal-grid" role="img" aria-label={`${step.points} points fills ${step.days} of twenty working days`}>
+                  {["M", "T", "W", "T", "F"].map((day, index) => (
+                    <span key={`day-${index}`} className="eon-cal-day" style={{ color: c.muted }}>{day}</span>
+                  ))}
+                  {Array.from({ length: 20 }, (_, index) => {
+                    const filled = Math.max(0, Math.min(1, step.days - index));
+                    return (
+                      <span key={index} className="eon-cal-cell" style={{ background: c.raised }}>
+                        {filled > 0 && <i style={{ width: `${filled * 100}%`, background: fill }} />}
+                      </span>
+                    );
+                  })}
+                </div>
+                <figcaption style={{ color: c.muted }}>{step.note}</figcaption>
+              </figure>
+            );
+          })}
+        </div>
       )}
       {section.linearFlow && <LinearHandoffFlow flow={section.linearFlow} c={c} />}
       {section.qaProtocol && <QaCommentProtocol c={c} />}
