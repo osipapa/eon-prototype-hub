@@ -20,6 +20,7 @@ export const CHANGELOG = [
       "New prototype and the setup prompt moved to the search row and the sidebar footer.",
       "Full view now happens inside the app instead of a new tab: the chrome drops away, and the library or context panel slides back in when the pointer reaches a screen edge. Esc leaves.",
       "Dark mode gained a real elevation ladder, so chrome, panels, and controls no longer all sit on the same black.",
+      "The loading screen logo lost its container and pulsing ring; it now sits directly on the background.",
     ],
   },
   {
