@@ -20,7 +20,7 @@ export const CHANGELOG = [
           "Full view now happens inside the app instead of a new tab: the chrome drops away, and the library or context panel slides back in when the pointer reaches a screen edge. Esc leaves. Touch devices still get the prototype as its own page.",
           "Pinching on a trackpad zooms the canvas, including over the prototype itself.",
           "A long list of prototype states now collapses to the current selection with its neighbours peeking in, and expands on hover.",
-          "The mobile viewport renders inside a phone shell, so a mobile prototype reads as a phone screen rather than a floating rectangle. Add a deviceFrame image to the media library to use your own mockup instead.",
+          "The mobile viewport renders inside the iPhone mockup from the media library, so a mobile prototype reads as a phone rather than a floating rectangle. The mobile canvas is now 402x874, an iPhone 17 Pro, which is the screen that mockup frames.",
           "A local file linked in an earlier session can be reconnected from the Source row instead of picked again from scratch.",
           "A live-linked file says what it is doing: syncing, synced at a time, or rendering locally when auto-publish is off.",
           "Eon Design has a Linear section: handoff flow, estimation, and card quality with QA, each on its own page.",

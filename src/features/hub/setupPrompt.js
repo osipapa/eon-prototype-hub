@@ -159,7 +159,7 @@ ${JSON.stringify(context, null, 2)}${combinationWarning}
 
 5) RESPONSIVE LAYOUT
 - The generated context lists every supported viewport. The full interaction must remain usable at mobile, tablet, laptop, and desktop sizes.
-- Use box-sizing:border-box, zero body margin, fluid dimensions, sensible overflow, and responsive stacking. Avoid fixed-width layouts that crop at 390px.
+- Use box-sizing:border-box, zero body margin, fluid dimensions, sensible overflow, and responsive stacking. Avoid fixed-width layouts that crop at 402px.
 - Let content scroll vertically when needed; do not hide essential actions below an unscrollable fixed canvas.
 
 6) INTERACTION AND ACCESSIBILITY

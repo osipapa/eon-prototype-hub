@@ -896,9 +896,9 @@ export default function PrototypeWorkspace({
               <section data-tutorial="prototype-canvas" ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`} style={{ background: canvasBg }}>
                 {layout === "single" ? (
                   <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + deviceMargin + 64), height: Math.max(canvasSize.height, frameHeight + deviceMargin + 64) }}>
-                    <div className={`eon-stage-frame${viewport === "mobile" ? " is-device" : ""}`}
+                    <div className={`eon-stage-frame${viewport === "mobile" ? " is-device" : ""}${viewport === "mobile" && media.iPhone ? " has-mockup" : ""}`}
                       style={{ width: frameWidth, height: frameHeight, flexShrink: 0, position: "relative", "--device-scale": frameScale }}>
-                      {viewport === "mobile" && <DeviceShell frame={media.deviceFrame} scale={frameScale} />}
+                      {viewport === "mobile" && <DeviceShell frame={media.iPhone} scale={frameScale} />}
                       <iframe data-tutorial="prototype-frame" ref={frameRef} className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
                         title={story.title} srcDoc={html}
                         sandbox={PROTOTYPE_SANDBOX}
@@ -1703,11 +1703,13 @@ function ReviewInspector({
    negative offsets so the frame box, the pin coordinates, and the scaling all
    stay exactly as they were: this is decoration, not layout.
 
-   A PNG uploaded to the media library under `deviceFrame` takes over when it
-   is there; PHONE_SCREEN_INSET says where that image's screen sits, as a
-   fraction of the image, so the prototype lines up inside it. Without one, the
+   The media library's `iPhone` mockup takes over when it is there. It is a
+   cut-out: the screen is transparent, so it lays over the iframe and its bezel
+   masks the corners. PHONE_SCREEN_INSET is measured from that file, where the
+   hole is 1206x2622 in a 1350x2760 image, exactly 3x an iPhone 17 Pro screen,
+   which is why VIEWPORTS.mobile matches that device. Without the asset, the
    built-in bezel draws the same phone in CSS and stays sharp at any zoom. ---- */
-const PHONE_SCREEN_INSET = { top: 0.0185, right: 0.049, bottom: 0.0185, left: 0.049 };
+const PHONE_SCREEN_INSET = { top: 0.025, right: 0.05333, bottom: 0.025, left: 0.05333 };
 
 function DeviceShell({ frame, scale }) {
   const px = (value) => `${value * scale}px`;

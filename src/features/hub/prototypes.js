@@ -30,7 +30,8 @@ export const VIEWPORTS = {
   desktop: { label: "Desktop", w: 1440, h: 900 },
   laptop: { label: "Laptop", w: 1280, h: 800 },
   tablet: { label: "Tablet", w: 834, h: 1112 },
-  mobile: { label: "Mobile", w: 390, h: 780 },
+  // iPhone 17 Pro logical size, so the mobile mockup frames it exactly.
+  mobile: { label: "Mobile", w: 402, h: 874 },
 };
 
 export const STATUS_COLOR = {

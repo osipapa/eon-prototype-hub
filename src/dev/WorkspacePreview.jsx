@@ -144,7 +144,11 @@ export default function WorkspacePreview() {
   if (tutorialParams.has("loading")) return <LoadingScreen>Loading prototypes…</LoadingScreen>;
   const [projects, setProjects] = useState(initialProjects);
   const [comments, setComments] = useState(initialComments);
-  const [assets, setAssets] = useState({});
+  // The real workspace gets this from the media library; seeding it here lets
+  // the preview exercise the mobile mockup.
+  const [assets, setAssets] = useState({
+    iPhone: "https://cdn.prod.website-files.com/663a718629c975b39d9e15fa/6a90931064d7dc0b26811064_iPhone%2017%20Pro%20-%20Deep%20Blue%20-%20Portrait.png",
+  });
   const [activity] = useState(initialActivity);
   const [toasts, setToasts] = useState([
     { toastId: "t1", actor_name: "Priya Nair", action: "edited_figma", detail: { to: "x" }, project_title: "Customer dashboard" },

@@ -416,7 +416,14 @@ button.eon-save-state { cursor: pointer; }
   border-radius: calc(48px * var(--device-scale, 1));
   box-shadow: none;
 }
-.eon-device-png { position: absolute; z-index: 2; max-width: none; pointer-events: none; object-fit: fill; }
+/* The mockup is a cut-out, so it lays over the iframe and its bezel masks the
+   corners. The prototype keeps square corners underneath. */
+.eon-device-png { position: absolute; z-index: 2; max-width: none; pointer-events: none; object-fit: fill; filter: drop-shadow(0 22px 46px rgba(0,0,0,.42)); }
+/* The cut-out is a rounded rectangle, so square iframe corners would poke into
+   the transparent gap beside the phone's rounded body. 63pt measured off the
+   mockup, scaled with the canvas. */
+.eon-stage-frame.has-mockup .eon-prototype-frame { border-radius: calc(63px * var(--device-scale, 1)); }
+.eon-pin-overlay { z-index: 3; }
 .eon-device-shell {
   position: absolute;
   z-index: 2;
