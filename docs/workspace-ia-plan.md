@@ -265,3 +265,27 @@ Two fixes found while verifying:
   13-line release into a wall.
 - **Trackpad pinch zooms the canvas.** The anchor bridge forwards ctrl-wheel out of the
   sandboxed iframe, so pinching over the prototype itself works too.
+
+### Later round
+
+- **Live file sync made durable.** The old watcher ended the link on the first
+  failed read, so an editor's atomic save (write temp, rename, or lock-then-write)
+  could silently kill it. It now retries transient failures, only gives up on a
+  genuinely missing file or a revoked permission, and confirms a file stopped
+  changing before accepting a read, so a half-flushed save is never published to the
+  team. Bursts of saves coalesce into one Supabase write. Handles are kept in
+  IndexedDB so a reload offers Reconnect rather than a fresh file picker.
+- **Long state lists collapse.** A nine-state control cost the whole canvas width.
+  It now shows the selection centred with its neighbours peeking in behind an edge
+  fade, and expands on hover or keyboard focus. The expanded bar layers over the
+  zoom cluster and dims it rather than moving: an earlier version lifted the bar
+  clear, which slid it out from under the cursor and oscillated.
+- **Full view is desktop-only.** Focus mode reveals its panels on edge hover, which
+  a touch device cannot do, so `(hover: hover) and (pointer: fine)` decides: hovering
+  pointers get focus mode, everything else opens the prototype as its own page. A
+  window that loses its hovering pointer leaves focus mode rather than stranding the
+  panels off screen.
+- **Row menus escape their panel.** They render in a portal, fixed to the trigger,
+  flipping above it when the bottom is close. z-index alone could not fix this: a
+  scrolling and transformed ancestor was clipping them.
+- **Changelog grouped** into New / Design / Behavior / Under the hood / Fixes.

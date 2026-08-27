@@ -289,7 +289,8 @@ svg.eon-accent-icon,
 .eon-sidebar-search > svg { position: absolute; z-index: 1; top: 12px; left: 12px; width: 15px; height: 15px; pointer-events: none; color: hsl(var(--muted-foreground)); }
 .eon-sidebar-new { width: 40px; min-width: 40px; height: 40px; flex: 0 0 40px; padding: 0; justify-content: center; }
 .eon-sidebar-setup { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; margin-top: 8px; padding: 0 6px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; }
-.eon-story-list { flex: 1; overflow-y: auto; padding: 12px 8px 18px; }
+.eon-story-list { flex: 1; overflow-y: auto; padding: 12px 8px 18px; scrollbar-width: none; }
+.eon-story-list::-webkit-scrollbar { width: 0; height: 0; }
 .eon-new-story { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; margin-bottom: 12px; padding: 0 12px; border: 1.5px dashed; border-radius: 12px; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; }
 .eon-group-label { display: flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .045em; text-transform: uppercase; }
 .eon-group-label-row { display: flex; min-height: 34px; align-items: center; }
@@ -311,6 +312,8 @@ svg.eon-accent-icon,
 .eon-story-menu { position: absolute; top: 42px; right: 0; z-index: 50; width: 156px; padding: 5px; border-radius: 13px; opacity: 1; transform: scale(1); transform-origin: top right; transition: transform 160ms var(--ease-out), opacity 120ms var(--ease-out); }
 .eon-story-menu button { display: flex; width: 100%; min-height: 40px; align-items: center; gap: 9px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 13px; text-align: left; }
 .eon-story-menu button:disabled { cursor: not-allowed; opacity: .4; }
+/* Portalled to the body so no scrolling or transformed ancestor can clip it. */
+.eon-story-menu.is-floating { position: fixed; top: auto; right: auto; z-index: 120; }
 .eon-sidebar-foot { display: flex; align-items: center; gap: 6px; min-height: 60px; padding: 10px; border-top: 1px solid; }
 .eon-sidebar-foot > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .eon-sidebar-empty, .eon-sidebar-mode-info { display: flex; min-height: 220px; align-items: center; justify-content: center; flex-direction: column; gap: 7px; padding: 28px 18px; text-align: center; }
@@ -336,6 +339,23 @@ button.eon-save-state { cursor: pointer; }
 .eon-icon-segment { display: flex; gap: 2px; padding: 3px; border-radius: 11px; }
 .eon-icon-segment .eon-icon-button { width: 36px; height: 34px; flex-basis: 36px; border-radius: 8px; }
 .eon-segmented { box-shadow: inset 0 0 0 1px rgba(144, 148, 165, .08); }
+/* Windowed segmented control: see PeekSegmented. */
+.eon-peek-segment { display: flex; min-width: 0; }
+.eon-peek-segment.is-peekable {
+  overflow: hidden;
+  transition: width 220ms var(--ease-drawer);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left, 0px), #000 calc(100% - var(--fade-right, 0px)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left, 0px), #000 calc(100% - var(--fade-right, 0px)), transparent 100%);
+}
+.eon-peek-segment.is-scrolling { overflow-x: auto; scrollbar-width: none; }
+.eon-peek-segment.is-scrolling::-webkit-scrollbar { width: 0; height: 0; }
+.eon-peek-segment-track { width: max-content; transition: transform 220ms var(--ease-drawer); }
+/* Expanded, the state pills overlap the zoom cluster rather than moving: a bar
+   that slides out from under the cursor un-hovers itself and oscillates. */
+.eon-ctlbar-float.is-expanded { z-index: 14; }
+.eon-ctlbar-float.is-expanded ~ .eon-viewctl-float { opacity: .25; }
+.eon-viewctl-float { transition: opacity 180ms var(--ease-out); }
+
 .eon-swatches { display: flex; align-items: center; gap: 2px; }
 .eon-swatch-hit { position: relative; display: grid; width: 40px; height: 40px; place-items: center; overflow: hidden; border: 0; border-radius: 10px; background: transparent; cursor: pointer; }
 .eon-swatch-hit > span { display: block; width: 18px; height: 18px; border-radius: 6px; }
@@ -511,7 +531,9 @@ button.eon-save-state { cursor: pointer; }
 .eon-changelog-card > header > div > span { margin-left: auto; font-size: 10px; font-variant-numeric: tabular-nums; }
 .eon-changelog-latest { min-height: 22px; border: 0; padding: 0 8px; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .eon-changelog-card h2 { margin: 7px 0 0; font-size: 17px; font-weight: 650; letter-spacing: -.025em; line-height: 1.3; text-wrap: balance; }
-.eon-changelog-card ul { display: flex; margin: 0; padding: 0 0 12px; flex-direction: column; gap: 9px; list-style: none; }
+.eon-changelog-group { padding-bottom: 14px; }
+.eon-changelog-group h3 { margin: 0 0 8px; font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.eon-changelog-card ul { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 9px; list-style: none; }
 .eon-changelog-card li { position: relative; padding-left: 17px; font-size: 13px; line-height: 1.55; text-wrap: pretty; }
 .eon-changelog-card li::before { content: ""; position: absolute; top: .6em; left: 3px; width: 5px; height: 5px; border-radius: 50%; background: var(--bullet); }
 @keyframes eon-changelog-entry-in { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
@@ -652,6 +674,7 @@ button.eon-save-state { cursor: pointer; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .eon-peek-segment.is-peekable, .eon-peek-segment-track,
   .eon-buttonish, .eon-comment, .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar, .eon-modal, .eon-controls-sheet, .eon-sheet, .eon-liquid-segment-indicator, .eon-brand-image, .eon-brand-skeleton { transition-duration: 0ms; }
   .eon-buttonish:active:not(:disabled) { transform: none; }
   .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar { transform: none; }

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
-  CHANGELOG, CHANGELOG_SEEN_KEY, latestChangelogDate, markChangelogSeen, readSeenChangelogDate,
+  CHANGELOG, CHANGELOG_SEEN_KEY, changelogCount, changelogGroups,
+  latestChangelogDate, markChangelogSeen, readSeenChangelogDate,
 } from "@/lib/changelog";
 
 export function useHubChangelog() {
@@ -79,7 +80,7 @@ export function HubChangelogDialog({ c, open, onClose }) {
     };
   };
 
-  const updateCount = CHANGELOG.reduce((total, entry) => total + entry.items.length, 0);
+  const updateCount = CHANGELOG.reduce((total, entry) => total + changelogCount(entry), 0);
 
   return (
     <div className="eon-modal-overlay" onMouseDown={(event) => {
@@ -141,15 +142,20 @@ export function HubChangelogDialog({ c, open, onClose }) {
                           Latest
                         </Badge>
                       )}
-                      <span style={{ color: c.muted }}>{entry.items.length} updates</span>
+                      <span style={{ color: c.muted }}>{changelogCount(entry)} updates</span>
                     </div>
                     <h2 style={{ color: c.text }}>{entry.title}</h2>
                   </header>
-                  <ul style={{ color: c.secondary }}>
-                    {entry.items.map((item) => (
-                      <li key={item} style={{ "--bullet": c.muted }}>{item}</li>
-                    ))}
-                  </ul>
+                  {changelogGroups(entry).map((group) => (
+                    <div key={group.label || "all"} className="eon-changelog-group">
+                      {group.label && <h3 style={{ color: c.muted }}>{group.label}</h3>}
+                      <ul style={{ color: c.secondary }}>
+                        {group.items.map((item) => (
+                          <li key={item} style={{ "--bullet": c.muted }}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </article>
               </section>
             );

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { fetchLinearIssue, uploadCommentImage, MAX_COMMENT_IMAGE_BYTES } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
 import LiquidSegmentedControl from "@/components/LiquidSegmentedControl";
+import PeekSegmented from "@/components/PeekSegmented";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { Liquid } from "liquid-gooey";
 import {
@@ -31,7 +33,10 @@ import { buildSetupPrompt } from "./setupPrompt";
 import {
   anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, isBridgeMessage,
 } from "./anchorBridge";
-import { pickHtmlFile, supportsFileLink, watchFile } from "@/lib/localFile";
+import {
+  ensureReadPermission, forgetFileLink, pickHtmlFile, recallFileLink,
+  rememberFileLink, supportsFileLink, watchFile,
+} from "@/lib/localFile";
 import { useSystemTheme } from "@/lib/systemTheme";
 import { copyText, useStoredState } from "@/lib/uiState";
 
@@ -146,6 +151,11 @@ export default function PrototypeWorkspace({
   const [autoPublish, setAutoPublish] = useState(true);
   const [localHtml, setLocalHtml] = useState(null);
   const [fileLinkError, setFileLinkError] = useState("");
+  // A handle kept from a previous session. Reconnecting needs a click, because
+  // the browser only regrants file access inside a user gesture.
+  const [rememberedLink, setRememberedLink] = useState(null);
+  const publishTimerRef = useRef(0);
+  const pendingPublishRef = useRef(null);
   const autoPublishRef = useRef(autoPublish);
   autoPublishRef.current = autoPublish;
   const patchProjectRef = useRef(onPatchProject);
@@ -450,6 +460,17 @@ export default function PrototypeWorkspace({
     return () => window.removeEventListener("keydown", exit);
   }, [focusMode]);
 
+  // A window that loses its hovering pointer (or is resized down to a touch
+  // layout) would strand the panels off screen with no way to reveal them.
+  useEffect(() => {
+    if (!focusMode) return undefined;
+    const query = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const check = () => { if (!query.matches) { setFocusMode(false); setPeek(null); } };
+    check();
+    query.addEventListener("change", check);
+    return () => query.removeEventListener("change", check);
+  }, [focusMode]);
+
   // Full view is about one prototype, so switching prototypes leaves it.
   useEffect(() => { setFocusMode(false); setPeek(null); }, [story?.id]);
   useEffect(() => { if (view !== "stories") { setFocusMode(false); setPeek(null); } }, [view]);
@@ -547,26 +568,52 @@ export default function PrototypeWorkspace({
 
   // Watch the linked file. Keeps running (and publishing) even while another
   // prototype is selected, so background syncs aren't lost.
+  // A burst of saves (format-on-save, a build writing twice) should reach the
+  // team as one write, not one per keystroke.
+  const queuePublish = (projectId, content) => {
+    pendingPublishRef.current = { projectId, content };
+    if (publishTimerRef.current) return;
+    publishTimerRef.current = window.setTimeout(() => {
+      publishTimerRef.current = 0;
+      const pending = pendingPublishRef.current;
+      pendingPublishRef.current = null;
+      if (pending) patchProjectRef.current(pending.projectId, { prototype_html: pending.content });
+    }, 700);
+  };
+  useEffect(() => () => window.clearTimeout(publishTimerRef.current), []);
+
   useEffect(() => {
     if (!fileLink?.handle) return undefined;
-    const { handle, projectId, lastModified } = fileLink;
+    const { handle, projectId, lastModified, size } = fileLink;
     return watchFile(
       handle,
-      lastModified,
+      { lastModified, size },
       (content, mtime) => {
+        setFileLinkError("");
         setLocalHtml(content);
         setFileLink((current) => (current?.handle === handle
           ? { ...current, lastModified: mtime, lastSyncAt: Date.now() }
           : current));
-        if (autoPublishRef.current) patchProjectRef.current(projectId, { prototype_html: content });
+        if (autoPublishRef.current) queuePublish(projectId, content);
       },
-      () => {
-        setFileLinkError("The linked file moved or was deleted. Link it again to resume.");
+      (error) => {
+        setFileLinkError(error.message);
         setFileLink(null);
         setLocalHtml(null);
       },
     );
   }, [fileLink?.handle]);
+
+  // Offer to pick the previous session's file back up.
+  useEffect(() => {
+    if (!story?.id || !supportsFileLink()) return undefined;
+    let stale = false;
+    setRememberedLink(null);
+    recallFileLink(story.id).then((saved) => {
+      if (!stale && saved?.handle) setRememberedLink(saved);
+    });
+    return () => { stale = true; };
+  }, [story?.id]);
 
   const openLinearContext = () => {
     setOpenContextRow("linear");
@@ -574,25 +621,52 @@ export default function PrototypeWorkspace({
     if (breakpoints.inspectorDrawer) setNavOpen(false);
   };
 
+  const adoptFile = (handle, name, file, content) => {
+    setLocalHtml(content);
+    setFileLink({
+      handle, name, projectId: story.id,
+      lastModified: file.lastModified, size: file.size, lastSyncAt: Date.now(),
+    });
+    setRememberedLink({ handle, name });
+    rememberFileLink(story.id, handle, name);
+    if (autoPublishRef.current) patchProjectRef.current(story.id, { prototype_html: content });
+  };
+
   const linkLocalFile = async () => {
     setFileLinkError("");
     try {
       const picked = await pickHtmlFile();
       if (!picked) return;
-      setLocalHtml(picked.content);
-      setFileLink({
-        handle: picked.handle, name: picked.name, projectId: story.id,
-        lastModified: picked.lastModified, lastSyncAt: Date.now(),
-      });
-      if (autoPublishRef.current) patchProjectRef.current(story.id, { prototype_html: picked.content });
+      adoptFile(picked.handle, picked.name, picked, picked.content);
     } catch (error) {
       setFileLinkError(error?.message || "Couldn't read that file.");
     }
   };
+
+  const reconnectLocalFile = async () => {
+    const saved = rememberedLink;
+    if (!saved?.handle) return;
+    setFileLinkError("");
+    try {
+      if (!(await ensureReadPermission(saved.handle))) {
+        setFileLinkError("The browser did not grant access to that file. Link it again.");
+        return;
+      }
+      const file = await saved.handle.getFile();
+      adoptFile(saved.handle, saved.name || file.name, file, await file.text());
+    } catch {
+      setFileLinkError("That file is no longer reachable. Link it again.");
+      setRememberedLink(null);
+      forgetFileLink(story.id);
+    }
+  };
+
   const unlinkLocalFile = () => {
     setFileLink(null);
     setLocalHtml(null);
     setFileLinkError("");
+    setRememberedLink(null);
+    forgetFileLink(story.id);
   };
   const publishLocalFile = () => {
     if (fileLink && localHtml != null) patchProjectRef.current(fileLink.projectId, { prototype_html: localHtml });
@@ -630,6 +704,15 @@ export default function PrototypeWorkspace({
   }));
   const patch = (field, value) => onPatchProject(story.id, { [field]: value });
   const openFull = () => {
+    // Focus mode reveals the panels on edge hover. Without a hovering pointer
+    // that is a trap, so touch devices open the prototype as its own page.
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      const wrapper = sandboxedFullView(html, story.title);
+      const url = URL.createObjectURL(new Blob([wrapper], { type: "text/html" }));
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      return;
+    }
     setFocusMode(true);
     setPeek(null);
   };
@@ -877,6 +960,8 @@ export default function PrototypeWorkspace({
           isLiveLinked={isLiveLinked} fileLink={fileLink?.projectId === story.id ? fileLink : null} isBuiltIn={isBuiltIn}
           compare={effCompare} setCompare={setCompare} canCompare={!breakpoints.noCompare}
           onOpenSource={() => setShowUpload(true)}
+          rememberedLink={supportsFileLink() && !isLiveLinked ? rememberedLink : null}
+          onReconnect={reconnectLocalFile} fileLinkError={fileLinkError}
           openRow={openContextRow} setOpenRow={setOpenContextRow}
           resize={inspectorResize}
           isDrawer={breakpoints.inspectorDrawer && !focusMode} onClose={() => setInspectorOpen(false)}
@@ -936,7 +1021,24 @@ function WorkspaceSidebar({
   const prototypeCount = Object.values(groups).reduce((total, items) => total + items.length, 0);
   const mediaCount = Object.keys(media || {}).length;
   const [collapsedGroups, setCollapsedGroups] = useState({});
+  const [menuRect, setMenuRect] = useState(null);
+  const menuTriggerRef = useRef(null);
+  const listRef = useRef(null);
   const drawerRef = useDrawerFocus(isDrawer, onClose);
+
+  // The menu is fixed to where the trigger was, so scrolling the list would
+  // leave it stranded. Close instead of chasing.
+  useEffect(() => {
+    if (!storyMenuId) { setMenuRect(null); return undefined; }
+    const node = listRef.current;
+    const close = () => setStoryMenuId(null);
+    node?.addEventListener("scroll", close, { passive: true });
+    window.addEventListener("resize", close);
+    return () => {
+      node?.removeEventListener("scroll", close);
+      window.removeEventListener("resize", close);
+    };
+  }, [storyMenuId, setStoryMenuId]);
   return (
     <aside
       data-tutorial="prototype-library"
@@ -1003,7 +1105,7 @@ function WorkspaceSidebar({
         )}
       </div>
 
-      <div className="eon-story-list">
+      <div ref={listRef} className="eon-story-list">
         {view === "stories" ? <>
           {!hasResults && (
             <div className="eon-sidebar-empty" style={{ color: c.muted }}>
@@ -1079,21 +1181,28 @@ function WorkspaceSidebar({
                   )}
                   {canDelete && renamingId !== item.id && (
                     <div style={{ position: "relative", flexShrink: 0 }}>
-                      <button className="eon-buttonish eon-icon-button" onClick={() => setStoryMenuId((current) => current === item.id ? null : item.id)}
-                        aria-label={`Actions for ${item.title}`} aria-expanded={storyMenuId === item.id} style={{ color: c.muted }}>
+                      <button ref={(node) => { if (storyMenuId === item.id) menuTriggerRef.current = node; }}
+                        className="eon-buttonish eon-icon-button"
+                        onClick={(event) => {
+                          const opening = storyMenuId !== item.id;
+                          menuTriggerRef.current = event.currentTarget;
+                          setMenuRect(opening ? event.currentTarget.getBoundingClientRect() : null);
+                          setStoryMenuId(opening ? item.id : null);
+                        }}
+                        aria-label={`Actions for ${item.title}`} aria-expanded={storyMenuId === item.id} aria-haspopup="menu" style={{ color: c.muted }}>
                         <MoreHorizontal size={16} />
                       </button>
-                      {storyMenuId === item.id && (
-                        <div className="eon-story-menu" role="menu" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
+                      {storyMenuId === item.id && menuRect && (
+                        <FloatingMenu c={c} anchor={menuRect} storyId={item.id} itemCount={isAdmin ? 4 : 1}>
                           {isAdmin && <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>}
                           {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>}
                           {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>}
-                          <button className="eon-buttonish" role="menuitem" onClick={(event) => {
-                            const restoreFocus = event.currentTarget.closest("[data-story-menu]")?.querySelector('button[aria-label^="Actions for"]');
+                          <button className="eon-buttonish" role="menuitem" onClick={() => {
+                            const restoreFocus = menuTriggerRef.current;
                             setStoryMenuId(null);
                             onDeleteProject?.(item.id, restoreFocus);
                           }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
-                        </div>
+                        </FloatingMenu>
                       )}
                     </div>
                   )}
@@ -1236,6 +1345,7 @@ function CanvasControlBar({
   protoTheme, setProtoTheme, canvasBg, setCanvasBg, segmented, compact,
 }) {
   const [open, setOpen] = useState(false);
+  const [stateExpanded, setStateExpanded] = useState(false);
   const sheetRef = useDrawerFocus(compact && open, () => setOpen(false));
   const firstControl = layout === "single" ? (effStory.controls || [])[0] : null;
   const activeSummary = firstControl ? args[firstControl.key] : (layout === "grid" ? effGridBy : protoTheme);
@@ -1245,7 +1355,11 @@ function CanvasControlBar({
   const stateContent = (
     <>
       {stateControls.map((control) => (
-        <ToolGroup key={control.key} label={control.label} c={c}>{segmented(control.options, args[control.key], (value) => setArg(control.key, value))}</ToolGroup>
+        <ToolGroup key={control.key} label={control.label} c={c}>
+          <PeekSegmented value={args[control.key]} optionsKey={control.options.join("\u0000")} enabled={!compact} onOpenChange={setStateExpanded}>
+            {segmented(control.options, args[control.key], (value) => setArg(control.key, value))}
+          </PeekSegmented>
+        </ToolGroup>
       ))}
       {layout === "grid" && <ToolGroup label="Lay out by" c={c}>{segmented(gridOptions, effGridBy, setGridBy)}</ToolGroup>}
     </>
@@ -1309,7 +1423,7 @@ function CanvasControlBar({
   if (!hasStateControls) return null;
 
   return (
-    <div data-tutorial="canvas-controls" className="eon-ctlbar eon-ctlbar-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+    <div data-tutorial="canvas-controls" className={`eon-ctlbar eon-ctlbar-float${stateExpanded ? " is-expanded" : ""}`} style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
       {stateContent}
     </div>
   );
@@ -1398,6 +1512,7 @@ function ReviewInspector({
   anchors, editLinear, setEditLinear, editFigma, setEditFigma,
   liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn,
   compare, setCompare, canCompare, onOpenSource,
+  rememberedLink, onReconnect, fileLinkError,
   openRow, setOpenRow,
   resize, isDrawer, onClose, peeking = null, onPeekStart, onPeekEnd,
 }) {
@@ -1442,20 +1557,31 @@ function ReviewInspector({
           valueTone={isLiveLinked ? c.brand : undefined} live={isLiveLinked}
           open={openRow === "source"} onToggle={() => toggleRow("source")}
           actions={(
-            <button className="eon-buttonish eon-context-action" onClick={onOpenSource} style={{ borderColor: c.border, color: c.secondary }}>
-              {story.prototype_html || isLiveLinked ? "Replace" : "Upload"}
-            </button>
+            <>
+              {rememberedLink && (
+                <button className="eon-buttonish eon-context-action" onClick={onReconnect}
+                  title={`Reconnect ${rememberedLink.name}`} style={{ borderColor: c.border, color: c.brand }}>
+                  Reconnect
+                </button>
+              )}
+              <button className="eon-buttonish eon-context-action" onClick={onOpenSource} style={{ borderColor: c.border, color: c.secondary }}>
+                {story.prototype_html || isLiveLinked ? "Replace" : "Upload"}
+              </button>
+            </>
           )}
         >
           <p className="eon-context-note" style={{ color: c.muted }}>
             {isLiveLinked
               ? `Rendering from ${fileLink?.name} on your machine. The link lasts for this session.`
-              : story.prototype_html
-                ? "Rendering the HTML saved on this prototype. Your team sees the same file."
-                : isBuiltIn
-                  ? "Rendering the built-in demo for this slug. Upload HTML to replace it."
-                  : "Upload an HTML file to render this prototype."}
+              : rememberedLink
+                ? `${rememberedLink.name} was linked here before. Reconnect to resume live sync.`
+                : story.prototype_html
+                  ? "Rendering the HTML saved on this prototype. Your team sees the same file."
+                  : isBuiltIn
+                    ? "Rendering the built-in demo for this slug. Upload HTML to replace it."
+                    : "Upload an HTML file to render this prototype."}
           </p>
+          {fileLinkError && <p className="eon-context-note" role="alert" style={{ color: "#FF7A8A" }}>{fileLinkError}</p>}
         </ContextRow>
 
         <ContextRow
@@ -1527,6 +1653,42 @@ function ReviewInspector({
         </TabsContent>
       </Tabs>
     </aside>
+  );
+}
+
+/* ---- A row menu inside a scrolling, transformed panel cannot escape its
+   clipping with z-index alone, so it renders in a portal, fixed to where the
+   trigger was, and flips above the trigger when the bottom is close. ---- */
+function FloatingMenu({ c, anchor, storyId, itemCount, children }) {
+  const WIDTH = 172;
+  const height = 10 + itemCount * 40;
+  const margin = 8;
+  const gap = 6;
+  const flipUp = anchor.bottom + gap + height > window.innerHeight - margin
+    && anchor.top - gap - height > margin;
+  const top = flipUp ? anchor.top - gap - height : anchor.bottom + gap;
+  const left = Math.min(
+    window.innerWidth - WIDTH - margin,
+    Math.max(margin, anchor.right - WIDTH),
+  );
+
+  return createPortal(
+    <div
+      className="eon-story-menu is-floating"
+      role="menu"
+      data-story-menu={storyId}
+      style={{
+        top: Math.max(margin, top),
+        left,
+        width: WIDTH,
+        transformOrigin: flipUp ? "bottom right" : "top right",
+        background: c.panel,
+        boxShadow: hubShadow(c),
+      }}
+    >
+      {children}
+    </div>,
+    document.body,
   );
 }
 
@@ -2494,6 +2656,12 @@ function SaveIndicator({ c, state, onRetry, compact = false }) {
       {content.icon}<span>{content.label}</span>{state === "error" && onRetry && !compact ? <span>· Retry</span> : null}
     </Tag>
   );
+}
+
+function sandboxedFullView(source, title) {
+  const escapedSource = String(source).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const escapedTitle = String(title || "Prototype").replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]);
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapedTitle}</title><style>*{box-sizing:border-box}html,body,iframe{width:100%;height:100%;margin:0}iframe{display:block;border:0}</style></head><body><iframe title="${escapedTitle}" sandbox="${PROTOTYPE_SANDBOX}" referrerpolicy="no-referrer" allow="clipboard-read; clipboard-write" srcdoc="${escapedSource}"></iframe></body></html>`;
 }
 
 function readStoredJson(key) {

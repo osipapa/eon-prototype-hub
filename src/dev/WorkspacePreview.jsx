@@ -42,8 +42,14 @@ const initialProjects = [
     title: "Checkout concept",
     group_name: "Growth experiments",
     status: "In review",
-    controls: [],
-    defaults: {},
+    // Deliberately long, so the preview exercises the collapsed state control.
+    controls: [
+      { key: "state", label: "State", options: [
+        "trip-details", "free-slots", "last-free", "first-paid", "mixed",
+        "duplicate", "at-limit", "declined", "sent",
+      ] },
+    ],
+    defaults: { state: "mixed" },
     figma_url: "",
     issue_id: "",
     issue_url: "",
