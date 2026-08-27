@@ -1282,12 +1282,45 @@ button.eon-save-state { cursor: pointer; }
 .eon-design-steps li > div { padding: 5px 0 24px; }
 .eon-design-steps strong { font-size: 14px; font-weight: 650; }
 .eon-design-steps p { max-width: 680px; margin: 6px 0 0; font-size: 12px; line-height: 1.58; }
-.eon-design-scale { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 10px; list-style: none; }
-.eon-design-scale li { display: flex; align-items: flex-start; gap: 14px; padding: 16px; border-radius: 18px; }
-.eon-design-scale li > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.eon-design-scale li strong { font-size: 15px; letter-spacing: -.01em; }
+/* Estimate scale as a timeline: the dot grows with the estimate, and the rail
+   runs behind it so the jump from one point to the next is visible. */
+/* --scale-text clears the largest dot, so every row starts at one column. */
+.eon-design-scale { --scale-axis: 36px; --scale-text: 54px; display: flex; margin: 22px 0 0; padding: 0; flex-direction: column; list-style: none; }
+.eon-design-scale li { position: relative; min-height: 64px; padding: 0 0 26px calc(var(--scale-axis) + var(--scale-text)); }
+.eon-design-scale li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--scale-axis) - 1px);
+  width: 2px;
+  border-radius: 2px;
+  background: var(--rail);
+}
+.eon-design-scale li:first-child::before { top: 12px; }
+.eon-design-scale li:last-child { padding-bottom: 0; }
+.eon-design-scale li:last-child::before { bottom: auto; height: calc(var(--dot) / 2 + 6px); }
+.eon-design-scale li.is-oversized::before { background: repeating-linear-gradient(to bottom, var(--rail) 0 4px, transparent 4px 9px); }
+.eon-design-scale-dot {
+  position: absolute;
+  top: 0;
+  left: calc(var(--scale-axis) - var(--dot) / 2);
+  display: grid;
+  width: var(--dot);
+  height: var(--dot);
+  place-items: center;
+  border-radius: 50%;
+  font-size: clamp(11px, calc(var(--dot) * .34), 18px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.eon-design-scale li > div { display: flex; min-width: 0; flex-direction: column; gap: 3px; padding-top: calc(var(--dot) / 2 - 12px); }
+.eon-design-scale li strong { display: flex; align-items: center; gap: 9px; font-size: 15px; letter-spacing: -.01em; }
+.eon-design-scale li strong em { font-size: 10px; font-style: normal; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
 .eon-design-scale li p { margin: 0; font-size: 13px; line-height: 1.55; }
-.eon-design-scale-points { display: grid; width: 44px; height: 44px; flex: 0 0 44px; place-items: center; border-radius: 14px; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 620px) {
+  .eon-design-scale { --scale-axis: 30px; --scale-text: 44px; }
+}
 
 .eon-design-checklist { display: flex; overflow: hidden; margin: 28px 0 0; padding: 0; flex-direction: column; border-radius: 24px; list-style: none; }
 .eon-design-checklist li { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; border-top: 1px solid rgba(144, 148, 165, .15); }
