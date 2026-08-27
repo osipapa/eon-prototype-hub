@@ -409,6 +409,26 @@ button.eon-save-state { cursor: pointer; }
 .eon-canvas-stage { display: flex; align-items: center; justify-content: center; padding: 32px 32px 96px; box-sizing: border-box; }
 .eon-grid-stage { min-width: 100%; min-height: 100%; padding: 28px; box-sizing: border-box; }
 .eon-prototype-frame { display: block; border: 0; border-radius: 13px; background: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 18px 60px rgba(0,0,0,.32); }
+
+/* Mobile viewport sits in a phone shell. The shell is decoration drawn around
+   the frame box, so pin coordinates and scaling are untouched. */
+.eon-stage-frame.is-device .eon-prototype-frame {
+  border-radius: calc(48px * var(--device-scale, 1));
+  box-shadow: none;
+}
+.eon-device-png { position: absolute; z-index: 2; max-width: none; pointer-events: none; object-fit: fill; }
+.eon-device-shell {
+  position: absolute;
+  z-index: 2;
+  border-style: solid;
+  border-color: #d8d9dc;
+  background: transparent;
+  pointer-events: none;
+}
+.eon-device-shell > span { position: absolute; display: block; }
+.eon-device-island { left: 50%; transform: translateX(-50%); background: #050505; }
+.eon-device-key { background: linear-gradient(to bottom, #c9cace, #9fa1a6 45%, #c9cace); }
+.light .eon-device-shell { border-color: #b9bbc0; }
 .light .eon-prototype-frame { box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 18px 60px rgba(0,0,0,.18); }
 .eon-media-scroll { min-height: 0; flex: 1; overflow: auto; }
 
