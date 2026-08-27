@@ -22,6 +22,8 @@ export const CHANGELOG = [
           "A long list of prototype states now collapses to the current selection with its neighbours peeking in, and expands on hover.",
           "A local file linked in an earlier session can be reconnected from the Source row instead of picked again from scratch.",
           "A live-linked file says what it is doing: syncing, synced at a time, or rendering locally when auto-publish is off.",
+          "Eon Design has a Linear section: handoff flow, estimation, and card quality with QA, each on its own page.",
+          "Estimation documents what a point is worth on our boards: 4 is about a day, 8 about half a week, 16 about a week.",
         ],
       },
       {

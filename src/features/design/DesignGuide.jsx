@@ -28,9 +28,16 @@ const PAGE_GROUPS = [
     ],
   },
   {
+    label: "Linear",
+    pages: [
+      { slug: "linear-handoff", title: "Handoff flow" },
+      { slug: "linear-estimation", title: "Estimation" },
+      { slug: "linear-cards", title: "Card quality & QA" },
+    ],
+  },
+  {
     label: "Resources",
     pages: [
-      { slug: "linear-handoff", title: "Linear handoff" },
       { slug: "common-files", title: "Common files & tools" },
     ],
   },
@@ -51,7 +58,7 @@ const PAGE_CONTENT = {
         cards: [
           { title: "Principles", body: "The qualities we want every Eon experience to express.", icon: Sparkles, to: "principles" },
           { title: "Ways of working", body: "A practical path from framing through learning.", icon: Workflow, to: "product-process" },
-          { title: "Delivery", body: "Review and Linear handoff practices that reduce ambiguity.", icon: FileCheck2, to: "linear-handoff" },
+          { title: "Linear", body: "How we point, hand off, and QA work on the board.", icon: FileCheck2, to: "linear-handoff" },
           { title: "Resources", body: "Common destinations for files, tools, and shared references.", icon: FolderOpen, to: "common-files" },
         ],
       },
@@ -157,9 +164,9 @@ const PAGE_CONTENT = {
     ],
   },
   "linear-handoff": {
-    kicker: "Resources",
-    title: "Linear handoff",
-    summary: "The board flow, ownership rules, and review gates that carry design work from an idea through Engineering QA.",
+    kicker: "Linear",
+    title: "Handoff flow",
+    summary: "The board flow and review gates that carry design work from an idea through Engineering QA.",
     sections: [
       {
         id: "board-flow",
@@ -226,6 +233,42 @@ const PAGE_CONTENT = {
           ],
         },
       },
+    ],
+  },
+  "linear-estimation": {
+    kicker: "Linear",
+    title: "Estimation",
+    summary: "What a point means on our boards, so an estimate reads the same to everyone who opens the card.",
+    sections: [
+      {
+        id: "point-scale",
+        title: "What a point is worth",
+        body: "Points describe effort, not calendar time. The anchors below are what the team agreed: use them to place a card on the scale, not to promise a delivery date.",
+        scale: [
+          { points: "4", meaning: "About a day", note: "One focused day of work with the shape already clear." },
+          { points: "8", meaning: "About half a week", note: "A few days. Usually several states or a dependency to resolve." },
+          { points: "16", meaning: "About a week", note: "The largest a single card should get. Above this, split it." },
+        ],
+      },
+      {
+        id: "estimating-well",
+        title: "How to land on a number",
+        body: "Estimate the whole card, including the states, the edge cases, and the review rounds the work will actually need.",
+        checklist: [
+          "Size the work as written on the card. If the scope is not clear enough to size, the card is not ready to estimate.",
+          "Include the states, the empty and error paths, and the review rounds, not just the ideal screen.",
+          "For anything under a day, use the small end of the scale. Pick by how much is unknown, not by counting hours.",
+          "If a card would go past 16, split it into cards that each deliver something on their own.",
+          "Re-point when scope changes, and say on the card why the number moved.",
+        ],
+      },
+    ],
+  },
+  "linear-cards": {
+    kicker: "Linear",
+    title: "Card quality & QA",
+    summary: "What a card has to contain to be useful to the next person, and how QA findings stay readable.",
+    sections: [
       {
         id: "card-ownership",
         title: "The assignee owns the quality of the card",
@@ -444,6 +487,19 @@ function DesignSection({ section, c, onSelectPage, navigateProduct }) {
             </button>
           ))}
         </div>
+      )}
+      {section.scale && (
+        <ol className="eon-design-scale">
+          {section.scale.map((step) => (
+            <li key={step.points} style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+              <span className="eon-design-scale-points eon-accent-icon" style={{ background: c.active, color: c.brand }}>{step.points}</span>
+              <div>
+                <strong>{step.meaning}</strong>
+                <p style={{ color: c.secondary }}>{step.note}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       )}
       {section.linearFlow && <LinearHandoffFlow flow={section.linearFlow} c={c} />}
       {section.qaProtocol && <QaCommentProtocol c={c} />}
