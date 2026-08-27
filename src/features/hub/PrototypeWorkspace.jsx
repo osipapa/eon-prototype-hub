@@ -154,6 +154,8 @@ export default function PrototypeWorkspace({
   // A handle kept from a previous session. Reconnecting needs a click, because
   // the browser only regrants file access inside a user gesture.
   const [rememberedLink, setRememberedLink] = useState(null);
+  // What the live link is doing right now, so the Source row can say so.
+  const [fileSync, setFileSync] = useState(null); // { phase: "syncing"|"synced"|"local", at }
   const publishTimerRef = useRef(0);
   const pendingPublishRef = useRef(null);
   const autoPublishRef = useRef(autoPublish);
@@ -577,7 +579,9 @@ export default function PrototypeWorkspace({
       publishTimerRef.current = 0;
       const pending = pendingPublishRef.current;
       pendingPublishRef.current = null;
-      if (pending) patchProjectRef.current(pending.projectId, { prototype_html: pending.content });
+      if (!pending) return;
+      patchProjectRef.current(pending.projectId, { prototype_html: pending.content });
+      setFileSync({ phase: "synced", at: Date.now() });
     }, 700);
   };
   useEffect(() => () => window.clearTimeout(publishTimerRef.current), []);
@@ -594,12 +598,15 @@ export default function PrototypeWorkspace({
         setFileLink((current) => (current?.handle === handle
           ? { ...current, lastModified: mtime, lastSyncAt: Date.now() }
           : current));
+        setFileSync({ phase: "syncing", at: Date.now() });
         if (autoPublishRef.current) queuePublish(projectId, content);
+        else setFileSync({ phase: "local", at: Date.now() });
       },
       (error) => {
         setFileLinkError(error.message);
         setFileLink(null);
         setLocalHtml(null);
+        setFileSync(null);
       },
     );
   }, [fileLink?.handle]);
@@ -628,6 +635,7 @@ export default function PrototypeWorkspace({
       lastModified: file.lastModified, size: file.size, lastSyncAt: Date.now(),
     });
     setRememberedLink({ handle, name });
+    setFileSync({ phase: autoPublishRef.current ? "synced" : "local", at: Date.now() });
     rememberFileLink(story.id, handle, name);
     if (autoPublishRef.current) patchProjectRef.current(story.id, { prototype_html: content });
   };
@@ -666,6 +674,7 @@ export default function PrototypeWorkspace({
     setLocalHtml(null);
     setFileLinkError("");
     setRememberedLink(null);
+    setFileSync(null);
     forgetFileLink(story.id);
   };
   const publishLocalFile = () => {
@@ -792,13 +801,14 @@ export default function PrototypeWorkspace({
     setSplitRatio((value) => Math.min(0.75, Math.max(0.25, value + (event.key === "ArrowRight" ? 0.05 : -0.05))));
   };
 
-  const segmented = (options, value, onPick, disabled = false) => (
+  const segmented = (options, value, onPick, disabled = false, ariaLabel) => (
     <LiquidSegmentedControl
       options={options}
       value={value}
       onValueChange={onPick}
       c={c}
       className="eon-segmented"
+      ariaLabel={ariaLabel}
       disabled={disabled}
     />
   );
@@ -958,6 +968,7 @@ export default function PrototypeWorkspace({
           editFigma={editFigma} setEditFigma={setEditFigma}
           liveLinear={liveLinear} linearId={linearId}
           isLiveLinked={isLiveLinked} fileLink={fileLink?.projectId === story.id ? fileLink : null} isBuiltIn={isBuiltIn}
+          fileSync={fileSync} autoPublish={autoPublish}
           compare={effCompare} setCompare={setCompare} canCompare={!breakpoints.noCompare}
           onOpenSource={() => setShowUpload(true)}
           rememberedLink={supportsFileLink() && !isLiveLinked ? rememberedLink : null}
@@ -1352,16 +1363,25 @@ function CanvasControlBar({
   const stateControls = layout === "single" ? (effStory.controls || []) : [];
   const hasStateControls = layout === "grid" || stateControls.length > 0;
 
-  const stateContent = (
+  // On the canvas the control floats with no surface behind it, so a bare text
+  // label would sit on whatever background the user picked. The sheet has a
+  // panel under it and keeps its labels.
+  const stateContent = (labelled) => (
     <>
-      {stateControls.map((control) => (
-        <ToolGroup key={control.key} label={control.label} c={c}>
-          <PeekSegmented value={args[control.key]} optionsKey={control.options.join("\u0000")} enabled={!compact} onOpenChange={setStateExpanded}>
-            {segmented(control.options, args[control.key], (value) => setArg(control.key, value))}
+      {stateControls.map((control) => {
+        const control_ = (
+          <PeekSegmented key={control.key} value={args[control.key]} optionsKey={control.options.join("\u0000")}
+            enabled={!compact} onOpenChange={setStateExpanded}>
+            {segmented(control.options, args[control.key], (value) => setArg(control.key, value), false, control.label)}
           </PeekSegmented>
-        </ToolGroup>
-      ))}
-      {layout === "grid" && <ToolGroup label="Lay out by" c={c}>{segmented(gridOptions, effGridBy, setGridBy)}</ToolGroup>}
+        );
+        return labelled
+          ? <ToolGroup key={control.key} label={control.label} c={c}>{control_}</ToolGroup>
+          : control_;
+      })}
+      {layout === "grid" && (labelled
+        ? <ToolGroup key="grid" label="Lay out by" c={c}>{segmented(gridOptions, effGridBy, setGridBy)}</ToolGroup>
+        : segmented(gridOptions, effGridBy, setGridBy, false, "Lay out by"))}
     </>
   );
   const appearanceContent = (
@@ -1410,7 +1430,7 @@ function CanvasControlBar({
                 </div>
                 <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={() => setOpen(false)} aria-label="Close prototype controls" style={{ color: c.muted }}><X size={17} /></button>
               </div>
-              <div className="eon-controls-sheet-body">{stateContent}{appearanceContent}</div>
+              <div className="eon-controls-sheet-body">{stateContent(true)}{appearanceContent}</div>
             </section>
           </>
         )}
@@ -1423,8 +1443,8 @@ function CanvasControlBar({
   if (!hasStateControls) return null;
 
   return (
-    <div data-tutorial="canvas-controls" className={`eon-ctlbar eon-ctlbar-float${stateExpanded ? " is-expanded" : ""}`} style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
-      {stateContent}
+    <div data-tutorial="canvas-controls" className={`eon-ctlbar eon-ctlbar-float${stateExpanded ? " is-expanded" : ""}`}>
+      {stateContent(false)}
     </div>
   );
 }
@@ -1510,7 +1530,7 @@ function ToolGroup({ label, c, children }) {
 function ReviewInspector({
   c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
   anchors, editLinear, setEditLinear, editFigma, setEditFigma,
-  liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn,
+  liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn, fileSync, autoPublish,
   compare, setCompare, canCompare, onOpenSource,
   rememberedLink, onReconnect, fileLinkError,
   openRow, setOpenRow,
@@ -1525,6 +1545,12 @@ function ReviewInspector({
     : story.prototype_html ? "Uploaded HTML"
     : isBuiltIn ? "Built-in demo"
     : "Nothing uploaded";
+
+  const syncedAt = fileSync?.at || fileLink?.lastSyncAt;
+  const syncLabel = fileSync?.phase === "syncing" ? "Syncing"
+    : !autoPublish ? "Local only"
+    : syncedAt ? `Synced ${new Date(syncedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+    : "Watching";
 
   return (
     <aside
@@ -1553,7 +1579,17 @@ function ReviewInspector({
 
       <div className="eon-context" style={{ borderColor: c.border }}>
         <ContextRow
-          c={c} rowKey="source" icon={Upload} label="Source" value={sourceValue}
+          c={c} rowKey="source" icon={Upload} label="Source"
+          valueText={isLiveLinked ? `${sourceValue}, ${syncLabel}` : sourceValue}
+          value={isLiveLinked ? (
+            <>
+              {sourceValue}
+              <span className={`eon-sync-chip${fileSync?.phase === "syncing" ? " is-syncing" : ""}`}
+                style={{ background: c.raised, color: fileSync?.phase === "syncing" ? c.brand : c.muted }}>
+                {syncLabel}
+              </span>
+            </>
+          ) : sourceValue}
           valueTone={isLiveLinked ? c.brand : undefined} live={isLiveLinked}
           open={openRow === "source"} onToggle={() => toggleRow("source")}
           actions={(
@@ -1572,7 +1608,9 @@ function ReviewInspector({
         >
           <p className="eon-context-note" style={{ color: c.muted }}>
             {isLiveLinked
-              ? `Rendering from ${fileLink?.name} on your machine. The link lasts for this session.`
+              ? autoPublish
+                ? `Watching ${fileLink?.name} on your machine. Every save renders here and publishes to your team.`
+                : `Watching ${fileLink?.name} on your machine. Saves render here only until you publish.`
               : rememberedLink
                 ? `${rememberedLink.name} was linked here before. Reconnect to resume live sync.`
                 : story.prototype_html
@@ -1716,12 +1754,12 @@ function SourceSheet({ c, story, onClose, children }) {
 
 /* ---- One fact about the prototype: label, current value, the actions that
    change it. Collapsed by default so the panel reads as a list, not a form. ---- */
-function ContextRow({ c, rowKey, icon: Icon, label, value, valueTone, live, open, onToggle, actions, children }) {
+function ContextRow({ c, rowKey, icon: Icon, label, value, valueText, valueTone, live, open, onToggle, actions, children }) {
   const bodyId = `eon-context-${rowKey}`;
   return (
     <div className="eon-context-row">
       <div className="eon-context-row-head">
-        <button className="eon-buttonish eon-context-row-main" onClick={onToggle} aria-expanded={open} aria-controls={bodyId} aria-label={`${label}: ${value}`}>
+        <button className="eon-buttonish eon-context-row-main" onClick={onToggle} aria-expanded={open} aria-controls={bodyId} aria-label={`${label}: ${valueText ?? value}`}>
           <Icon size={14} style={{ color: c.muted }} aria-hidden="true" />
           <span className="eon-context-row-label" style={{ color: c.muted }}>{label}</span>
           <span className="eon-context-row-value" style={{ color: valueTone || c.text }}>

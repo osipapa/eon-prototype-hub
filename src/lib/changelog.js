@@ -21,6 +21,7 @@ export const CHANGELOG = [
           "Pinching on a trackpad zooms the canvas, including over the prototype itself.",
           "A long list of prototype states now collapses to the current selection with its neighbours peeking in, and expands on hover.",
           "A local file linked in an earlier session can be reconnected from the Source row instead of picked again from scratch.",
+          "A live-linked file says what it is doing: syncing, synced at a time, or rendering locally when auto-publish is off.",
         ],
       },
       {
@@ -35,6 +36,7 @@ export const CHANGELOG = [
           "Control labels dropped their shouting capitals, and sidebar comment counts carry an icon that says what they count.",
           "Status dots lost their outer halo ring, and the loading screen logo lost its container and pulsing ring.",
           "What's new lists its updates as grouped bullets instead of a card each.",
+          "The prototype state control floats on its own, with no container drawn around it.",
         ],
       },
       {

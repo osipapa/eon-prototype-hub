@@ -382,7 +382,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-canvas { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
 /* left+right anchors give the shrink-to-fit width the whole canvas to work
    with (left:50% alone caps it at half and wraps early); auto margins center. */
-.eon-ctlbar-float { position: absolute; bottom: 14px; left: 12px; right: 12px; z-index: 12; display: flex; width: fit-content; max-width: calc(100% - 24px); margin: 0 auto; align-items: center; justify-content: center; flex-wrap: wrap; border-radius: 18px; backdrop-filter: blur(18px); }
+.eon-ctlbar-float { position: absolute; bottom: 14px; left: 12px; right: 12px; z-index: 12; display: flex; width: fit-content; max-width: calc(100% - 24px); margin: 0 auto; align-items: center; justify-content: center; flex-wrap: wrap; }
 /* Split by Figma compare, the canvas gets too narrow for two clusters side by
    side, so the state pills step up a row instead of sitting under the zoom. */
 @container (max-width: 660px) {
@@ -975,10 +975,10 @@ button.eon-save-state { cursor: pointer; }
 }
 
 /* Floating canvas control bar + top toolbar: stay usable as the canvas narrows. */
-.eon-ctlbar { gap: 12px; padding: 8px 14px; row-gap: 8px; }
+.eon-ctlbar { gap: 10px; row-gap: 8px; }
 .eon-toolbar { row-gap: 8px; }
 @media (max-width: 760px) {
-  .eon-ctlbar { gap: 8px; padding: 6px 10px; }
+  .eon-ctlbar { gap: 8px; }
   .eon-ctlbar .eon-ctl-label { display: none; }
   /* One row cannot hold identity and the view switches this narrow, so the
      view switches take a line of their own rather than squeezing the title. */
@@ -1031,6 +1031,8 @@ button.eon-save-state { cursor: pointer; }
 .eon-live-chip-meta span { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eon-live-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .eon-live-toggle input { accent-color: var(--eon-accent-start); width: 14px; height: 14px; cursor: pointer; }
+.eon-sync-chip { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 18px; padding: 0 7px; border-radius: 9px; font-size: 10px; font-weight: 600; letter-spacing: .01em; white-space: nowrap; }
+.eon-sync-chip.is-syncing { animation: eon-live-pulse 1.4s ease-in-out infinite; }
 .eon-live-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 2px; padding: 2px 7px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: .02em; }
 .eon-live-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: #7FA78A; animation: eon-live-pulse 1.6s ease-in-out infinite; }
 @keyframes eon-live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
@@ -1064,7 +1066,7 @@ button.eon-save-state { cursor: pointer; }
   .eon-changelog-entry { animation: none; }
   .eon-spin, .eon-app-spinner, .eon-loading-mark, .eon-loading-bar span { animation: none; }
   .eon-toast { animation: none; }
-  .eon-live-dot { animation: none; }
+  .eon-live-dot, .eon-sync-chip.is-syncing { animation: none; }
 }
 
 /* Design Hub: single-example tracking reference. */
