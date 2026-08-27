@@ -20,6 +20,7 @@ export const CHANGELOG = [
           "Full view now happens inside the app instead of a new tab: the chrome drops away, and the library or context panel slides back in when the pointer reaches a screen edge. Esc leaves. Touch devices still get the prototype as its own page.",
           "Pinching on a trackpad zooms the canvas, including over the prototype itself.",
           "A long list of prototype states now collapses to the current selection with its neighbours peeking in, and expands on hover.",
+          "The setup prompt now tells prototypes to respect the iPhone safe areas, so a search bar or nav no longer ends up sliced by the Dynamic Island.",
           "The mobile viewport renders inside the iPhone mockup from the media library, so a mobile prototype reads as a phone rather than a floating rectangle. The mobile canvas is now 402x874, an iPhone 17 Pro, which is the screen that mockup frames.",
           "A local file linked in an earlier session can be reconnected from the Source row instead of picked again from scratch.",
           "A live-linked file says what it is doing: syncing, synced at a time, or rendering locally when auto-publish is off.",
@@ -39,7 +40,7 @@ export const CHANGELOG = [
           "Control labels dropped their shouting capitals, and sidebar comment counts carry an icon that says what they count.",
           "Status dots lost their outer halo ring, and the loading screen logo lost its container and pulsing ring.",
           "What's new lists its updates as grouped bullets instead of a card each.",
-          "The prototype state control floats on its own, with no container drawn around it.",
+          "The prototype state control floats on its own, with no container drawn around it. Collapsed, the pill keeps a solid edge and only the labels inside fade.",
         ],
       },
       {

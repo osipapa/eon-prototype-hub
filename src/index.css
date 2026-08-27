@@ -340,16 +340,24 @@ button.eon-save-state { cursor: pointer; }
 .eon-icon-segment .eon-icon-button { width: 36px; height: 34px; flex-basis: 36px; border-radius: 8px; }
 .eon-segmented { box-shadow: inset 0 0 0 1px rgba(144, 148, 165, .08); }
 /* Windowed segmented control: see PeekSegmented. */
-.eon-peek-segment { display: flex; min-width: 0; }
+.eon-peek-segment { --peek-ease: cubic-bezier(.22, 1, .36, 1); --peek-duration: 340ms; display: flex; min-width: 0; }
 .eon-peek-segment.is-peekable {
   overflow: hidden;
-  transition: width 220ms var(--ease-drawer);
+  /* The pill keeps its own crisp edge; only what is inside it fades. */
+  border-radius: 999px;
+  transition: width var(--peek-duration) var(--peek-ease);
+  will-change: width;
+}
+/* The mask sits on the buttons, not on the container, so the surface behind
+   them stays solid all the way to the rounded edge. */
+.eon-peek-segment.is-peekable .eon-liquid-segment {
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left, 0px), #000 calc(100% - var(--fade-right, 0px)), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left, 0px), #000 calc(100% - var(--fade-right, 0px)), transparent 100%);
+  transition: -webkit-mask-image var(--peek-duration) var(--peek-ease), mask-image var(--peek-duration) var(--peek-ease);
 }
 .eon-peek-segment.is-scrolling { overflow-x: auto; scrollbar-width: none; }
 .eon-peek-segment.is-scrolling::-webkit-scrollbar { width: 0; height: 0; }
-.eon-peek-segment-track { width: max-content; transition: transform 220ms var(--ease-drawer); }
+.eon-peek-segment-track { width: max-content; transition: transform var(--peek-duration) var(--peek-ease); }
 /* Expanded, the state pills overlap the zoom cluster rather than moving: a bar
    that slides out from under the cursor un-hovers itself and oscillates. */
 .eon-ctlbar-float.is-expanded { z-index: 14; }
@@ -701,7 +709,7 @@ button.eon-save-state { cursor: pointer; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .eon-peek-segment.is-peekable, .eon-peek-segment-track,
+  .eon-peek-segment.is-peekable, .eon-peek-segment-track, .eon-peek-segment.is-peekable .eon-liquid-segment,
   .eon-buttonish, .eon-comment, .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar, .eon-modal, .eon-controls-sheet, .eon-sheet, .eon-liquid-segment-indicator, .eon-brand-image, .eon-brand-skeleton { transition-duration: 0ms; }
   .eon-buttonish:active:not(:disabled) { transform: none; }
   .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar { transform: none; }

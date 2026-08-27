@@ -108,6 +108,16 @@ export function buildSetupPrompt({
     supportedViewports: Object.fromEntries(
       Object.entries(VIEWPORTS).map(([key, value]) => [key, { width: value.w, height: value.h }]),
     ),
+    // Measured off the iPhone 17 Pro mockup the hub frames the mobile viewport
+    // with. Points, at the 402x874 mobile size.
+    mobileSafeArea: {
+      device: "iPhone 17 Pro",
+      top: 59,
+      bottom: 34,
+      left: 0,
+      right: 0,
+      dynamicIsland: { width: 124, height: 36, offsetFromScreenTop: 14, centeredHorizontally: true },
+    },
     availableMediaTokens: availableMediaTokens(assets),
   };
 
@@ -161,6 +171,11 @@ ${JSON.stringify(context, null, 2)}${combinationWarning}
 - The generated context lists every supported viewport. The full interaction must remain usable at mobile, tablet, laptop, and desktop sizes.
 - Use box-sizing:border-box, zero body margin, fluid dimensions, sensible overflow, and responsive stacking. Avoid fixed-width layouts that crop at 402px.
 - Let content scroll vertically when needed; do not hide essential actions below an unscrollable fixed canvas.
+- Respect the device safe areas at the mobile size. The hub renders the mobile viewport inside a real iPhone mockup, so the Dynamic Island physically covers the top of the screen and the home indicator sits over the bottom. mobileSafeArea in the context above has the measured numbers.
+- Keep every piece of text, control, icon, and tap target clear of those top and bottom insets. A search field, title, or nav bar that starts at y=0 will be sliced by the island.
+- Full-bleed backgrounds are the exception and should extend under both insets: maps, photography, gradients, and sheet backdrops read better running edge to edge.
+- Express the insets with env(safe-area-inset-*) and a fallback, for example padding-top:max(59px, env(safe-area-inset-top)), so the same document is correct in the hub, in full view, and on a real device.
+- Do not draw your own status bar clock or battery. The mockup supplies the hardware; a painted status bar collides with the island.
 
 6) INTERACTION AND ACCESSIBILITY
 - Make the primary journey genuinely interactive with deterministic in-memory mock data. Include the relevant loading, empty, error, success, menu, modal, and validation states when the brief calls for them.
@@ -174,5 +189,6 @@ ${JSON.stringify(context, null, 2)}${combinationWarning}
 
 8) FINAL CHECK
 - Validate the HTML, both themes, all declared control options, all four viewports, keyboard navigation, focus visibility, overflow, and offline/CDN failure behavior.
+- At the mobile size, confirm nothing readable or tappable falls under the Dynamic Island or the home indicator.
 - Confirm that media remains expressed as {{tokens}} and that the output contains no Markdown or prose outside the HTML document.`;
 }
