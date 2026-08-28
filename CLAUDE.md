@@ -127,6 +127,13 @@ Every push that changes the platform adds an entry to `src/lib/changelog.js`
 (newest first, grouped by day — extend today's entry if one exists) in the same
 commit. Users see it via "What's new" (sparkles, sidebar footer).
 
+Whenever the change is something you can see, the entry carries an image: set
+`image` to a path under `public/` (e.g. `"changelog/2026-08-28-contrast.png"`;
+the renderer adds `import.meta.env.BASE_URL` for the Pages base) and `imageAlt`,
+which doubles as the caption. Capture it from a dev-only preview route
+(`?workspace-preview`, `?design-preview`, `?prompts-preview`,
+`?tracking-preview` — see `src/main.jsx`) so no sign-in is needed.
+
 ## Guardrails
 
 - Only the anon key goes in the client. Never commit `.env` or the service_role key.
