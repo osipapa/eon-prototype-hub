@@ -14,7 +14,7 @@ const FADE = 28;      // width of the edge fade
 const WORTH_IT = 28;  // below this saving, stay expanded and skip the effect
 const RESERVED = 96;   // the bar's own margins and padding
 
-export default function PeekSegmented({ value, optionsKey, enabled = true, onOpenChange, children }) {
+export default function PeekSegmented({ value, optionsKey, surface, enabled = true, onOpenChange, children }) {
   const trackRef = useRef(null);
   const scrollRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -84,7 +84,6 @@ export default function PeekSegmented({ value, optionsKey, enabled = true, onOpe
   return (
     <div
       className={`eon-peek-segment${metrics ? " is-peekable" : ""}${open ? " is-open" : ""}${scrolls ? " is-scrolling" : ""}`}
-      ref={scrollRef}
       onMouseEnter={() => metrics && setOpenState(true)}
       onMouseLeave={() => setOpenState(false)}
       onFocusCapture={() => metrics && setOpenState(true)}
@@ -95,14 +94,20 @@ export default function PeekSegmented({ value, optionsKey, enabled = true, onOpe
         width: open ? metrics.expanded : metrics.collapsed,
         "--fade-left": `${peeking ? metrics.fadeLeft : 0}px`,
         "--fade-right": `${peeking ? metrics.fadeRight : 0}px`,
+        "--peek-surface": surface,
       } : undefined}
     >
-      <div
-        ref={trackRef}
-        className="eon-peek-segment-track"
-        style={peeking ? { transform: `translateX(${-metrics.offset}px)` } : undefined}
-      >
-        {children}
+      {/* The window is what the mask measures against. Masking the track would
+          put the fade at the ends of the full-width strip, off screen, and
+          masking the outer element would dissolve the pill's own surface. */}
+      <div ref={scrollRef} className="eon-peek-segment-window">
+        <div
+          ref={trackRef}
+          className="eon-peek-segment-track"
+          style={peeking ? { transform: `translateX(${-metrics.offset}px)` } : undefined}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

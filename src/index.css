@@ -342,22 +342,23 @@ button.eon-save-state { cursor: pointer; }
    light mode, where the pill is white and needs something to sit inside. */
 /* Windowed segmented control: see PeekSegmented. */
 .eon-peek-segment { --peek-ease: cubic-bezier(.22, 1, .36, 1); --peek-duration: 340ms; display: flex; min-width: 0; }
+/* The pill's surface is painted by the outer element, which is never masked,
+   so its rounded edge stays crisp. The window inside it carries the mask, so
+   the fade is measured against what you can actually see. */
 .eon-peek-segment.is-peekable {
-  overflow: hidden;
-  /* The pill keeps its own crisp edge; only what is inside it fades. */
   border-radius: 999px;
+  background: var(--peek-surface);
   transition: width var(--peek-duration) var(--peek-ease);
   will-change: width;
 }
-/* The mask sits on the buttons, not on the container, so the surface behind
-   them stays solid all the way to the rounded edge. */
-.eon-peek-segment.is-peekable .eon-liquid-segment {
+.eon-peek-segment.is-peekable .eon-liquid-segment-shell { background: transparent !important; }
+.eon-peek-segment-window { position: relative; display: flex; min-width: 0; width: 100%; border-radius: inherit; overflow: hidden; }
+.eon-peek-segment.is-peekable .eon-peek-segment-window {
   -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left, 0px), #000 calc(100% - var(--fade-right, 0px)), transparent 100%);
   mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-left, 0px), #000 calc(100% - var(--fade-right, 0px)), transparent 100%);
-  transition: -webkit-mask-image var(--peek-duration) var(--peek-ease), mask-image var(--peek-duration) var(--peek-ease);
 }
-.eon-peek-segment.is-scrolling { overflow-x: auto; scrollbar-width: none; }
-.eon-peek-segment.is-scrolling::-webkit-scrollbar { width: 0; height: 0; }
+.eon-peek-segment.is-scrolling .eon-peek-segment-window { overflow-x: auto; scrollbar-width: none; }
+.eon-peek-segment.is-scrolling .eon-peek-segment-window::-webkit-scrollbar { width: 0; height: 0; }
 .eon-peek-segment-track { width: max-content; transition: transform var(--peek-duration) var(--peek-ease); }
 /* Expanded, the state pills overlap the zoom cluster rather than moving: a bar
    that slides out from under the cursor un-hovers itself and oscillates. */
@@ -715,7 +716,7 @@ button.eon-save-state { cursor: pointer; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .eon-peek-segment.is-peekable, .eon-peek-segment-track, .eon-peek-segment.is-peekable .eon-liquid-segment,
+  .eon-peek-segment.is-peekable, .eon-peek-segment-track,
   .eon-buttonish, .eon-comment, .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar, .eon-modal, .eon-controls-sheet, .eon-sheet, .eon-liquid-segment-indicator, .eon-brand-image, .eon-brand-skeleton { transition-duration: 0ms; }
   .eon-buttonish:active:not(:disabled) { transform: none; }
   .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar { transform: none; }

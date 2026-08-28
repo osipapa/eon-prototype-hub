@@ -1388,7 +1388,7 @@ function CanvasControlBar({
       {stateControls.map((control) => {
         const control_ = (
           <PeekSegmented key={control.key} value={args[control.key]} optionsKey={control.options.join("\u0000")}
-            enabled={!compact} onOpenChange={setStateExpanded}>
+            surface={c.raised} enabled={!compact} onOpenChange={setStateExpanded}>
             {segmented(control.options, args[control.key], (value) => setArg(control.key, value), false, control.label)}
           </PeekSegmented>
         );

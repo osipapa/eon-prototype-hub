@@ -73,7 +73,7 @@ export const CHANGELOG = [
           "Control labels dropped their shouting capitals, and sidebar comment counts carry an icon that says what they count.",
           "Status dots lost their outer halo ring, and the loading screen logo lost its container and pulsing ring.",
           "What's new lists its updates as grouped bullets instead of a card each.",
-          "The prototype state control floats on its own, with no container drawn around it. Collapsed, the pill keeps a solid edge and only the labels inside fade.",
+          "The prototype state control floats on its own, with no container drawn around it. Collapsed, the pill keeps a solid edge while the labels either side of the selection fade out.",
         ],
       },
       {
