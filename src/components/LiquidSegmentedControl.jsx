@@ -84,7 +84,7 @@ export default function LiquidSegmentedControl({
   return (
     <div
       className={`eon-liquid-segment-shell is-${variant}`}
-      style={{ background: c.raised, opacity: disabled ? 0.45 : 1 }}
+      style={{ background: c.raised, boxShadow: c.well, opacity: disabled ? 0.45 : 1 }}
     >
       <Liquid
         ref={rootRef}

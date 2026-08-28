@@ -5,11 +5,44 @@
 
    Each entry's changes are grouped so a long release stays scannable. Use the
    labels in GROUP_ORDER and keep them in that order; drop any group with
-   nothing in it. */
+   nothing in it.
+
+   An entry may carry `image` (a path under public/, so it survives the Pages
+   build) and `imageAlt`. Add one whenever the release is something you can see:
+   a screenshot of the change says more than the bullet describing it. Leave it
+   off when the work has nothing to show. */
 
 export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixes"];
 
 export const CHANGELOG = [
+  {
+    date: "2026-08-28",
+    title: "Light mode gets its contrast back",
+    image: "changelog/2026-08-28-contrast.png",
+    imageAlt: "The prototype state control in both themes: a white pill on a deepened track in light, the light pill on a dark track in dark.",
+    groups: [
+      {
+        label: "Design",
+        items: [
+          "The selected state pill now reads as selected. It had been one shade off its own track in both themes, 1.15:1 in dark and 1.12:1 in light, which is invisible. Dark mode gives the pill the light surface and dark ink, 12.4:1; light mode keeps the white pill and deepens the track into a well around it.",
+          "Light mode had almost no elevation: the page and the panels sitting on it were 1.04:1 apart. The page steps down to #F4F4F5, control surfaces to #E4E4E7, so a sidebar, a card, and an input no longer all read as the same white.",
+          "Secondary text passes AA everywhere in light mode. It sat at 4.24:1 on control surfaces and 3.74:1 on the review tabs; it is 4.5:1 or better on every surface now, and the shadcn tokens were pulled onto the same value so components stop drifting from the palette.",
+        ],
+      },
+      {
+        label: "Behavior",
+        items: [
+          "The canvas takes its background from the prototype theme: white for light, black for dark. It used to open on a fixed mid-grey, so every prototype was judged against a colour it was never designed against. Picking a swatch still pins it; picking the one the theme would have chosen hands it back.",
+        ],
+      },
+      {
+        label: "Under the hood",
+        items: [
+          "A changelog entry can carry an image, and this one does. Releases you can see should show it.",
+        ],
+      },
+    ],
+  },
   {
     date: "2026-08-27",
     title: "The workspace gets a hierarchy",

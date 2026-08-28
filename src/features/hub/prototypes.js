@@ -14,16 +14,24 @@ export const HUB = {
   //   nav     primary    chrome: sidebar, toolbar, context panel
   //   panel   elevated   floating bars, menus, sheets, cards
   //   raised  control    inputs, segment tracks, counters inside a panel
+  //
+  // `selected` is the segmented-control pill and has to read as "on" from
+  // across the room, so it is ink against its track, not another shade of it:
+  // 12.4:1 in dark, where the pill is the light one. Light mode keeps the
+  // white-pill-in-a-well reading, so the track is deepened and the lift comes
+  // from the well's inset shadow rather than from the pill's own colour.
   dark: { bg: "#000000", nav: "#0D0D0D", panel: "#1A1A1A", raised: "#262626", border: "rgba(255,255,255,0.10)",
     text: "#FAFAFA", muted: "#A1A1AA", secondary: "rgba(250,250,250,0.72)",
     hover: "#262626", active: "#1F1F1F", brand: "#F19DFF",
     primary: "#E8E8E8", primaryText: "#141414",
-    selected: "#1A1A1A", selectedText: "#FAFAFA" },
-  light: { bg: "#FAFAFA", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#F2F2F2", border: "rgba(0,0,0,0.10)",
-    text: "#171717", muted: "#737373", secondary: "rgba(23,23,23,0.72)",
-    hover: "#F2F2F2", active: "#ECECEC", brand: "#B400CF",
+    selected: "#E8E8E8", selectedText: "#141414",
+    well: "inset 0 0 0 1px rgba(255,255,255,0.07)" },
+  light: { bg: "#F4F4F5", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#E4E4E7", border: "rgba(0,0,0,0.12)",
+    text: "#171717", muted: "#636369", secondary: "rgba(23,23,23,0.72)",
+    hover: "#ECECEE", active: "#E0E0E4", brand: "#9A00B0",
     primary: "#171717", primaryText: "#FAFAFA",
-    selected: "#FFFFFF", selectedText: "#171717" },
+    selected: "#FFFFFF", selectedText: "#171717",
+    well: "inset 0 1px 2px rgba(23,23,23,0.09), inset 0 0 0 1px rgba(23,23,23,0.07)" },
 };
 
 export const VIEWPORTS = {

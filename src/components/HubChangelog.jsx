@@ -146,6 +146,12 @@ export function HubChangelogDialog({ c, open, onClose }) {
                     </div>
                     <h2 style={{ color: c.text }}>{entry.title}</h2>
                   </header>
+                  {entry.image && (
+                    <figure className="eon-changelog-shot" style={{ background: c.raised, borderColor: c.border }}>
+                      <img src={`${import.meta.env.BASE_URL}${entry.image}`} alt={entry.imageAlt || ""} decoding="async" />
+                      {entry.imageAlt && <figcaption style={{ color: c.muted }}>{entry.imageAlt}</figcaption>}
+                    </figure>
+                  )}
                   {changelogGroups(entry).map((group) => (
                     <div key={group.label || "all"} className="eon-changelog-group">
                       {group.label && <h3 style={{ color: c.muted }}>{group.label}</h3>}

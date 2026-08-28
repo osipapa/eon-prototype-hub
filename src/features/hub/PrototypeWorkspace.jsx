@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { fetchLinearIssue, uploadCommentImage, MAX_COMMENT_IMAGE_BYTES } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
@@ -98,7 +98,19 @@ export default function PrototypeWorkspace({
   const [layout, setLayout] = useStoredState("eon-layout", "single");
   const [gridBy, setGridBy] = useState("states");
   const [query, setQuery] = useState("");
-  const [canvasBg, setCanvasBg] = useStoredState("eon-canvas-background", "#808080");
+  // "auto" means the canvas takes its cue from the prototype theme: white for
+  // light, black for dark, so a prototype never opens on a colour it was not
+  // designed against. Picking a swatch pins it; picking the one auto would have
+  // chosen anyway hands it back, so it keeps following the theme.
+  // The old grey default is read as auto so existing sessions get the fix too.
+  const [storedCanvasBg, setStoredCanvasBg] = useStoredState("eon-canvas-background", "auto");
+  const canvasBg = (storedCanvasBg === "auto" || storedCanvasBg === "#808080")
+    ? (protoTheme === "dark" ? "#000000" : "#FFFFFF")
+    : storedCanvasBg;
+  const setCanvasBg = useCallback((next) => {
+    const auto = protoTheme === "dark" ? "#000000" : "#FFFFFF";
+    setStoredCanvasBg(next === auto ? "auto" : next);
+  }, [protoTheme, setStoredCanvasBg]);
   const [liveArgs, setLiveArgs] = useState({});
   const [showUpload, setShowUpload] = useState(false);
   const [dragId, setDragId] = useState(null);

@@ -59,15 +59,15 @@
     --secondary: 0 0% 95%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 240 3% 40%;
     --accent: 0 0% 95%;
     --accent-foreground: 0 0% 9%;
     --destructive: 347 68% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 90%;
-    --input: 0 0% 92%;
-    --ring: 292 100% 41%;
-    --brand: 292 100% 41%;
+    --border: 0 0% 88%;
+    --input: 240 5% 90%;
+    --ring: 292 100% 35%;
+    --brand: 292 100% 35%;
     --shadow-surface:
       0 0 0 1px rgba(0, 0, 0, .08),
       0 1px 3px rgba(0, 0, 0, .08),
@@ -338,7 +338,8 @@ button.eon-save-state { cursor: pointer; }
 .eon-tool-group > span { font-size: 11px; font-weight: 500; white-space: nowrap; }
 .eon-icon-segment { display: flex; gap: 2px; padding: 3px; border-radius: 11px; }
 .eon-icon-segment .eon-icon-button { width: 36px; height: 34px; flex-basis: 36px; border-radius: 8px; }
-.eon-segmented { box-shadow: inset 0 0 0 1px rgba(144, 148, 165, .08); }
+/* The track's well comes from the palette (HUB.well) so it can deepen in
+   light mode, where the pill is white and needs something to sit inside. */
 /* Windowed segmented control: see PeekSegmented. */
 .eon-peek-segment { --peek-ease: cubic-bezier(.22, 1, .36, 1); --peek-duration: 340ms; display: flex; min-width: 0; }
 .eon-peek-segment.is-peekable {
@@ -566,6 +567,11 @@ button.eon-save-state { cursor: pointer; }
 .eon-changelog-card > header > div > span { margin-left: auto; font-size: 10px; font-variant-numeric: tabular-nums; }
 .eon-changelog-latest { min-height: 22px; border: 0; padding: 0 8px; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .eon-changelog-card h2 { margin: 7px 0 0; font-size: 17px; font-weight: 650; letter-spacing: -.025em; line-height: 1.3; text-wrap: balance; }
+/* A release you can see gets a shot of it, boxed like the canvas it came from
+   so a white light-mode capture still has an edge on a white card. */
+.eon-changelog-shot { margin: 0 0 16px; padding: 0; overflow: hidden; border: 1px solid; border-radius: 12px; }
+.eon-changelog-shot img { display: block; width: 100%; height: auto; }
+.eon-changelog-shot figcaption { padding: 8px 12px 9px; border-top: 1px solid; border-color: inherit; font-size: 11px; line-height: 1.45; }
 .eon-changelog-group { padding-bottom: 14px; }
 .eon-changelog-group h3 { margin: 0 0 8px; font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
 .eon-changelog-card ul { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 9px; list-style: none; }
