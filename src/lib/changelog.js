@@ -24,7 +24,7 @@ export const CHANGELOG = [
       {
         label: "New",
         items: [
-          "Eon Design has a Tracking section. Websites explains the attribution and routing script that runs on every page of eonrides.com, written for anyone on the team: where a click goes, what a campaign link looks like, what the script remembers and for how long, how a button gets its link, how the app opens the right screen, what happens on each device, and six worked examples. Code is shown in terminal-style blocks with a copy control.",
+          "Eon Design has a Tracking section. Websites explains the attribution and routing script that runs on every page of eonrides.com, written for anyone on the team: where a click goes, what a campaign link looks like, what the script remembers and for how long, how a button gets its link, how the app opens the right screen, what happens on each device, and six worked examples. Six diagrams carry the parts that are easier to see than read: where a click goes, the 30-day memory as a timeline, how a button's link is built, the JSON landing on a phone screen, the Mixpanel ID's two routes, and the name translation to AppsFlyer. Code is shown in terminal-style blocks with syntax colours and a copy control.",
           "How we work has a placeholder for AI usage principles, to be written with the team.",
           "Mixpanel is the other Tracking page. It carries the setup guide that used to be its own area: the five steps, the event contract, guardrails, QA, and the copyable setup prompt.",
         ],

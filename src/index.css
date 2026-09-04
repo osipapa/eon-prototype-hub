@@ -1269,10 +1269,22 @@ button.eon-save-state { cursor: pointer; }
 .eon-term figcaption > button:focus-visible { outline: 2px solid #F19DFF; outline-offset: 1px; }
 .eon-term pre { margin: 0; padding: 14px 16px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; }
 .eon-term code { font: inherit; }
-.eon-term .is-comment { color: #7C7C88; font-style: normal; }
+.eon-term i { font-style: normal; }
+.eon-term .tk-comment { color: #7C8590; }
+.eon-term .tk-string { color: #98C379; }
+.eon-term .tk-number { color: #D19A66; }
+.eon-term .tk-keyword { color: #C678DD; }
+.eon-term .tk-key, .eon-term .tk-host, .eon-term .tk-fn { color: #61AFEF; }
+.eon-term .tk-attr { color: #E5C07B; }
+.eon-term .tk-tag { color: #E06C75; }
+.eon-term .tk-placeholder { color: #56B6C2; }
+.eon-term .tk-punct { color: #ABB2BF; }
+.eon-term .tk-prompt { color: #98C379; font-weight: 600; user-select: none; }
 
 .eon-doc-figure { margin: 0; padding: 18px; border-radius: 20px; overflow-x: auto; }
-.eon-doc-figure svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: "DM Sans", sans-serif; }
+.eon-doc-figure svg { display: block; width: 100%; height: auto; font-family: "DM Sans", sans-serif; }
+.eon-doc-figure figcaption { max-width: 640px; margin: 12px 4px 0; font-size: 11.5px; line-height: 1.5; }
+.eon-doc-p + .eon-doc-figure, .eon-term + .eon-doc-figure, .eon-doc-figure + .eon-term { margin-top: 18px; }
 
 @media (max-width: 680px) {
   .eon-doc-p, .eon-doc-list { font-size: 13.5px; }
