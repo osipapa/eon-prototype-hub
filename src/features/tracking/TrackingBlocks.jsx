@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy, FileText } from "lucide-react";
 import { copyText } from "@/lib/uiState";
-import { MIXPANEL_TRACKING_EXAMPLE } from "./trackingExample";
+import { MIXPANEL_TRACKING_EXAMPLE, TRIP_REVIEW_PLAN } from "./trackingExample";
 import { WEBSITE_ATTRIBUTION } from "./websiteAttribution";
 
 /* Tracking reference blocks rendered inside Eon Design pages. Each block is
@@ -13,6 +13,7 @@ export default function TrackingBlock({ block, c, onOpenPrompts }) {
 
 const shadow = "var(--shadow-surface)";
 const mp = MIXPANEL_TRACKING_EXAMPLE;
+const plan = TRIP_REVIEW_PLAN;
 const wa = WEBSITE_ATTRIBUTION;
 
 /* ---------- Shared documentation primitives ---------- */
@@ -42,57 +43,141 @@ function MixpanelOverview({ c }) {
   );
 }
 
-/* From the person's action to a chart: three places, one event. */
-function MixpanelFlow({ c }) {
-  const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-mp)" };
-  const row = (x, y, text, bold) => <text key={`${x}-${y}`} x={x} y={y} fill={bold ? c.text : c.secondary} fontSize="10" fontFamily={MONO}>{text}</text>;
+/* A typed value drawn as a chip: number, boolean, string, or null. */
+function TypeChip({ x, y, type, text }) {
   return (
-    <Figure c={c} viewBox="0 0 760 210" label="A completed action in the app calls one shared analytics module, which sends a named event with typed properties to Mixpanel, where it appears in Live View and then in reports."
-      caption="Every surface calls the same module, so an event has one name and one shape wherever it is sent from.">
-      <Arrow id="eon-fig-mp" c={c} />
-      <rect x={12} y={30} width={216} height={150} rx="10" fill={c.bg} stroke={c.border} />
-      <text x={24} y={52} fill={c.text} fontSize="11.5" fontWeight="600">In the product</text>
-      <text x={24} y={78} fill={c.secondary} fontSize="10.5">The person finishes an action:</text>
-      <text x={24} y={96} fill={c.text} fontSize="10.5" fontWeight="600">the carousel scroll completes,</text>
-      <text x={24} y={112} fill={c.text} fontSize="10.5" fontWeight="600">the booking is confirmed.</text>
-      <text x={24} y={140} fill={c.muted} fontSize="9.5" fontStyle="italic">a result, not a tap</text>
+    <g className={`ty-${type}`}>
+      <rect x={x} y={y} width={chipW(text)} height="22" rx="7" fillOpacity=".16" />
+      <text x={x + 9} y={y + 15} fontFamily={MONO} fontSize="10">{text}</text>
+    </g>
+  );
+}
 
-      <path d="M228,105 L268,105" {...line} />
+/* A star is tapped on the phone, Trip Reviewed is sent with four typed
+   properties, Mixpanel receives it. */
+function TapToEvent({ c }) {
+  const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-tap)" };
+  const star = (cx, cy, filled) => {
+    const pts = [];
+    for (let i = 0; i < 10; i += 1) {
+      const r = i % 2 === 0 ? 9 : 4;
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      pts.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`);
+    }
+    return <polygon key={cx} points={pts.join(" ")} fill={filled ? c.brand : "none"} stroke={filled ? c.brand : c.muted} strokeWidth="1.2" />;
+  };
+  const props = [["number", "Rating: 4"], ["boolean", "Is Update: false"], ["string", "Car ID: \"car_8f3a…\""], ["string", "Owner ID: \"adm_2c1d…\""]];
+  return (
+    <Figure c={c} viewBox="0 0 760 300" label="On the Trip Summary screen the person taps the fourth star of the Rate Your Trip card. The app sends a Trip Reviewed event with Rating 4 as a number, Is Update false as a boolean, and Car ID and Owner ID as strings. Mixpanel receives it."
+      caption="One tap, one event, four typed properties. Numbers, booleans, and strings each look different in a report, so the type is part of the contract.">
+      <Arrow id="eon-fig-tap" c={c} />
+      {/* phone */}
+      <rect x={30} y={16} width={200} height={268} rx="24" fill={c.bg} stroke={c.border} strokeWidth="1.5" />
+      <rect x={38} y={24} width={184} height={252} rx="18" fill={c.panel} />
+      <rect x={104} y={30} width={52} height="6" rx="3" fill={c.border} />
+      <text x={130} y={64} textAnchor="middle" fill={c.text} fontSize="11.5" fontWeight="650">Trip Summary</text>
+      <rect x={50} y={80} width={160} height={110} rx="12" fill={c.bg} stroke={c.border} />
+      <text x={130} y={104} textAnchor="middle" fill={c.text} fontSize="11" fontWeight="600">Rate your trip</text>
+      {[0, 1, 2, 3, 4].map((i) => star(78 + i * 26, 130, i < 4))}
+      <circle cx={156} cy={130} r="15" fill="none" stroke={c.brand} strokeWidth="1.2" strokeDasharray="3 2" />
+      <rect x={66} y={156} width={128} height={20} rx="7" fill={c.panel} stroke={c.border} />
+      <text x={130} y={170} textAnchor="middle" fill={c.muted} fontSize="9">Add details</text>
+      <text x={130} y={216} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">the fourth star is tapped</text>
 
-      <rect x={272} y={30} width={216} height={150} rx="10" fill={c.bg} stroke={c.brand} strokeWidth="1.5" />
-      <text x={284} y={52} fill={c.text} fontSize="11.5" fontWeight="600">Shared analytics module</text>
-      {row(284, 78, "track(")}
-      {row(296, 96, "FeatureActionCompleted,", true)}
-      {row(296, 114, "{ featureName, action,")}
-      {row(296, 132, "  surface, result }")}
-      {row(284, 150, ")")}
-      <text x={284} y={170} fill={c.muted} fontSize="9.5" fontStyle="italic">names and property builders live here</text>
+      <path d="M232,130 L290,130" {...line} />
+      <text x={261} y={118} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">fires</text>
 
-      <path d="M488,105 L528,105" {...line} />
+      {/* event */}
+      <rect x={294} y={40} width={272} height={200} rx="12" fill={c.bg} stroke={c.brand} strokeWidth="1.5" />
+      <text x={310} y={66} fill={c.muted} fontSize="9.5">event</text>
+      <text x={310} y={86} fill={c.text} fontSize="13" fontWeight="650">Trip Reviewed</text>
+      <text x={310} y={112} fill={c.muted} fontSize="9.5">properties</text>
+      {props.map(([type, text], i) => <TypeChip key={text} x={310} y={122 + i * 28} type={type} text={text} />)}
 
-      <rect x={532} y={30} width={216} height={150} rx="10" fill={c.bg} stroke={c.border} />
-      <text x={544} y={52} fill={c.text} fontSize="11.5" fontWeight="600">Mixpanel</text>
-      <text x={544} y={78} fill={c.secondary} fontSize="10.5">Live View shows the payload</text>
-      <text x={544} y={94} fill={c.secondary} fontSize="10.5">as it arrives, property by property.</text>
-      <text x={544} y={120} fill={c.secondary} fontSize="10.5">Once it is verified in production,</text>
-      <text x={544} y={136} fill={c.secondary} fontSize="10.5">it goes into reports and funnels.</text>
-      <text x={544} y={164} fill={c.muted} fontSize="9.5" fontStyle="italic">check before you chart</text>
+      <path d="M568,130 L626,130" {...line} />
+      <text x={597} y={118} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">to</text>
+
+      {/* mixpanel */}
+      <rect x={630} y={92} width={116} height={76} rx="12" fill={c.bg} stroke={c.border} />
+      <text x={688} y={124} textAnchor="middle" fill={c.text} fontSize="12" fontWeight="650">Mixpanel</text>
+      <text x={688} y={142} textAnchor="middle" fill={c.muted} fontSize="9.5">Live View, then reports</text>
+
+      {/* type legend */}
+      {[["number", "number"], ["boolean", "boolean"], ["string", "string"], ["null", "null, when skipped"]].map(([type, label], i) => (
+        <g key={type} transform={`translate(${310 + i * 108} 270)`} className={`ty-${type}`}>
+          <circle cx="4" cy="-3" r="3.5" />
+          <text x="12" y="0" fill={c.muted} fontSize="9.5">{label}</text>
+        </g>
+      ))}
     </Figure>
   );
 }
 
-function MixpanelEvent({ c }) {
-  const event = mp.eventExample;
+function MixpanelTap({ c }) {
   return (
     <>
-      <Prose c={c} text={[event.trigger, event.note]} />
-      <Terminal title="Event, as sent" lang="js" code={mp.eventCode} />
-      <DocTable
-        c={c}
-        head={["Property", "Type", "Allowed values"]}
-        mono={[0]}
-        rows={event.properties.map((property) => [property.name, `${property.type}${property.required ? ", required" : ", optional"}`, property.values])}
-      />
+      <Prose c={c} text={plan.intro} />
+      <TapToEvent c={c} />
+      <Terminal title="Trip Reviewed, as sent" lang="json" code={plan.tapPayload} />
+    </>
+  );
+}
+
+function MixpanelFormat({ c }) {
+  return (
+    <>
+      <Prose c={c} text={plan.formatIntro} />
+      <DocTable c={c} head={["", "How we do it"]} rows={plan.format.map((row) => [row.rule, row.how])} />
+    </>
+  );
+}
+
+/* The three events across the review flow, and what gates each. */
+function ReviewFlow({ c }) {
+  const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-flow)" };
+  const stops = [
+    { x: 12, screen: "Trip Summary", action: "the card is on screen", event: "Page Viewed", note: "already exists" },
+    { x: 200, screen: "Rate your trip", action: "a star is tapped", event: "Trip Reviewed", note: "always, even if nothing else" },
+    { x: 388, screen: "Details form", action: "Submit & Claim Eon Credit", event: "Trip Review Details Added", note: "only if a question was answered" },
+    { x: 576, screen: "App Store ask", action: "the prompt appears", event: "App Store Review Requested", note: "4 or 5 stars, support not unresolved" },
+  ];
+  return (
+    <Figure c={c} viewBox="0 0 760 190" label="The review flow: Page Viewed when the Trip Summary screen shows the card, Trip Reviewed when a star is tapped, Trip Review Details Added when the details form is submitted with at least one answer, App Store Review Requested when the prompt appears, which only happens for 4 or 5 stars and when support was not left unresolved."
+      caption="Each event has one moment it fires and one condition that can stop it. Car ID and Owner ID ride along on every event from the star tap onwards.">
+      <Arrow id="eon-fig-flow" c={c} />
+      {stops.map((stop, i) => (
+        <g key={stop.event}>
+          <rect x={stop.x} y={20} width={172} height={64} rx="10" fill={c.bg} stroke={c.border} />
+          <text x={stop.x + 12} y={42} fill={c.text} fontSize="11" fontWeight="600">{stop.screen}</text>
+          <text x={stop.x + 12} y={60} fill={c.muted} fontSize="9.5" fontStyle="italic">{stop.action}</text>
+          <path d={`M${stop.x + 86},84 L${stop.x + 86},110`} {...line} />
+          <rect x={stop.x} y={112} width={172} height={58} rx="10" fill={c.bg} stroke={c.brand} strokeWidth="1.2" />
+          <text x={stop.x + 12} y={134} fill={c.text} fontSize="10.5" fontWeight="650">{stop.event}</text>
+          <text x={stop.x + 12} y={152} fill={c.muted} fontSize="9" fontStyle="italic">{stop.note}</text>
+          {i < stops.length - 1 && <path d={`M${stop.x + 172},52 L${stop.x + 186},52`} {...line} />}
+        </g>
+      ))}
+    </Figure>
+  );
+}
+
+function MixpanelPlan({ c }) {
+  return (
+    <>
+      <ReviewFlow c={c} />
+      {plan.events.map((event) => (
+        <div key={event.name} className="eon-doc-event">
+          <h3 className="eon-doc-h3" style={{ color: c.text }}>{event.name}{event.supporting && <span style={{ color: c.muted }}> · supporting</span>}</h3>
+          <Prose c={c} text={event.when} />
+          <Terminal title={`${event.name}, as sent`} lang="json" code={event.payload} />
+          <DocTable
+            c={c}
+            head={["Property", "Type", "Values", "Notes"]}
+            mono={[0]}
+            rows={event.properties.map((property) => [property.name, <span key="t" className={`eon-doc-type is-${property.type}`}>{property.type}</span>, property.values, property.notes])}
+          />
+        </div>
+      ))}
     </>
   );
 }
@@ -167,6 +252,7 @@ const GRAMMAR = {
     [COMMENT, "comment"],
     [/"[^"]*"(?=\s*:)/, "key"],
     [/"[^"]*"/, "string"],
+    [/\b(?:null|true|false)\b/, "keyword"],
     [/\b\d+(?:\.\d+)?\b/, "number"],
     [/[{}[\]:,]/, "punct"],
   ],
@@ -763,8 +849,9 @@ function Console({ c }) {
 
 const BLOCKS = {
   "mixpanel-overview": MixpanelOverview,
-  "mixpanel-flow": MixpanelFlow,
-  "mixpanel-event": MixpanelEvent,
+  "mixpanel-tap": MixpanelTap,
+  "mixpanel-format": MixpanelFormat,
+  "mixpanel-plan": MixpanelPlan,
   "mixpanel-rules": MixpanelRules,
   "mixpanel-prompt": MixpanelPrompt,
   "attr-overview": AttrOverview,

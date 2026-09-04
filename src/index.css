@@ -1247,7 +1247,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-doc-table { width: 100%; min-width: 520px; border-collapse: collapse; text-align: left; font-size: 12.5px; line-height: 1.55; }
 .eon-doc-table th { padding: 10px 14px 10px 0; border-bottom: 1px solid; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .eon-doc-table td { padding: 11px 14px 11px 0; border-bottom: 1px solid; vertical-align: top; overflow-wrap: anywhere; }
-.eon-doc-table td:first-child { width: 30%; font-weight: 500; }
+.eon-doc-table td:first-child { width: 26%; font-weight: 500; }
 .eon-doc-table th:last-child, .eon-doc-table td:last-child { padding-right: 0; }
 
 /* Terminal-style code block: fixed dark surface in both themes, like an API
@@ -1297,6 +1297,25 @@ button.eon-save-state { cursor: pointer; }
 .light .eon-doc-figure .fl-screen { fill: #9A00B0; }
 .eon-doc-step + .eon-doc-step { margin-top: 26px; }
 .eon-doc-step > .eon-doc-figure { margin-top: 12px; }
+/* Property types in the Mixpanel figures and tables. */
+.eon-doc-figure .ty-number { fill: #D19A66; }
+.eon-doc-figure .ty-boolean { fill: #C678DD; }
+.eon-doc-figure .ty-string { fill: #98C379; }
+.eon-doc-figure .ty-null { fill: #A1A1AA; }
+.light .eon-doc-figure .ty-number { fill: #B45309; }
+.light .eon-doc-figure .ty-boolean { fill: #7C3AED; }
+.light .eon-doc-figure .ty-string { fill: #147A36; }
+.light .eon-doc-figure .ty-null { fill: #636369; }
+.eon-doc-type { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; }
+.eon-doc-type.is-number { color: #D19A66; }
+.eon-doc-type.is-boolean { color: #C678DD; }
+.eon-doc-type.is-string { color: #98C379; }
+.light .eon-doc-type.is-number { color: #B45309; }
+.light .eon-doc-type.is-boolean { color: #7C3AED; }
+.light .eon-doc-type.is-string { color: #147A36; }
+.eon-doc-event { margin-top: 36px; }
+.eon-doc-h3 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.015em; }
+.eon-doc-h3 span { font-size: 12px; font-weight: 500; letter-spacing: 0; }
 .eon-doc-figure figcaption { max-width: 640px; margin: 12px 4px 0; font-size: 11.5px; line-height: 1.5; }
 .eon-doc-p + .eon-doc-figure, .eon-term + .eon-doc-figure, .eon-doc-figure + .eon-term { margin-top: 18px; }
 

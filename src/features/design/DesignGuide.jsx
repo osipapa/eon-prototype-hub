@@ -306,11 +306,12 @@ const PAGE_CONTENT = {
   "tracking-mixpanel": {
     kicker: "Tracking",
     title: "Mixpanel tracking setup",
-    summary: "How we turn something a person does in the product into an event we can trust in a report.",
+    summary: "How we turn something a person does in the product into an event we can trust in a report, shown on the trip review flow.",
     sections: [
       { id: "overview", title: "What we track, and in what order", tracking: "mixpanel-overview" },
-      { id: "flow", title: "From an action to a report", tracking: "mixpanel-flow" },
-      { id: "event", title: "What an event looks like", tracking: "mixpanel-event" },
+      { id: "tap", title: "From a tap to an event", tracking: "mixpanel-tap" },
+      { id: "format", title: "How we name and format things", tracking: "mixpanel-format" },
+      { id: "plan", title: "The trip review flow, event by event", body: "Three events and one that already exists. For each: when it fires, the payload as sent, and every property with its type and allowed values.", tracking: "mixpanel-plan" },
       { id: "rules", title: "Rules we keep to", tracking: "mixpanel-rules" },
       { id: "prompt", title: "Setup prompt", tracking: "mixpanel-prompt" },
     ],
