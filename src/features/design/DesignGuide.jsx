@@ -306,36 +306,13 @@ const PAGE_CONTENT = {
   "tracking-mixpanel": {
     kicker: "Tracking",
     title: "Mixpanel tracking setup",
-    summary: "A simple, reusable guide for turning a product flow into a reliable Mixpanel implementation.",
+    summary: "How we turn something a person does in the product into an event we can trust in a report.",
     sections: [
-      {
-        id: "setup",
-        title: "How tracking is implemented",
-        body: "Five steps, in order. Each one exists to stop a class of mistakes: events without a question, contracts that drift between surfaces, and payloads nobody verified.",
-        tracking: "mixpanel-steps",
-      },
-      {
-        id: "event-contract",
-        title: "Event contract",
-        body: "One event, one exact trigger, typed properties with documented values and units. This is the shape every new event should copy.",
-        tracking: "mixpanel-event",
-      },
-      {
-        id: "guardrails",
-        title: "Guardrails",
-        tracking: "mixpanel-guardrails",
-      },
-      {
-        id: "qa",
-        title: "QA checklist",
-        tracking: "mixpanel-qa",
-      },
-      {
-        id: "setup-prompt",
-        title: "Setup prompt",
-        body: "Paste this into Claude with the feature, the flow, and the current conventions filled in. It returns the event catalog, property contracts, helpers, and QA list in one pass.",
-        tracking: "mixpanel-prompt",
-      },
+      { id: "overview", title: "What we track, and in what order", tracking: "mixpanel-overview" },
+      { id: "flow", title: "From an action to a report", tracking: "mixpanel-flow" },
+      { id: "event", title: "What an event looks like", tracking: "mixpanel-event" },
+      { id: "rules", title: "Rules we keep to", tracking: "mixpanel-rules" },
+      { id: "prompt", title: "Setup prompt", tracking: "mixpanel-prompt" },
     ],
   },
   "tracking-websites": {

@@ -1231,23 +1231,16 @@ button.eon-save-state { cursor: pointer; }
 /* Tracking blocks inside Eon Design: the Mixpanel prompt card and the
    documentation primitives (prose, tables, terminal-style code) used by the
    attribution reference. Blocks sit under a section's intro. */
-.eon-design-section > .eon-tracking-steps, .eon-design-section > .eon-tracking-event, .eon-design-section > .eon-tracking-checklist,
-.eon-design-section > .eon-tracking-prompt-card { margin-top: 28px; }
 .eon-design-section > .eon-doc-p:first-of-type, .eon-design-section > .eon-doc-figure, .eon-design-section > .eon-doc-table-wrap:first-of-type { margin-top: 22px; }
 .eon-design-section-intro + .eon-doc-p { margin-top: 12px; }
 .eon-design-section-intro + .eon-doc-table-wrap, .eon-design-section-intro + .eon-term { margin-top: 22px; }
 
-.eon-tracking-prompt-card { padding: 20px; border-radius: 24px; }
-.eon-tracking-prompt-card .eon-prompt-use-head { display: flex; align-items: flex-start; gap: 12px; }
-.eon-tracking-prompt-card .eon-prompt-use-head strong { display: block; font-size: 14px; font-weight: 650; }
-.eon-tracking-prompt-card .eon-prompt-use-head p { margin: 4px 0 0; font-size: 12px; line-height: 1.55; }
-.eon-tracking-prompt-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.eon-tracking-prompt-actions .eon-prompt-copy-primary, .eon-tracking-prompt-actions .eon-prompt-copy-secondary { width: auto; margin: 0; }
-.eon-tracking-rail-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: 10px; }
 
 .eon-doc-p { max-width: 720px; margin: 14px 0 0; font-size: 14px; line-height: 1.65; text-wrap: pretty; }
 .eon-doc-list { max-width: 720px; margin: 10px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.65; }
 .eon-doc-list li { margin-top: 6px; padding-left: 4px; }
+.eon-doc-link { display: inline-flex; min-height: 36px; align-items: center; gap: 7px; margin-top: 14px; padding: 0 12px; border: 1px solid; border-radius: 9px; background: transparent; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 500; }
+.eon-doc-link:hover { background: rgba(144,148,165,.12); }
 .eon-doc-code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .9em; overflow-wrap: anywhere; }
 
 .eon-doc-table-wrap { width: 100%; margin-top: 18px; overflow-x: auto; border-top: 1px solid; }
@@ -1283,6 +1276,25 @@ button.eon-save-state { cursor: pointer; }
 
 .eon-doc-figure { margin: 0; padding: 18px; border-radius: 20px; overflow-x: auto; }
 .eon-doc-figure svg { display: block; width: 100%; height: auto; font-family: "DM Sans", sans-serif; }
+/* Flow colours for the attribution map: One Dark on dark, deeper ink on light. */
+.eon-doc-figure .fl-source { fill: #61AFEF; }
+.eon-doc-figure .fl-medium { fill: #56B6C2; }
+.eon-doc-figure .fl-campaign { fill: #C678DD; }
+.eon-doc-figure .fl-content { fill: #E06C75; }
+.eon-doc-figure .fl-click { fill: #98C379; }
+.eon-doc-figure .fl-code { fill: #E5C07B; }
+.eon-doc-figure .fl-mp { fill: #D19A66; }
+.eon-doc-figure .fl-page { fill: #A1A1AA; }
+.eon-doc-figure .fl-screen { fill: #F19DFF; }
+.light .eon-doc-figure .fl-source { fill: #245FD1; }
+.light .eon-doc-figure .fl-medium { fill: #0E7C86; }
+.light .eon-doc-figure .fl-campaign { fill: #7C3AED; }
+.light .eon-doc-figure .fl-content { fill: #C0392B; }
+.light .eon-doc-figure .fl-click { fill: #147A36; }
+.light .eon-doc-figure .fl-code { fill: #9A4A00; }
+.light .eon-doc-figure .fl-mp { fill: #B45309; }
+.light .eon-doc-figure .fl-page { fill: #636369; }
+.light .eon-doc-figure .fl-screen { fill: #9A00B0; }
 .eon-doc-figure figcaption { max-width: 640px; margin: 12px 4px 0; font-size: 11.5px; line-height: 1.5; }
 .eon-doc-p + .eon-doc-figure, .eon-term + .eon-doc-figure, .eon-doc-figure + .eon-term { margin-top: 18px; }
 
@@ -1290,7 +1302,6 @@ button.eon-save-state { cursor: pointer; }
   .eon-doc-p, .eon-doc-list { font-size: 13.5px; }
   .eon-doc-table { min-width: 460px; }
   .eon-doc-table td:first-child { width: 36%; }
-  .eon-tracking-prompt-actions .eon-prompt-copy-primary, .eon-tracking-prompt-actions .eon-prompt-copy-secondary { width: 100%; }
 }
 
 /* Eon Design documentation — the durable layer above individual tools. */

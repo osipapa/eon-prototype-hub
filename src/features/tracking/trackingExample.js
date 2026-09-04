@@ -29,6 +29,19 @@ export const MIXPANEL_TRACKING_EXAMPLE = {
   summary: "A simple, reusable guide for turning a product flow into a reliable Mixpanel implementation.",
   platform: "Mixpanel",
   coverage: "Web + iOS",
+  intro: [
+    "Mixpanel is where we see what people actually do in the product. An event is a record of something that happened, with a few typed properties that say how. Reports, funnels, and retention all come from those events, so the quality of a chart is decided at the moment the event is defined.",
+    "We track completed actions, not taps: a booking confirmed, a subscription started, a carousel scrolled to the end. A click is only an event when the click itself is the behaviour we want to measure.",
+  ],
+  eventCode: `mixpanel.track("Feature Action Completed", {
+  "Feature Name": "vehicle_carousel",   // stable identifier for the feature
+  "Action": "scroll",                   // one of the approved action values
+  "Surface": "iOS",                     // Web, iOS, or Android
+  "Result": "Success",                  // Success or Partial
+  "Duration Ms": 1240                   // optional, elapsed time in milliseconds
+});`,
+  checkIntro: "Before an event is used in a report, someone checks it end to end:",
+  promptIntro: "When a feature needs tracking, this prompt turns the flow into a plan: the questions the data should answer, the events and their exact names, a property contract for each, the shared helpers, and a checklist for verifying it in Mixpanel. Fill in the placeholders and paste it into Claude.",
   setupSteps: [
     {
       title: "Define the question",
@@ -53,7 +66,7 @@ export const MIXPANEL_TRACKING_EXAMPLE = {
   ],
   eventExample: {
     name: "Feature Action Completed",
-    trigger: "The product confirms that the user's primary action completed successfully.",
+    trigger: "The example below fires when the product confirms that the person's primary action completed. It has one exact trigger and five properties, each with a type and a documented set of values.",
     properties: [
       { name: "Feature Name", type: "string", values: "Stable feature identifier", required: true },
       { name: "Action", type: "enum", values: "Approved action value", required: true },
@@ -61,21 +74,21 @@ export const MIXPANEL_TRACKING_EXAMPLE = {
       { name: "Result", type: "enum", values: "Success · Partial", required: true },
       { name: "Duration Ms", type: "integer", values: "Elapsed time in milliseconds", required: false },
     ],
-    note: "Replace this illustrative name and property set with the vocabulary already used by your product.",
+    note: "The name and properties are illustrative. A real event reuses the vocabulary the product already has before it introduces new words.",
   },
   guardrails: [
-    "Track completed product behavior rather than low-value interface clicks.",
-    "Centralize event names and typed property builders in one analytics module.",
-    "Identify users consistently and document anonymous-to-known transitions.",
-    "Do not send free text or personal information without an explicit privacy decision.",
-    "Define retry and deduplication behavior before supporting offline events.",
+    "Track completed product behaviour, not interface clicks.",
+    "Event names and property builders live in one shared analytics module that every surface uses.",
+    "People are identified the same way everywhere, and the moment an anonymous visitor becomes a known user is documented.",
+    "Free text and personal information never go into an event without an explicit privacy decision.",
+    "Retries and duplicates are decided before an event is allowed to be sent offline.",
   ],
   qa: [
-    "Confirm exact event names, casing, property types, and values in Mixpanel Live View.",
-    "Test happy, alternate, failure, cancellation, retry, and rapid-repeat paths.",
-    "Verify one user action produces one intended event and no duplicates.",
-    "Check identity and shared context on both anonymous and signed-in sessions.",
-    "Monitor the production release before using the new event in reports.",
+    "The exact event name, its casing, and every property type and value show up in Mixpanel Live View.",
+    "The happy path, the alternate paths, failure, cancellation, retry, and a quick double-tap all behave as documented.",
+    "One action produces one event, never two.",
+    "Identity and the shared properties look right both signed out and signed in.",
+    "The production release is watched for a while before the event goes into a report.",
   ],
   setupPrompt: MIXPANEL_SETUP_PROMPT_BODY,
 };
