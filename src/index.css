@@ -1295,6 +1295,8 @@ button.eon-save-state { cursor: pointer; }
 .light .eon-doc-figure .fl-mp { fill: #B45309; }
 .light .eon-doc-figure .fl-page { fill: #636369; }
 .light .eon-doc-figure .fl-screen { fill: #9A00B0; }
+.eon-doc-step + .eon-doc-step { margin-top: 26px; }
+.eon-doc-step > .eon-doc-figure { margin-top: 12px; }
 .eon-doc-figure figcaption { max-width: 640px; margin: 12px 4px 0; font-size: 11.5px; line-height: 1.5; }
 .eon-doc-p + .eon-doc-figure, .eon-term + .eon-doc-figure, .eon-doc-figure + .eon-term { margin-top: 18px; }
 

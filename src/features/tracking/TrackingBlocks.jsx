@@ -323,139 +323,211 @@ function Panel({ c, x, y, w, h, title, accent }) {
   );
 }
 
-function SystemMap({ c }) {
-  const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-map)" };
-  const small = (x, y, text, anchor = "start") => <text x={x} y={y} textAnchor={anchor} fill={c.muted} fontSize="9.5" fontStyle="italic">{text}</text>;
-  const col = [12, 262, 512];
-  const colW = 236;
+/* Values drawn as chips: a coloured pill per parameter, readable at a
+   glance, laid out left to right. */
+const CH = 6.05; // px per character at 10px mono
+const chipW = (text) => Math.round(text.length * CH + 18);
+function Chip({ x, y, k, text }) {
   return (
-    <Figure c={c} viewBox="0 0 760 1086" label="One example ad link followed through the whole chain: the page saves the campaign details, the Subscribe button is rebuilt as a OneLink with AppsFlyer's parameter names, OneLink records the click and sends the person to the app, the redirect page, or the web app, and each destination reads the same values back under its own names."
-      caption="One visit, followed all the way. Each colour is one value: it changes name on the way through AppsFlyer, never meaning.">
-      <Arrow id="eon-fig-map" c={c} />
+    <g className={`fl-${k}`}>
+      <rect x={x} y={y} width={chipW(text)} height="22" rx="7" fillOpacity=".16" />
+      <text x={x + 9} y={y + 15} fontFamily={MONO} fontSize="10">{text}</text>
+    </g>
+  );
+}
+function ChipRow({ x, y, chips, gap = 6 }) {
+  let cursor = x;
+  return chips.map(([k, text]) => {
+    const cx = cursor;
+    cursor += chipW(text) + gap;
+    return <Chip key={text} x={cx} y={y} k={k} text={text} />;
+  });
+}
+function StepTitle({ c, x = 18, y = 24, children }) {
+  return <text x={x} y={y} fill={c.text} fontSize="12" fontWeight="600">{children}</text>;
+}
 
-      {/* legend */}
-      {FLOW_KEYS.map(([key, label], i) => (
-        <g key={key} transform={`translate(${14 + i * 82} 14)`}>
-          <circle cx="4" cy="-3" r="3.5" className={`fl-${key}`} />
-          <text x="12" y="0" fill={c.muted} fontSize="9">{label}</text>
-        </g>
-      ))}
+const AD_CHIPS = [["code", "code=EON99"], ["source", "utm_source=meta"], ["medium", "utm_medium=paid"], ["campaign", "utm_campaign=subs_sept"], ["content", "utm_content=video_a"], ["click", "fbclid=IwAR…"]];
 
-      {/* 1. the ad link */}
-      <Panel c={c} x={12} y={30} w={736} h={64} title="The ad link, as someone taps it" />
-      <Line c={c} x={26} y={66} parts={["https://www.eonrides.com/", ["page", "electric-car-subscription"]]} />
-      <Line c={c} x={26} y={82} parts={["?", ["code", "code=EON99"], " &", ["source", "utm_source=meta"], " &", ["medium", "utm_medium=paid"], " &", ["campaign", "utm_campaign=subs_sept"], " &", ["content", "utm_content=video_a"], " &", ["click", "fbclid=IwAR…"]]} />
+function StepAdLink({ c }) {
+  return (
+    <Figure c={c} viewBox="0 0 760 118" label="The ad link: the page electric-car-subscription with a promo code, four UTM parameters, and the fbclid the ad network added.">
+      <StepTitle c={c}>1 · Someone taps the ad</StepTitle>
+      <text x={18} y={58} fill={c.secondary} fontSize="10.5" fontFamily={MONO}>https://www.eonrides.com/</text>
+      <Chip x={172} y={42} k="page" text="electric-car-subscription" />
+      <ChipRow x={18} y={78} chips={AD_CHIPS} />
+    </Figure>
+  );
+}
 
-      <path d="M380,94 L380,118" {...line} />
+function StepRemember({ c }) {
+  return (
+    <Figure c={c} viewBox="0 0 760 150" label="What the site keeps: the campaign parameters and click ID for 30 days, the promo code until a newer one, plus the page tag and Mixpanel ID the page adds itself.">
+      <StepTitle c={c}>2 · The site remembers it</StepTitle>
+      <text x={18} y={58} fill={c.muted} fontSize="10">kept for 30 days</text>
+      <ChipRow x={150} y={43} chips={AD_CHIPS.slice(1)} />
+      <text x={18} y={92} fill={c.muted} fontSize="10">until a newer one</text>
+      <ChipRow x={150} y={77} chips={[["code", "code=EON99"]]} />
+      <text x={18} y={126} fill={c.muted} fontSize="10">the page adds</text>
+      <ChipRow x={150} y={111} chips={[["page", "c=electric-car-subscription"], ["mp", "mp_id=f5bd1ba5-…"]]} />
+      <text x={470} y={126} fill={c.muted} fontSize="9.5" fontStyle="italic">the Mixpanel ID comes from the SDK on the page</text>
+    </Figure>
+  );
+}
 
-      {/* 2. the page */}
-      <Panel c={c} x={12} y={120} w={736} h={112} title="www.eonrides.com · the script reads the link" accent />
-      {small(26, 160, "saved for 30 days")}
-      <Line c={c} x={150} y={160} parts={[["source", "utm_source=meta"], "  ", ["medium", "utm_medium=paid"], "  ", ["campaign", "utm_campaign=subs_sept"], "  ", ["content", "utm_content=video_a"], "  ", ["click", "fbclid=IwAR…"]]} />
-      {small(26, 180, "kept until a newer one")}
-      <Line c={c} x={150} y={180} parts={[["code", "code=EON99"]]} />
-      {small(26, 200, "added by the page")}
-      <Line c={c} x={150} y={200} parts={[["page", "c=electric-car-subscription"], "   ", ["mp", "mp_id=f5bd1ba5-…"], "  (from the Mixpanel SDK)"]} />
-      {small(26, 220, "and every Subscribe button on the page is rebuilt as the link below, on tap")}
+function StepRename({ c }) {
+  const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-rename)" };
+  const rows = [
+    [["source", "utm_source=meta"], ["source", "af_channel=meta"], ""],
+    [["medium", "utm_medium=paid"], ["medium", "af_sub1=paid"], ""],
+    [["campaign", "utm_campaign=subs_sept"], ["campaign", "af_adset=subs_sept"], ""],
+    [["content", "utm_content=video_a"], ["content", "af_ad=video_a"], ""],
+    [["click", "fbclid=IwAR…"], ["click", "af_sub3=fbclid:IwAR…"], "several click IDs are packed into one slot"],
+    [["mp", "mp_id=f5bd1ba5-…"], ["mp", "af_sub4=f5bd1ba5-…"], "AppsFlyer has no Mixpanel slot, so it rides in a spare one"],
+    [["code", "code=EON99"], ["code", "code=EON99"], "kept as is for the web app"],
+    [["code", "code=EON99"], ["code", "deep_link_value.code=EON99"], "and inside the app's JSON, for the promo popup"],
+    [["page", "c=electric-car-subscription"], ["page", "c=electric-car-subscription"], "which page the button was on"],
+    [["screen", "DLV_PATHNAME[subscription]"], ["screen", "deep_link_value.pathname=/subscriptions"], "the screen, from the script's table"],
+  ];
+  const top = 56;
+  const step = 29;
+  return (
+    <Figure c={c} viewBox={`0 0 760 ${top + rows.length * step + 8}`} label="On tap, each value is renamed to AppsFlyer's parameter: utm_source becomes af_channel, utm_medium af_sub1, utm_campaign af_adset, utm_content af_ad, click IDs are packed into af_sub3, the Mixpanel ID goes into af_sub4, the code is sent both flat and inside deep_link_value, and the screen to open comes from the script's table.">
+      <Arrow id="eon-fig-rename" c={c} />
+      <StepTitle c={c}>3 · On tap, each value gets the name AppsFlyer expects</StepTitle>
+      <text x={18} y={44} fill={c.muted} fontSize="9.5" fontStyle="italic">on the site</text>
+      <text x={290} y={44} fill={c.muted} fontSize="9.5" fontStyle="italic">on the OneLink</text>
+      {rows.map(([left, right, note], i) => {
+        const y = top + i * step;
+        return (
+          <g key={i}>
+            <Chip x={18} y={y} k={left[0]} text={left[1]} />
+            <path d={`M${18 + chipW(left[1]) + 10},${y + 11} L282,${y + 11}`} {...line} />
+            <Chip x={290} y={y} k={right[0]} text={right[1]} />
+            {note && <text x={290 + chipW(right[1]) + 12} y={y + 15} fill={c.muted} fontSize="9.5" fontStyle="italic">{note}</text>}
+          </g>
+        );
+      })}
+    </Figure>
+  );
+}
 
-      <path d="M380,232 L380,256" {...line} />
+function StepDestinations({ c }) {
+  const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-dest)" };
+  return (
+    <Figure c={c} viewBox="0 0 760 300" label="AppsFlyer OneLink records the click and sends the person to the app if it is installed, to the redirect page on a phone without it (and from there to the store or the web app), or to the web app on desktop.">
+      <Arrow id="eon-fig-dest" c={c} />
+      <StepTitle c={c}>4 · AppsFlyer records the click and picks the destination</StepTitle>
+      <Box c={c} x={230} y={44} w={300} h={54} title="go.eonrides.com/nQbG/subs" sub="the link, with everything from step 3 on it" accent />
+      <path d="M300,98 L300,130 L120,130 L120,160" {...line} />
+      <path d="M380,98 L380,160" {...line} />
+      <path d="M460,98 L460,130 L640,130 L640,160" {...line} />
+      <text x={120} y={150} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">phone, app installed</text>
+      <text x={380} y={150} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">phone, no app</text>
+      <text x={640} y={150} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">desktop</text>
+      <Box c={c} x={20} y={162} w={200} h={54} title="Eon app" sub="opens the screen, shows the code" />
+      <Box c={c} x={270} y={162} w={220} h={54} title="/app-redirect-ios or -android" sub="a page on the site, see step 5" />
+      <Box c={c} x={540} y={162} w={200} h={54} title="app.eonrides.com" sub="the web app" />
+      <path d="M330,216 L330,244" {...line} />
+      <path d="M430,216 L430,244" {...line} />
+      <Box c={c} x={232} y={246} w={190} h={44} title="App Store or Google Play" sub="first open still gets the screen and code" />
+      <Box c={c} x={442} y={246} w={200} h={44} title="Continue on web" sub="to app.eonrides.com, values kept" />
+    </Figure>
+  );
+}
 
-      {/* 3. the OneLink */}
-      <Panel c={c} x={12} y={258} w={736} h={96} title="go.eonrides.com/nQbG/subs · the OneLink, with AppsFlyer's names for the same values" />
-      <Line c={c} x={26} y={296} parts={["?", ["source", "af_channel=meta"], " &", ["medium", "af_sub1=paid"], " &", ["campaign", "af_adset=subs_sept"], " &", ["content", "af_ad=video_a"], " &", ["click", "af_sub3=fbclid:IwAR…"]]} />
-      <Line c={c} x={26} y={312} parts={["&", ["mp", "af_sub4=f5bd1ba5-…"], " &", ["code", "code=EON99"], " &", ["page", "c=electric-car-subscription"]]} />
-      <Line c={c} x={26} y={328} parts={["&deep_link_value={", ["screen", "\"pathname\":\"/subscriptions\""], ",", ["code", "\"code\":\"EON99\""], "}"]} />
-      {small(26, 346, "utm_source → af_channel, utm_medium → af_sub1, utm_campaign → af_adset, utm_content → af_ad, click IDs packed into af_sub3, Mixpanel ID in af_sub4")}
+function StepReturn({ c }) {
+  const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-return)" };
+  const fills = [
+    [["source", "utm_source={af_channel}"], ["source", "utm_source=meta"]],
+    [["campaign", "utm_campaign={af_adset}"], ["campaign", "utm_campaign=subs_sept"]],
+    [["medium", "utm_medium={af_sub1}"], ["medium", "utm_medium=paid"]],
+    [["content", "utm_content={af_ad}"], ["content", "utm_content=video_a"]],
+    [["click", "af_sub3={af_sub3}"], ["click", "af_sub3=fbclid:IwAR…"]],
+  ];
+  const unpack = [
+    [["click", "af_sub3=fbclid:IwAR…"], ["click", "fbclid=IwAR…"]],
+    [["mp", "af_sub4=f5bd1ba5-…"], ["mp", "mp_id=f5bd1ba5-…"]],
+    [["code", "deep_link_value.code=EON99"], ["code", "code=EON99"]],
+  ];
+  const top = 78;
+  const step = 29;
+  const top2 = top + fills.length * step + 44;
+  return (
+    <Figure c={c} viewBox={`0 0 760 ${top2 + unpack.length * step + 8}`} label="On the redirect page, AppsFlyer has filled the macros in its configured URL with the values from the link, so utm_source is meta again; the script then unpacks the click ID from af_sub3, reads the Mixpanel ID from af_sub4 as mp_id, and takes the code out of deep_link_value.">
+      <Arrow id="eon-fig-return" c={c} />
+      <StepTitle c={c}>5 · On the redirect page, the names come back</StepTitle>
+      <text x={18} y={44} fill={c.secondary} fontSize="10.5">AppsFlyer is configured to send phones without the app to this URL, and fills each {"{macro}"} from the link:</text>
+      <text x={18} y={66} fill={c.muted} fontSize="9.5" fontStyle="italic">configured in AppsFlyer</text>
+      <text x={330} y={66} fill={c.muted} fontSize="9.5" fontStyle="italic">what the page receives</text>
+      {fills.map(([left, right], i) => {
+        const y = top + i * step;
+        return (
+          <g key={i}>
+            <Chip x={18} y={y} k={left[0]} text={left[1]} />
+            <path d={`M${18 + chipW(left[1]) + 10},${y + 11} L322,${y + 11}`} {...line} />
+            <Chip x={330} y={y} k={right[0]} text={right[1]} />
+          </g>
+        );
+      })}
+      <text x={18} y={top + fills.length * step + 10} fill={c.muted} fontSize="9.5" fontStyle="italic">AppsFlyer also appends everything else that was on the link: c, af_sub4, code, deep_link_value</text>
+      <text x={18} y={top2 - 12} fill={c.secondary} fontSize="10.5">Then the script unpacks what is still in AppsFlyer's shape, and the page behaves like any tagged landing page:</text>
+      {unpack.map(([left, right], i) => {
+        const y = top2 + i * step;
+        return (
+          <g key={i}>
+            <Chip x={18} y={y} k={left[0]} text={left[1]} />
+            <path d={`M${18 + chipW(left[1]) + 10},${y + 11} L322,${y + 11}`} {...line} />
+            <Chip x={330} y={y} k={right[0]} text={right[1]} />
+          </g>
+        );
+      })}
+    </Figure>
+  );
+}
 
-      <path d="M380,354 L380,378" {...line} />
-
-      {/* 4. AppsFlyer */}
-      <Panel c={c} x={162} y={380} w={436} h={48} title="AppsFlyer OneLink records the click with everything above" />
-      {small(176, 418, "then sends the person on, depending on the device")}
-
-      <path d="M262,428 L262,452 L130,452 L130,478" {...line} />
-      <path d="M380,428 L380,478" {...line} />
-      <path d="M498,428 L498,452 L630,452 L630,478" {...line} />
-      {small(130, 470, "phone, app installed", "middle")}
-      {small(380, 470, "phone, no app", "middle")}
-      {small(630, 470, "desktop", "middle")}
-
-      {/* 5a. app */}
-      <Panel c={c} x={col[0]} y={480} w={colW} h={240} title="Eon app" />
-      {small(col[0] + 14, 516, "receives, through AppsFlyer")}
-      <Line c={c} x={col[0] + 14} y={534} size={9.5} parts={["deep_link_value → opens ", ["screen", "/subscriptions"]]} />
-      <Line c={c} x={col[0] + 14} y={550} size={9.5} parts={["                  and shows ", ["code", "EON99"]]} />
-      <Line c={c} x={col[0] + 14} y={572} size={9.5} parts={[["source", "af_channel"], " ", ["medium", "af_sub1"], " ", ["campaign", "af_adset"]]} />
-      <Line c={c} x={col[0] + 14} y={588} size={9.5} parts={[["content", "af_ad"], " ", ["click", "af_sub3"]]} />
-      {small(col[0] + 14, 604, "→ the install or open is attributed to the Meta ad")}
-      <Line c={c} x={col[0] + 14} y={626} size={9.5} parts={[["mp", "af_sub4"], " → mixpanel.identify(…)"]} />
-      {small(col[0] + 14, 642, "→ the same person as on the site")}
-
-      {/* 5b. redirect page */}
-      <Panel c={c} x={col[1]} y={480} w={colW} h={240} title="/app-redirect-ios or -android" />
-      {small(col[1] + 14, 516, "AppsFlyer rebuilds the link with utm_ names")}
-      <Line c={c} x={col[1] + 14} y={534} size={9.5} parts={[["source", "utm_source=meta"]]} />
-      <Line c={c} x={col[1] + 14} y={550} size={9.5} parts={[["medium", "utm_medium=paid"]]} />
-      <Line c={c} x={col[1] + 14} y={566} size={9.5} parts={[["campaign", "utm_campaign=subs_sept"]]} />
-      <Line c={c} x={col[1] + 14} y={582} size={9.5} parts={[["content", "utm_content=video_a"]]} />
-      <Line c={c} x={col[1] + 14} y={598} size={9.5} parts={[["click", "af_sub3=fbclid:IwAR…"]]} />
-      <Line c={c} x={col[1] + 14} y={614} size={9.5} parts={[["mp", "af_sub4=f5bd1ba5-…"]]} />
-      <Line c={c} x={col[1] + 14} y={630} size={9.5} parts={["deep_link_value={…", ["code", "\"code\":\"EON99\""], "}"]} />
-      {small(col[1] + 14, 652, "the script unpacks what is still packed")}
-      <Line c={c} x={col[1] + 14} y={670} size={9.5} parts={[["click", "af_sub3"], " → ", ["click", "fbclid=IwAR…"]]} />
-      <Line c={c} x={col[1] + 14} y={686} size={9.5} parts={[["mp", "af_sub4"], " → ", ["mp", "mp_id"]]} />
-      <Line c={c} x={col[1] + 14} y={702} size={9.5} parts={["deep_link_value → ", ["code", "code=EON99"]]} />
-
-      {/* 5c. web app on desktop */}
-      <Panel c={c} x={col[2]} y={480} w={colW} h={240} title="app.eonrides.com" />
-      {small(col[2] + 14, 516, "AppsFlyer sends the person here with")}
-      <Line c={c} x={col[2] + 14} y={534} size={9.5} parts={[["source", "utm_source=meta"]]} />
-      <Line c={c} x={col[2] + 14} y={550} size={9.5} parts={[["medium", "utm_medium=paid"]]} />
-      <Line c={c} x={col[2] + 14} y={566} size={9.5} parts={[["campaign", "utm_campaign=subs_sept"]]} />
-      <Line c={c} x={col[2] + 14} y={582} size={9.5} parts={[["content", "utm_content=video_a"]]} />
-      <Line c={c} x={col[2] + 14} y={598} size={9.5} parts={[["code", "code=EON99"]]} />
-      <Line c={c} x={col[2] + 14} y={614} size={9.5} parts={[["page", "c=electric-car-subscription"]]} />
-      <Line c={c} x={col[2] + 14} y={630} size={9.5} parts={[["mp", "af_sub4=f5bd1ba5-…"]]} />
-      {small(col[2] + 14, 652, "the web app reads")}
-      <Line c={c} x={col[2] + 14} y={670} size={9.5} parts={[["code", "code"], " → applies the promo"]} />
-      <Line c={c} x={col[2] + 14} y={686} size={9.5} parts={[["mp", "af_sub4"], " → mixpanel.identify(…)"]} />
-      <Line c={c} x={col[2] + 14} y={702} size={9.5} parts={[["source", "utm_"], " → its own analytics"]} />
-
-      {/* 6. from the redirect page */}
-      <path d="M320,720 L320,770" {...line} />
-      <path d="M440,720 L440,770" {...line} />
-      {small(314, 750, "installs the app", "end")}
-      {small(446, 750, "taps Continue on web")}
-
-      <Panel c={c} x={12} y={772} w={360} h={112} title="App Store or Google Play, then first open" />
-      {small(26, 808, "AppsFlyer delivers the same deep_link_value on first open")}
-      <Line c={c} x={26} y={828} size={9.5} parts={["deep_link_value → opens ", ["screen", "/subscriptions"], ", shows ", ["code", "EON99"]]} />
-      <Line c={c} x={26} y={846} size={9.5} parts={[["source", "af_channel"], " … ", ["click", "af_sub3"], " → attributed to the Meta ad"]} />
-      <Line c={c} x={26} y={864} size={9.5} parts={[["mp", "af_sub4"], " → mixpanel.identify(…)"]} />
-
-      <Panel c={c} x={388} y={772} w={360} h={112} title="app.eonrides.com, from the redirect page" />
-      {small(402, 808, "the script forwards everything onto the Continue on web link")}
-      <Line c={c} x={402} y={828} size={9.5} parts={["app.eonrides.com/?", ["source", "utm_source=meta"], "&", ["medium", "utm_medium=paid"]]} />
-      <Line c={c} x={402} y={844} size={9.5} parts={["&", ["campaign", "utm_campaign=subs_sept"], "&", ["content", "utm_content=video_a"]]} />
-      <Line c={c} x={402} y={860} size={9.5} parts={["&", ["click", "fbclid=IwAR…"], "&", ["code", "code=EON99"], "&", ["mp", "mp_id=f5bd1ba5-…"], "&", ["page", "c=app-redirect-ios"]]} />
-
-      {/* 7. summary strip */}
-      <Panel c={c} x={12} y={906} w={736} h={166} title="Where each value ends up" />
-      {[
-        [["source", "utm_source"], "Meta, the channel that brought the person in. Stays for 30 days. Reaches AppsFlyer as af_channel and the web app as utm_source."],
-        [["campaign", "utm_campaign"], "The ad set (af_adset). With utm_medium (af_sub1) and utm_content (af_ad) it identifies the exact ad."],
-        [["click", "fbclid"], "The ad network's own click ID. Packed into af_sub3 for AppsFlyer, unpacked again on the way back."],
-        [["code", "code"], "The promo. Travels twice: as a plain code= for the web app and inside deep_link_value for the native app."],
-        [["mp", "Mixpanel ID"], "af_sub4 on OneLinks, mp_id on internal links. Whoever receives it calls mixpanel.identify, so it is one person everywhere."],
-        [["page", "c"], "The page the person tapped on, always the current one. Tells AppsFlyer where on the site the conversion came from."],
-      ].map(([key, text], i) => (
-        <g key={key[1]}>
-          <Line c={c} x={26} y={946 + i * 20} size={9.5} parts={[key]} />
-          <text x={126} y={946 + i * 20} fill={c.secondary} fontSize="9.5">{text}</text>
+function StepOutcome({ c }) {
+  const cols = [
+    { x: 12, title: "Eon app", sub: "installed, or first open after the store", chips: [["screen", "/subscriptions"], ["code", "EON99"], ["mp", "f5bd1ba5-…"], ["source", "meta"]], reads: ["opens the screen", "shows the promo popup", "mixpanel.identify", "install attributed to the ad"] },
+    { x: 262, title: "app.eonrides.com", sub: "desktop, or Continue on web", chips: [["code", "EON99"], ["source", "meta"], ["campaign", "subs_sept"], ["mp", "f5bd1ba5-…"]], reads: ["applies the promo", "its own analytics", "", "mixpanel.identify"] },
+    { x: 512, title: "AppsFlyer", sub: "the click record", chips: [["source", "meta"], ["campaign", "subs_sept"], ["content", "video_a"], ["page", "electric-car-…"]], reads: ["which channel", "which ad set", "which creative", "which page converted"] },
+  ];
+  return (
+    <Figure c={c} viewBox="0 0 760 236" label="What each side ends up with: the app opens the Subscriptions screen with the EON99 popup and identifies the Mixpanel user; the web app applies the promo, keeps the UTMs, and identifies the same user; AppsFlyer holds the channel, ad set, creative, and the page that converted.">
+      <StepTitle c={c}>6 · What each side ends up with</StepTitle>
+      {cols.map((col) => (
+        <g key={col.title}>
+          <rect x={col.x} y={40} width={236} height={186} rx="10" fill={c.bg} stroke={c.border} />
+          <text x={col.x + 14} y={62} fill={c.text} fontSize="11.5" fontWeight="600">{col.title}</text>
+          <text x={col.x + 14} y={78} fill={c.muted} fontSize="9.5" fontStyle="italic">{col.sub}</text>
+          {col.chips.map(([k, text], i) => (
+            <g key={text}>
+              <Chip x={col.x + 14} y={92 + i * 30} k={k} text={text} />
+              <text x={col.x + 14 + chipW(text) + 10} y={92 + i * 30 + 15} fill={c.secondary} fontSize="9.5">{col.reads[i]}</text>
+            </g>
+          ))}
         </g>
       ))}
     </Figure>
   );
+}
+
+/* The system map, as a storyboard: six small figures, one idea each. */
+function SystemMap({ c }) {
+  const steps = [
+    ["Every campaign link is a normal page URL with the campaign parameters, the promo code, and whatever click ID the ad network adds.", StepAdLink],
+    ["The first tagged visit is saved in the browser. The campaign and click ID stay for 30 days; the promo code is replaced by the next one the person uses.", StepRemember],
+    ["AppsFlyer has its own names for these slots. When a OneLink button is tapped, the script writes every value onto the link under AppsFlyer's name.", StepRename],
+    ["AppsFlyer records the click with all of it and decides where the person goes. The script never has to know the device.", StepDestinations],
+    ["A phone without the app lands on a page of the site. AppsFlyer has already turned the names back, and the script finishes the job.", StepReturn],
+    ["Whichever way the person went, the same values arrive. Same colours, same meaning, different names on the way.", StepOutcome],
+  ];
+  return steps.map(([text, Step]) => (
+    <div key={text} className="eon-doc-step">
+      <p className="eon-doc-p" style={{ color: c.secondary }}>{text}</p>
+      <Step c={c} />
+    </div>
+  ));
 }
 
 /* The same person over a month: what the snapshot holds after each visit. */
@@ -587,42 +659,6 @@ function IdentityFlow({ c }) {
   );
 }
 
-/* The same values under AppsFlyer's names and the site's names. */
-function NameTranslation({ c }) {
-  const pairs = [
-    ["utm_source", "af_channel"],
-    ["utm_medium", "af_sub1"],
-    ["utm_campaign", "af_adset"],
-    ["utm_content", "af_ad"],
-    ["utm_term", "af_sub2"],
-    ["fbclid, gclid", "af_sub3  (packed, name:value|name:value)"],
-    ["Mixpanel ID (mp_id)", "af_sub4"],
-    ["code", "code, and inside deep_link_value"],
-  ];
-  const top = 58;
-  const step = 24;
-  return (
-    <Figure c={c} viewBox="0 0 760 260" label="Each site parameter next to its AppsFlyer name: utm_source is af_channel, utm_medium is af_sub1, utm_campaign is af_adset, utm_content is af_ad, utm_term is af_sub2, click IDs are packed into af_sub3, the Mixpanel ID is af_sub4, and the code travels as code."
-      caption="Same values, different names. The script renames them on the way out to OneLink and back again on the redirect pages.">
-      <text x={60} y={32} fill={c.text} fontSize="11.5" fontWeight="600">On the site</text>
-      <text x={430} y={32} fill={c.text} fontSize="11.5" fontWeight="600">In AppsFlyer</text>
-      {pairs.map(([site, af], i) => {
-        const y = top + i * step;
-        return (
-          <g key={site}>
-            <text x={60} y={y} fill={c.text} fontSize="11" fontFamily={MONO}>{site}</text>
-            <line x1={250} y1={y - 4} x2={410} y2={y - 4} stroke={c.border} strokeWidth="1" />
-            <circle cx={250} cy={y - 4} r="2.5" fill={c.brand} />
-            <circle cx={410} cy={y - 4} r="2.5" fill={c.brand} />
-            <text x={430} y={y} fill={c.text} fontSize="11" fontFamily={MONO}>{af}</text>
-          </g>
-        );
-      })}
-      <text x={330} y={top + pairs.length * step + 4} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">out: site → OneLink · back: redirect page → site</text>
-    </Figure>
-  );
-}
-
 function CampaignUrl({ c }) {
   return (
     <>
@@ -658,7 +694,6 @@ function Buttons({ c }) {
       <Prose c={c} text={wa.stampIntro} />
       <Terminal title="The link, as tapped" lang="url" code={wa.stampExample} />
       <Prose c={c} text={wa.stampNote} />
-      <NameTranslation c={c} />
     </>
   );
 }

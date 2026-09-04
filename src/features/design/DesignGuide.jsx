@@ -461,18 +461,20 @@ export default function DesignGuide({
                 <span style={{ color: c.brand }}>{page.kicker}</span>
                 <h1>{page.title}</h1>
                 <p style={{ color: c.secondary }}>{page.summary}</p>
-                {pageRecord.wip && <p className="eon-design-wip" style={{ color: c.muted, borderColor: c.border }}>Work in progress. This page is still being written and may change.</p>}
+                {pageRecord.wip && <p className="eon-design-wip" style={{ color: c.muted, borderColor: c.border }}>This page is in progress. The team is still writing it, so there is nothing to read here yet.</p>}
               </header>
-              {page.sections.map((section) => (
+              {!pageRecord.wip && page.sections.map((section) => (
                 <DesignSection key={section.id} section={section} c={c} onSelectPage={selectPage} navigateProduct={navigateProduct} onOpenPrompts={onOpenPrompts} />
               ))}
             </article>
-            <aside className="eon-design-toc" aria-label="On this page">
-              <div style={{ borderColor: c.border }}>
-                <strong>On this page</strong>
-                {page.sections.map((section) => <a key={section.id} href={`#${section.id}`} style={{ color: c.muted }}>{section.title}</a>)}
-              </div>
-            </aside>
+            {!pageRecord.wip && (
+              <aside className="eon-design-toc" aria-label="On this page">
+                <div style={{ borderColor: c.border }}>
+                  <strong>On this page</strong>
+                  {page.sections.map((section) => <a key={section.id} href={`#${section.id}`} style={{ color: c.muted }}>{section.title}</a>)}
+                </div>
+              </aside>
+            )}
           </div>
         </div>
       </main>
