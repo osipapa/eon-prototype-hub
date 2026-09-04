@@ -414,7 +414,7 @@ function ButtonFlow({ c }) {
       <rect x={532} y={30} width={216} height={150} rx="10" fill={c.bg} stroke={c.border} />
       <text x={544} y={52} fill={c.text} fontSize="11.5" fontWeight="600">The link, as tapped</text>
       {row(544, 78, 'go.eonrides.com/nQbG/subs', true)}
-      {row(544, 96, '+ campaign (af_channel, af_adset…)')}
+      {row(544, 96, '+ campaign, as af_channel…')}
       {row(544, 114, '+ click IDs, Mixpanel ID')}
       {row(544, 132, '+ promo code')}
       {row(544, 150, '+ screen to open')}
@@ -429,15 +429,15 @@ function DeepLinkPhone({ c }) {
     <Figure c={c} viewBox="0 0 760 300" label="The deep_link_value JSON names a screen and a promo code; the app opens the Subscriptions screen and shows a popup with the code applied."
       caption="pathname is the screen the app opens. code is the promo popup on top of it.">
       <Arrow id="eon-fig-dlv" c={c} />
-      <text x={30} y={60} fill={c.muted} fontSize="10" fontFamily={MONO}>deep_link_value</text>
-      <text x={30} y={90} fill={c.text} fontSize="12.5" fontFamily={MONO}>{"{"}</text>
-      <text x={48} y={114} fill={c.text} fontSize="12.5" fontFamily={MONO}>"pathname": "/subscriptions",</text>
-      <text x={48} y={140} fill={c.text} fontSize="12.5" fontFamily={MONO}>"code": "EON99"</text>
-      <text x={30} y={164} fill={c.text} fontSize="12.5" fontFamily={MONO}>{"}"}</text>
-      <path d="M300,110 C 380,110 400,66 468,66" {...line} />
-      <path d="M220,136 C 340,136 380,228 468,228" {...line} />
-      <Note c={c} x={384} y={82}>opens this screen</Note>
-      <Note c={c} x={384} y={194}>shows this popup</Note>
+      <text x={40} y={104} fill={c.muted} fontSize="10" fontFamily={MONO}>deep_link_value</text>
+      <text x={40} y={132} fill={c.text} fontSize="12.5" fontFamily={MONO}>{"{"}</text>
+      <text x={58} y={156} fill={c.text} fontSize="12.5" fontFamily={MONO}>"pathname": "/subscriptions",</text>
+      <text x={58} y={180} fill={c.text} fontSize="12.5" fontFamily={MONO}>"code": "EON99"</text>
+      <text x={40} y={204} fill={c.text} fontSize="12.5" fontFamily={MONO}>{"}"}</text>
+      <path d="M300,152 C 380,152 390,66 468,66" {...line} />
+      <path d="M190,176 C 300,176 380,228 468,228" {...line} />
+      <Note c={c} x={458} y={54} anchor="end">opens this screen</Note>
+      <Note c={c} x={458} y={248} anchor="end">shows this popup</Note>
 
       <rect x={470} y={16} width={230} height={268} rx="26" fill={c.bg} stroke={c.border} strokeWidth="1.5" />
       <rect x={478} y={24} width={214} height={252} rx="20" fill={c.panel} />
@@ -491,17 +491,17 @@ function NameTranslation({ c }) {
   return (
     <Figure c={c} viewBox="0 0 760 260" label="Each site parameter next to its AppsFlyer name: utm_source is af_channel, utm_medium is af_sub1, utm_campaign is af_adset, utm_content is af_ad, utm_term is af_sub2, click IDs are packed into af_sub3, the Mixpanel ID is af_sub4, and the code travels as code."
       caption="Same values, different names. The script renames them on the way out to OneLink and back again on the redirect pages.">
-      <text x={40} y={32} fill={c.text} fontSize="11.5" fontWeight="600">On the site</text>
-      <text x={720} y={32} textAnchor="end" fill={c.text} fontSize="11.5" fontWeight="600">In AppsFlyer</text>
+      <text x={60} y={32} fill={c.text} fontSize="11.5" fontWeight="600">On the site</text>
+      <text x={430} y={32} fill={c.text} fontSize="11.5" fontWeight="600">In AppsFlyer</text>
       {pairs.map(([site, af], i) => {
         const y = top + i * step;
         return (
           <g key={site}>
-            <text x={40} y={y} fill={c.text} fontSize="11" fontFamily={MONO}>{site}</text>
-            <line x1={260} y1={y - 4} x2={400} y2={y - 4} stroke={c.border} strokeWidth="1" />
-            <circle cx={260} cy={y - 4} r="2.5" fill={c.brand} />
-            <circle cx={400} cy={y - 4} r="2.5" fill={c.brand} />
-            <text x={412} y={y} fill={c.text} fontSize="11" fontFamily={MONO}>{af}</text>
+            <text x={60} y={y} fill={c.text} fontSize="11" fontFamily={MONO}>{site}</text>
+            <line x1={250} y1={y - 4} x2={410} y2={y - 4} stroke={c.border} strokeWidth="1" />
+            <circle cx={250} cy={y - 4} r="2.5" fill={c.brand} />
+            <circle cx={410} cy={y - 4} r="2.5" fill={c.brand} />
+            <text x={430} y={y} fill={c.text} fontSize="11" fontFamily={MONO}>{af}</text>
           </g>
         );
       })}
