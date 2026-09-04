@@ -42,6 +42,12 @@ export const CHANGELOG = [
           "The design preview route takes a page: ?design-preview=tracking-websites opens straight to it without signing in.",
         ],
       },
+      {
+        label: "Fixes",
+        items: [
+          "Websites no longer describes app redirect pages or a store step. A OneLink opens the app when it is installed and app.eonrides.com otherwise, and the page, the figures, and the tables say so.",
+        ],
+      },
     ],
   },
   {

@@ -319,7 +319,7 @@ const PAGE_CONTENT = {
   "tracking-websites": {
     kicker: "Tracking",
     title: "Site-wide attribution & routing",
-    summary: "How a person who taps an ad ends up in the app, the web app, or the store with the campaign and promo code still attached.",
+    summary: "How a person who taps an ad ends up in the app or the web app with the campaign and promo code still attached.",
     sections: [
       { id: "overview", title: "What the script does", tracking: "attr-overview" },
       { id: "system-map", title: "Where a click goes", body: "The site builds the link. AppsFlyer OneLink records the click and decides where the person ends up, based on their device and whether the app is installed.", tracking: "attr-map" },
@@ -328,7 +328,7 @@ const PAGE_CONTENT = {
       { id: "buttons", title: "How a button gets its link", tracking: "attr-buttons" },
       { id: "deep-link", title: "Opening the right screen in the app", tracking: "attr-deeplink" },
       { id: "across-pages", title: "Keeping the details from page to page", tracking: "attr-across" },
-      { id: "coming-back", title: "Coming back from AppsFlyer", tracking: "attr-return" },
+      { id: "coming-back", title: "Arriving at the web app", tracking: "attr-return" },
       { id: "devices", title: "What happens on each device", tracking: "attr-devices" },
       { id: "examples", title: "Worked examples", body: "The same person, six visits. What the Subscribe button on the page carries after each one.", tracking: "attr-examples" },
       { id: "settings", title: "Settings the script depends on", body: "The values at the top of the script, and what has to be true in AppsFlyer and in the apps for the whole chain to work.", tracking: "attr-settings" },

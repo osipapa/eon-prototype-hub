@@ -501,23 +501,16 @@ function StepRename({ c }) {
 function StepDestinations({ c }) {
   const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-dest)" };
   return (
-    <Figure c={c} viewBox="0 0 760 300" label="AppsFlyer OneLink records the click and sends the person to the app if it is installed, to the redirect page on a phone without it (and from there to the store or the web app), or to the web app on desktop.">
+    <Figure c={c} viewBox="0 0 760 232" label="AppsFlyer OneLink records the click and opens the app when it is installed; otherwise, on a phone or on desktop, it sends the person to app.eonrides.com.">
       <Arrow id="eon-fig-dest" c={c} />
       <StepTitle c={c}>4 · AppsFlyer records the click and picks the destination</StepTitle>
       <Box c={c} x={230} y={44} w={300} h={54} title="go.eonrides.com/nQbG/subs" sub="the link, with everything from step 3 on it" accent />
-      <path d="M300,98 L300,130 L120,130 L120,160" {...line} />
-      <path d="M380,98 L380,160" {...line} />
-      <path d="M460,98 L460,130 L640,130 L640,160" {...line} />
-      <text x={120} y={150} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">phone, app installed</text>
-      <text x={380} y={150} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">phone, no app</text>
-      <text x={640} y={150} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">desktop</text>
-      <Box c={c} x={20} y={162} w={200} h={54} title="Eon app" sub="opens the screen, shows the code" />
-      <Box c={c} x={270} y={162} w={220} h={54} title="/app-redirect-ios or -android" sub="a page on the site, see step 5" />
-      <Box c={c} x={540} y={162} w={200} h={54} title="app.eonrides.com" sub="the web app" />
-      <path d="M330,216 L330,244" {...line} />
-      <path d="M430,216 L430,244" {...line} />
-      <Box c={c} x={232} y={246} w={190} h={44} title="App Store or Google Play" sub="first open still gets the screen and code" />
-      <Box c={c} x={442} y={246} w={200} h={44} title="Continue on web" sub="to app.eonrides.com, values kept" />
+      <path d="M330,98 L330,130 L200,130 L200,160" {...line} />
+      <path d="M430,98 L430,130 L560,130 L560,160" {...line} />
+      <text x={200} y={150} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">the app is installed</text>
+      <text x={560} y={150} textAnchor="middle" fill={c.muted} fontSize="9.5" fontStyle="italic">it is not, on a phone or on desktop</text>
+      <Box c={c} x={80} y={162} w={240} h={54} title="Eon app" sub="opens the screen, shows the code" />
+      <Box c={c} x={440} y={162} w={240} h={54} title="app.eonrides.com" sub="the web app, see step 5" />
     </Figure>
   );
 }
@@ -531,21 +524,22 @@ function StepReturn({ c }) {
     [["content", "utm_content={af_ad}"], ["content", "utm_content=video_a"]],
     [["click", "af_sub3={af_sub3}"], ["click", "af_sub3=fbclid:IwAR…"]],
   ];
-  const unpack = [
-    [["click", "af_sub3=fbclid:IwAR…"], ["click", "fbclid=IwAR…"]],
-    [["mp", "af_sub4=f5bd1ba5-…"], ["mp", "mp_id=f5bd1ba5-…"]],
-    [["code", "deep_link_value.code=EON99"], ["code", "code=EON99"]],
+  const reads = [
+    [["code", "code=EON99"], "applies the promo"],
+    [["mp", "af_sub4=f5bd1ba5-…"], "mixpanel.identify, the same person as on the site"],
+    [["source", "utm_source=meta"], "its own analytics, with the other utm_ values"],
+    [["page", "c=electric-car-subscription"], "which page the person converted from"],
   ];
   const top = 78;
   const step = 29;
   const top2 = top + fills.length * step + 44;
   return (
-    <Figure c={c} viewBox={`0 0 760 ${top2 + unpack.length * step + 8}`} label="On the redirect page, AppsFlyer has filled the macros in its configured URL with the values from the link, so utm_source is meta again; the script then unpacks the click ID from af_sub3, reads the Mixpanel ID from af_sub4 as mp_id, and takes the code out of deep_link_value.">
+    <Figure c={c} viewBox={`0 0 760 ${top2 + reads.length * step + 8}`} label="When the app is not installed, AppsFlyer sends the person to app.eonrides.com through a redirect URL whose macros turn af_channel back into utm_source and so on, and appends the rest of the link. The web app applies the code, identifies the Mixpanel user from af_sub4, and keeps the UTMs and page tag.">
       <Arrow id="eon-fig-return" c={c} />
-      <StepTitle c={c}>5 · On the redirect page, the names come back</StepTitle>
-      <text x={18} y={44} fill={c.secondary} fontSize="10.5">AppsFlyer is configured to send phones without the app to this URL, and fills each {"{macro}"} from the link:</text>
+      <StepTitle c={c}>5 · At the web app, the names come back</StepTitle>
+      <text x={18} y={44} fill={c.secondary} fontSize="10.5">AppsFlyer sends anyone without the app to this URL, filling each {"{macro}"} from the link:</text>
       <text x={18} y={66} fill={c.muted} fontSize="9.5" fontStyle="italic">configured in AppsFlyer</text>
-      <text x={330} y={66} fill={c.muted} fontSize="9.5" fontStyle="italic">what the page receives</text>
+      <text x={330} y={66} fill={c.muted} fontSize="9.5" fontStyle="italic">what app.eonrides.com receives</text>
       {fills.map(([left, right], i) => {
         const y = top + i * step;
         return (
@@ -557,14 +551,13 @@ function StepReturn({ c }) {
         );
       })}
       <text x={18} y={top + fills.length * step + 10} fill={c.muted} fontSize="9.5" fontStyle="italic">AppsFlyer also appends everything else that was on the link: c, af_sub4, code, deep_link_value</text>
-      <text x={18} y={top2 - 12} fill={c.secondary} fontSize="10.5">Then the script unpacks what is still in AppsFlyer's shape, and the page behaves like any tagged landing page:</text>
-      {unpack.map(([left, right], i) => {
+      <text x={18} y={top2 - 12} fill={c.secondary} fontSize="10.5">The web app reads them from the query string:</text>
+      {reads.map(([chip, what], i) => {
         const y = top2 + i * step;
         return (
           <g key={i}>
-            <Chip x={18} y={y} k={left[0]} text={left[1]} />
-            <path d={`M${18 + chipW(left[1]) + 10},${y + 11} L322,${y + 11}`} {...line} />
-            <Chip x={330} y={y} k={right[0]} text={right[1]} />
+            <Chip x={18} y={y} k={chip[0]} text={chip[1]} />
+            <text x={18 + chipW(chip[1]) + 12} y={y + 15} fill={c.secondary} fontSize="10">{what}</text>
           </g>
         );
       })}
@@ -574,8 +567,8 @@ function StepReturn({ c }) {
 
 function StepOutcome({ c }) {
   const cols = [
-    { x: 12, title: "Eon app", sub: "installed, or first open after the store", chips: [["screen", "/subscriptions"], ["code", "EON99"], ["mp", "f5bd1ba5-…"], ["source", "meta"]], reads: ["opens the screen", "shows the promo popup", "mixpanel.identify", "install attributed to the ad"] },
-    { x: 262, title: "app.eonrides.com", sub: "desktop, or Continue on web", chips: [["code", "EON99"], ["source", "meta"], ["campaign", "subs_sept"], ["mp", "f5bd1ba5-…"]], reads: ["applies the promo", "its own analytics", "", "mixpanel.identify"] },
+    { x: 12, title: "Eon app", sub: "when it is installed", chips: [["screen", "/subscriptions"], ["code", "EON99"], ["mp", "f5bd1ba5-…"], ["source", "meta"]], reads: ["opens the screen", "shows the promo popup", "mixpanel.identify", "install attributed to the ad"] },
+    { x: 262, title: "app.eonrides.com", sub: "when it is not", chips: [["code", "EON99"], ["source", "meta"], ["campaign", "subs_sept"], ["mp", "f5bd1ba5-…"]], reads: ["applies the promo", "its own analytics", "", "mixpanel.identify"] },
     { x: 512, title: "AppsFlyer", sub: "the click record", chips: [["source", "meta"], ["campaign", "subs_sept"], ["content", "video_a"], ["page", "electric-car-…"]], reads: ["which channel", "which ad set", "which creative", "which page converted"] },
   ];
   return (
@@ -604,8 +597,8 @@ function SystemMap({ c }) {
     ["Every campaign link is a normal page URL with the campaign parameters, the promo code, and whatever click ID the ad network adds.", StepAdLink],
     ["The first tagged visit is saved in the browser. The campaign and click ID stay for 30 days; the promo code is replaced by the next one the person uses.", StepRemember],
     ["AppsFlyer has its own names for these slots. When a OneLink button is tapped, the script writes every value onto the link under AppsFlyer's name.", StepRename],
-    ["AppsFlyer records the click with all of it and decides where the person goes. The script never has to know the device.", StepDestinations],
-    ["A phone without the app lands on a page of the site. AppsFlyer has already turned the names back, and the script finishes the job.", StepReturn],
+    ["AppsFlyer records the click with all of it and decides where the person goes: the app if it is installed, the web app if not. The script never has to know the device.", StepDestinations],
+    ["Anyone without the app lands on app.eonrides.com. AppsFlyer has already turned the names back, and the web app reads the rest.", StepReturn],
     ["Whichever way the person went, the same values arrive. Same colours, same meaning, different names on the way.", StepOutcome],
   ];
   return steps.map(([text, Step]) => (
@@ -731,7 +724,7 @@ function DeepLinkPhone({ c }) {
 function IdentityFlow({ c }) {
   const line = { stroke: c.muted, strokeWidth: 1.1, fill: "none", markerEnd: "url(#eon-fig-id)" };
   return (
-    <Figure c={c} viewBox="0 0 760 210" label="The browser's Mixpanel ID travels as af_sub4 through OneLink to the app and as mp_id on internal links to the web app; both call mixpanel.identify with it."
+    <Figure c={c} viewBox="0 0 760 210" label="The browser's Mixpanel ID travels as af_sub4 through OneLink to the app or the web app, and as mp_id on internal links to the web app; the receiving side calls mixpanel.identify with it."
       caption="Whichever way the person goes, the receiving side identifies them with the ID the site already had, so Mixpanel sees one person.">
       <Arrow id="eon-fig-id" c={c} />
       <Box c={c} x={16} y={74} w={200} h={62} title="Browser on the site" sub="Mixpanel ID f5bd1ba5-…" accent />
@@ -739,8 +732,8 @@ function IdentityFlow({ c }) {
       <path d="M216,114 L300,114 L300,164 L468,164" {...line} />
       <text x={384} y={38} textAnchor="middle" fill={c.muted} fontSize="9.5" fontFamily={MONO}>OneLink · af_sub4</text>
       <text x={384} y={156} textAnchor="middle" fill={c.muted} fontSize="9.5" fontFamily={MONO}>internal link · mp_id</text>
-      <Box c={c} x={470} y={16} w={274} h={62} title="Eon app" sub="mixpanel.identify(af_sub4)" />
-      <Box c={c} x={470} y={134} w={274} h={62} title="app.eonrides.com" sub="mixpanel.identify(mp_id)" />
+      <Box c={c} x={470} y={16} w={274} h={62} title="Eon app, or app.eonrides.com through OneLink" sub="mixpanel.identify(af_sub4)" />
+      <Box c={c} x={470} y={134} w={274} h={62} title="app.eonrides.com, through a link on the site" sub="mixpanel.identify(mp_id)" />
     </Figure>
   );
 }
@@ -811,8 +804,8 @@ function ComingBack({ c }) {
   return (
     <>
       <Prose c={c} text={wa.returnIntro} />
-      <DocTable c={c} head={["AppsFlyer sends", "The script reads it as"]} mono={[0, 1]} rows={wa.normalize.map((row) => [row.from, row.to])} />
-      <Prose c={c} text={[wa.normalizeNote, wa.redirectIntro]} />
+      <DocTable c={c} head={["AppsFlyer's name", "Ours"]} mono={[0, 1]} rows={wa.normalize.map((row) => [row.from, row.to])} />
+      <Prose c={c} text={wa.normalizeNote} />
     </>
   );
 }

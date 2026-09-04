@@ -5,7 +5,7 @@
 export const WEBSITE_ATTRIBUTION = {
   slug: "website-attribution",
   title: "Site-wide attribution & routing",
-  summary: "How a person who taps an ad ends up in the app, the web app, or the store with the campaign and promo code still attached.",
+  summary: "How a person who taps an ad ends up in the app or the web app with the campaign and promo code still attached.",
 
   intro: [
     "Every page of eonrides.com loads one script from Webflow's footer code. The script does not decide which device the visitor is on; AppsFlyer OneLink does that on its servers. The script's job is to build the right link for every button and to keep the campaign details with the visitor from page to page.",
@@ -101,7 +101,7 @@ https://go.eonrides.com/nQbG/subs
 
   /* Deep link */
   deepLinkIntro: [
-    "The native app receives one JSON object called deep_link_value. It opens the screen named in pathname and, if a code is present, shows the promo popup. This works both when the app is already installed and when it is opened for the first time after installing from the store.",
+    "The native app receives one JSON object called deep_link_value. It opens the screen named in pathname and, if a code is present, shows the promo popup. AppsFlyer hands it over when the link opens the app.",
   ],
   dlvShape: `{ "pathname": "/subscriptions", "code": "EON99" }
 
@@ -119,18 +119,19 @@ https://go.eonrides.com/nQbG/subs
 
   /* Across pages */
   forwardIntro: [
-    "Every other link that stays on eonrides.com or one of its subdomains gets the campaign details added as query parameters, unless they are already there. This is what carries attribution from www.eonrides.com to app.eonrides.com, and from the app redirect pages' Continue on web button. Anchors, mailto, tel, and the OneLink buttons themselves are left alone.",
+    "Every other link that stays on eonrides.com or one of its subdomains gets the campaign details added as query parameters, unless they are already there. This is what carries attribution from www.eonrides.com to app.eonrides.com. Anchors, mailto, tel, and the OneLink buttons themselves are left alone.",
     "The Mixpanel ID rides along too, so the web session and the app session are treated as the same person. The site sends it as mp_id on internal links and as af_sub4 on OneLinks; the receiving side calls mixpanel.identify with it before sending any event.",
   ],
   identity: [
     { hop: "Site to OneLink to the native app", carrier: "af_sub4", consumer: "The app calls mixpanel.identify(af_sub4)" },
     { hop: "Site to app.eonrides.com", carrier: "mp_id", consumer: "The web app calls mixpanel.identify(mp_id)" },
-    { hop: "OneLink to a redirect page to the web app", carrier: "af_sub4, read back as mp_id", consumer: "Automatic" },
+    { hop: "OneLink to app.eonrides.com, when the app is not installed", carrier: "af_sub4", consumer: "The web app calls mixpanel.identify(af_sub4)" },
   ],
 
   /* Coming back from AppsFlyer */
   returnIntro: [
-    "When there is no app on the phone, OneLink sends the person to /app-redirect-ios or /app-redirect-android on the site. On desktop it sends them to app.eonrides.com. In both cases AppsFlyer rebuilds the URL with its own parameter names, so the page receives af_channel rather than utm_source. The script translates these back on load; from then on the page behaves like any other tagged landing page.",
+    "Whenever the app is not installed, on a phone or on desktop, OneLink sends the person to app.eonrides.com. The redirect URL configured in AppsFlyer turns its names back into ours with macros, so the web app receives utm_source=meta rather than af_channel=meta, and AppsFlyer appends everything else that was on the link.",
+    "The script on www.eonrides.com understands the af_ names too. If a link ever lands on the site in AppsFlyer's shape, it translates them on load and the page behaves like any other tagged landing page.",
   ],
   normalize: [
     { from: "af_channel", to: "utm_source" },
@@ -141,15 +142,13 @@ https://go.eonrides.com/nQbG/subs
     { from: "af_sub3, packed as gclid:abc|fbclid:xyz", to: "gclid and fbclid, unpacked" },
     { from: "deep_link_value carrying a code", to: "code" },
   ],
-  normalizeNote: "If the URL already has the utm_ or code version, that one wins.",
-  redirectIntro: "The redirect pages only render when the app is not installed. Their store buttons link straight to the App Store and Google Play, not back through OneLink, because the click was already recorded and going through OneLink again would loop. The Continue on web button is a plain link to app.eonrides.com; the script adds the attribution to it like any other internal link.",
+  normalizeNote: "If the URL already has the utm_ or code version, that one wins. The web app reads code, the utm_ parameters, c, and af_sub4 as the Mixpanel ID.",
 
   /* Devices */
   outcomes: [
-    { device: "Desktop", happens: "OneLink sends the person straight to app.eonrides.com with the campaign, code, and Mixpanel ID on the URL. The web app reads them from the query string." },
     { device: "Phone, app installed", happens: "The link opens the app directly. AppsFlyer hands it deep_link_value and the af_ parameters, the app opens the named screen, shows the promo popup, and identifies the Mixpanel user." },
-    { device: "Phone, no app, installs it", happens: "OneLink shows the redirect page, the person installs from the store, and on first open AppsFlyer delivers the same deep_link_value as a deferred deep link. Same result as an installed app." },
-    { device: "Phone, no app, stays on the web", happens: "The person taps Continue on web and lands on app.eonrides.com with the campaign, code, and Mixpanel ID forwarded." },
+    { device: "Phone, no app", happens: "OneLink sends the person to app.eonrides.com with the campaign, code, page tag, and Mixpanel ID on the URL. The web app reads them from the query string." },
+    { device: "Desktop", happens: "Same as a phone without the app: app.eonrides.com, with everything on the URL." },
   ],
 
   /* Worked examples */
@@ -159,7 +158,7 @@ https://go.eonrides.com/nQbG/subs
     { visit: "The same person comes back the next day by typing the URL, opens /pricing, and taps Subscribe.", result: "Still attributed to Meta, still EON99, from the snapshot. The page tag is now pricing." },
     { visit: "The same person later arrives from a Google ad with code EON50.", result: "Meta stays as the first touch. The code becomes EON50, because the promo code is always the latest one." },
     { visit: "The same person comes back after more than 30 days with no campaign link.", result: "The snapshot has expired. No campaign, no code, and the link opens Subscriptions plainly." },
-    { visit: "Someone without the app lands on /app-redirect-ios with af_channel=meta and a code, and taps Continue on web.", result: "The page translates the AppsFlyer names back, and the web app receives utm_source=meta, the click ID, and the code." },
+    { visit: "Someone without the app taps Subscribe after arriving from the Meta ad with code EON99.", result: "OneLink sends them to app.eonrides.com. The web app receives utm_source=meta, the click ID in af_sub3, code=EON99, and the Mixpanel ID in af_sub4, and applies the promo." },
   ],
 
   /* Settings */
@@ -185,17 +184,15 @@ const TTL_MS      = 30 * 24 * 60 * 60 * 1000;   // 30 days`,
     { label: "Default pid", value: "eonrides_web" },
     { label: "Web app", value: "app.eonrides.com" },
   ],
-  appsflyerIntro: "The script assumes AppsFlyer is set up like this. AppsFlyer passes every OneLink parameter through to the redirect URLs, which is what lets the site recover the attribution on the way back.",
+  appsflyerIntro: "The script assumes AppsFlyer is set up like this. AppsFlyer passes every OneLink parameter through to the redirect URL, which is what lets the web app pick the attribution up.",
   appsflyer: [
     { setting: "Shortlinks", value: "eonrides, download_app, subs, partner, each with its own deep_link_value" },
-    { setting: "iOS redirect when the app is missing", value: "https://eonrides.com/app-redirect-ios?utm_source={af_channel}&utm_campaign={af_adset}&utm_medium={af_sub1}&utm_content={af_ad}&utm_term={af_sub2}&af_sub3={af_sub3}" },
-    { setting: "Android redirect when the app is missing", value: "https://eonrides.com/app-redirect-android with the same macros" },
-    { setting: "Desktop redirect", value: "https://app.eonrides.com with the same macros" },
+    { setting: "Redirect when the app is not installed, iOS, Android, and desktop", value: "https://app.eonrides.com/?utm_source={af_channel}&utm_campaign={af_adset}&utm_medium={af_sub1}&utm_content={af_ad}&utm_term={af_sub2}&af_sub3={af_sub3}" },
     { setting: "Universal Links and App Links", value: "The apps claim go.eonrides.com; the AASA and assetlinks.json files are served" },
   ],
   appSide: [
-    { surface: "Native app", detail: "In AppsFlyer's onDeepLinking handler, parse deep_link_value, go to pathname, and show the promo popup if there is a code. Handle it both on a direct open and a deferred one. Call mixpanel.identify with af_sub4." },
-    { surface: "Web app", detail: "On load, read code, the utm_ parameters, c, and mp_id (or af_sub4) from the query string. Call mixpanel.identify with mp_id." },
+    { surface: "Native app", detail: "In AppsFlyer's onDeepLinking handler, parse deep_link_value, go to pathname, and show the promo popup if there is a code. Call mixpanel.identify with af_sub4." },
+    { surface: "Web app", detail: "On load, read code, the utm_ parameters, c, and mp_id or af_sub4 from the query string, whichever is there. Call mixpanel.identify with it." },
   ],
 
   /* Console */
