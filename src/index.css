@@ -147,7 +147,6 @@ svg.eon-accent-icon,
 /* Gradient accents stay on emphasis details; copy and structural controls keep
    solid colors for predictable contrast in both themes. */
 .eon-design-hero > span,
-.eon-tracking-hero-kicker,
 .eon-prompt-section-kicker {
   width: fit-content;
   background: var(--eon-accent-gradient);
@@ -1111,54 +1110,7 @@ button.eon-save-state { cursor: pointer; }
   .eon-live-dot, .eon-sync-chip.is-syncing { animation: none; }
 }
 
-/* Design Hub: single-example tracking reference. */
-.eon-tracking-workspace {
-  display: flex;
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  min-width: 0;
-  overflow: hidden;
-  font-family: "DM Sans", sans-serif;
-}
-.eon-tracking-main { display: flex; min-width: 0; min-height: 0; flex: 1; flex-direction: column; }
-.eon-tracking-scroll { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
-.eon-tracking-layout {
-  display: grid;
-  width: min(1180px, 100%);
-  margin: 0 auto;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 32px;
-  padding: 40px;
-}
-.eon-tracking-article { min-width: 0; }
-.eon-tracking-hero { max-width: 720px; padding: 2px 0 40px; }
-.eon-tracking-hero-kicker { display: flex; align-items: center; gap: 7px; margin-bottom: 14px; font-size: 11px; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
-.eon-tracking-hero h1 { margin: 0; font-size: clamp(34px, 4vw, 48px); font-weight: 650; letter-spacing: -.045em; line-height: 1.04; text-wrap: balance; }
-.eon-tracking-hero > p { max-width: 650px; margin: 16px 0 0; font-size: 15px; line-height: 1.65; text-wrap: pretty; }
-.eon-tracking-hero-stats { display: flex; flex-wrap: wrap; gap: 0; margin-top: 24px; border-top: 1px solid; border-bottom: 1px solid; }
-.eon-tracking-hero-stats span { display: inline-flex; min-height: 44px; align-items: center; gap: 5px; padding-right: 18px; font-size: 11px; }
-.eon-tracking-hero-stats span + span { padding-left: 18px; border-left: 1px solid; border-color: inherit; }
-.eon-tracking-hero-stats strong { color: inherit; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.eon-tracking-sidebar-body { min-height: 0; flex: 1; padding: 14px 8px 20px; overflow-y: auto; }
-.eon-tracking-nav-item {
-  display: flex;
-  width: 100%;
-  min-height: 56px;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-}
-.eon-tracking-nav-item > span { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
-.eon-tracking-nav-item strong, .eon-tracking-nav-item small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.eon-tracking-nav-item strong { font-size: 12px; font-weight: 650; }
-.eon-tracking-nav-item small { font-size: 10px; }
-
+/* Tracking references, rendered inside Eon Design pages. */
 .eon-tracking-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .eon-tracking-step { display: flex; min-width: 0; align-items: flex-start; gap: 12px; padding: 18px; border-radius: 16px; }
 .eon-tracking-step > span { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; font-size: 11px; font-weight: 750; }
@@ -1271,21 +1223,144 @@ button.eon-save-state { cursor: pointer; }
 .eon-tracking-decision strong { font-size: 12px; font-weight: 650; }
 .eon-tracking-decision p { margin: 5px 0 0; font-size: 11px; line-height: 1.55; }
 
-.eon-tracking-rail { min-width: 0; }
-.eon-tracking-rail-card { position: sticky; top: 24px; padding: 18px; border-radius: 24px; }
-.eon-tracking-rail-card .eon-prompt-use-head { display: flex; align-items: center; gap: 10px; }
-.eon-tracking-rail-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: 10px; }
-.eon-tracking-rail-statuses { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; padding-top: 16px; border-top: 1px solid; }
-.eon-tracking-rail-statuses > div { display: grid; grid-template-columns: 8px 62px minmax(0, 1fr); align-items: center; gap: 7px; font-size: 10px; }
-.eon-tracking-rail-statuses strong { font-weight: 700; }
-.eon-tracking-rail-statuses em { color: hsl(var(--muted-foreground)); font-style: normal; }
-.eon-tracking-status-dot { width: 8px; height: 8px; border-radius: 50%; }
-.eon-tracking-status-dot.is-shipped { background: #62E58B; box-shadow: 0 0 0 4px rgba(98,229,139,.13); }
-.eon-tracking-status-dot.is-draft { background: #FFB34F; box-shadow: 0 0 0 4px rgba(255,179,79,.13); }
 .eon-tracking-meta { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; padding-top: 16px; border-top: 1px solid; }
 .eon-tracking-meta > div { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 10px; align-items: baseline; font-size: 10px; }
 .eon-tracking-meta span { color: hsl(var(--muted-foreground)); }
 .eon-tracking-meta strong { min-width: 0; overflow-wrap: anywhere; font-size: 10px; font-weight: 650; line-height: 1.4; }
+
+/* Tracking blocks inside Eon Design: the Mixpanel prompt card and the
+   attribution (eon-attr-*) reference. Blocks sit under the section intro, so
+   each top-level block carries its own top margin. */
+.eon-design-section > .eon-tracking-steps, .eon-design-section > .eon-tracking-event, .eon-design-section > .eon-tracking-checklist,
+.eon-design-section > .eon-tracking-prompt-card, .eon-design-section > .eon-attr-status, .eon-design-section > .eon-attr-map,
+.eon-design-section > .eon-attr-code, .eon-design-section > .eon-attr-table, .eon-design-section > .eon-attr-defs,
+.eon-design-section > .eon-attr-pipeline, .eon-design-section > .eon-attr-mapping, .eon-design-section > .eon-attr-snapshot,
+.eon-design-section > .eon-attr-precedence, .eon-design-section > .eon-attr-pair, .eon-design-section > .eon-attr-outcomes,
+.eon-design-section > .eon-attr-callout { margin-top: 28px; }
+.eon-attr-code + .eon-attr-code, .eon-attr-code + .eon-attr-table, .eon-attr-table + .eon-attr-defs, .eon-attr-callout + .eon-attr-table,
+.eon-attr-chips + .eon-attr-callout, .eon-attr-defs + .eon-attr-ids, .eon-attr-note + .eon-attr-code, .eon-attr-note + .eon-attr-defs,
+.eon-attr-note + .eon-attr-chips, .eon-attr-table + .eon-attr-note, .eon-attr-code + .eon-attr-note { margin-top: 14px; }
+.eon-tracking-steps + .eon-attr-meta { margin-top: 22px; }
+.eon-attr-meta + .eon-attr-callout { margin-top: 18px; }
+.eon-attr-pair + .eon-attr-chips { margin-top: 16px; }
+
+.eon-tracking-prompt-card { padding: 20px; border-radius: 24px; }
+.eon-tracking-prompt-card .eon-prompt-use-head { display: flex; align-items: flex-start; gap: 12px; }
+.eon-tracking-prompt-card .eon-prompt-use-head strong { display: block; font-size: 14px; font-weight: 650; }
+.eon-tracking-prompt-card .eon-prompt-use-head p { margin: 4px 0 0; font-size: 12px; line-height: 1.55; }
+.eon-tracking-prompt-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.eon-tracking-prompt-actions .eon-prompt-copy-primary, .eon-tracking-prompt-actions .eon-prompt-copy-secondary { width: auto; margin: 0; }
+.eon-tracking-rail-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: 10px; }
+.eon-tracking-checklist > div > span b { font-size: 11px; font-weight: 750; font-variant-numeric: tabular-nums; }
+
+.eon-attr-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .92em; overflow-wrap: anywhere; }
+.eon-attr-mono.is-legacy { text-decoration: line-through; opacity: .7; }
+.eon-attr-note { max-width: 720px; margin: 14px 0 0; font-size: 12px; line-height: 1.6; text-wrap: pretty; }
+.eon-attr-subhead { margin: 30px 0 12px; font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
+.eon-attr-status { display: flex; flex-wrap: wrap; gap: 8px; }
+.eon-attr-pill { display: inline-flex; min-height: 28px; align-items: center; padding: 0 11px; border-radius: 999px; font-size: 11px; font-weight: 650; }
+.eon-attr-pill.is-shipped { background: rgba(98,229,139,.16); color: #62E58B; }
+.light .eon-attr-pill.is-shipped { color: #147A36; }
+.eon-attr-pill.is-draft { background: rgba(255,179,79,.17); color: #FFB34F; }
+.light .eon-attr-pill.is-draft { color: #9A4A00; }
+.eon-attr-tag { display: inline-flex; min-height: 18px; align-items: center; padding: 0 7px; border-radius: 999px; font-size: 8px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.eon-attr-tag.is-first { background: rgba(114,167,255,.17); color: #72A7FF; }
+.light .eon-attr-tag.is-first { color: #245FD1; }
+.eon-attr-tag.is-last { background: rgba(255,179,79,.17); color: #FFB34F; }
+.light .eon-attr-tag.is-last { color: #9A4A00; }
+.eon-attr-tag.is-reference, .eon-attr-tag.is-none { background: rgba(144,148,165,.18); color: hsl(var(--muted-foreground)); }
+
+.eon-attr-callout { display: flex; align-items: flex-start; gap: 11px; padding: 16px 18px; border-radius: 16px; }
+.eon-attr-callout > svg { flex: 0 0 auto; margin-top: 2px; }
+.eon-attr-callout.is-warn { box-shadow: inset 3px 0 #FFB34F, var(--shadow-surface) !important; }
+.eon-attr-callout.is-warn > svg { color: #FFB34F; }
+.light .eon-attr-callout.is-warn > svg { color: #9A4A00; }
+.eon-attr-callout p { margin: 0; font-size: 12px; line-height: 1.6; }
+
+.eon-attr-code { margin: 0; overflow: hidden; border-radius: 16px; }
+.eon-attr-code figcaption { padding: 11px 16px 0; font-size: 10px; font-weight: 650; letter-spacing: .03em; }
+.eon-attr-code pre { margin: 0; padding: 12px 16px 14px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.eon-attr-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+.eon-attr-table { overflow: hidden; border-radius: 20px; }
+.eon-attr-table-el th:nth-child(1), .eon-attr-table-el th:nth-child(2) { width: auto; }
+.eon-attr-table-el td:first-child code { display: inline; font-size: 10.5px; font-weight: 600; }
+.eon-attr-table-el tbody tr:first-child td { border-top: 1px solid; }
+
+.eon-attr-defs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.eon-attr-defs > div { padding: 16px 18px; border-radius: 16px; }
+.eon-attr-defs > div > code, .eon-attr-defs > div > strong { display: block; font-size: 12px; font-weight: 650; }
+.eon-attr-defs p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.55; }
+.eon-attr-ids { display: grid; overflow: hidden; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 16px; }
+.eon-attr-ids > div { display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; border-top: 1px solid; }
+.eon-attr-ids > div:nth-child(-n+3) { border-top: 0; }
+.eon-attr-ids > div:not(:nth-child(3n+1)) { border-left: 1px solid; border-left-color: inherit; }
+.eon-attr-ids span { font-size: 10px; }
+.eon-attr-ids code { font-size: 11px; font-weight: 650; }
+
+.eon-attr-map { margin: 0; padding: 18px; border-radius: 24px; overflow-x: auto; }
+.eon-attr-map svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: "DM Sans", sans-serif; }
+
+.eon-attr-pipeline { display: grid; overflow-x: auto; grid-auto-columns: minmax(236px, 1fr); grid-auto-flow: column; gap: 10px; padding: 3px 3px 16px; scroll-snap-type: x proximity; scrollbar-color: rgba(144, 148, 165, .42) transparent; scrollbar-width: thin; }
+.eon-attr-stage { display: flex; min-width: 0; flex-direction: column; padding: 16px; border-radius: 18px; scroll-snap-align: start; }
+.eon-attr-stage-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.eon-attr-stage-head > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 9px; font-size: 11px; font-weight: 750; }
+.eon-attr-stage-head small { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.eon-attr-stage strong { font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
+.eon-attr-stage p { margin: 6px 0 0; font-size: 11px; line-height: 1.55; }
+.eon-attr-stage ul { display: flex; margin: 12px 0 0; padding: 0; flex-direction: column; gap: 7px; list-style: none; }
+.eon-attr-stage li { display: flex; align-items: flex-start; gap: 6px; font-size: 10.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.eon-attr-stage li svg { flex: 0 0 auto; margin-top: 3px; }
+
+.eon-attr-mapping { overflow: hidden; border-radius: 20px; }
+.eon-attr-mapping > div { display: grid; grid-template-columns: minmax(0, 1.2fr) 14px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid; font-size: 11px; }
+.eon-attr-mapping > div:first-child { border-top: 0; }
+.eon-attr-mapping > div small { grid-column: 1 / -1; margin-top: -4px; font-size: 10px; }
+
+.eon-attr-snapshot { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 12px; }
+.eon-attr-json > div { display: flex; flex-direction: column; gap: 3px; padding: 10px 16px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 1.55; }
+.eon-attr-json > div > span { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.eon-attr-json > div > span:not(:first-child):not(:last-child) { padding-left: 18px; }
+.eon-attr-json i { font-style: normal; }
+.eon-attr-json em { font-style: normal; overflow-wrap: anywhere; }
+.eon-attr-legend { display: flex; flex-direction: column; gap: 10px; }
+.eon-attr-legend > div { padding: 12px 14px; border-radius: 14px; }
+.eon-attr-legend p { margin: 6px 0 0; font-size: 11px; line-height: 1.5; }
+.eon-attr-legend > p { margin: 2px 4px 0; font-size: 10.5px; line-height: 1.5; }
+
+.eon-attr-precedence { overflow: hidden; border-radius: 20px; }
+.eon-attr-precedence > div { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid; }
+.eon-attr-precedence > div:first-child { border-top: 0; }
+.eon-attr-precedence > div > code { font-weight: 650; }
+.eon-attr-precedence > div > div { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.eon-attr-precedence > div > div > span { display: inline-flex; align-items: center; gap: 4px; }
+.eon-attr-precedence em { display: inline-flex; min-height: 24px; align-items: center; padding: 0 9px; border: 1px solid; border-radius: 999px; font-size: 10.5px; font-style: normal; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+.eon-attr-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; }
+.eon-attr-chips > span { margin-right: 4px; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.eon-attr-chips > code { display: inline-flex; min-height: 24px; align-items: center; padding: 0 9px; border-radius: 8px; background: rgba(144,148,165,.16); font-size: 10.5px; }
+
+.eon-attr-outcomes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.eon-attr-outcomes > div { display: flex; min-width: 0; flex-direction: column; padding: 18px; border-radius: 18px; }
+.eon-attr-outcomes > div > span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; }
+.eon-attr-outcomes strong { margin-top: 12px; font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
+.eon-attr-outcomes dl { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 6px 10px; margin: 12px 0 0; font-size: 11px; line-height: 1.5; }
+.eon-attr-outcomes dt { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; line-height: 1.9; }
+.eon-attr-outcomes dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 680px) {
+  .eon-attr-pair, .eon-attr-defs, .eon-attr-snapshot, .eon-attr-outcomes { grid-template-columns: minmax(0, 1fr); }
+  .eon-attr-ids { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .eon-attr-ids > div:nth-child(-n+3) { border-top: 1px solid; }
+  .eon-attr-ids > div:nth-child(-n+2) { border-top: 0; }
+  .eon-attr-ids > div:not(:nth-child(3n+1)) { border-left: 0; }
+  .eon-attr-ids > div:nth-child(2n) { border-left: 1px solid; border-left-color: inherit; }
+  .eon-attr-precedence > div { grid-template-columns: minmax(0, 1fr); }
+  .eon-attr-mapping > div { grid-template-columns: minmax(0, 1fr); }
+  .eon-attr-mapping > div svg { transform: rotate(90deg); }
+  .eon-attr-pipeline { grid-auto-columns: minmax(224px, 82vw); margin-right: -20px; padding-right: 20px; }
+  .eon-tracking-prompt-actions .eon-prompt-copy-primary, .eon-tracking-prompt-actions .eon-prompt-copy-secondary { width: 100%; }
+}
 
 /* Eon Design documentation — the durable layer above individual tools. */
 .eon-design-workspace { display: flex; width: 100%; height: 100vh; height: 100dvh; min-width: 0; overflow: hidden; font-family: "DM Sans", sans-serif; }
@@ -1434,27 +1509,17 @@ button.eon-save-state { cursor: pointer; }
 .eon-design-toc a:hover { color: inherit !important; }
 
 @media (max-width: 1180px) {
-  .eon-tracking-layout { grid-template-columns: minmax(0, 1fr); }
-  .eon-tracking-rail-card { position: static; }
-  .eon-tracking-rail { order: -1; }
   .eon-design-page { grid-template-columns: minmax(0, 860px); }
   .eon-design-toc { display: none; }
 }
 @media (max-width: 900px) {
-  .eon-tracking-layout { padding: 36px; }
   .eon-design-sidebar { position: fixed; top: 0; bottom: 0; left: 0; width: min(304px, 88vw) !important; height: 100vh; height: 100dvh; flex-basis: auto !important; box-shadow: 20px 0 60px rgba(0,0,0,.28); }
   .eon-design-sidebar > .eon-sidebar-resizer { display: none; }
   .eon-design-page { padding: 48px 36px 84px; }
 }
 @media (max-width: 680px) {
-  .eon-tracking-layout { gap: 28px; padding: 26px 20px 44px; }
-  .eon-tracking-rail { order: 0; }
   .eon-tracking-source-grid, .eon-tracking-decision-stack, .eon-tracking-steps { grid-template-columns: minmax(0, 1fr); }
   .eon-tracking-source { min-height: 168px; }
-  .eon-tracking-hero { padding-bottom: 32px; }
-  .eon-tracking-hero h1 { font-size: 34px; }
-  .eon-tracking-hero-stats span { width: 100%; min-height: 36px; padding: 0; }
-  .eon-tracking-hero-stats span + span { padding-left: 0; border-top: 1px solid; border-left: 0; }
   .eon-tracking-flow-head { align-items: flex-start; }
   .eon-tracking-table { min-width: 520px; }
   .eon-tracking-table th, .eon-tracking-table td { padding-inline: 13px; }

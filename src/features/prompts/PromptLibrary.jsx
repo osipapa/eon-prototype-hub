@@ -30,7 +30,6 @@ export default function PromptLibrary({
   onSelectPrompt,
   onOpenDesign,
   onOpenPrototypes,
-  onOpenTracking,
   onOpenAdmin,
   onSignOut,
   onCreatePrompt,
@@ -152,7 +151,6 @@ export default function PromptLibrary({
           onSelectPrompt={selectPrompt}
           onOpenDesign={onOpenDesign}
           onOpenPrototypes={onOpenPrototypes}
-          onOpenTracking={onOpenTracking}
           onOpenAdmin={onOpenAdmin}
           onSignOut={onSignOut}
           changelog={changelog}
@@ -308,7 +306,6 @@ function PromptSidebar({
   onSelectPrompt,
   onOpenDesign,
   onOpenPrototypes,
-  onOpenTracking,
   onOpenAdmin,
   onSignOut,
   changelog,
@@ -377,7 +374,6 @@ function PromptSidebar({
             onSelect={(product) => {
               if (product === "design") onOpenDesign?.();
               if (product === "prototypes") onOpenPrototypes?.();
-              if (product === "tracking") onOpenTracking?.();
             }}
           />
           {isDrawer && (

@@ -131,8 +131,8 @@ Whenever the change is something you can see, the entry carries an image: set
 `image` to a path under `public/` (e.g. `"changelog/2026-08-28-contrast.png"`;
 the renderer adds `import.meta.env.BASE_URL` for the Pages base) and `imageAlt`,
 which doubles as the caption. Capture it from a dev-only preview route
-(`?workspace-preview`, `?design-preview`, `?prompts-preview`,
-`?tracking-preview` — see `src/main.jsx`) so no sign-in is needed.
+(`?workspace-preview`, `?design-preview[=<slug>]`, `?prompts-preview` — see
+`src/main.jsx`) so no sign-in is needed.
 
 ## Guardrails
 

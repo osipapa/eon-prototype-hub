@@ -559,7 +559,6 @@ export default function Hub() {
         onToggleReaction={onToggleReaction}
         onOpenDesign={() => navigate("/design")}
         onOpenPrompts={() => navigate("/prompts")}
-        onOpenTracking={() => navigate("/tracking")}
         onOpenAdmin={() => navigate("/admin")}
         onSignOut={signOut}
       />

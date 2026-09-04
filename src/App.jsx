@@ -7,7 +7,6 @@ const Login = lazy(() => import("./routes/Login"));
 const Hub = lazy(() => import("./routes/Hub"));
 const Design = lazy(() => import("./routes/Design"));
 const Prompts = lazy(() => import("./routes/Prompts"));
-const Tracking = lazy(() => import("./routes/Tracking"));
 const Admin = lazy(() => import("./routes/Admin"));
 
 function Splash({ children }) {
@@ -55,8 +54,8 @@ export default function App() {
             <Route path="/design/:slug" element={<RequireAuth><Design /></RequireAuth>} />
             <Route path="/prompts" element={<RequireAuth><Prompts /></RequireAuth>} />
             <Route path="/prompts/:slug" element={<RequireAuth><Prompts /></RequireAuth>} />
-            <Route path="/tracking" element={<RequireAuth><Tracking /></RequireAuth>} />
-            <Route path="/tracking/:slug" element={<RequireAuth><Tracking /></RequireAuth>} />
+            {/* Tracking moved into Eon Design; keep old links working. */}
+            <Route path="/tracking/*" element={<Navigate to="/design/tracking-mixpanel" replace />} />
             <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

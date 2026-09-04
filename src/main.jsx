@@ -4,7 +4,6 @@ import App from "./App";
 import { AuthProvider } from "./lib/auth";
 import WorkspacePreview from "./dev/WorkspacePreview";
 import PromptLibraryPreview from "./dev/PromptLibraryPreview";
-import TrackingPreview from "./dev/TrackingPreview";
 import EonAccentDefs from "./components/EonAccentDefs";
 import { startAnimatedFavicon } from "./lib/animatedFavicon";
 import "./index.css";
@@ -16,7 +15,6 @@ startAnimatedFavicon();
 const previewParams = new URLSearchParams(window.location.search);
 const isWorkspacePreview = import.meta.env.DEV && previewParams.has("workspace-preview");
 const isPromptPreview = import.meta.env.DEV && previewParams.has("prompts-preview");
-const isTrackingPreview = import.meta.env.DEV && previewParams.has("tracking-preview");
 const isDesignPreview = import.meta.env.DEV && previewParams.has("design-preview");
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -24,8 +22,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <EonAccentDefs />
     {isDesignPreview ? (
       <React.Suspense fallback={null}><DesignGuidePreview /></React.Suspense>
-    ) : isTrackingPreview ? (
-      <TrackingPreview />
     ) : isPromptPreview ? (
       <PromptLibraryPreview />
     ) : isWorkspacePreview ? (

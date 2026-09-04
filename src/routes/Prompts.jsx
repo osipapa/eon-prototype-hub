@@ -220,7 +220,6 @@ export default function Prompts() {
       onSelectPrompt={(prompt) => navigate(`/prompts/${prompt.slug}`)}
       onOpenDesign={() => navigate("/design")}
       onOpenPrototypes={() => navigate("/")}
-      onOpenTracking={() => navigate("/tracking")}
       onOpenAdmin={() => navigate("/admin")}
       onSignOut={signOut}
       onCreatePrompt={source === "shared" ? handleCreatePrompt : undefined}

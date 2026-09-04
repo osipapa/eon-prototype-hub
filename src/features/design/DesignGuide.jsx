@@ -3,7 +3,7 @@ import {
   ArrowRight, BookOpen, Boxes, Check, ChevronDown, ChevronRight, ExternalLink,
   FileCheck2, FolderOpen, GitBranch, Lightbulb, ListChecks, Menu,
   MessageSquareText, Milestone, MousePointer2, ShieldCheck, Sparkles,
-  Workflow, X,
+  Workflow, X, BarChart3,
 } from "lucide-react";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
@@ -11,6 +11,7 @@ import HubSidebarFooter from "@/components/HubSidebarFooter";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { HUB } from "@/features/hub/prototypes";
 import { useSystemTheme } from "@/lib/systemTheme";
+import TrackingBlock from "@/features/tracking/TrackingBlocks";
 
 const PAGE_GROUPS = [
   {
@@ -33,6 +34,13 @@ const PAGE_GROUPS = [
       { slug: "linear-handoff", title: "Handoff flow" },
       { slug: "linear-estimation", title: "Estimation" },
       { slug: "linear-cards", title: "Card quality & QA" },
+    ],
+  },
+  {
+    label: "Tracking",
+    pages: [
+      { slug: "tracking-mixpanel", title: "Mixpanel" },
+      { slug: "tracking-websites", title: "Websites" },
     ],
   },
   {
@@ -59,6 +67,7 @@ const PAGE_CONTENT = {
           { title: "Principles", body: "The qualities we want every Eon experience to express.", icon: Sparkles, to: "principles" },
           { title: "Ways of working", body: "A practical path from framing through learning.", icon: Workflow, to: "product-process" },
           { title: "Linear", body: "How we point, hand off, and QA work on the board.", icon: FileCheck2, to: "linear-handoff" },
+          { title: "Tracking", body: "How we instrument Mixpanel and keep attribution intact on the websites.", icon: BarChart3, to: "tracking-mixpanel" },
           { title: "Resources", body: "Common destinations for files, tools, and shared references.", icon: FolderOpen, to: "common-files" },
         ],
       },
@@ -293,6 +302,155 @@ const PAGE_CONTENT = {
       },
     ],
   },
+  "tracking-mixpanel": {
+    kicker: "Tracking",
+    title: "Mixpanel tracking setup",
+    summary: "A simple, reusable guide for turning a product flow into a reliable Mixpanel implementation.",
+    sections: [
+      {
+        id: "setup",
+        title: "How tracking is implemented",
+        body: "Five steps, in order. Each one exists to stop a class of mistakes: events without a question, contracts that drift between surfaces, and payloads nobody verified.",
+        tracking: "mixpanel-steps",
+      },
+      {
+        id: "event-contract",
+        title: "Event contract",
+        body: "One event, one exact trigger, typed properties with documented values and units. This is the shape every new event should copy.",
+        tracking: "mixpanel-event",
+      },
+      {
+        id: "guardrails",
+        title: "Guardrails",
+        tracking: "mixpanel-guardrails",
+      },
+      {
+        id: "qa",
+        title: "QA checklist",
+        tracking: "mixpanel-qa",
+      },
+      {
+        id: "setup-prompt",
+        title: "Setup prompt",
+        body: "Paste this into Claude with the feature, the flow, and the current conventions filled in. It returns the event catalog, property contracts, helpers, and QA list in one pass.",
+        tracking: "mixpanel-prompt",
+      },
+    ],
+  },
+  "tracking-websites": {
+    kicker: "Tracking · Websites",
+    title: "Site-wide attribution & routing",
+    summary: "One script on every page of eonrides.com makes sure whoever arrives from an ad ends up in the right place — native app, web app, or store — with their attribution and promo code intact.",
+    sections: [
+      {
+        id: "jobs",
+        title: "Five jobs, one script",
+        body: "The script runs from Webflow's footer code on every page. It normalizes what arrives, remembers the first touch, routes and stamps every CTA, and forwards attribution to every internal link.",
+        tracking: "attr-jobs",
+      },
+      {
+        id: "system-map",
+        title: "System map",
+        body: "Where a click goes. The site builds the URL; AppsFlyer OneLink records the click and decides the destination per device.",
+        tracking: "attr-map",
+      },
+      {
+        id: "entry-points",
+        title: "Entry points & URL formats",
+        body: "Campaign URLs arrive with utm_*; redirects back from AppsFlyer arrive with af_* macros. Both end up in the same place.",
+        tracking: "attr-entry",
+      },
+      {
+        id: "config",
+        title: "Central configuration",
+        body: "Every CTA destination and in-app route lives in one table at the top of the script.",
+        tracking: "attr-config",
+      },
+      {
+        id: "pipeline",
+        title: "Pipeline",
+        body: "Execution order on every page load, then again on every click.",
+        tracking: "attr-pipeline",
+      },
+      {
+        id: "normalize",
+        title: "5.1 Normalize: af_* back to utm_*",
+        body: "Runs once at load, before anything is stored. Existing utm_* / code on the URL always win over the translated value.",
+        tracking: "attr-normalize",
+      },
+      {
+        id: "snapshot",
+        title: "5.2 Capture: the first-touch snapshot",
+        body: "What the script remembers for 30 days, and which fields a later visit is allowed to overwrite.",
+        tracking: "attr-snapshot",
+      },
+      {
+        id: "precedence",
+        title: "5.3 Resolve: what value wins right now",
+        body: "c is deliberately last-touch: it tells AppsFlyer which on-site page produced the conversion click, while utm_* tells it which ad brought the user in. Two questions, two params.",
+        tracking: "attr-precedence",
+      },
+      {
+        id: "stamp",
+        title: "5.5 Stamp OneLink hrefs",
+        body: "Every tagged OneLink CTA is rebuilt with the resolved values just before it can be clicked.",
+        tracking: "attr-stamp",
+      },
+      {
+        id: "deep-link-value",
+        title: "The deep_link_value contract",
+        body: "The one JSON object the native app receives, and the rule that decides when the script is allowed to send it.",
+        tracking: "attr-dlv",
+      },
+      {
+        id: "webflow",
+        title: "Webflow attributes",
+        body: "What to put on a button in the Designer. Nothing else is read.",
+        tracking: "attr-webflow",
+      },
+      {
+        id: "redirect-pages",
+        title: "Redirect pages",
+        body: "/app-redirect-ios and /app-redirect-android are the OneLink fallbacks for “app not installed”.",
+        tracking: "attr-redirect",
+      },
+      {
+        id: "outcomes",
+        title: "Outcome by device",
+        tracking: "attr-outcomes",
+      },
+      {
+        id: "identity",
+        title: "Identity across hops",
+        body: "The Mixpanel distinct_id rides along on every hop so the web session and the app session are the same person.",
+        tracking: "attr-identity",
+      },
+      {
+        id: "behavior",
+        title: "Behavior matrix",
+        body: "Worked examples of what the subscription CTA carries after each kind of visit.",
+        tracking: "attr-behavior",
+      },
+      {
+        id: "appsflyer",
+        title: "AppsFlyer configuration & app-side requirements",
+        body: "What the script depends on outside itself.",
+        tracking: "attr-appsflyer",
+      },
+      {
+        id: "debug-qa",
+        title: "Debug helpers, QA & rollout",
+        body: "Everything is inspectable from the browser console.",
+        tracking: "attr-debug",
+      },
+      {
+        id: "changes",
+        title: "Change log v2.0",
+        body: "What promo-code pass-through added over v1.",
+        tracking: "attr-changes",
+      },
+    ],
+  },
   "common-files": {
     kicker: "Resources",
     title: "Common files & tools",
@@ -304,7 +462,7 @@ const PAGE_CONTENT = {
         resources: [
           { title: "Prototype hub", body: "Build, review, comment on, and share interactive product work.", to: "prototypes" },
           { title: "Prompt library", body: "Reusable prompts and templates for design and delivery work.", to: "prompts" },
-          { title: "Mixpanel guide", body: "Implementation contract, setup prompt, and QA guidance.", to: "tracking" },
+          { title: "Tracking guides", body: "Mixpanel setup, and how attribution flows through the websites.", page: "tracking-mixpanel" },
         ],
       },
       {
@@ -331,7 +489,6 @@ export default function DesignGuide({
   onSelectPage,
   onOpenPrototypes,
   onOpenPrompts,
-  onOpenTracking,
   onOpenAdmin,
   onSignOut,
 }) {
@@ -357,7 +514,6 @@ export default function DesignGuide({
   const navigateProduct = (product) => {
     if (product === "prototypes") onOpenPrototypes?.();
     if (product === "prompts") onOpenPrompts?.();
-    if (product === "tracking") onOpenTracking?.();
   };
 
   const selectPage = (nextPage) => {
@@ -412,7 +568,7 @@ export default function DesignGuide({
                 <p style={{ color: c.secondary }}>{page.summary}</p>
               </header>
               {page.sections.map((section) => (
-                <DesignSection key={section.id} section={section} c={c} onSelectPage={selectPage} navigateProduct={navigateProduct} />
+                <DesignSection key={section.id} section={section} c={c} onSelectPage={selectPage} navigateProduct={navigateProduct} onOpenPrompts={onOpenPrompts} />
               ))}
             </article>
             <aside className="eon-design-toc" aria-label="On this page">
@@ -449,7 +605,7 @@ function DesignNavGroup({ group, activeSlug, c, onSelect }) {
   );
 }
 
-function DesignSection({ section, c, onSelectPage, navigateProduct }) {
+function DesignSection({ section, c, onSelectPage, navigateProduct, onOpenPrompts }) {
   return (
     <section className="eon-design-section" id={section.id}>
       <h2>{section.title}</h2>
@@ -484,7 +640,7 @@ function DesignSection({ section, c, onSelectPage, navigateProduct }) {
       {section.resources && (
         <div className="eon-design-resources">
           {section.resources.map((resource) => (
-            <button key={resource.title} className="eon-buttonish" type="button" disabled={resource.pending} onClick={() => resource.to && navigateProduct(resource.to)} style={{ background: c.panel, boxShadow: "var(--shadow-surface)", color: c.text }}>
+            <button key={resource.title} className="eon-buttonish" type="button" disabled={resource.pending} onClick={() => (resource.page ? onSelectPage(ALL_PAGES.find((page) => page.slug === resource.page)) : resource.to && navigateProduct(resource.to))} style={{ background: c.panel, boxShadow: "var(--shadow-surface)", color: c.text }}>
               <span className="eon-design-resource-icon eon-accent-icon" style={{ background: c.active, color: c.brand }}><BookOpen size={17} /></span>
               <span><strong>{resource.title}</strong><small style={{ color: c.secondary }}>{resource.body}</small></span>
               {resource.pending ? <em style={{ color: c.muted }}>Link needed</em> : <ExternalLink size={15} style={{ color: c.muted }} />}
@@ -523,6 +679,7 @@ function DesignSection({ section, c, onSelectPage, navigateProduct }) {
       )}
       {section.linearFlow && <LinearHandoffFlow flow={section.linearFlow} c={c} />}
       {section.qaProtocol && <QaCommentProtocol c={c} />}
+      {section.tracking && <TrackingBlock block={section.tracking} c={c} onOpenPrompts={onOpenPrompts} />}
     </section>
   );
 }

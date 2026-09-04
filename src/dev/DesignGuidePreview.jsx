@@ -2,7 +2,7 @@ import { useState } from "react";
 import DesignGuide from "@/features/design/DesignGuide";
 
 export default function DesignGuidePreview() {
-  const [activeSlug, setActiveSlug] = useState("overview");
+  const [activeSlug, setActiveSlug] = useState(() => new URLSearchParams(window.location.search).get("design-preview") || "overview");
   return (
     <DesignGuide
       activeSlug={activeSlug}
@@ -11,7 +11,6 @@ export default function DesignGuidePreview() {
       onSelectPage={(page) => setActiveSlug(page.slug)}
       onOpenPrototypes={() => {}}
       onOpenPrompts={() => {}}
-      onOpenTracking={() => {}}
       onOpenAdmin={() => {}}
       onSignOut={() => {}}
     />

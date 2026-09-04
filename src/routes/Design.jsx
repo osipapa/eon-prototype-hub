@@ -34,7 +34,6 @@ export default function Design() {
       onSelectPage={(page) => navigate(`/design/${page.slug}`)}
       onOpenPrototypes={() => navigate("/")}
       onOpenPrompts={() => navigate("/prompts")}
-      onOpenTracking={() => navigate("/tracking")}
       onOpenAdmin={() => navigate("/admin")}
       onSignOut={signOut}
     />

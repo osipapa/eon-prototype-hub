@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  BarChart3, BookOpen, Check, ChevronDown, Monitor, Shapes,
+  BookOpen, Check, ChevronDown, Monitor, Shapes,
 } from "lucide-react";
 import EonMark from "@/components/EonMark";
 
@@ -8,7 +8,6 @@ const PRODUCTS = [
   { id: "design", label: "Eon Design", description: "How Eon designs and ships", Icon: Shapes },
   { id: "prototypes", label: "Prototypes", description: "Build and review experiences", Icon: Monitor },
   { id: "prompts", label: "Prompts", description: "Reusable team prompts", Icon: BookOpen },
-  { id: "tracking", label: "Mixpanel", description: "Instrument and validate", Icon: BarChart3 },
 ];
 
 export default function DesignHubSwitcher({ active, c, logo, logoLoading = false, onSelect }) {

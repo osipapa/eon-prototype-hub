@@ -16,6 +16,33 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-09-04",
+    title: "Tracking moves into Eon Design",
+    image: "changelog/2026-09-04-tracking.png",
+    imageAlt: "Eon Design with a new Tracking group in the sidebar, open on the Websites page: Site-wide attribution & routing.",
+    groups: [
+      {
+        label: "New",
+        items: [
+          "Eon Design has a Tracking section. Websites documents the site-wide attribution and routing script that runs on every page of eonrides.com: a system map of where a click goes, the seven-stage pipeline, what the first-touch snapshot remembers, the deep_link_value contract, outcome by device, the Webflow attributes, AppsFlyer configuration, debug helpers, and the QA checklist.",
+          "Mixpanel is the other Tracking page. It carries the setup guide that used to be its own area: the five steps, the event contract, guardrails, QA, and the copyable setup prompt.",
+        ],
+      },
+      {
+        label: "Behavior",
+        items: [
+          "The area switcher lists Eon Design, Prototypes, and Prompts. Mixpanel is no longer a separate area; old /tracking links land on the Mixpanel page.",
+        ],
+      },
+      {
+        label: "Under the hood",
+        items: [
+          "The design preview route takes a page: ?design-preview=tracking-websites opens straight to it without signing in.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-08-28",
     title: "Light mode gets its contrast back",
     image: "changelog/2026-08-28-contrast.png",

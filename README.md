@@ -38,7 +38,7 @@ src/
   routes/      Login, Hub, Prompts, Admin
   features/hub/ PrototypeHub UI + prototype builders/media
   features/prompts/ Prompt Library UI + starter references
-  features/tracking/ Mixpanel reference + reusable setup prompt
+  features/tracking/ Tracking references rendered inside Eon Design (Mixpanel, website attribution)
 supabase/      schema.sql (tables + RLS), seed.sql
 .github/workflows/deploy.yml   GitHub Pages CI
 ```
