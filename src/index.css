@@ -1291,12 +1291,14 @@ button.eon-save-state { cursor: pointer; }
 .eon-design-nav-group-toggle svg { transition-property: transform; transition-duration: 160ms; transition-timing-function: var(--ease-out); }
 .eon-design-nav-group-toggle svg.is-collapsed { transform: rotate(-90deg); }
 .eon-design-nav-item { display: flex; width: 100%; min-height: 42px; align-items: center; padding: 0 10px 0 28px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; text-align: left; font-size: 12px; }
-.eon-design-nav-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eon-design-nav-item span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eon-design-nav-item small { flex: 0 0 auto; margin-left: 8px; font-size: 10px; }
 .eon-design-main { display: flex; min-width: 0; min-height: 0; flex: 1; flex-direction: column; }
 .eon-design-scroll { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
 .eon-design-page { display: grid; width: min(1280px, 100%); margin: 0 auto; grid-template-columns: minmax(0, 860px) 180px; justify-content: center; gap: 72px; padding: 64px 48px 100px; }
 .eon-design-article { min-width: 0; }
 .eon-design-hero { max-width: 790px; padding: 24px 0 58px; }
+.eon-design-hero p.eon-design-wip { display: inline-block; max-width: none; margin-top: 22px; padding-top: 12px; border-top: 1px solid; font-size: 12px; line-height: 1.5; }
 .eon-design-hero > span { display: block; margin-bottom: 14px; font-size: 11px; font-weight: 750; letter-spacing: .085em; text-transform: uppercase; }
 .eon-design-hero h1 { max-width: 760px; margin: 0; font-size: clamp(44px, 5.4vw, 72px); font-weight: 650; letter-spacing: -.055em; line-height: 1.02; text-wrap: balance; }
 .eon-design-hero p { max-width: 720px; margin: 22px 0 0; font-size: clamp(17px, 2vw, 21px); line-height: 1.55; text-wrap: pretty; }

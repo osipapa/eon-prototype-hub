@@ -17,15 +17,16 @@ const PAGE_GROUPS = [
   {
     label: "Get started",
     pages: [
-      { slug: "overview", title: "Overview" },
-      { slug: "principles", title: "Design principles" },
+      { slug: "overview", title: "Overview", wip: true },
+      { slug: "principles", title: "Design principles", wip: true },
     ],
   },
   {
     label: "How we work",
     pages: [
-      { slug: "product-process", title: "Product design process" },
-      { slug: "design-review", title: "Design review" },
+      { slug: "product-process", title: "Product design process", wip: true },
+      { slug: "design-review", title: "Design review", wip: true },
+      { slug: "ai-principles", title: "AI usage principles", wip: true },
     ],
   },
   {
@@ -46,7 +47,7 @@ const PAGE_GROUPS = [
   {
     label: "Resources",
     pages: [
-      { slug: "common-files", title: "Common files & tools" },
+      { slug: "common-files", title: "Common files & tools", wip: true },
     ],
   },
 ];
@@ -356,6 +357,18 @@ const PAGE_CONTENT = {
       { id: "console", title: "Checking it in the browser", tracking: "attr-console" },
     ],
   },
+  "ai-principles": {
+    kicker: "How we work",
+    title: "AI usage principles",
+    summary: "How the team uses AI tools in design work, and what we check before anything AI-assisted ships.",
+    sections: [
+      {
+        id: "scope",
+        title: "What this page will cover",
+        body: "Where AI tools help and where they get in the way, what we review before AI-assisted work goes out, what never goes into a prompt, and how we say when AI was used. The principles are being written with the team; nothing here is final yet.",
+      },
+    ],
+  },
   "common-files": {
     kicker: "Resources",
     title: "Common files & tools",
@@ -471,6 +484,7 @@ export default function DesignGuide({
                 <span style={{ color: c.brand }}>{page.kicker}</span>
                 <h1>{page.title}</h1>
                 <p style={{ color: c.secondary }}>{page.summary}</p>
+                {pageRecord.wip && <p className="eon-design-wip" style={{ color: c.muted, borderColor: c.border }}>Work in progress. This page is still being written and may change.</p>}
               </header>
               {page.sections.map((section) => (
                 <DesignSection key={section.id} section={section} c={c} onSelectPage={selectPage} navigateProduct={navigateProduct} onOpenPrompts={onOpenPrompts} />
@@ -503,6 +517,7 @@ function DesignNavGroup({ group, activeSlug, c, onSelect }) {
         return (
           <button key={page.slug} className="eon-buttonish eon-design-nav-item" type="button" onClick={() => onSelect(page)} aria-current={selected ? "page" : undefined} style={{ background: selected ? c.active : "transparent", color: selected ? c.text : c.secondary }}>
             <span>{page.title}</span>
+            {page.wip && <small style={{ color: c.muted }}>In progress</small>}
           </button>
         );
       })}

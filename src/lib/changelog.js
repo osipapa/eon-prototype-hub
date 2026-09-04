@@ -25,12 +25,14 @@ export const CHANGELOG = [
         label: "New",
         items: [
           "Eon Design has a Tracking section. Websites explains the attribution and routing script that runs on every page of eonrides.com, written for anyone on the team: where a click goes, what a campaign link looks like, what the script remembers and for how long, how a button gets its link, how the app opens the right screen, what happens on each device, and six worked examples. Code is shown in terminal-style blocks with a copy control.",
+          "How we work has a placeholder for AI usage principles, to be written with the team.",
           "Mixpanel is the other Tracking page. It carries the setup guide that used to be its own area: the five steps, the event contract, guardrails, QA, and the copyable setup prompt.",
         ],
       },
       {
         label: "Behavior",
         items: [
+          "Pages that are still being written say so: Overview, Design principles, Product design process, Design review, AI usage principles, and Common files & tools carry an In progress label in the sidebar and a note under the title.",
           "The area switcher lists Eon Design, Prototypes, and Prompts. Mixpanel is no longer a separate area; old /tracking links land on the Mixpanel page.",
         ],
       },
