@@ -1229,20 +1229,13 @@ button.eon-save-state { cursor: pointer; }
 .eon-tracking-meta strong { min-width: 0; overflow-wrap: anywhere; font-size: 10px; font-weight: 650; line-height: 1.4; }
 
 /* Tracking blocks inside Eon Design: the Mixpanel prompt card and the
-   attribution (eon-attr-*) reference. Blocks sit under the section intro, so
-   each top-level block carries its own top margin. */
+   documentation primitives (prose, tables, terminal-style code) used by the
+   attribution reference. Blocks sit under a section's intro. */
 .eon-design-section > .eon-tracking-steps, .eon-design-section > .eon-tracking-event, .eon-design-section > .eon-tracking-checklist,
-.eon-design-section > .eon-tracking-prompt-card, .eon-design-section > .eon-attr-status, .eon-design-section > .eon-attr-map,
-.eon-design-section > .eon-attr-code, .eon-design-section > .eon-attr-table, .eon-design-section > .eon-attr-defs,
-.eon-design-section > .eon-attr-pipeline, .eon-design-section > .eon-attr-mapping, .eon-design-section > .eon-attr-snapshot,
-.eon-design-section > .eon-attr-precedence, .eon-design-section > .eon-attr-pair, .eon-design-section > .eon-attr-outcomes,
-.eon-design-section > .eon-attr-callout { margin-top: 28px; }
-.eon-attr-code + .eon-attr-code, .eon-attr-code + .eon-attr-table, .eon-attr-table + .eon-attr-defs, .eon-attr-callout + .eon-attr-table,
-.eon-attr-chips + .eon-attr-callout, .eon-attr-defs + .eon-attr-ids, .eon-attr-note + .eon-attr-code, .eon-attr-note + .eon-attr-defs,
-.eon-attr-note + .eon-attr-chips, .eon-attr-table + .eon-attr-note, .eon-attr-code + .eon-attr-note { margin-top: 14px; }
-.eon-tracking-steps + .eon-attr-meta { margin-top: 22px; }
-.eon-attr-meta + .eon-attr-callout { margin-top: 18px; }
-.eon-attr-pair + .eon-attr-chips { margin-top: 16px; }
+.eon-design-section > .eon-tracking-prompt-card { margin-top: 28px; }
+.eon-design-section > .eon-doc-p:first-of-type, .eon-design-section > .eon-doc-figure, .eon-design-section > .eon-doc-table-wrap:first-of-type { margin-top: 22px; }
+.eon-design-section-intro + .eon-doc-p { margin-top: 12px; }
+.eon-design-section-intro + .eon-doc-table-wrap, .eon-design-section-intro + .eon-term { margin-top: 22px; }
 
 .eon-tracking-prompt-card { padding: 20px; border-radius: 24px; }
 .eon-tracking-prompt-card .eon-prompt-use-head { display: flex; align-items: flex-start; gap: 12px; }
@@ -1251,114 +1244,40 @@ button.eon-save-state { cursor: pointer; }
 .eon-tracking-prompt-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .eon-tracking-prompt-actions .eon-prompt-copy-primary, .eon-tracking-prompt-actions .eon-prompt-copy-secondary { width: auto; margin: 0; }
 .eon-tracking-rail-icon { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: 10px; }
-.eon-tracking-checklist > div > span b { font-size: 11px; font-weight: 750; font-variant-numeric: tabular-nums; }
 
-.eon-attr-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .92em; overflow-wrap: anywhere; }
-.eon-attr-mono.is-legacy { text-decoration: line-through; opacity: .7; }
-.eon-attr-note { max-width: 720px; margin: 14px 0 0; font-size: 12px; line-height: 1.6; text-wrap: pretty; }
-.eon-attr-subhead { margin: 30px 0 12px; font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
-.eon-attr-status { display: flex; flex-wrap: wrap; gap: 8px; }
-.eon-attr-pill { display: inline-flex; min-height: 28px; align-items: center; padding: 0 11px; border-radius: 999px; font-size: 11px; font-weight: 650; }
-.eon-attr-pill.is-shipped { background: rgba(98,229,139,.16); color: #62E58B; }
-.light .eon-attr-pill.is-shipped { color: #147A36; }
-.eon-attr-pill.is-draft { background: rgba(255,179,79,.17); color: #FFB34F; }
-.light .eon-attr-pill.is-draft { color: #9A4A00; }
-.eon-attr-tag { display: inline-flex; min-height: 18px; align-items: center; padding: 0 7px; border-radius: 999px; font-size: 8px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
-.eon-attr-tag.is-first { background: rgba(114,167,255,.17); color: #72A7FF; }
-.light .eon-attr-tag.is-first { color: #245FD1; }
-.eon-attr-tag.is-last { background: rgba(255,179,79,.17); color: #FFB34F; }
-.light .eon-attr-tag.is-last { color: #9A4A00; }
-.eon-attr-tag.is-reference, .eon-attr-tag.is-none { background: rgba(144,148,165,.18); color: hsl(var(--muted-foreground)); }
+.eon-doc-p { max-width: 720px; margin: 14px 0 0; font-size: 14px; line-height: 1.65; text-wrap: pretty; }
+.eon-doc-list { max-width: 720px; margin: 10px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.65; }
+.eon-doc-list li { margin-top: 6px; padding-left: 4px; }
+.eon-doc-code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .9em; overflow-wrap: anywhere; }
 
-.eon-attr-callout { display: flex; align-items: flex-start; gap: 11px; padding: 16px 18px; border-radius: 16px; }
-.eon-attr-callout > svg { flex: 0 0 auto; margin-top: 2px; }
-.eon-attr-callout.is-warn { box-shadow: inset 3px 0 #FFB34F, var(--shadow-surface) !important; }
-.eon-attr-callout.is-warn > svg { color: #FFB34F; }
-.light .eon-attr-callout.is-warn > svg { color: #9A4A00; }
-.eon-attr-callout p { margin: 0; font-size: 12px; line-height: 1.6; }
+.eon-doc-table-wrap { width: 100%; margin-top: 18px; overflow-x: auto; border-top: 1px solid; }
+.eon-doc-table { width: 100%; min-width: 520px; border-collapse: collapse; text-align: left; font-size: 12.5px; line-height: 1.55; }
+.eon-doc-table th { padding: 10px 14px 10px 0; border-bottom: 1px solid; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.eon-doc-table td { padding: 11px 14px 11px 0; border-bottom: 1px solid; vertical-align: top; overflow-wrap: anywhere; }
+.eon-doc-table td:first-child { width: 30%; font-weight: 500; }
+.eon-doc-table th:last-child, .eon-doc-table td:last-child { padding-right: 0; }
 
-.eon-attr-code { margin: 0; overflow: hidden; border-radius: 16px; }
-.eon-attr-code figcaption { padding: 11px 16px 0; font-size: 10px; font-weight: 650; letter-spacing: .03em; }
-.eon-attr-code pre { margin: 0; padding: 12px 16px 14px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-.eon-attr-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+/* Terminal-style code block: fixed dark surface in both themes, like an API
+   reference, so the code reads the same wherever the page is. */
+.eon-term { margin: 18px 0 0; overflow: hidden; border-radius: 12px; background: #131316; color: #E6E6EA; box-shadow: 0 0 0 1px rgba(255,255,255,.06); }
+.light .eon-term { box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 8px 24px -16px rgba(0,0,0,.35); }
+.eon-term figcaption { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 8px 0 14px; border-bottom: 1px solid rgba(255,255,255,.08); background: #1B1B1F; font-size: 11.5px; }
+.eon-term figcaption > span { min-width: 0; flex: 1; overflow: hidden; color: #C9C9D1; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.eon-term figcaption > em { color: #7C7C88; font-size: 10.5px; font-style: normal; text-transform: lowercase; }
+.eon-term figcaption > button { display: inline-flex; min-height: 26px; align-items: center; gap: 5px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: #A8A8B3; cursor: pointer; font: inherit; font-size: 11px; }
+.eon-term figcaption > button:hover { background: rgba(255,255,255,.08); color: #FFFFFF; }
+.eon-term figcaption > button:focus-visible { outline: 2px solid #F19DFF; outline-offset: 1px; }
+.eon-term pre { margin: 0; padding: 14px 16px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; }
+.eon-term code { font: inherit; }
+.eon-term .is-comment { color: #7C7C88; font-style: normal; }
 
-.eon-attr-table { overflow: hidden; border-radius: 20px; }
-.eon-attr-table-el th:nth-child(1), .eon-attr-table-el th:nth-child(2) { width: auto; }
-.eon-attr-table-el td:first-child code { display: inline; font-size: 10.5px; font-weight: 600; }
-.eon-attr-table-el tbody tr:first-child td { border-top: 1px solid; }
-
-.eon-attr-defs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.eon-attr-defs > div { padding: 16px 18px; border-radius: 16px; }
-.eon-attr-defs > div > code, .eon-attr-defs > div > strong { display: block; font-size: 12px; font-weight: 650; }
-.eon-attr-defs p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.55; }
-.eon-attr-ids { display: grid; overflow: hidden; grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 16px; }
-.eon-attr-ids > div { display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; border-top: 1px solid; }
-.eon-attr-ids > div:nth-child(-n+3) { border-top: 0; }
-.eon-attr-ids > div:not(:nth-child(3n+1)) { border-left: 1px solid; border-left-color: inherit; }
-.eon-attr-ids span { font-size: 10px; }
-.eon-attr-ids code { font-size: 11px; font-weight: 650; }
-
-.eon-attr-map { margin: 0; padding: 18px; border-radius: 24px; overflow-x: auto; }
-.eon-attr-map svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: "DM Sans", sans-serif; }
-
-.eon-attr-pipeline { display: grid; overflow-x: auto; grid-auto-columns: minmax(236px, 1fr); grid-auto-flow: column; gap: 10px; padding: 3px 3px 16px; scroll-snap-type: x proximity; scrollbar-color: rgba(144, 148, 165, .42) transparent; scrollbar-width: thin; }
-.eon-attr-stage { display: flex; min-width: 0; flex-direction: column; padding: 16px; border-radius: 18px; scroll-snap-align: start; }
-.eon-attr-stage-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-.eon-attr-stage-head > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 9px; font-size: 11px; font-weight: 750; }
-.eon-attr-stage-head small { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.eon-attr-stage strong { font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
-.eon-attr-stage p { margin: 6px 0 0; font-size: 11px; line-height: 1.55; }
-.eon-attr-stage ul { display: flex; margin: 12px 0 0; padding: 0; flex-direction: column; gap: 7px; list-style: none; }
-.eon-attr-stage li { display: flex; align-items: flex-start; gap: 6px; font-size: 10.5px; line-height: 1.5; overflow-wrap: anywhere; }
-.eon-attr-stage li svg { flex: 0 0 auto; margin-top: 3px; }
-
-.eon-attr-mapping { overflow: hidden; border-radius: 20px; }
-.eon-attr-mapping > div { display: grid; grid-template-columns: minmax(0, 1.2fr) 14px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid; font-size: 11px; }
-.eon-attr-mapping > div:first-child { border-top: 0; }
-.eon-attr-mapping > div small { grid-column: 1 / -1; margin-top: -4px; font-size: 10px; }
-
-.eon-attr-snapshot { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 12px; }
-.eon-attr-json > div { display: flex; flex-direction: column; gap: 3px; padding: 10px 16px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; line-height: 1.55; }
-.eon-attr-json > div > span { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.eon-attr-json > div > span:not(:first-child):not(:last-child) { padding-left: 18px; }
-.eon-attr-json i { font-style: normal; }
-.eon-attr-json em { font-style: normal; overflow-wrap: anywhere; }
-.eon-attr-legend { display: flex; flex-direction: column; gap: 10px; }
-.eon-attr-legend > div { padding: 12px 14px; border-radius: 14px; }
-.eon-attr-legend p { margin: 6px 0 0; font-size: 11px; line-height: 1.5; }
-.eon-attr-legend > p { margin: 2px 4px 0; font-size: 10.5px; line-height: 1.5; }
-
-.eon-attr-precedence { overflow: hidden; border-radius: 20px; }
-.eon-attr-precedence > div { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 18px; border-top: 1px solid; }
-.eon-attr-precedence > div:first-child { border-top: 0; }
-.eon-attr-precedence > div > code { font-weight: 650; }
-.eon-attr-precedence > div > div { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.eon-attr-precedence > div > div > span { display: inline-flex; align-items: center; gap: 4px; }
-.eon-attr-precedence em { display: inline-flex; min-height: 24px; align-items: center; padding: 0 9px; border: 1px solid; border-radius: 999px; font-size: 10.5px; font-style: normal; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-
-.eon-attr-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; }
-.eon-attr-chips > span { margin-right: 4px; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.eon-attr-chips > code { display: inline-flex; min-height: 24px; align-items: center; padding: 0 9px; border-radius: 8px; background: rgba(144,148,165,.16); font-size: 10.5px; }
-
-.eon-attr-outcomes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.eon-attr-outcomes > div { display: flex; min-width: 0; flex-direction: column; padding: 18px; border-radius: 18px; }
-.eon-attr-outcomes > div > span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; }
-.eon-attr-outcomes strong { margin-top: 12px; font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
-.eon-attr-outcomes dl { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 6px 10px; margin: 12px 0 0; font-size: 11px; line-height: 1.5; }
-.eon-attr-outcomes dt { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; line-height: 1.9; }
-.eon-attr-outcomes dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.eon-doc-figure { margin: 0; padding: 18px; border-radius: 20px; overflow-x: auto; }
+.eon-doc-figure svg { display: block; width: 100%; min-width: 620px; height: auto; font-family: "DM Sans", sans-serif; }
 
 @media (max-width: 680px) {
-  .eon-attr-pair, .eon-attr-defs, .eon-attr-snapshot, .eon-attr-outcomes { grid-template-columns: minmax(0, 1fr); }
-  .eon-attr-ids { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .eon-attr-ids > div:nth-child(-n+3) { border-top: 1px solid; }
-  .eon-attr-ids > div:nth-child(-n+2) { border-top: 0; }
-  .eon-attr-ids > div:not(:nth-child(3n+1)) { border-left: 0; }
-  .eon-attr-ids > div:nth-child(2n) { border-left: 1px solid; border-left-color: inherit; }
-  .eon-attr-precedence > div { grid-template-columns: minmax(0, 1fr); }
-  .eon-attr-mapping > div { grid-template-columns: minmax(0, 1fr); }
-  .eon-attr-mapping > div svg { transform: rotate(90deg); }
-  .eon-attr-pipeline { grid-auto-columns: minmax(224px, 82vw); margin-right: -20px; padding-right: 20px; }
+  .eon-doc-p, .eon-doc-list { font-size: 13.5px; }
+  .eon-doc-table { min-width: 460px; }
+  .eon-doc-table td:first-child { width: 36%; }
   .eon-tracking-prompt-actions .eon-prompt-copy-primary, .eon-tracking-prompt-actions .eon-prompt-copy-secondary { width: 100%; }
 }
 
