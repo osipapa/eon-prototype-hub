@@ -32,17 +32,14 @@ root.style.colorScheme=root.dataset.theme;
   --button-border-secondary:rgba(144,148,165,0.2); --button-text-secondary-default:#FFFFFF;
   --input-border-default:#3A3D4A; --input-border-active:#EDD2F6; --input-placeholder-primary:rgba(144,148,165,0.5);
   --divider:#1E1E22; --icon-fill-icon:#9094A5; --navigation-bar-border:#1E1E22;
-  --sheet-shadow:rgba(0,0,0,0.5);
 
   /* layout */
   --safe-top:max(59px,env(safe-area-inset-top,0px));
   --safe-bottom:max(34px,env(safe-area-inset-bottom,0px));
   --hero:224px;        /* where the sheet's top edge rests in the peek state */
-  --inset:12px;        /* gutter around the floating sheet in the peek state */
   --sheet-radius:20px;
 
-  /* driven by scroll progress: 1 at peek, 0 at full */
-  --lift:1; --mix:100%; --radius:var(--sheet-radius);
+  --radius:var(--sheet-radius); /* squares off as the sheet docks */
 }
 html.light,[data-theme="light"]{
   --background-1:#F9F9FD; --background-2:#FFFFFF; --background-3:#DDE0EA;
@@ -54,7 +51,6 @@ html.light,[data-theme="light"]{
   --button-border-secondary:rgba(144,148,165,0.2); --button-text-secondary-default:#000000;
   --input-border-default:#9094A5; --input-border-active:#000000; --input-placeholder-primary:rgba(144,148,165,0.5);
   --divider:#DDE0EA; --icon-fill-icon:#9094A5; --navigation-bar-border:#DDE0EA;
-  --sheet-shadow:rgba(30,30,34,0.14);
 }
 
 *{box-sizing:border-box}
@@ -79,16 +75,15 @@ h1,p{margin:0}
 .status-cover{position:fixed;top:0;left:0;right:0;height:var(--safe-top);z-index:3;background:var(--background-1);opacity:0;transition:opacity .15s;pointer-events:none}
 .docked .status-cover{opacity:1}
 
-/* ---------- the sheet: floats inset at peek, fills the screen at full ---------- */
+/* ---------- the sheet: normal document flow, so native scroll moves it ---------- */
 .sheet{
   position:relative;z-index:1;
-  width:calc(100% - 2 * var(--inset) * var(--lift));max-width:600px;
+  width:100%;max-width:600px;
   margin:var(--hero) auto 0;
   padding:24px 16px calc(var(--safe-bottom) + 24px);
   min-height:calc(100svh - var(--safe-top));
-  background:color-mix(in srgb,var(--background-2) var(--mix),var(--background-1));
+  background:var(--background-1);
   border-radius:var(--radius) var(--radius) 0 0;
-  box-shadow:0 -8px 32px color-mix(in srgb,var(--sheet-shadow) var(--mix),transparent);
   display:flex;flex-direction:column;gap:24px;
 }
 .sheet-handle{position:absolute;top:0;left:50%;transform:translateX(-50%);width:80px;height:24px;display:grid;place-items:center;touch-action:pan-y;cursor:grab}
@@ -194,9 +189,7 @@ function paint(){
   if(Math.abs(y-lastY)>.5)direction=y>lastY?1:-1;
   lastY=y;
 
-  // The floating sheet loses its gutters, its raised surface, and finally its corners as it rises.
-  root.style.setProperty('--lift',lift.toFixed(3));
-  root.style.setProperty('--mix',(lift*100).toFixed(1)+'%');
+  // The sheet squares its corners as it docks.
   root.style.setProperty('--radius',(SHEET_RADIUS*clamp(lift/.2,0,1)).toFixed(2)+'px');
   root.classList.toggle('docked',progress>=.999);
   root.classList.toggle('scrolled',y>dock+1);
