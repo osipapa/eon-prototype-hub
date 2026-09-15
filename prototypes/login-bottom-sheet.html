@@ -39,7 +39,8 @@ root.style.colorScheme=root.dataset.theme;
   --hero:224px;        /* where the sheet's top edge rests in the peek state */
   --sheet-radius:20px;
 
-  --radius:var(--sheet-radius); /* squares off as the sheet docks */
+  --radius:var(--sheet-radius); /* squares off only in the last few px */
+  --ext:0px;                    /* how far the sheet surface reaches above its content box */
 }
 html.light,[data-theme="light"]{
   --background-1:#F9F9FD; --background-2:#FFFFFF; --background-3:#DDE0EA;
@@ -71,26 +72,23 @@ h1,p{margin:0}
 .hero img{display:block;width:100%;height:auto;will-change:transform}
 .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 58%,var(--background-1))}
 
-/* Status bar band: covered once the sheet is full so content never scrolls under the island. */
-.status-cover{position:fixed;top:0;left:0;right:0;height:var(--safe-top);z-index:3;background:var(--background-1);opacity:0;transition:opacity .15s;pointer-events:none}
-.docked .status-cover{opacity:1}
-
 /* ---------- the sheet: normal document flow, so native scroll moves it ---------- */
 .sheet{
-  position:relative;z-index:1;
+  position:relative;z-index:1;isolation:isolate;
   width:100%;max-width:600px;
   margin:var(--hero) auto 0;
   padding:24px 16px calc(var(--safe-bottom) + 24px);
   min-height:calc(100svh - var(--safe-top));
-  background:var(--background-1);
-  border-radius:var(--radius) var(--radius) 0 0;
   display:flex;flex-direction:column;gap:24px;
 }
-.sheet-handle{position:absolute;top:0;left:50%;transform:translateX(-50%);width:80px;height:24px;display:grid;place-items:center;touch-action:pan-y;cursor:grab}
+/* The surface. Its top edge climbs past the content box as the page scrolls, so the sheet itself reaches the top of the screen. */
+.sheet::before{content:"";position:absolute;z-index:-1;left:0;right:0;bottom:0;top:calc(-1 * var(--ext));background:var(--background-1);border-radius:var(--radius) var(--radius) 0 0}
+.sheet-handle{position:absolute;top:calc(-1 * var(--ext));left:50%;transform:translateX(-50%);width:80px;height:24px;display:grid;place-items:center;touch-action:pan-y;cursor:grab}
 .sheet-handle span{width:36px;height:5px;border-radius:100px;background:var(--text-secondary-50)}
 .sheet-handle:active{cursor:grabbing}
 
-.sheet-toolbar{position:sticky;top:var(--safe-top);z-index:2;display:flex;align-items:center;justify-content:space-between;min-height:40px;margin:-4px 0 0;background:inherit;transition:box-shadow .15s}
+.sheet-toolbar{position:sticky;top:var(--safe-top);z-index:2;display:flex;align-items:center;justify-content:space-between;min-height:40px;margin:-4px 0 0;background:var(--background-1);transition:box-shadow .15s}
+.sheet-toolbar::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:var(--ext);background:var(--background-1)}
 .scrolled .sheet-toolbar{box-shadow:0 1px var(--navigation-bar-border)}
 .pill{position:relative;display:inline-flex;align-items:center;height:30px;padding:0 16px 0 4px;border:1px solid var(--background-3);border-radius:100px;background:var(--background-2);color:var(--icon-fill-icon);font-size:12px;line-height:16px}
 .pill::after{content:"";position:absolute;inset:-7px 0}
@@ -155,7 +153,6 @@ select.input{width:100%;padding:8px 12px;cursor:pointer;background-image:url("da
 </head>
 <body>
 <div class="hero" aria-hidden="true"><img src="{{Sing-in}}" alt="" data-standalone="https://cdn.prod.website-files.com/663a718629c975b39d9e15fa/6a58e4d5c6acaee76a6895d9_login-singin.png" onerror="this.onerror=null;this.src=this.dataset.standalone"></div>
-<div class="status-cover" aria-hidden="true"></div>
 <main class="sheet" id="sheet">
 <button class="sheet-handle" id="sheet-handle" type="button" aria-label="Expand login sheet" aria-expanded="false"><span aria-hidden="true"></span></button>
 <div class="sheet-toolbar"><button class="pill" id="back" type="button" aria-label="Back to login preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>Back</button><button class="pill" id="theme" type="button" hidden>Dark mode</button></div>
@@ -177,21 +174,20 @@ select.input{width:100%;padding:8px 12px;cursor:pointer;background-image:url("da
 <script>
 const motionQuery=matchMedia('(prefers-reduced-motion: reduce)');
 const sheet=document.getElementById('sheet');
-const heroImg=document.querySelector('.hero img'),handle=document.getElementById('sheet-handle'),statusCover=document.querySelector('.status-cover');
+const heroImg=document.querySelector('.hero img'),handle=document.getElementById('sheet-handle'),toolbar=document.querySelector('.sheet-toolbar');
 const phone=document.getElementById('phone'),go=document.getElementById('continue');
 const SHEET_RADIUS=20;
-let dock=0,lastY=0,direction=1,touching=false,settleTimer=0,frame=0,animating=false;
+let dock=0,safeTop=0,lastY=0,direction=1,touching=false,settleTimer=0,frame=0,animating=false;
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
-// Full = the sheet's top edge resting just under the status bar, so nothing hides beneath the toolbar.
-function measure(){dock=Math.max(0,sheet.offsetTop-statusCover.offsetHeight)}
+// Full = the content resting just under the status bar; the surface has reached the top edge by then.
+function measure(){safeTop=parseFloat(getComputedStyle(toolbar).top)||0;dock=Math.max(0,sheet.offsetTop-safeTop)}
 function paint(){
   const y=Math.max(0,window.scrollY),progress=dock?clamp(y/dock,0,1):1,lift=1-progress;
   if(Math.abs(y-lastY)>.5)direction=y>lastY?1:-1;
   lastY=y;
 
-  // The sheet squares its corners as it docks.
-  root.style.setProperty('--radius',(SHEET_RADIUS*clamp(lift/.2,0,1)).toFixed(2)+'px');
-  root.classList.toggle('docked',progress>=.999);
+  root.style.setProperty('--ext',(safeTop*progress).toFixed(2)+'px');
+  root.style.setProperty('--radius',(SHEET_RADIUS*clamp(lift/.06,0,1)).toFixed(2)+'px');
   root.classList.toggle('scrolled',y>dock+1);
 
   handle.setAttribute('aria-expanded',String(progress>=.999));
