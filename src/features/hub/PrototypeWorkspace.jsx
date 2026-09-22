@@ -15,8 +15,8 @@ import PeekSegmented from "@/components/PeekSegmented";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { Liquid } from "liquid-gooey";
 import {
-  AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, Circle, Copy,
-  ExternalLink, History, ImagePlus, LayoutGrid, Loader2,
+  AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, ChevronLeft, Circle, Copy,
+  ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, Loader2,
   Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
   Menu, MoreHorizontal, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
   Tablet, Trash2, Upload, X,
@@ -87,13 +87,13 @@ export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], activity = [], coViewers = [],
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
-  onPatchProject, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder,
+  onPatchProject, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
   onCreateComment, onResolveComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
 }) {
   const hubTheme = useSystemTheme();
   const [protoTheme, setProtoTheme] = useStoredState("eon-prototype-theme", "dark");
-  const [view, setView] = useState("stories");
+  const [view, setView] = useState(initialView);
   const [viewport, setViewport] = useStoredState("eon-viewport", "laptop");
   const [layout, setLayout] = useStoredState("eon-layout", "single");
   const [gridBy, setGridBy] = useState("states");
@@ -782,6 +782,18 @@ export default function PrototypeWorkspace({
     onReorder(ordered, targetGroup ? { [dragId]: targetGroup } : {});
     setDragId(null);
   };
+  // A prototype moved to a group lands at the end of it; a new group starts
+  // at the bottom of the list.
+  const moveToGroup = (id, group) => {
+    const name = group.trim();
+    const current = projects.find((item) => item.id === id);
+    if (!name || !current || (current.group_name || "General") === name || !onReorder) return;
+    const groupOf = (itemId) => projects.find((item) => item.id === itemId)?.group_name || "General";
+    const ordered = projects.map((item) => item.id).filter((itemId) => itemId !== id);
+    const last = ordered.findLastIndex((itemId) => groupOf(itemId) === name);
+    ordered.splice(last === -1 ? ordered.length : last + 1, 0, id);
+    onReorder(ordered, { [id]: name });
+  };
   const moveStory = (id, direction) => {
     const ordered = projects.map((item) => item.id);
     const from = ordered.indexOf(id);
@@ -862,6 +874,7 @@ export default function PrototypeWorkspace({
             if (project) setDeleteCandidate({ project, restoreFocus });
           }}
           moveStory={moveStory} projectOrder={projects.map((item) => item.id)}
+          moveToGroup={moveToGroup} allGroups={[...new Set(projects.map((item) => item.group_name || "General"))]}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
           onOpenDesign={onOpenDesign} onOpenPrompts={onOpenPrompts} onOpenTracking={onOpenTracking} onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
           changelog={changelog}
@@ -1037,7 +1050,7 @@ function WorkspaceSidebar({
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
-  onDeleteProject, moveStory, projectOrder, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
+  onDeleteProject, moveStory, projectOrder, moveToGroup, allGroups, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
   onOpenDesign, onOpenPrompts, onOpenTracking,
   changelog,
   linearByProject,
@@ -1050,6 +1063,8 @@ function WorkspaceSidebar({
   const mediaCount = Object.keys(media || {}).length;
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const [menuRect, setMenuRect] = useState(null);
+  // Which face of the row menu is showing: its actions, or the group picker.
+  const [menuPanel, setMenuPanel] = useState("actions");
   const menuTriggerRef = useRef(null);
   const listRef = useRef(null);
   const drawerRef = useDrawerFocus(isDrawer, onClose);
@@ -1057,6 +1072,7 @@ function WorkspaceSidebar({
   // The menu is fixed to where the trigger was, so scrolling the list would
   // leave it stranded. Close instead of chasing.
   useEffect(() => {
+    setMenuPanel("actions");
     if (!storyMenuId) { setMenuRect(null); return undefined; }
     const node = listRef.current;
     const close = () => setStoryMenuId(null);
@@ -1221,15 +1237,43 @@ function WorkspaceSidebar({
                         <MoreHorizontal size={16} />
                       </button>
                       {storyMenuId === item.id && menuRect && (
-                        <FloatingMenu c={c} anchor={menuRect} storyId={item.id} itemCount={isAdmin ? 4 : 1}>
-                          {isAdmin && <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>}
-                          {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>}
-                          {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>}
-                          <button className="eon-buttonish" role="menuitem" onClick={() => {
-                            const restoreFocus = menuTriggerRef.current;
-                            setStoryMenuId(null);
-                            onDeleteProject?.(item.id, restoreFocus);
-                          }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
+                        <FloatingMenu c={c} anchor={menuRect} storyId={item.id}
+                          itemCount={menuPanel === "actions" ? (isAdmin ? 5 : 2) : Math.min(allGroups.length, 6) + 2}>
+                          {menuPanel === "actions" ? <>
+                            {isAdmin && <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>}
+                            {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>}
+                            {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>}
+                            <button className="eon-buttonish" role="menuitem" aria-haspopup="menu" onClick={() => setMenuPanel("groups")} style={{ color: c.text }}><FolderInput size={14} /> Move to group</button>
+                            <button className="eon-buttonish" role="menuitem" onClick={() => {
+                              const restoreFocus = menuTriggerRef.current;
+                              setStoryMenuId(null);
+                              onDeleteProject?.(item.id, restoreFocus);
+                            }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
+                          </> : <>
+                            <button autoFocus className="eon-buttonish eon-menu-back" role="menuitem" onClick={() => setMenuPanel("actions")} style={{ color: c.muted }}><ChevronLeft size={14} /> Move to group</button>
+                            <div className="eon-menu-groups">
+                              {allGroups.map((group) => {
+                                const isCurrent = (item.group_name || "General") === group;
+                                return (
+                                  <button key={group} className="eon-buttonish" role="menuitemradio" aria-checked={isCurrent}
+                                    onClick={() => { moveToGroup(item.id, group); setStoryMenuId(null); }} style={{ color: c.text }}>
+                                    <span className="eon-menu-check">{isCurrent && <Check size={14} />}</span>
+                                    <span className="eon-menu-label">{group}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {menuPanel === "new-group" ? (
+                              <input autoFocus className="eon-menu-input" placeholder="Group name" aria-label="New group name"
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter" && event.currentTarget.value.trim()) { moveToGroup(item.id, event.currentTarget.value); setStoryMenuId(null); }
+                                  if (event.key === "Escape") { event.stopPropagation(); setMenuPanel("groups"); }
+                                }}
+                                style={{ background: c.raised, borderColor: c.brand, color: c.text }} />
+                            ) : (
+                              <button className="eon-buttonish" role="menuitem" onClick={() => setMenuPanel("new-group")} style={{ color: c.text }}><Plus size={14} /> New group…</button>
+                            )}
+                          </>}
                         </FloatingMenu>
                       )}
                     </div>

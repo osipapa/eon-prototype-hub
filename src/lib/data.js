@@ -230,13 +230,40 @@ export function subscribeAssets(cb) {
   return () => supabase.removeChannel(ch);
 }
 
-// Upload a File to Storage, return its public URL.
+const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
+export const MEDIA_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml", "image/avif"];
+const LIBRARY_FOLDER = "library/";
+
+// Why a file can't go in the media library, or "" when it can.
+export function mediaFileProblem(file) {
+  if (!MEDIA_IMAGE_TYPES.includes(file?.type)) return "Use a PNG, JPG, GIF, WebP, SVG, or AVIF image.";
+  if (file.size > MAX_MEDIA_BYTES) return "Images need to be under 10 MB.";
+  return "";
+}
+
+// Upload an image for the media library and return its public URL. Library
+// files sit under their own prefix so removing an asset can remove its file
+// without touching comment screenshots.
 export async function uploadMedia(file) {
-  const path = `${crypto.randomUUID()}-${file.name}`;
-  const { error } = await supabase.storage.from("media").upload(path, file);
+  const problem = mediaFileProblem(file);
+  if (problem) throw new Error(problem);
+  const safeName = (file.name || "image").replace(/[^\w.-]+/g, "-");
+  const path = `${LIBRARY_FOLDER}${crypto.randomUUID()}-${safeName}`;
+  const { error } = await supabase.storage
+    .from("media").upload(path, file, { contentType: file.type, cacheControl: "31536000" });
   if (error) throw error;
   const { data } = supabase.storage.from("media").getPublicUrl(path);
   return data.publicUrl;
+}
+
+// Delete a library upload once no asset points at it. Anything else (CDN
+// links, presets, comment screenshots) is not ours to remove and is ignored.
+export async function removeMediaFile(url) {
+  const base = supabase.storage.from("media").getPublicUrl("").data.publicUrl;
+  if (typeof url !== "string" || !url.startsWith(base + LIBRARY_FOLDER)) return;
+  const path = decodeURI(url.slice(base.length).split(/[?#]/)[0]);
+  const { error } = await supabase.storage.from("media").remove([path]);
+  if (error) throw error;
 }
 
 export const MAX_COMMENT_IMAGE_BYTES = 5 * 1024 * 1024;

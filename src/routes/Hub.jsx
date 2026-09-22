@@ -10,7 +10,7 @@ import {
 } from "../features/onboarding/tutorial";
 import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
-  listAssets, upsertAsset, deleteAsset, subscribeAssets, listComments, createComment, subscribeComments,
+  listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
   setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
 } from "../lib/data";
 import { joinTeamPresence } from "../lib/presence";
@@ -366,10 +366,19 @@ export default function Hub() {
     scheduleSave(id);
   }
 
+  // An uploaded file goes once its asset stops pointing at it, unless another
+  // asset still does. Best effort: the asset change has already landed.
+  function releaseMediaFile(url, remaining) {
+    if (!url || Object.values(remaining).includes(url)) return;
+    removeMediaFile(url).catch((error) => console.error(error));
+  }
+
   async function onSetAsset(key, url) {
+    const previous = assets[key];
     setAssets((current) => ({ ...current, [key]: url }));
     try {
       await upsertAsset(profile.team_id, { key, name: key, url });
+      if (previous !== url) releaseMediaFile(previous, { ...assets, [key]: url });
     } catch (error) {
       reportRefreshError(error);
     }
@@ -377,6 +386,7 @@ export default function Hub() {
 
   async function onDeleteAsset(key) {
     const previous = assets[key];
+    const { [key]: _removed, ...remaining } = assets;
     setAssets((current) => {
       const next = { ...current };
       delete next[key];
@@ -384,6 +394,7 @@ export default function Hub() {
     });
     try {
       await deleteAsset(key);
+      releaseMediaFile(previous, remaining);
     } catch (error) {
       setAssets((current) => ({ ...current, [key]: previous }));
       throw error;

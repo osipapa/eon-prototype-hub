@@ -11,7 +11,7 @@ the site is hosted on GitHub Pages.
 ```bash
 npm install
 npx shadcn@latest add button badge input textarea tabs
-cp .env.example .env    # fill VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_BASE
+cp .env.example .env    # fill VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_BASE (VITE_MAPBOX_TOKEN optional)
 npm run dev
 ```
 

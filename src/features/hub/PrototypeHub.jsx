@@ -5,9 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
 import {
   ExternalLink, ChevronDown, Upload, Trash2, Copy, Check, AlertCircle, Loader2, LayoutGrid,
+  ImageOff, Link2, MoreHorizontal, RotateCcw,
 } from "lucide-react";
 import { VIEWPORTS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, safeMediaUrl } from "./prototypes";
 import { buildSetupPrompt } from "./setupPrompt";
+import { MEDIA_IMAGE_TYPES, mediaFileProblem, uploadMedia } from "@/lib/data";
 
 export { buildSetupPrompt } from "./setupPrompt";
 
@@ -492,25 +494,62 @@ export function UploadPanel({
 }
 
 /* ---- Media manager. Assets persist via onSetAsset(key,url) and map into every
-   prototype through {{key}} tokens (logos, placeholders). ---- */
+   prototype through {{key}} tokens (logos, placeholders). An image comes from
+   an upload into the media bucket or from a pasted link. Two sections keep it
+   calm: the team's own library, then the built-in logos and presets. Per-image
+   actions live behind a menu so the grid reads as images, not forms. ---- */
+const EMPTY_DRAFT = { mode: "", name: "", url: "", file: null };
+const IMAGE_ACCEPT = MEDIA_IMAGE_TYPES.join(",");
+const LOGO_NOTES = { eonLogo: "Hub logo", acmeLogo: "Story logo" };
+
+// "Team photo 2.png" -> "teamPhoto2", so a dropped file arrives with a usable token.
+function keyFromFileName(fileName) {
+  const words = String(fileName).replace(/\.[^.]+$/, "").split(/[^a-zA-Z0-9]+/).filter(Boolean);
+  return words.map((word, index) => (index ? word[0].toUpperCase() : word[0].toLowerCase()) + word.slice(1)).join("") || "image";
+}
+
+function formatBytes(bytes) {
+  return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+const dragsFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
+const isUploadedMedia = (url) => /\/storage\/v1\/object\/public\/media\/library\//.test(url || "");
+
 export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
   const [ph, setPh] = useState({ w: 320, h: 180, label: "", bg: "#E5E7EB", fg: "#94A3B8", name: "" });
-  const [img, setImg] = useState({ name: "", url: "" });
+  const [draft, setDraft] = useState(EMPTY_DRAFT);
+  const [adding, setAdding] = useState(false);
+  const [pageDrag, setPageDrag] = useState(false);
+  const [busyKey, setBusyKey] = useState("");
   const [copied, setCopied] = useState("");
   const [mediaError, setMediaError] = useState("");
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [deletingKey, setDeletingKey] = useState("");
-  const field = { height: 34, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, borderRadius: 999 };
+  const addFileRef = useRef(null);
+  const replaceFileRef = useRef(null);
+  const replaceKeyRef = useRef("");
+  const stagedPreview = useMemo(() => (draft.file ? URL.createObjectURL(draft.file) : ""), [draft.file]);
+  useEffect(() => () => { if (stagedPreview) URL.revokeObjectURL(stagedPreview); }, [stagedPreview]);
+
+  // A file dropped outside a drop target would open in the tab and leave the hub.
+  useEffect(() => {
+    const guard = (event) => {
+      if (!dragsFiles(event) || event.defaultPrevented) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "none";
+    };
+    window.addEventListener("dragover", guard);
+    window.addEventListener("drop", guard);
+    return () => {
+      window.removeEventListener("dragover", guard);
+      window.removeEventListener("drop", guard);
+    };
+  }, []);
+
+  const field = { height: 36, background: c.raised, borderColor: c.border, color: c.text, fontSize: 13, borderRadius: 999 };
   const panel = { background: c.panel, border: `1px solid ${c.border}`, borderRadius: 16, padding: 18 };
   const btn = { height: 34, padding: "0 12px", flexShrink: 0, borderRadius: 999, border: `1px solid ${c.border}`, background: c.raised, color: c.muted, cursor: "pointer", fontSize: 12 };
   const copy = async (text, id) => { try { await navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(""), 1200); } catch (e) { /* clipboard blocked */ } };
-  const Token = ({ name, available = true }) => (
-    <button onClick={() => available && copy(`{{${name}}}`, `tok-${name}`)} disabled={!available}
-      title={available ? "Copy token" : "Add a valid image URL to activate this token"}
-      style={{ fontSize: 11, fontFamily: "ui-monospace, Menlo, monospace", color: c.text, background: c.raised, border: `1px solid ${c.border}`, padding: "2px 7px", borderRadius: 6, cursor: available ? "pointer" : "not-allowed", opacity: available ? 1 : 0.5 }}>
-      {copied === `tok-${name}` ? "copied" : `{{${name}}}`}
-    </button>
-  );
 
   const cleanKey = (s) => s.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/(^-|-$)/g, "");
   const phData = MEDIA.placeholder(ph.w, ph.h, ph.label, ph.bg, ph.fg);
@@ -540,10 +579,45 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
     onSetAsset(key, safeMediaUrl(phData));
     setPh({ ...ph, name: "" });
   };
-  const addImage = () => {
-    const key = cleanKey(img.name);
-    if (!key || !img.url.trim()) return;
-    if (saveAssetUrl(key, img.url)) setImg({ name: "", url: "" });
+  const stageFile = (file) => {
+    if (!file) return;
+    const problem = mediaFileProblem(file);
+    setMediaError(problem);
+    if (problem) return;
+    setDraft((current) => ({ ...current, mode: "file", file, url: "", name: current.name.trim() || keyFromFileName(file.name) }));
+  };
+  const addImage = async () => {
+    const key = cleanKey(draft.name);
+    if (!key || adding) return;
+    if (draft.mode === "link") {
+      if (draft.url.trim() && saveAssetUrl(key, draft.url)) setDraft(EMPTY_DRAFT);
+      return;
+    }
+    setAdding(true);
+    setMediaError("");
+    try {
+      await onSetAsset(key, await uploadMedia(draft.file));
+      setDraft(EMPTY_DRAFT);
+    } catch (error) {
+      setMediaError(error?.message || "The image could not be uploaded. Try again.");
+    } finally {
+      setAdding(false);
+    }
+  };
+  // Uploading onto an image swaps it in every prototype that uses its token.
+  const replaceWithFile = async (key, file) => {
+    if (!file || busyKey) return;
+    const problem = mediaFileProblem(file);
+    setMediaError(problem);
+    if (problem) return;
+    setBusyKey(key);
+    try {
+      await onSetAsset(key, await uploadMedia(file));
+    } catch (error) {
+      setMediaError(error?.message || "The image could not be uploaded. Try again.");
+    } finally {
+      setBusyKey("");
+    }
   };
   const removeAsset = async (key) => {
     setDeletingKey(key);
@@ -560,109 +634,144 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
     }
   };
 
-  // One flat list: team logos, the always-available preset photos, then
-  // anything saved in this team's library. A saved asset under a logo/preset
-  // key overrides it; Reset clears the override.
-  const logoDefaults = {
-    eonLogo: { label: "Eon logo (hub)", html: MEDIA.logos.eon(c.text, c.brand) },
-    acmeLogo: { label: "Acme logo (stories)", html: MEDIA.logos.acme(40, 10, "#4F46E5") },
-  };
+  // A saved asset under a logo or preset key overrides it; Reset clears that.
+  const logoHtml = { eonLogo: MEDIA.logos.eon(c.text, c.brand), acmeLogo: MEDIA.logos.acme(40, 10, "#4F46E5") };
   const safeAsset = (key) => safeMediaUrl(assets[key]);
-  const customKeys = Object.keys(assets).filter((k) => !logoDefaults[k] && !PRESET_MEDIA[k] && assets[k]);
-  const items = [
-    ...Object.entries(logoDefaults).map(([k, d]) => ({
-      key: k, label: d.label, kind: assets[k] ? "Logo" : "Logo · add URL", url: assets[k] || "", linkUrl: safeAsset(k),
-      previewHtml: assets[k] ? null : d.html, previewSrc: safeAsset(k),
+  const builtIn = [
+    ...Object.entries(LOGO_NOTES).map(([key, note]) => ({
+      key, url: assets[key] || "", linkUrl: safeAsset(key), previewSrc: safeAsset(key),
+      previewHtml: assets[key] ? null : logoHtml[key], note: assets[key] ? `${note} · replaced` : note,
     })),
-    ...Object.keys(PRESET_MEDIA).map((k) => ({
-      key: k, label: k, kind: assets[k] ? "Preset · replaced" : "Preset", url: assets[k] || "",
-      linkUrl: safeAsset(k) || PRESET_MEDIA[k], previewSrc: safeAsset(k) || PRESET_MEDIA[k],
-    })),
-    ...customKeys.map((k) => ({
-      key: k, label: k, kind: "Saved", url: assets[k], linkUrl: safeAsset(k), previewSrc: safeAsset(k), removable: true,
+    ...Object.keys(PRESET_MEDIA).map((key) => ({
+      key, url: assets[key] || "", linkUrl: safeAsset(key) || PRESET_MEDIA[key],
+      previewSrc: safeAsset(key) || PRESET_MEDIA[key], note: assets[key] ? "Replaced" : "Default",
     })),
   ];
+  const library = Object.keys(assets)
+    .filter((key) => !LOGO_NOTES[key] && !PRESET_MEDIA[key] && assets[key])
+    .sort((left, right) => left.localeCompare(right))
+    .map((key) => ({
+      key, url: assets[key], linkUrl: safeAsset(key), previewSrc: safeAsset(key), removable: true,
+      note: isUploadedMedia(assets[key]) ? "Uploaded" : "Link",
+    }));
+  const newKey = cleanKey(draft.name);
+  const replacesKey = Boolean(newKey) && Boolean(assets[newKey] || LOGO_NOTES[newKey] || PRESET_MEDIA[newKey]);
+  const canAdd = Boolean(newKey) && Boolean(draft.mode === "file" ? draft.file : draft.url.trim()) && !adding;
 
-  const mediaCard = (item) => (
-    <div key={item.key} style={{ border: `1px solid ${c.border}`, borderRadius: 12, padding: 12, background: c.panel, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
-        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", color: c.muted, background: c.raised, borderRadius: 100, padding: "3px 8px", flexShrink: 0 }}>{item.kind}</span>
-      </div>
-      <div style={{ height: 110, borderRadius: 10, border: `1px solid ${c.border}`, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-        {item.previewHtml
-          ? <span dangerouslySetInnerHTML={{ __html: item.previewHtml }} />
-          : item.previewSrc
-            ? <img src={item.previewSrc} alt={item.label} loading="lazy" referrerPolicy="no-referrer" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-            : <span style={{ padding: 12, color: c.muted, fontSize: 12, textAlign: "center" }}>Add a valid image URL to preview this asset.</span>}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <Token name={item.key} available={Boolean(item.linkUrl)} />
-        <button onClick={() => copy(item.linkUrl, `link-${item.key}`)} disabled={!item.linkUrl} style={{ ...btn, height: 26, padding: "0 8px", opacity: item.linkUrl ? 1 : 0.5 }}>{copied === `link-${item.key}` ? "Copied" : "Link"}</button>
-        {(item.url || item.removable) && (
-          <button
-            className="eon-buttonish"
-            onClick={() => item.removable ? setDeleteCandidate(item) : removeAsset(item.key).catch(() => {})}
-            disabled={deletingKey === item.key}
-            title={item.removable ? "Delete from library" : "Reset to default"}
-            aria-label={`${item.removable ? "Delete" : "Reset"} ${item.label}`}
-            style={{ ...btn, height: 30, minWidth: 40, padding: "0 8px", marginLeft: "auto", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, color: item.removable ? "#D98295" : c.muted }}
-          >
-            {deletingKey === item.key
-              ? <Loader2 className="eon-spin" size={13} aria-hidden="true" />
-              : item.removable && <Trash2 size={13} aria-hidden="true" />}
-            {item.removable ? "Delete" : "Reset"}
-          </button>
-        )}
-      </div>
-      <Input key={`${item.key}-${item.url}`} defaultValue={item.url} placeholder="Paste image URL to replace" aria-label={`Image URL for ${item.key}`}
-        onBlur={(e) => { const v = e.target.value.trim(); if (v !== item.url) saveAssetUrl(item.key, v); }} style={field} />
-    </div>
+  const tile = (item) => (
+    <MediaTile key={item.key} c={c} item={item}
+      busy={busyKey === item.key || deletingKey === item.key}
+      copied={copied === `tok-${item.key}`}
+      onCopyToken={() => copy(`{{${item.key}}}`, `tok-${item.key}`)}
+      onCopyLink={() => copy(item.linkUrl, `link-${item.key}`)}
+      onPickFile={() => { replaceKeyRef.current = item.key; replaceFileRef.current?.click(); }}
+      onDropFile={(file) => replaceWithFile(item.key, file)}
+      onSaveLink={(value) => { if (value !== item.url) saveAssetUrl(item.key, value); }}
+      onRemove={() => (item.removable ? setDeleteCandidate({ key: item.key, label: item.key }) : removeAsset(item.key).catch(() => {}))} />
   );
 
   return (
     <>
-    <div style={{ flex: 1 }}>
-      <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-        <p style={{ margin: 0, color: c.muted, fontSize: 12, lineHeight: 1.5 }}>Use any shared image as {"{{name}}"}. Replacing its URL updates every prototype that references it.</p>
-        <div style={{ ...panel, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 13, fontWeight: 500, marginRight: 4 }}>Add an image</div>
-          <Input value={img.name} onChange={(e) => setImg({ ...img, name: e.target.value })} placeholder="Name (e.g. teamPhoto)" aria-label="New image name" style={{ ...field, flex: "0 1 200px" }} />
-          <Input value={img.url} onChange={(e) => setImg({ ...img, url: e.target.value })} placeholder="https://cdn.example.com/image.png" aria-label="New image URL" style={{ ...field, flex: "1 1 240px" }} />
-          <button onClick={addImage} disabled={!img.name.trim() || !img.url.trim()} style={{ ...btn, background: c.primary, color: c.primaryText, border: "none", opacity: img.name.trim() && img.url.trim() ? 1 : 0.5 }}>Add to media</button>
-          {img.name.trim() && <span style={{ fontSize: 11, color: c.muted }}>Will be available as <code style={{ color: c.text }}>{`{{${cleanKey(img.name)}}}`}</code></span>}
+    <div className="eon-media-page"
+      onDragOver={(event) => { if (!dragsFiles(event)) return; event.preventDefault(); setPageDrag(true); }}
+      onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPageDrag(false); }}
+      onDrop={(event) => { if (!dragsFiles(event)) return; event.preventDefault(); setPageDrag(false); stageFile(event.dataTransfer.files?.[0]); }}>
+      <header className="eon-media-head">
+        <p style={{ color: c.muted }}>Use any image in a prototype as <code style={{ color: c.text }}>{"{{name}}"}</code>. Replace it here and every prototype updates.</p>
+        <div className="eon-media-head-actions">
+          <button type="button" className="eon-buttonish eon-secondary-button" onClick={() => { setMediaError(""); setDraft({ ...EMPTY_DRAFT, mode: "link" }); }}
+            style={{ borderColor: c.border, color: c.secondary, background: "transparent" }}>
+            <Link2 size={15} aria-hidden="true" /> Paste link
+          </button>
+          <Button type="button" className="eon-buttonish" onClick={() => addFileRef.current?.click()}
+            style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+            <Upload size={15} aria-hidden="true" /> Upload image
+          </Button>
         </div>
-        {mediaError && <p role="alert" style={{ margin: 0, color: "#FF508F", fontSize: 12 }}>{mediaError}</p>}
+      </header>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
-          {items.map(mediaCard)}
-        </div>
-
-        <details style={panel}>
-          <summary style={{ fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Generate a blank placeholder (optional)</summary>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16, marginTop: 14 }}>
-            <div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <Input type="number" min={1} max={4096} value={ph.w} onChange={(e) => setPh({ ...ph, w: +e.target.value || 0 })} aria-label="Placeholder width in pixels" style={field} />
-                <Input type="number" min={1} max={4096} value={ph.h} onChange={(e) => setPh({ ...ph, h: +e.target.value || 0 })} aria-label="Placeholder height in pixels" style={field} />
-              </div>
-              <Input value={ph.label} onChange={(e) => setPh({ ...ph, label: e.target.value })} placeholder={`Label (default ${ph.w}×${ph.h})`} aria-label="Placeholder label" style={{ ...field, marginBottom: 8 }} />
-              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                <input type="color" value={ph.bg} onChange={(e) => setPh({ ...ph, bg: e.target.value })} aria-label="Placeholder background color" style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
-                <input type="color" value={ph.fg} onChange={(e) => setPh({ ...ph, fg: e.target.value })} aria-label="Placeholder foreground color" style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
-              </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <Input value={ph.name} onChange={(e) => setPh({ ...ph, name: e.target.value })} placeholder="Save as (e.g. blankHero)" aria-label="Placeholder asset name" style={field} />
-                <button onClick={savePlaceholder} disabled={!ph.name.trim()} style={{ ...btn, opacity: ph.name.trim() ? 1 : 0.5 }}>Save</button>
-              </div>
-              <p style={{ fontSize: 11, color: c.muted, marginTop: 8 }}>Or drop <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> straight into a prototype.</p>
-            </div>
-            <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: "hidden", display: "flex", justifyContent: "center", background: c.bg, padding: 12 }}>
-              <img src={phData} alt="placeholder" style={{ maxWidth: "100%", maxHeight: 180, objectFit: "contain" }} />
-            </div>
+      {draft.mode && (
+        <form className="eon-media-draft" onSubmit={(event) => { event.preventDefault(); addImage(); }}
+          style={{ background: c.panel, borderColor: c.border }}>
+          {draft.mode === "file" && <img src={stagedPreview} alt="" className="eon-media-draft-thumb" style={{ background: c.bg }} />}
+          <div className="eon-media-draft-fields">
+            {draft.mode === "file"
+              ? <span className="eon-media-draft-file" style={{ color: c.muted }}><span style={{ color: c.text }}>{draft.file.name}</span> · {formatBytes(draft.file.size)}</span>
+              : <Input autoFocus value={draft.url} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="Paste an image link" aria-label="Image link" style={{ ...field, flex: "1 1 260px" }} />}
+            <Input autoFocus={draft.mode === "file"} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              placeholder="Name, e.g. teamPhoto" aria-label="Image name" style={{ ...field, flex: "0 1 220px" }} />
+            <span style={{ fontSize: 12, color: c.muted }}>
+              {newKey ? <>{replacesKey ? "Replaces" : "Use it as"} <code style={{ color: c.text }}>{`{{${newKey}}}`}</code></> : "Name it to get a token"}
+            </span>
           </div>
-        </details>
-      </div>
+          <div className="eon-media-draft-actions">
+            <button type="button" className="eon-buttonish eon-secondary-button" onClick={() => { setDraft(EMPTY_DRAFT); setMediaError(""); }} disabled={adding}
+              style={{ borderColor: c.border, color: c.secondary, background: "transparent" }}>Cancel</button>
+            <Button type="submit" className="eon-buttonish" disabled={!canAdd}
+              style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 8, fontSize: 13, fontWeight: 600, opacity: canAdd || adding ? 1 : 0.5 }}>
+              {adding ? <><Loader2 className="eon-spin" size={15} aria-hidden="true" />Uploading…</> : "Add to library"}
+            </Button>
+          </div>
+        </form>
+      )}
+      {mediaError && <p role="alert" className="eon-media-error"><AlertCircle size={14} aria-hidden="true" />{mediaError}</p>}
+
+      <section className="eon-media-section" aria-labelledby="eon-media-library"
+        style={{ outline: pageDrag ? `1.5px dashed ${c.brand}` : "none" }}>
+        <div className="eon-media-section-head">
+          <h2 id="eon-media-library" style={{ color: c.text }}>Library</h2>
+          <span className="eon-count" style={{ background: c.raised, color: c.muted }}>{library.length}</span>
+          {pageDrag && <span style={{ marginLeft: "auto", fontSize: 12, color: c.brand }}>Drop to add it to the library</span>}
+        </div>
+        {library.length ? (
+          <div className="eon-media-grid">{library.map(tile)}</div>
+        ) : (
+          <button type="button" className="eon-dropzone eon-media-empty" onClick={() => addFileRef.current?.click()}
+            style={{ borderColor: c.border, color: c.secondary }}>
+            <Upload size={16} color={c.muted} aria-hidden="true" />
+            No images yet. Upload one or drop it here.
+          </button>
+        )}
+      </section>
+
+      <section className="eon-media-section" aria-labelledby="eon-media-builtin">
+        <div className="eon-media-section-head">
+          <h2 id="eon-media-builtin" style={{ color: c.text }}>Built-in</h2>
+          <span className="eon-count" style={{ background: c.raised, color: c.muted }}>{builtIn.length}</span>
+          <span style={{ fontSize: 12, color: c.muted }}>Always available. Replace one to use your own image.</span>
+        </div>
+        <div className="eon-media-grid">{builtIn.map(tile)}</div>
+      </section>
+
+      <details className="eon-media-placeholder">
+        <summary style={{ color: c.secondary }}>Make a placeholder image</summary>
+        <div style={{ ...panel, display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16, marginTop: 12 }}>
+          <div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <Input type="number" min={1} max={4096} value={ph.w} onChange={(e) => setPh({ ...ph, w: +e.target.value || 0 })} aria-label="Placeholder width in pixels" style={field} />
+              <Input type="number" min={1} max={4096} value={ph.h} onChange={(e) => setPh({ ...ph, h: +e.target.value || 0 })} aria-label="Placeholder height in pixels" style={field} />
+            </div>
+            <Input value={ph.label} onChange={(e) => setPh({ ...ph, label: e.target.value })} placeholder={`Label (default ${ph.w}×${ph.h})`} aria-label="Placeholder label" style={{ ...field, marginBottom: 8 }} />
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <input type="color" value={ph.bg} onChange={(e) => setPh({ ...ph, bg: e.target.value })} aria-label="Placeholder background color" style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
+              <input type="color" value={ph.fg} onChange={(e) => setPh({ ...ph, fg: e.target.value })} aria-label="Placeholder foreground color" style={{ flex: 1, height: 34, borderRadius: 8, border: `1px solid ${c.border}`, background: c.bg }} />
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <Input value={ph.name} onChange={(e) => setPh({ ...ph, name: e.target.value })} placeholder="Save as (e.g. blankHero)" aria-label="Placeholder asset name" style={field} />
+              <button onClick={savePlaceholder} disabled={!ph.name.trim()} style={{ ...btn, opacity: ph.name.trim() ? 1 : 0.5 }}>Save</button>
+            </div>
+            <p style={{ fontSize: 11, color: c.muted, marginTop: 8 }}>Or drop <code style={{ color: c.text }}>{'{{placeholder:320x180}}'}</code> straight into a prototype.</p>
+          </div>
+          <div style={{ border: `1px solid ${c.border}`, borderRadius: 10, overflow: "hidden", display: "flex", justifyContent: "center", background: c.bg, padding: 12 }}>
+            <img src={phData} alt="placeholder" style={{ maxWidth: "100%", maxHeight: 180, objectFit: "contain" }} />
+          </div>
+        </div>
+      </details>
+
+      <input ref={addFileRef} type="file" accept={IMAGE_ACCEPT} className="eon-visually-hidden" tabIndex={-1} aria-hidden="true"
+        onChange={(e) => { stageFile(e.target.files?.[0]); e.target.value = ""; }} />
+      <input ref={replaceFileRef} type="file" accept={IMAGE_ACCEPT} className="eon-visually-hidden" tabIndex={-1} aria-hidden="true"
+        onChange={(e) => { replaceWithFile(replaceKeyRef.current, e.target.files?.[0]); e.target.value = ""; }} />
     </div>
     {deleteCandidate && (
       <DeleteMediaDialog
@@ -675,6 +784,95 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
       />
     )}
     </>
+  );
+}
+
+// One image: the picture, its token (click to copy), and a menu for the rest.
+// Dropping a file on it replaces the image for every prototype.
+function MediaTile({ c, item, busy, copied, onCopyToken, onCopyLink, onPickFile, onDropFile, onSaveLink, onRemove }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [broken, setBroken] = useState(false);
+  const actionsRef = useRef(null);
+  const available = Boolean(item.linkUrl);
+
+  useEffect(() => { setBroken(false); }, [item.previewSrc]);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const close = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+      if (event.type === "mousedown" && !actionsRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    window.addEventListener("keydown", close);
+    window.addEventListener("mousedown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("mousedown", close);
+    };
+  }, [menuOpen]);
+
+  const act = (action) => () => { setMenuOpen(false); action(); };
+
+  return (
+    <div className="eon-media-tile" style={{ background: c.panel, borderColor: dragOver ? c.brand : c.border }}
+      onDragOver={(event) => { if (!dragsFiles(event)) return; event.preventDefault(); event.stopPropagation(); setDragOver(true); }}
+      onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragOver(false); }}
+      onDrop={(event) => { if (!dragsFiles(event)) return; event.preventDefault(); event.stopPropagation(); setDragOver(false); onDropFile(event.dataTransfer.files?.[0]); }}>
+      <div className="eon-media-thumb" style={{ background: c.bg }}>
+        {item.previewHtml
+          ? <span dangerouslySetInnerHTML={{ __html: item.previewHtml }} />
+          : item.previewSrc && !broken
+            ? <img src={item.previewSrc} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
+            : <span className="eon-media-thumb-empty" style={{ color: c.muted }}><ImageOff size={18} aria-hidden="true" />{item.previewSrc ? "Can't load this image" : "No image yet"}</span>}
+        {(busy || dragOver) && (
+          <span className="eon-media-thumb-note">
+            {busy ? <><Loader2 className="eon-spin" size={14} aria-hidden="true" />Working…</> : "Drop to replace"}
+          </span>
+        )}
+      </div>
+      <div className="eon-media-meta">
+        {editingLink ? (
+          <Input autoFocus defaultValue={item.url} placeholder="Paste an image link" aria-label={`Image link for ${item.key}`}
+            onFocus={(event) => event.currentTarget.select()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+              if (event.key === "Escape") { event.currentTarget.dataset.cancel = "true"; event.currentTarget.blur(); }
+            }}
+            onBlur={(event) => {
+              const cancelled = event.currentTarget.dataset.cancel === "true";
+              setEditingLink(false);
+              if (!cancelled) onSaveLink(event.currentTarget.value.trim());
+            }}
+            style={{ height: 34, background: c.raised, borderColor: c.brand, color: c.text, fontSize: 12, borderRadius: 8 }} />
+        ) : (
+          <>
+            <button type="button" className="eon-media-token" onClick={onCopyToken} disabled={!available}
+              title={available ? `Copy {{${item.key}}}` : "Upload an image or paste a link to use this token"}
+              aria-label={available ? `Copy token ${item.key}` : `${item.key}, no image yet`}>
+              <span className="eon-media-token-name" style={{ color: copied ? c.brand : c.text }}>{copied ? "Copied" : item.key}</span>
+              <span className="eon-media-token-note" style={{ color: c.muted }}>{item.note}</span>
+            </button>
+            <div ref={actionsRef} className="eon-media-actions">
+              <button type="button" className="eon-buttonish eon-icon-button" onClick={() => setMenuOpen((open) => !open)}
+                aria-label={`Actions for ${item.key}`} aria-haspopup="menu" aria-expanded={menuOpen} style={{ width: 34, height: 34, flexBasis: 34, color: c.muted }}>
+                <MoreHorizontal size={16} aria-hidden="true" />
+              </button>
+              {menuOpen && (
+                <div className="eon-story-menu eon-media-menu" role="menu" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+                  <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onPickFile)} style={{ color: c.text }}><Upload size={14} /> Upload image</button>
+                  <button type="button" className="eon-buttonish" role="menuitem" onClick={act(() => setEditingLink(true))} style={{ color: c.text }}><Link2 size={14} /> Paste link</button>
+                  <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onCopyLink)} disabled={!available} style={{ color: c.text }}><Copy size={14} /> Copy image link</button>
+                  {item.removable
+                    ? <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onRemove)} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
+                    : item.url && <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onRemove)} style={{ color: c.text }}><RotateCcw size={14} /> Reset to default</button>}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 

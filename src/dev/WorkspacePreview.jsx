@@ -148,6 +148,9 @@ export default function WorkspacePreview() {
   // the preview exercise the mobile mockup.
   const [assets, setAssets] = useState({
     iPhone: "https://cdn.prod.website-files.com/663a718629c975b39d9e15fa/6a90931064d7dc0b26811064_iPhone%2017%20Pro%20-%20Deep%20Blue%20-%20Portrait.png",
+    "Model-Y": "https://cdn.prod.website-files.com/663a718629c975b39d9e15fa/6ab2c01dfd68dc2efa29b489_tesla-modelY-2026-grey-dark-front-1280x720.webp",
+    "tesla-logo": "https://cdn.prod.website-files.com/663a718629c975b39d9e15fa/68769781d3ab1aefe8ec85f6_tesla-logo-dark.avif",
+    "tesla-models": "https://cdn.prod.website-files.com/663a718629c975b39d9e15fa/68d2e3b895888fe9ebd8810a_tesla-model3-2024-grey-light-side-2560x1440.webp",
   });
   const [activity] = useState(initialActivity);
   const [toasts, setToasts] = useState([
@@ -189,7 +192,11 @@ export default function WorkspacePreview() {
         })}
         onNewProject={async () => {}}
         onDeleteProject={(id) => setProjects((items) => items.filter((item) => item.id !== id))}
-        onReorder={() => {}}
+        initialView={tutorialParams.has("media") ? "media" : "stories"}
+        onReorder={(orderedIds, groupById = {}) => setProjects((items) => orderedIds.map((id, index) => {
+          const item = items.find((project) => project.id === id);
+          return { ...item, sort_order: index, group_name: groupById[id] ?? item.group_name };
+        }))}
         onCreateComment={async (projectId, body, imageUrl = null, anchor = null) => {
           setComments((items) => [...items, {
             id: `preview-${Date.now()}`,

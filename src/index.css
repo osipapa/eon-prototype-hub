@@ -313,6 +313,11 @@ svg.eon-accent-icon,
 .eon-story-menu button:disabled { cursor: not-allowed; opacity: .4; }
 /* Portalled to the body so no scrolling or transformed ancestor can clip it. */
 .eon-story-menu.is-floating { position: fixed; top: auto; right: auto; z-index: 120; }
+.eon-story-menu .eon-menu-back { font-weight: 600; }
+.eon-menu-groups { max-height: 240px; overflow-y: auto; }
+.eon-menu-check { display: inline-flex; width: 14px; flex-shrink: 0; }
+.eon-menu-label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eon-menu-input { display: block; width: 100%; height: 36px; margin: 2px 0; padding: 0 10px; border: 1px solid; border-radius: 8px; font: inherit; font-size: 13px; outline: none; }
 .eon-sidebar-foot { display: flex; align-items: center; gap: 6px; min-height: 60px; padding: 10px; border-top: 1px solid; }
 .eon-sidebar-foot > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .eon-sidebar-empty, .eon-sidebar-mode-info { display: flex; min-height: 220px; align-items: center; justify-content: center; flex-direction: column; gap: 7px; padding: 28px 18px; text-align: center; }
@@ -447,6 +452,35 @@ button.eon-save-state { cursor: pointer; }
 .light .eon-device-shell { border-color: #b9bbc0; }
 .light .eon-prototype-frame { box-shadow: 0 0 0 1px rgba(0,0,0,.1), 0 18px 60px rgba(0,0,0,.18); }
 .eon-media-scroll { min-height: 0; flex: 1; overflow: auto; }
+.eon-media-page { display: flex; box-sizing: border-box; min-height: 100%; max-width: 1360px; flex-direction: column; gap: 22px; padding: 20px 20px 32px; }
+.eon-media-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
+.eon-media-head p { margin: 0; font-size: 13px; line-height: 1.5; }
+.eon-media-head-actions { display: flex; gap: 8px; }
+.eon-media-draft { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px; border: 1px solid; border-radius: 16px; }
+.eon-media-draft-thumb { width: 52px; height: 52px; flex-shrink: 0; border-radius: 10px; object-fit: cover; }
+.eon-media-draft-fields { display: flex; min-width: 0; flex: 1 1 360px; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.eon-media-draft-file { min-width: 0; max-width: 260px; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.eon-media-draft-actions { display: flex; gap: 8px; margin-left: auto; }
+.eon-media-error { display: flex; align-items: center; gap: 6px; margin: 0; color: #FF508F; font-size: 12px; }
+.eon-media-section { display: flex; flex-direction: column; gap: 12px; border-radius: 12px; outline-offset: 8px; }
+.eon-media-section-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 22px; }
+.eon-media-section-head h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.eon-media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.eon-media-empty { width: 100%; min-height: 120px; justify-content: center; background: transparent; cursor: pointer; font: inherit; font-size: 13px; }
+.eon-media-tile { position: relative; display: flex; min-width: 0; flex-direction: column; border: 1px solid; border-radius: 14px; transition: border-color 120ms var(--ease-out); }
+.eon-media-thumb { position: relative; display: flex; aspect-ratio: 4 / 3; align-items: center; justify-content: center; margin: 6px 6px 0; overflow: hidden; border-radius: 9px; }
+.eon-media-thumb > img { width: 100%; height: 100%; object-fit: contain; }
+.eon-media-thumb-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; font-size: 12px; text-align: center; }
+.eon-media-thumb-note { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0, 0, 0, .6); color: #fff; font-size: 12px; font-weight: 500; }
+.eon-media-meta { display: flex; min-height: 50px; align-items: center; gap: 2px; padding: 4px 4px 4px 12px; }
+.eon-media-meta > input { margin: 4px 8px 4px 0; }
+.eon-media-token { display: flex; min-width: 0; flex: 1; flex-direction: column; align-items: flex-start; gap: 2px; padding: 4px 0; border: 0; border-radius: 6px; background: none; cursor: pointer; font: inherit; text-align: left; }
+.eon-media-token:disabled { cursor: default; }
+.eon-media-token-name { max-width: 100%; overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.eon-media-token-note { font-size: 11px; }
+.eon-media-actions { position: relative; flex-shrink: 0; }
+.eon-media-menu { top: 38px; width: 188px; }
+.eon-media-placeholder summary { width: fit-content; cursor: pointer; font-size: 13px; }
 
 .eon-compare { display: flex; min-width: 0; min-height: 0; flex: 1; }
 .eon-compare.is-dragging { user-select: none; }

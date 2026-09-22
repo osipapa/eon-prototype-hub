@@ -648,3 +648,17 @@ create policy "auth upload media" on storage.objects for insert
   with check (bucket_id = 'media' and auth.role() = 'authenticated');
 create policy "auth update media" on storage.objects for update
   using (bucket_id = 'media' and auth.role() = 'authenticated');
+-- Media library uploads (library/) can be removed along with their asset;
+-- comment screenshots (comments/) cannot.
+create policy "auth delete library media" on storage.objects for delete
+  using (
+    bucket_id = 'media'
+    and auth.role() = 'authenticated'
+    and (storage.foldername(name))[1] = 'library'
+  );
+
+-- Images only, 10 MB each, matching the client's upload checks.
+update storage.buckets
+set file_size_limit = 10485760,
+    allowed_mime_types = array['image/*']
+where id = 'media';

@@ -64,6 +64,18 @@ export const PRESET_MEDIA = {
   productImage: "https://picsum.photos/seed/eon-product/1000/1000",
 };
 
+// Mapbox for any prototype that needs a real map. The setup prompt hands these
+// to the AI verbatim, so generated HTML hardcodes them and works in the hub, in
+// a local file, and in an AI preview alike. The token is a public (pk.) browser
+// token from the veeon account. It comes from the VITE_MAPBOX_TOKEN build
+// variable (local .env, and a GitHub Actions variable for Pages) only because
+// GitHub push protection rejects it in source. Without it, prompts skip maps.
+export const MAPBOX = {
+  accessToken: import.meta.env.VITE_MAPBOX_TOKEN || "",
+  style: "mapbox://styles/mapbox/standard",
+  glVersion: "3.27.0",
+};
+
 const DATA_IMAGE_URL = /^data:image\/(?:avif|gif|jpe?g|png|svg\+xml|webp)(?:;charset=[a-z0-9_-]+)?(?:;base64)?,/i;
 
 // Assets are team-editable and some logo helpers return HTML strings. Keep URL

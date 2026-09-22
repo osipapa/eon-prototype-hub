@@ -68,6 +68,8 @@ Fill from Supabase → Settings → API:
 - `VITE_SUPABASE_ANON_KEY` (the anon PUBLIC key — never the service_role key)
 - `VITE_BASE` = `/<your-repo-name>/` (e.g. `/eon-prototype-hub/`). Use `/` only for a
   `username.github.io` user site.
+- `VITE_MAPBOX_TOKEN` (optional): the Mapbox public `pk.` token the setup prompt gives
+  map prototypes. Never put it in source: GitHub push protection rejects the push.
 
 Optional: enable Google as an auth provider in Supabase → Authentication → Providers,
 and add your GitHub Pages URL to Authentication → URL Configuration → Redirect URLs
@@ -92,7 +94,8 @@ Sign up with your email (magic link). You become the admin. Verify:
 1. Push to a GitHub repo named to match `VITE_BASE`.
 2. Repo → Settings → Pages → Source: **GitHub Actions**.
 3. Repo → Settings → Secrets and variables → Actions:
-   - **Variables**: `VITE_BASE` (e.g. `/eon-prototype-hub/`), `VITE_SUPABASE_URL`.
+   - **Variables**: `VITE_BASE` (e.g. `/eon-prototype-hub/`), `VITE_SUPABASE_URL`,
+     `VITE_MAPBOX_TOKEN`.
    - **Secrets**: `VITE_SUPABASE_ANON_KEY`.
 4. Push to `main`. The workflow in `.github/workflows/deploy.yml` builds and deploys.
 5. Add the resulting Pages URL to Supabase Auth Redirect URLs so login returns to it.

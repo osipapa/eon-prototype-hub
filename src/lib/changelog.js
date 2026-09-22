@@ -16,6 +16,38 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-09-22",
+    title: "Upload images, a calmer Media page, and maps",
+    image: "changelog/2026-09-22-media.png",
+    imageAlt: "The Media page: your library first, then the built-in logos and presets. Each image shows its token and a menu, with Upload image and Paste link at the top.",
+    groups: [
+      {
+        label: "New",
+        items: [
+          "Upload images straight into Media, no CDN link needed. Use Upload image or drop a file anywhere on the page. It takes its name from the file (you can change it) and works as a {{token}} like any other image. PNG, JPG, GIF, WebP, SVG, and AVIF up to 10 MB.",
+          "Replace any image by dropping a file on it, or from its menu: Upload image, Paste link, Copy image link, and Delete or Reset to default.",
+          "Prototypes can use real maps. The setup prompt now carries the team's Mapbox token and style, and tells the AI to follow the hub theme (day and night), run the map full-bleed under the safe areas, keep the attribution, and fall back cleanly when the map can't load. Its snippet starts Mapbox's workers the one way that works inside the hub's sandboxed frame.",
+          "Move a prototype to another group from its menu, or start a new group there. Admins can move any prototype; members can move the ones they created.",
+        ],
+      },
+      {
+        label: "Design",
+        items: [
+          "Media is calmer: your library comes first, then the built-in logos and presets. Each image shows its token (click to copy) and keeps everything else in a menu, so there is no link field or badge on every card.",
+          "An image that can't load says so instead of showing a broken icon, and an empty library asks for a first upload.",
+        ],
+      },
+      {
+        label: "Under the hood",
+        items: [
+          "Uploads live under library/ in the media bucket, which now accepts images only, 10 MB each. Deleting or replacing an uploaded image removes its file too, unless another token still uses it. Comment screenshots are never removed.",
+          "The Mapbox token comes from the VITE_MAPBOX_TOKEN build variable instead of the source, because GitHub push protection rejects it there. A build without it leaves maps out of the setup prompt.",
+          "The dev preview opens straight to Media with ?workspace-preview&media, and moving a prototype between groups works there.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-09-04",
     title: "Tracking moves into Eon Design",
     image: "changelog/2026-09-04-tracking.png",
