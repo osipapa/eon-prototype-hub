@@ -415,7 +415,15 @@ button.eon-save-state { cursor: pointer; }
 .eon-controls-sheet-body .eon-tool-group > span { display: block; font-size: 10px; }
 .eon-controls-sheet-body .eon-segmented { display: grid !important; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .eon-controls-sheet-body .eon-segmented > button { min-height: 44px !important; overflow-wrap: anywhere; }
-.eon-controls-sheet-body .eon-segmented > button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* liquid-gooey puts its own svg and span ahead of the buttons, so count
+   buttons only, or the wrong option spans the row and leaves a hole. */
+.eon-controls-sheet-body .eon-segmented > button:last-of-type:nth-of-type(odd) { grid-column: 1 / -1; }
+/* Two columns wrap onto more rows, where a 999px pill turns into a blob. Keep
+   the one-row pill's corner instead: 44px row / 2 + 3px padding. */
+.eon-controls-sheet-body .eon-liquid-segment-shell { border-radius: 25px; }
+/* Moving between rows stretches the liquid along a diagonal, which pokes out
+   of the shell. Clip only the liquid layer, so focus rings stay whole. */
+.eon-controls-sheet-body .eon-segmented > svg[data-gooey-svg] { clip-path: inset(0 round 25px); }
 .eon-controls-sheet-body .eon-swatches { min-height: 44px; }
 @starting-style {
   .eon-controls-sheet { opacity: 0; transform: translateY(18px); }

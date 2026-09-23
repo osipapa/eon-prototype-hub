@@ -16,6 +16,22 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-09-23",
+    title: "Phone controls get their shape back",
+    image: "changelog/2026-09-23-mobile-controls.png",
+    imageAlt: "The Controls sheet on a phone: two options sit in a full-width pill, longer lists in a two-column grid inside a rounded box, with the selection filling its cell.",
+    groups: [
+      {
+        label: "Fixes",
+        items: [
+          "On phones, the pickers in the Controls sheet no longer squeeze into circles. Two options fill the width as a pill. More options wrap into two columns inside a rounded box, and an odd one out takes the whole last row.",
+          "Every option gets its own cell again. The sheet had been counting the selection highlight as an option, which pushed the wrong one onto its own row and left a gap.",
+          "Moving the selection between rows stays inside the box instead of spilling over its edge.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-09-22",
     title: "Upload images, a calmer Media page, and maps",
     image: "changelog/2026-09-22-media.png",

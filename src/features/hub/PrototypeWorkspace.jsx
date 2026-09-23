@@ -1430,15 +1430,18 @@ function CanvasControlBar({
   const stateContent = (labelled) => (
     <>
       {stateControls.map((control) => {
-        const control_ = (
-          <PeekSegmented key={control.key} value={args[control.key]} optionsKey={control.options.join("\u0000")}
-            surface={c.raised} enabled={!compact} onOpenChange={setStateExpanded}>
-            {segmented(control.options, args[control.key], (value) => setArg(control.key, value), false, control.label)}
-          </PeekSegmented>
-        );
+        const control_ = segmented(control.options, args[control.key], (value) => setArg(control.key, value), false, control.label);
+        // The sheet lays every option out at full width, so only the floating
+        // bar needs the peek window. Its max-content track would shrink the
+        // sheet's grid to the width of its labels.
         return labelled
           ? <ToolGroup key={control.key} label={control.label} c={c}>{control_}</ToolGroup>
-          : control_;
+          : (
+            <PeekSegmented key={control.key} value={args[control.key]} optionsKey={control.options.join("\u0000")}
+              surface={c.raised} onOpenChange={setStateExpanded}>
+              {control_}
+            </PeekSegmented>
+          );
       })}
       {layout === "grid" && (labelled
         ? <ToolGroup key="grid" label="Lay out by" c={c}>{segmented(gridOptions, effGridBy, setGridBy)}</ToolGroup>
