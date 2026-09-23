@@ -472,7 +472,17 @@ export default function DesignGuide({
               <aside className="eon-design-toc" aria-label="On this page">
                 <div style={{ borderColor: c.border }}>
                   <strong>On this page</strong>
-                  {page.sections.map((section) => <a key={section.id} href={`#${section.id}`} style={{ color: c.muted }}>{section.title}</a>)}
+                  {/* HashRouter reads a bare #id as a route and redirects home, so scroll instead. */}
+                  {page.sections.map((section) => (
+                    <a key={section.id} href={`#${section.id}`} style={{ color: c.muted }}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+                        document.getElementById(section.id)?.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+                      }}>
+                      {section.title}
+                    </a>
+                  ))}
                 </div>
               </aside>
             )}

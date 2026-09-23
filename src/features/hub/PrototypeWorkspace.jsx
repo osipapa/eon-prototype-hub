@@ -43,6 +43,10 @@ import { copyText, useStoredState } from "@/lib/uiState";
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
 
+// Mouse or trackpad. Touch screens get tap wording, and Return starts a new
+// line there because a phone keyboard has no Shift+Return.
+const hasFinePointer = () => window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? true;
+
 function linearIdentifier(project) {
   return project?.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || project?.issue_id || null;
 }
@@ -94,7 +98,9 @@ export default function PrototypeWorkspace({
   const hubTheme = useSystemTheme();
   const [protoTheme, setProtoTheme] = useStoredState("eon-prototype-theme", "dark");
   const [view, setView] = useState(initialView);
-  const [viewport, setViewport] = useStoredState("eon-viewport", "laptop");
+  // A first visit from a phone starts on the phone frame: a laptop frame
+  // shrunk to fit a phone is too small to read.
+  const [viewport, setViewport] = useStoredState("eon-viewport", window.matchMedia("(max-width: 680px)").matches ? "mobile" : "laptop");
   const [layout, setLayout] = useStoredState("eon-layout", "single");
   const [gridBy, setGridBy] = useState("states");
   const [query, setQuery] = useState("");
@@ -730,7 +736,7 @@ export default function PrototypeWorkspace({
   const openFull = () => {
     // Focus mode reveals the panels on edge hover. Without a hovering pointer
     // that is a trap, so touch devices open the prototype as its own page.
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    if (!hasFinePointer()) {
       const wrapper = sandboxedFullView(html, story.title);
       const url = URL.createObjectURL(new Blob([wrapper], { type: "text/html" }));
       window.open(url, "_blank", "noopener,noreferrer");
@@ -965,7 +971,7 @@ export default function PrototypeWorkspace({
               {breakpoints.compactControls && layout === "single" && (
                 <div className="eon-zoom eon-zoom-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
                   <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out" style={{ color: c.muted }}><Minus size={15} /></button>
-                  <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" style={{ color: c.text }}>{Math.round(scale * zoom * 100)}%</button>
+                  <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" aria-label={`Zoom ${Math.round(scale * zoom * 100)}%. Fit prototype to canvas`} style={{ color: c.text }}>{Math.round(scale * zoom * 100)}%</button>
                   <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in" style={{ color: c.muted }}><Plus size={15} /></button>
                 </div>
               )}
@@ -1237,7 +1243,7 @@ function WorkspaceSidebar({
                         <MoreHorizontal size={16} />
                       </button>
                       {storyMenuId === item.id && menuRect && (
-                        <FloatingMenu c={c} anchor={menuRect} storyId={item.id}
+                        <FloatingMenu c={c} anchor={menuRect} storyId={item.id} triggerRef={menuTriggerRef} onClose={() => setStoryMenuId(null)}
                           itemCount={menuPanel === "actions" ? (isAdmin ? 5 : 2) : Math.min(allGroups.length, 6) + 2}>
                           {menuPanel === "actions" ? <>
                             {isAdmin && <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>}
@@ -1355,7 +1361,7 @@ function WorkspaceToolbar({
           )}
         </div>
         {view === "stories" && <PresenceAvatars c={c} viewers={coViewers} />}
-        <div style={{ flex: 1 }} />
+        <div className="eon-toolbar-spacer" style={{ flex: 1 }} />
         {view === "stories" && (
           <>
             <SaveIndicator c={c} state={saveState} onRetry={onRetrySave} />
@@ -1568,7 +1574,7 @@ function CanvasViewControls({
         {layout === "single" && (
           <>
             <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out" style={{ color: c.muted }}><Minus size={15} /></button>
-            <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" style={{ color: c.text }}>{Math.round(scale * zoom * 100)}%</button>
+            <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" aria-label={`Zoom ${Math.round(scale * zoom * 100)}%. Fit prototype to canvas`} style={{ color: c.text }}>{Math.round(scale * zoom * 100)}%</button>
             <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in" style={{ color: c.muted }}><Plus size={15} /></button>
             <span className="eon-viewctl-divider" style={{ background: c.border }} aria-hidden="true" />
           </>
@@ -1814,7 +1820,34 @@ function DeviceShell({ frame, scale }) {
 /* ---- A row menu inside a scrolling, transformed panel cannot escape its
    clipping with z-index alone, so it renders in a portal, fixed to where the
    trigger was, and flips above the trigger when the bottom is close. ---- */
-function FloatingMenu({ c, anchor, storyId, itemCount, children }) {
+function FloatingMenu({ c, anchor, storyId, itemCount, triggerRef, onClose, children }) {
+  const menuRef = useRef(null);
+  // The menu lives at the end of <body>, far from its button in tab order, so
+  // it takes focus itself: the first item on open and after a panel switch,
+  // arrows to move, Escape or Tab to close back onto the button.
+  useEffect(() => {
+    const menu = menuRef.current;
+    if (menu && !menu.contains(document.activeElement)) {
+      menu.querySelector('[role^="menuitem"]:not(:disabled)')?.focus({ preventScroll: true });
+    }
+  });
+  const onKeyDown = (event) => {
+    if (event.key === "Escape" || event.key === "Tab") {
+      // Only the menu closes; the drawer around it stays open.
+      event.preventDefault();
+      event.stopPropagation();
+      onClose();
+      triggerRef.current?.focus();
+      return;
+    }
+    if (event.target.tagName === "INPUT") return;
+    const items = [...menuRef.current.querySelectorAll('[role^="menuitem"]:not(:disabled)')];
+    const index = items.indexOf(document.activeElement);
+    const next = { ArrowDown: (index + 1) % items.length, ArrowUp: (index - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[event.key];
+    if (next === undefined || !items.length) return;
+    event.preventDefault();
+    items[next].focus();
+  };
   const WIDTH = 172;
   const height = 10 + itemCount * 40;
   const margin = 8;
@@ -1829,9 +1862,11 @@ function FloatingMenu({ c, anchor, storyId, itemCount, children }) {
 
   return createPortal(
     <div
+      ref={menuRef}
       className="eon-story-menu is-floating"
       role="menu"
       data-story-menu={storyId}
+      onKeyDown={onKeyDown}
       style={{
         top: Math.max(margin, top),
         left,
@@ -1874,7 +1909,7 @@ function SourceSheet({ c, story, onClose, children }) {
 function ContextRow({ c, rowKey, icon: Icon, label, value, valueText, valueTone, live, open, onToggle, actions, children }) {
   const bodyId = `eon-context-${rowKey}`;
   return (
-    <div className="eon-context-row">
+    <div className="eon-context-row" data-tutorial={`context-${rowKey}`}>
       <div className="eon-context-row-head">
         <button className="eon-buttonish eon-context-row-main" onClick={onToggle} aria-expanded={open} aria-controls={bodyId} aria-label={`${label}: ${valueText ?? value}`}>
           <Icon size={14} style={{ color: c.muted }} aria-hidden="true" />
@@ -2067,10 +2102,11 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
   };
 
   const canSend = Boolean(draft.trim() || attachment) && !sending;
+  const finePointer = hasFinePointer();
   const status = sending
     ? (attachment ? "Uploading image…" : "Sending comment…")
-    : anchors.anchorMode ? "Click the prototype to place the pin · Esc to cancel"
-    : "Enter to send · paste or drop an image";
+    : anchors.anchorMode ? (finePointer ? "Click the prototype to place the pin · Esc to cancel" : "Tap the prototype to place the pin")
+    : finePointer ? "Enter to send · paste or drop an image" : "";
 
   return (
     <div className="eon-comments">
@@ -2129,7 +2165,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
           </div>
         )}
         <Textarea value={draft} maxLength={4000} onChange={(event) => setDraft(event.target.value)} onPaste={onPaste}
-          onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }}
+          onKeyDown={(event) => { if (finePointer && event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }}
           placeholder={anchors.pendingAnchor ? "Describe what the pin points at…" : "Write a comment…"} aria-label="Write a comment"
           style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.raised, borderColor: error ? "#D98295" : dragging ? c.brand : c.border, color: c.text, borderRadius: 20, fontSize: 14, lineHeight: 1.5 }} />
         <div className="eon-composer-meta">
@@ -2331,12 +2367,13 @@ function PinComposer({ c, x, y, frameWidth, onSubmit, onCancel }) {
   // Flip to the left of the pin when the panel would spill past the frame.
   const width = 232;
   const flip = x + 16 + width > frameWidth;
+  const finePointer = hasFinePointer();
   return (
     <div className="eon-pin-composer" style={{ left: flip ? x - 16 - width : x + 16, top: y, width, background: c.panel, borderColor: c.border }}>
       <Textarea ref={inputRef} value={draft} maxLength={4000} rows={2}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+          if (finePointer && event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault();
             if (draft.trim()) onSubmit(draft.trim());
           }
@@ -2344,7 +2381,7 @@ function PinComposer({ c, x, y, frameWidth, onSubmit, onCancel }) {
         placeholder="Comment…" aria-label="Write a pinned comment"
         style={{ minHeight: 54, maxHeight: 120, resize: "none", background: c.raised, borderColor: c.border, color: c.text, borderRadius: 18, fontSize: 13, lineHeight: 1.45 }} />
       <div className="eon-pin-composer-meta">
-        <span style={{ color: c.muted }}>Enter to send</span>
+        <span style={{ color: c.muted }}>{finePointer ? "Enter to send" : ""}</span>
         <button type="button" className="eon-buttonish eon-pin-composer-send" onClick={() => draft.trim() && onSubmit(draft.trim())}
           disabled={!draft.trim()} aria-label="Send pinned comment"
           style={{ background: c.primary, color: c.primaryText, opacity: draft.trim() ? 1 : 0.5 }}>
@@ -2643,14 +2680,18 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   const dialogRef = useRef(null);
   const fileInputRef = useRef(null);
   const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
   busyRef.current = busy;
+  closeRef.current = onClose;
 
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
+  // Runs once: onClose is a new function on every parent render, and
+  // re-running this would hand focus back to the opener mid-typing.
   useEffect(() => {
     const returnFocusTo = restoreFocus || document.activeElement;
     const onKey = (event) => {
-      if (event.key === "Escape" && !busyRef.current) onClose();
+      if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
       if (event.key !== "Tab") return;
       const focusable = dialogRef.current?.querySelectorAll('button:not(:disabled), input:not(:disabled):not([tabindex="-1"]), textarea:not(:disabled), [tabindex="0"]');
       if (!focusable?.length) return;
@@ -2664,7 +2705,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
       window.removeEventListener("keydown", onKey);
       returnFocusTo?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
   const readFile = (file) => {
     if (!file) return;

@@ -17,16 +17,39 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-09-23",
-    title: "Phone controls get their shape back",
-    image: "changelog/2026-09-23-mobile-controls.png",
-    imageAlt: "The Controls sheet on a phone: two options sit in a full-width pill, longer lists in a two-column grid inside a rounded box, with the selection filling its cell.",
+    title: "Phones, keyboards, and a walkthrough you can finish",
+    image: "changelog/2026-09-23-phones.png",
+    imageAlt: "Three phone screens: the workspace with the full title, a status dot, and the phone frame; comments with Resolve and reactions showing; the walkthrough pointing at the Linear row.",
     groups: [
+      {
+        label: "Design",
+        items: [
+          "On phones the header keeps the prototype's name. The Linear status becomes a dot, like the sidebar rows, and Full view is a round button like the ones beside it.",
+          "On laptops with both panels open, the toolbar no longer breaks \"Linear not connected\" and \"Full view\" onto two lines. Full view drops its label first, then the Linear badge becomes a dot.",
+        ],
+      },
+      {
+        label: "Behavior",
+        items: [
+          "Opening the hub on a phone for the first time starts on the phone frame, not a laptop frame shrunk to a quarter of its size.",
+          "On touch screens, Return in a comment starts a new line, and the hints talk about tapping instead of keys and dragging. Comment pins also get a bigger tap area.",
+          "On phones, toasts sit above the Controls button and zoom instead of covering them.",
+          "The actions menu on each prototype works from the keyboard: focus moves into it, the arrow keys move through it, and Escape goes back to the button.",
+        ],
+      },
       {
         label: "Fixes",
         items: [
+          "The walkthrough can be finished again. Its Linear and share steps pointed at controls a redesign removed, so their cards stayed invisible and new teammates got the tour again on every visit. The Linear steps now point at the Linear row, the share steps are gone, and a step that can't find its target shows its card in the middle of the screen.",
+          "Typing in New prototype, the prompt editor, and the category and delete dialogs no longer loses focus when something else on the page updates, like a teammate's edit or a phone keyboard opening.",
+          "On phones and tablets, Resolve and Add reaction show on every comment. They used to wait for a hover that never happens on touch.",
+          "Text fields no longer make iPhone Safari zoom into the page when you tap them.",
+          "\"On this page\" links in Eon Design scroll to their section instead of sending you back to Prototypes.",
+          "On phones, the prompt editor, category manager, What's new, and admin dialogs fit the visible screen and scroll inside, so their buttons don't end up under the browser bar.",
           "On phones, the pickers in the Controls sheet no longer squeeze into circles. Two options fill the width as a pill. More options wrap into two columns inside a rounded box, and an odd one out takes the whole last row.",
-          "Every option gets its own cell again. The sheet had been counting the selection highlight as an option, which pushed the wrong one onto its own row and left a gap.",
+          "Every option in the Controls sheet gets its own cell again. The sheet had been counting the selection highlight as an option, which pushed the wrong one onto its own row and left a gap.",
           "Moving the selection between rows stays inside the box instead of spilling over its edge.",
+          "Screen readers hear the save status on phones and the zoom level on the zoom button.",
         ],
       },
     ],

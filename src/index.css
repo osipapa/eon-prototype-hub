@@ -326,12 +326,29 @@ svg.eon-accent-icon,
 .eon-sidebar-mode-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; }
 
 .eon-workspace-main { display: flex; min-width: 0; flex: 1; flex-direction: column; overflow: hidden; }
-.eon-toolbar { position: relative; z-index: 20; flex: 0 0 auto; border-bottom: 1px solid; box-shadow: 0 8px 24px rgba(0, 0, 0, .04); }
+.eon-toolbar { position: relative; z-index: 20; flex: 0 0 auto; border-bottom: 1px solid; box-shadow: 0 8px 24px rgba(0, 0, 0, .04); container: eon-toolbar / inline-size; }
 .eon-toolbar-primary { display: flex; min-height: 60px; align-items: center; gap: 9px; padding: 9px 14px; }
 .eon-toolbar-title { display: flex; min-width: 0; align-items: center; gap: 8px; }
-.eon-toolbar-title > span { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.eon-toolbar-title > span { min-width: 64px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .eon-toolbar-views { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; }
 .eon-status-button { display: inline-flex; min-height: 36px; align-items: center; gap: 3px; padding: 0 5px 0 0; border: 0; border-radius: 9px; background: transparent; cursor: pointer; }
+.eon-story-status { white-space: nowrap; }
+/* Docked panels (or the drawer toggles on tablets) leave the toolbar short
+   of room between ~520 and 900px. Step down before anything wraps: Full view
+   drops its label, then the Linear badge turns into a dot so the title stays
+   readable. Phones have their own rules further down. */
+.eon-full-button { white-space: nowrap; }
+@media (min-width: 761px) {
+  @container eon-toolbar (max-width: 800px) {
+    .eon-full-button span { display: none; }
+    .eon-full-button { width: 40px; flex: 0 0 40px; padding: 0 !important; justify-content: center; }
+  }
+  @container eon-toolbar (max-width: 700px) {
+    .eon-status-button { min-width: 24px; justify-content: flex-start; padding: 0 0 0 4px; }
+    .eon-story-status { width: 8px; height: 8px; min-height: 0 !important; padding: 0 !important; overflow: hidden; font-size: 0; background: currentColor !important; }
+    .eon-story-status > svg { display: none; }
+  }
+}
 .eon-save-state { display: inline-flex; min-height: 32px; align-items: center; gap: 5px; padding: 0 9px; border: 0; border-radius: 9px; font-size: 11px; white-space: nowrap; }
 button.eon-save-state { cursor: pointer; }
 .eon-save-state.is-compact { min-height: 28px; padding: 0 7px; }
@@ -586,7 +603,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-comment-body p { margin: 4px 0 0; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .eon-changelog-button { position: relative; }
 .eon-changelog-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 999px; }
-.eon-modal.eon-changelog-dialog { width: min(760px, 100%); max-height: min(820px, calc(100vh - 40px)); overflow: hidden; }
+.eon-modal.eon-changelog-dialog { width: min(760px, 100%); max-height: min(820px, calc(100vh - 40px)); max-height: min(820px, calc(100dvh - 40px)); overflow: hidden; }
 .eon-changelog-dialog .eon-modal-head { min-height: 72px; padding: 12px 16px 12px 20px; }
 .eon-changelog-mark { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: 12px; }
 .eon-changelog-heading { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
@@ -644,7 +661,11 @@ button.eon-save-state { cursor: pointer; }
 .eon-comment-filter-tab span { margin-left: 3px; font-weight: 400; font-variant-numeric: tabular-nums; }
 .eon-pin-dot { display: grid; width: 18px; height: 18px; flex: 0 0 auto; place-items: center; padding: 0; border: 0; border-radius: 999px; font-size: 10px; font-weight: 700; cursor: pointer; }
 .eon-resolve-button { display: grid; width: 22px; height: 22px; margin-left: auto; place-items: center; padding: 0; border: 0; background: none; border-radius: 6px; cursor: pointer; }
-.eon-comment:not(:hover) .eon-resolve-button:not([aria-label="Reopen comment"]):not(:focus-visible) { opacity: 0; }
+/* Resolve waits for hover only where there is hover. On a touch screen it
+   would never appear. */
+@media (hover: hover) and (pointer: fine) {
+  .eon-comment:not(:hover) .eon-resolve-button:not([aria-label="Reopen comment"]):not(:focus-visible) { opacity: 0; }
+}
 .eon-resolved-label { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; }
 .eon-anchor-context { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 4px 9px; border: 1px solid; border-radius: 999px; font-size: 11px; cursor: pointer; }
 .eon-composer-pin { display: flex; align-items: center; gap: 7px; width: fit-content; max-width: 100%; margin-bottom: 8px; padding: 5px 6px 5px 5px; border: 1px solid; border-radius: 999px; font-size: 12px; }
@@ -679,7 +700,9 @@ button.eon-save-state { cursor: pointer; }
 .eon-reaction-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid; border-radius: 999px; font-size: 12px; cursor: pointer; }
 .eon-reaction-chip span { font-size: 11px; font-variant-numeric: tabular-nums; }
 .eon-reaction-add { display: grid; width: 24px; height: 22px; place-items: center; padding: 0; border: 1px solid; border-radius: 999px; cursor: pointer; }
-.eon-comment:not(:hover) .eon-reaction-add:not([aria-expanded="true"]):not(:focus-visible) { opacity: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .eon-comment:not(:hover) .eon-reaction-add:not([aria-expanded="true"]):not(:focus-visible) { opacity: 0; }
+}
 .eon-reaction-picker { position: absolute; bottom: calc(100% + 5px); left: 0; z-index: 6; display: flex; gap: 2px; padding: 4px; border: 1px solid; border-radius: 10px; }
 .eon-reaction-picker button { padding: 3px 5px; border: 0; background: none; border-radius: 7px; font-size: 15px; cursor: pointer; }
 .eon-reaction-picker button:hover { background: rgba(128,128,128,.18); }
@@ -740,20 +763,24 @@ button.eon-save-state { cursor: pointer; }
 @media (max-width: 680px) {
   .eon-toolbar-primary { gap: 6px; padding-inline: 8px; }
   .eon-toolbar-title { min-width: 0; }
-  .eon-toolbar-title > span { max-width: 120px; }
   .eon-full-button span { display: none; }
-  .eon-full-button { width: 40px; padding: 0 !important; justify-content: center; }
+  /* Icon-only, it matches the round menu and comments buttons beside it. */
+  .eon-full-button { width: 40px; flex: 0 0 40px; padding: 0 !important; justify-content: center; border: 0; border-radius: 999px; background: transparent !important; box-shadow: var(--shadow-surface); }
   .eon-toolbar-views { gap: 4px; }
   .eon-context-row-main { padding-left: 12px; }
   .eon-context-row-body { padding-left: 37px; }
   .eon-canvas-stage { padding: 20px 20px 92px; }
-  .eon-save-state:not(.is-compact) span { display: none; }
-  .eon-save-state:not(.is-compact) { width: 32px; min-height: 32px; justify-content: center; padding: 0; }
+  /* Icon only on screen; the words stay for screen readers. */
+  .eon-save-state:not(.is-compact) span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+  .eon-save-state:not(.is-compact) { position: relative; width: 32px; min-height: 32px; justify-content: center; padding: 0; }
 }
 
 @media (max-width: 480px) {
-  .eon-story-status { display: none; }
-  .eon-toolbar-title > span { max-width: 84px; }
+  /* No room for the Linear label. The status stays as a dot, like the
+     sidebar rows, still one tap from the issue. */
+  .eon-status-button { min-width: 24px; justify-content: flex-start; padding: 0 0 0 4px; }
+  .eon-story-status { width: 8px; height: 8px; min-height: 0 !important; padding: 0 !important; overflow: hidden; font-size: 0; background: currentColor !important; }
+  .eon-story-status > svg { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -780,6 +807,15 @@ button.eon-save-state { cursor: pointer; }
 }
 @media (hover: none) {
   .eon-group-edit { opacity: 1; }
+}
+@media (pointer: coarse) {
+  /* iOS Safari zooms the page into any field under 16px and stays zoomed.
+     !important beats the inline sizes some fields set. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]),
+  textarea, select { font-size: 16px !important; }
+  /* Pins are small marks; give fingers a bigger target than the mark. */
+  .eon-pin-dot { position: relative; }
+  .eon-canvas-pin::after, .eon-pin-dot::after { content: ""; position: absolute; inset: -10px; }
 }
 
 /* Design Hub: API-documentation-style Prompt Library. */
@@ -930,7 +966,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-empty p { max-width: 360px; margin: 0; font-size: 13px; line-height: 1.55; text-wrap: pretty; }
 .eon-prompt-empty-create { display: inline-flex; min-height: 42px; align-items: center; gap: 7px; margin-top: 8px; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; font-size: 11px; font-weight: 650; }
 
-.eon-modal.eon-prompt-editor { width: min(680px, calc(100vw - 40px)); max-height: calc(100vh - 40px); min-height: 0; }
+.eon-modal.eon-prompt-editor { width: min(680px, calc(100vw - 40px)); max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); min-height: 0; }
 .eon-prompt-editor-heading { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
 .eon-prompt-editor-heading > span { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border-radius: 10px; }
 .eon-prompt-editor-heading strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -987,7 +1023,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-editor-save:disabled, .eon-prompt-delete-confirm:disabled, .eon-prompt-editor-cancel:disabled { cursor: not-allowed; opacity: .55; }
 .eon-prompt-delete-confirm { background: #D98295; color: #210C12; }
 
-.eon-modal.eon-category-manager { width: min(580px, calc(100vw - 40px)); max-height: min(720px, calc(100vh - 40px)); min-height: 0; }
+.eon-modal.eon-category-manager { width: min(580px, calc(100vw - 40px)); max-height: min(720px, calc(100vh - 40px)); max-height: min(720px, calc(100dvh - 40px)); min-height: 0; }
 .eon-category-manager-body { gap: 14px; }
 .eon-category-create { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
 .eon-category-add {
@@ -1067,7 +1103,13 @@ button.eon-save-state { cursor: pointer; }
      view switches take a line of their own rather than squeezing the title. */
   .eon-toolbar-primary { flex-wrap: wrap; row-gap: 6px; padding-bottom: 8px; }
   .eon-toolbar-views { order: 9; flex-basis: 100%; justify-content: center; }
-  .eon-toolbar-title > span { min-width: 72px; }
+  /* The view switches have their own row here, so the title takes the rest
+     of the first row and only truncates when it runs out. It fills the row
+     rather than sizing to its text: a wrapping row would push the buttons
+     onto a new line before letting the title shrink. */
+  .eon-toolbar-spacer { display: none; }
+  .eon-toolbar-title { flex: 1 1 0; }
+  .eon-toolbar-title > span { min-width: 72px; max-width: none; }
 }
 /* Keep the centered control bar clear of the floating zoom on wide canvases. */
 @media (min-width: 761px) {
@@ -1143,6 +1185,10 @@ button.eon-save-state { cursor: pointer; }
 .eon-toast-body span { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eon-toast .eon-icon-button { flex-shrink: 0; }
 @keyframes eon-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 680px) {
+  /* Toasts sit above the Controls button and zoom instead of covering them. */
+  .eon-toast-host { right: 14px; bottom: 72px; left: 14px; max-width: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .eon-modal { transition-duration: 0ms; transform: none; }

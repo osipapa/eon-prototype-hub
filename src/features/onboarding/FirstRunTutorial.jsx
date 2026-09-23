@@ -38,6 +38,9 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
   const steps = useMemo(() => createTutorialSteps(firstName, persona), [firstName, persona]);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
+  // A step whose target never shows up (a layout without it, or a UI change)
+  // still shows its card, centred, instead of leaving an invisible step.
+  const [targetMissing, setTargetMissing] = useState(false);
   const [coachSize, setCoachSize] = useState({ width: 330, height: 210 });
   const [closing, setClosing] = useState(false);
   const coachRef = useRef(null);
@@ -122,6 +125,8 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
     let followTimer;
     let tabRetryTimer;
     let reviewTabHandled = !step.tab;
+    setTargetMissing(false);
+    const missingTimer = window.setTimeout(() => { if (!targetRef.current) setTargetMissing(true); }, 900);
     window.dispatchEvent(new CustomEvent("eon:tutorial:reveal", {
       detail: { panel: step.reveal || null, tab: step.tab || null },
     }));
@@ -155,6 +160,9 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
     const onGeometryChange = () => refreshTarget();
     window.addEventListener("resize", onGeometryChange);
     window.addEventListener("scroll", onGeometryChange, true);
+    // Drawers slide in with a transform, which no observer reports: measure
+    // again once they land.
+    document.addEventListener("transitionend", onGeometryChange);
     document.addEventListener("click", afterInteraction);
 
     const mutationObserver = typeof MutationObserver !== "undefined"
@@ -172,8 +180,10 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
       if (followFrame) window.cancelAnimationFrame(followFrame);
       if (followTimer) window.clearTimeout(followTimer);
       if (tabRetryTimer) window.clearTimeout(tabRetryTimer);
+      window.clearTimeout(missingTimer);
       window.removeEventListener("resize", onGeometryChange);
       window.removeEventListener("scroll", onGeometryChange, true);
+      document.removeEventListener("transitionend", onGeometryChange);
       document.removeEventListener("click", afterInteraction);
       mutationObserver?.disconnect();
       targetObserver?.disconnect();
@@ -287,7 +297,7 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
   const hole = targetRect && scrimGeometry(targetRect);
 
   return (
-    <div className={`eon-coach-root${targetRect ? " is-ready" : ""}${closing ? " is-closing" : ""}`}>
+    <div className={`eon-coach-root${targetRect || targetMissing ? " is-ready" : ""}${closing ? " is-closing" : ""}`}>
       {hole && (
         <>
           <div className="eon-coach-scrim is-top" style={hole.top} />

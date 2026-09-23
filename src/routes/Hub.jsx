@@ -521,7 +521,7 @@ export default function Hub() {
   if (!projects) {
     if (loadError) {
       return (
-        <div role="alert" style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#000", color: "#fff", fontFamily: "'DM Sans',sans-serif", padding: 24 }}>
+        <div role="alert" style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "#000", color: "#fff", fontFamily: "'DM Sans',sans-serif", padding: 24 }}>
           <div style={{ maxWidth: 420, textAlign: "center" }}>
             <div style={{ fontSize: 16, fontWeight: 600 }}>Couldn't load the workspace</div>
             <p style={{ margin: "8px 0 18px", color: "#9094A5", fontSize: 13, lineHeight: 1.5 }}>{loadError}</p>

@@ -624,18 +624,24 @@ function PromptEditorModal({ c, prompt, categories, onClose, onSave }) {
   const [error, setError] = useState("");
   const variableKeys = useMemo(() => promptTokens(draft.prompt_body), [draft.prompt_body]);
 
+  // Runs once: onClose changes on every parent render, and re-running would
+  // bounce focus to the opener and back to the first field mid-typing.
+  const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
+  busyRef.current = busy;
+  closeRef.current = onClose;
   useEffect(() => {
     const previous = document.activeElement;
     firstFieldRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape" && !busy) onClose();
+      if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       window.removeEventListener("keydown", closeOnEscape);
       previous?.focus?.();
     };
-  }, [busy, onClose]);
+  }, []);
 
   const setField = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
   const variableFor = (key) => variableMap[key] || {
@@ -791,10 +797,14 @@ function PromptDeleteModal({ c, prompt, restoreFocus, onClose, onDelete }) {
   const [error, setError] = useState("");
   const dialogRef = useRef(null);
 
+  const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
+  busyRef.current = busy;
+  closeRef.current = onClose;
   useEffect(() => {
     const previous = restoreFocus || document.activeElement;
     const closeOnEscape = (event) => {
-      if (event.key === "Escape" && !busy) onClose();
+      if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
       if (event.key !== "Tab") return;
       const controls = [...(dialogRef.current?.querySelectorAll("button:not(:disabled)") || [])];
       if (!controls.length) return;
@@ -806,7 +816,7 @@ function PromptDeleteModal({ c, prompt, restoreFocus, onClose, onDelete }) {
       window.removeEventListener("keydown", closeOnEscape);
       previous?.focus?.();
     };
-  }, [busy, onClose, restoreFocus]);
+  }, []);
 
   const remove = async () => {
     setBusy(true);
@@ -861,18 +871,24 @@ function CategoryManagerModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // Runs once: onClose changes on every parent render, and re-running would
+  // bounce focus to the opener and back to the first field mid-typing.
+  const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
+  busyRef.current = busy;
+  closeRef.current = onClose;
   useEffect(() => {
     const previous = document.activeElement;
     firstFieldRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape" && !busy) onClose();
+      if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       window.removeEventListener("keydown", closeOnEscape);
       previous?.focus?.();
     };
-  }, [busy, onClose]);
+  }, []);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -1000,18 +1016,22 @@ function CategoryDeleteModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
+  busyRef.current = busy;
+  closeRef.current = onClose;
   useEffect(() => {
     const previous = document.activeElement;
     cancelRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape" && !busy) onClose();
+      if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       window.removeEventListener("keydown", closeOnEscape);
       previous?.focus?.();
     };
-  }, [busy, onClose]);
+  }, []);
 
   const remove = async () => {
     if (!fallbackCategoryName) return;

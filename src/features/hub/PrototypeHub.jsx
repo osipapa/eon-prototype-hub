@@ -878,11 +878,16 @@ function MediaTile({ c, item, busy, copied, onCopyToken, onCopyLink, onPickFile,
 
 function DeleteMediaDialog({ c, item, busy, error, onClose, onConfirm }) {
   const dialogRef = useRef(null);
+  const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
+  busyRef.current = busy;
+  closeRef.current = onClose;
 
+  // Runs once, so a busy flip or parent render can't hand focus back mid-dialog.
   useEffect(() => {
     const previousFocus = document.activeElement;
     const onKeyDown = (event) => {
-      if (event.key === "Escape" && !busy) onClose();
+      if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
       if (event.key !== "Tab") return;
       const controls = [...(dialogRef.current?.querySelectorAll("button:not(:disabled)") || [])];
       if (!controls.length) return;
@@ -894,7 +899,7 @@ function DeleteMediaDialog({ c, item, busy, error, onClose, onConfirm }) {
       window.removeEventListener("keydown", onKeyDown);
       previousFocus?.focus?.();
     };
-  }, [busy, onClose]);
+  }, []);
 
   return (
     <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
