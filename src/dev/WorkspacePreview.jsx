@@ -215,6 +215,12 @@ export default function WorkspacePreview() {
             author: { id: "preview-user", full_name: "Mate", email: "mate@example.com" },
           }]);
         }}
+        onEditComment={async (commentId, body) => {
+          setComments((items) => items.map((item) => item.id === commentId ? { ...item, body } : item));
+        }}
+        onDeleteComment={async (commentId) => {
+          setComments((items) => items.filter((item) => item.id !== commentId));
+        }}
         onResolveComment={async (commentId, resolved) => {
           setComments((items) => items.map((item) => item.id === commentId
             ? { ...item, resolved_at: resolved ? new Date().toISOString() : null, resolved_by: resolved ? "preview-user" : null }

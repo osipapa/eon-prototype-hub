@@ -12,6 +12,7 @@ import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
   setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
+  updateCommentBody, deleteComment,
   listPrototypeChecks, savePrototypeChecks, subscribePrototypeChecks,
 } from "../lib/data";
 import { joinTeamPresence } from "../lib/presence";
@@ -504,6 +505,20 @@ export default function Hub() {
     }
   }
 
+  async function onEditComment(commentId, body) {
+    const before = comments;
+    setComments((items) => items.map((item) => item.id === commentId ? { ...item, body } : item));
+    try { await updateCommentBody(commentId, body); }
+    catch (error) { setComments(before); throw error; }
+  }
+
+  async function onDeleteComment(commentId) {
+    const before = comments;
+    setComments((items) => items.filter((item) => item.id !== commentId));
+    try { await deleteComment(commentId); }
+    catch (error) { setComments(before); throw error; }
+  }
+
   async function onToggleReaction(commentId, emoji) {
     const comment = comments.find((item) => item.id === commentId);
     if (!comment || String(commentId).startsWith("pending-")) return;
@@ -606,6 +621,8 @@ export default function Hub() {
         onReorder={onReorder}
         onCreateComment={onCreateComment}
         onResolveComment={onResolveComment}
+        onEditComment={onEditComment}
+        onDeleteComment={onDeleteComment}
         onToggleReaction={onToggleReaction}
         onOpenDesign={() => navigate("/design")}
         onOpenPrompts={() => navigate("/prompts")}

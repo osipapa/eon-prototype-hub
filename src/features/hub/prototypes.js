@@ -323,7 +323,9 @@ export function parsePrototypeConfig(html) {
       ? cfg.controls.filter((c) => c && c.key && Array.isArray(c.options))
       : undefined;
     const defaults = cfg.defaults && typeof cfg.defaults === "object" ? cfg.defaults : undefined;
-    return { controls, defaults };
+    // The device the prototype is designed for; the hub opens it in that frame.
+    const viewport = VIEWPORTS[cfg.viewport] ? cfg.viewport : undefined;
+    return { controls, defaults, viewport };
   } catch { return {}; }
 }
 

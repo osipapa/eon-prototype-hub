@@ -9,12 +9,14 @@
      { eon:1, type:"eon-anchor-query", selectors } selectors to track
      { eon:1, type:"eon-anchor-reveal", selector, doc_x, doc_y, flash } show + scroll pin into view;
                                                    flash outlines the element for a moment (check findings)
+     { eon:1, type:"eon-shot", code, scale }         render the viewport to a PNG (code is html-to-image)
    prototype → hub
      { eon:1, type:"eon-anchor-ready" }            bridge is live (iframe mounted)
      { eon:1, type:"eon-anchor-click", selector, rel_x, rel_y, x_pct, y_pct, doc_x, doc_y }
      { eon:1, type:"eon-anchor-cancel" }           Esc pressed inside the iframe
      { eon:1, type:"eon-anchor-rects", rects, scroll } selector → {x,y,w,h} | {hidden} | null
      { eon:1, type:"eon-anchor-zoom", delta }      trackpad pinch over the prototype
+     { eon:1, type:"eon-shot-result", blob | error }
 
    Multi-screen prototypes (stepped flows toggling [hidden] or display:none)
    report anchors on inactive screens as {hidden:true}. The hub draws no pin
@@ -68,14 +70,14 @@ function forceShow(el){
 }
 function queueRects(){if(queued||!watched.length)return;queued=true;requestAnimationFrame(sendRects);}
 function highlight(el){
-  if(!hl){hl=document.createElement("div");hl.style.cssText="position:fixed;pointer-events:none;z-index:2147483646;border:1.5px solid #7C5CFF;border-radius:4px;background:rgba(124,92,255,.08);transition:all 60ms linear";document.documentElement.appendChild(hl);}
+  if(!hl){hl=document.createElement("div");hl.setAttribute("data-eon-overlay","");hl.style.cssText="position:fixed;pointer-events:none;z-index:2147483646;border:1.5px solid #7C5CFF;border-radius:4px;background:rgba(124,92,255,.08);transition:all 60ms linear";document.documentElement.appendChild(hl);}
   if(!el){hl.style.display="none";return;}
   var r=el.getBoundingClientRect();
   hl.style.display="block";hl.style.left=r.left+"px";hl.style.top=r.top+"px";hl.style.width=r.width+"px";hl.style.height=r.height+"px";
 }
 var fl=null,flTimer=0;
 function flash(el){
-  if(!fl){fl=document.createElement("div");fl.style.cssText="position:fixed;pointer-events:none;z-index:2147483647;border:2px solid #F5C451;border-radius:6px;box-shadow:0 0 0 4px rgba(245,196,81,.3);transition:opacity 400ms ease";document.documentElement.appendChild(fl);}
+  if(!fl){fl=document.createElement("div");fl.setAttribute("data-eon-overlay","");fl.style.cssText="position:fixed;pointer-events:none;z-index:2147483647;border:2px solid #F5C451;border-radius:6px;box-shadow:0 0 0 4px rgba(245,196,81,.3);transition:opacity 400ms ease";document.documentElement.appendChild(fl);}
   var r=el.getBoundingClientRect();
   fl.style.left=(r.left-3)+"px";fl.style.top=(r.top-3)+"px";fl.style.width=(r.width+6)+"px";fl.style.height=(r.height+6)+"px";
   fl.style.display="block";fl.style.opacity="1";
@@ -113,6 +115,15 @@ addEventListener("message",function(e){
     }
     else if(typeof m.doc_x==="number"&&typeof m.doc_y==="number")scrollTo(m.doc_x-innerWidth/2,m.doc_y-innerHeight/2);
     queueRects();
+  }
+  else if(m.type==="eon-shot"){
+    var fail=function(err){post({type:"eon-shot-result",error:String(err&&err.message||err)});};
+    try{
+      if(!window.htmlToImage)(new Function(m.code))();
+      window.htmlToImage.toBlob(document.documentElement,{width:innerWidth,height:innerHeight,pixelRatio:m.scale||2,
+        filter:function(n){return !(n.hasAttribute&&n.hasAttribute("data-eon-overlay"));}})
+        .then(function(blob){if(blob)post({type:"eon-shot-result",blob:blob});else fail("empty image");},fail);
+    }catch(err){fail(err);}
   }
 });
 function onWheel(e){

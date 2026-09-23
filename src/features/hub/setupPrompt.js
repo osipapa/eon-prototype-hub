@@ -182,8 +182,9 @@ ${JSON.stringify(context, null, 2)}${combinationWarning}
 - Preserve the effective control keys/options shown in the generated context when updating the active prototype.
 - For a new prototype, declare meaningful visual variants with strict JSON. Do not add comments or trailing commas:
     <script type="application/json" id="eon-config">
-    { "controls": [{ "key": "state", "label": "State", "options": ["default", "loading", "empty", "error"] }], "defaults": { "state": "default" } }
+    { "viewport": "mobile", "controls": [{ "key": "state", "label": "State", "options": ["default", "loading", "empty", "error"] }], "defaults": { "state": "default" } }
     </script>
+- Set "viewport" to the device the design is for: "mobile", "tablet", "laptop", or "desktop". The hub opens the prototype in that frame.
 - New keys must match ${CONTROL_KEY}, be unique, and use non-empty unique string options. Every default must reference an existing key and one of its options.
 - Stored project controls take precedence over eon-config controls. Stored defaults override matching eon-config defaults. The generated context already reflects that merge.
 - Every declared option must produce a meaningfully distinct, complete state. Handle missing or unknown arguments with a safe default.

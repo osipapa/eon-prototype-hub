@@ -10,64 +10,50 @@
    An entry may carry `image` (a path under public/, so it survives the Pages
    build) and `imageAlt`. Add one whenever the release is something you can see:
    a screenshot of the change says more than the bullet describing it. Leave it
-   off when the work has nothing to show. */
+   off when the work has nothing to show.
+
+   Keep it short: one line per change, what people can see or do, no
+   implementation detail. The caption (imageAlt) is one short sentence. */
 
 export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixes"];
 
 export const CHANGELOG = [
   {
     date: "2026-09-23",
-    title: "Open prototypes on your phone, and automatic checks",
+    title: "Your phone, automatic checks, and shortcuts",
     image: "changelog/2026-09-23-phone-and-checks.png",
-    imageAlt: "The workspace with the Open on your phone popover showing a QR code and Phone connected, the Checks row listing what sticks out at 360px, and the phone beside it showing the same prototype full screen.",
+    imageAlt: "The phone QR popover showing Phone connected, next to the Checks results.",
     groups: [
       {
         label: "New",
         items: [
-          "Open on your phone. The QR button next to Full view shows a code for the prototype you're on. Scan it and your phone shows the prototype full screen, then follows what you pick on your laptop: another prototype, a different state or theme, a new upload. The popover tells you when the phone is connected, and a phone that isn't signed in yet signs in once and lands on the prototype.",
-          "Checks. Every prototype is rendered 360px wide in each of its states, in light and dark, and checked for what breaks on phones: content sticking out past the edge, tap targets under 44px, low-contrast text, and text fields under 16px, which make iPhone zoom in. It also flags a missing empty, error, or loading state. Findings show in a new Checks row in the context panel and as a count on the prototype in the sidebar; pick one to jump to it on the prototype.",
-          "Checks run on their own when someone opens a prototype on a desktop, and the whole team sees the results. They run again when the HTML or the states change.",
-        ],
-      },
-      {
-        label: "Design",
-        items: [
-          "Linear tickets show as a chip in the sidebar, like DES-706, tinted with the issue's status colour, instead of a status dot.",
-          "On phones the header keeps the prototype's name, the Linear status shrinks to the ticket chip, and Full view is a round button like the ones beside it.",
-          "On laptops with both panels open, the toolbar no longer breaks \"Linear not connected\" and \"Full view\" onto two lines. Full view drops its label first, then the Linear badge shrinks to the ticket chip.",
+          "Open on your phone: scan the QR next to Full view, and your phone follows what you pick.",
+          "Checks test every state at phone width for overflow, tap targets, contrast, and small fields.",
+          "⌘K jumps to any prototype, most recent first.",
+          "Shortcuts: ← → states, 1 to 4 device, G grid, T theme, F full view.",
+          "Copy screenshot, next to zoom, puts the current state on your clipboard.",
+          "Edit or delete your own comments. A comment's time links straight to it.",
         ],
       },
       {
         label: "Behavior",
         items: [
-          "Opening the hub on a phone for the first time starts on the phone frame, not a laptop frame shrunk to a quarter of its size.",
-          "On touch screens, Return in a comment starts a new line, and the hints talk about tapping instead of keys and dragging. Comment pins also get a bigger tap area.",
-          "On phones, toasts sit above the Controls button and zoom instead of covering them.",
-          "The actions menu on each prototype works from the keyboard: focus moves into it, the arrow keys move through it, and Escape goes back to the button.",
-          "A link into the hub survives signing in: you land where it pointed, not on Prototypes.",
-        ],
-      },
-      {
-        label: "Under the hood",
-        items: [
-          "Check results live in a new prototype_checks table (supabase/migrations/20260923_prototype_checks.sql). Until it's applied, checks still run but stay in each browser.",
-          "The phone follows your laptop over a realtime channel named after a random ID for that browser tab. It only carries which prototype, state, and theme to show; the phone loads the prototype itself, with the same access rules as the hub.",
+          "Prototypes reopen in the device you last used for them.",
+          "The address bar keeps the device, theme, and state, so a copied link opens the same view.",
+          "Linear tickets show as chips in their status color.",
+          "Signing in takes you to the link you opened.",
         ],
       },
       {
         label: "Fixes",
         items: [
-          "The walkthrough can be finished again. Its Linear and share steps pointed at controls a redesign removed, so their cards stayed invisible and new teammates got the tour again on every visit. The Linear steps now point at the Linear row, the share steps are gone, and a step that can't find its target shows its card in the middle of the screen.",
-          "Typing in New prototype, the prompt editor, and the category and delete dialogs no longer loses focus when something else on the page updates, like a teammate's edit or a phone keyboard opening.",
-          "On phones and tablets, Resolve and Add reaction show on every comment. They used to wait for a hover that never happens on touch.",
-          "Text fields no longer make iPhone Safari zoom into the page when you tap them.",
-          "\"On this page\" links in Eon Design scroll to their section instead of sending you back to Prototypes.",
-          "On phones, the prompt editor, category manager, What's new, and admin dialogs fit the visible screen and scroll inside, so their buttons don't end up under the browser bar.",
-          "On phones, the pickers in the Controls sheet no longer squeeze into circles. Two options fill the width as a pill. More options wrap into two columns inside a rounded box, and an odd one out takes the whole last row.",
-          "Every option in the Controls sheet gets its own cell again. The sheet had been counting the selection highlight as an option, which pushed the wrong one onto its own row and left a gap.",
-          "Moving the selection between rows stays inside the box instead of spilling over its edge.",
-          "Screen readers hear the save status on phones and the zoom level on the zoom button.",
-          "Pick a group in New prototype is a real dropdown with every group and a New group… option. It used to suggest groups only as you typed, and Safari showed none at all.",
+          "The walkthrough can be finished again.",
+          "Dialogs keep your typing when the page updates.",
+          "On phones, fields don't zoom, comment actions show, and Return adds a line.",
+          "The Controls sheet on phones shows pills and grids, not circles.",
+          "The laptop toolbar fits on one line with both panels open.",
+          "On this page links in Eon Design scroll to their section.",
+          "Pick a group in New prototype is a dropdown with every group.",
         ],
       },
     ],
@@ -76,30 +62,21 @@ export const CHANGELOG = [
     date: "2026-09-22",
     title: "Upload images, a calmer Media page, and maps",
     image: "changelog/2026-09-22-media.png",
-    imageAlt: "The Media page: your library first, then the built-in logos and presets. Each image shows its token and a menu, with Upload image and Paste link at the top.",
+    imageAlt: "The Media page with your library first and Upload image at the top.",
     groups: [
       {
         label: "New",
         items: [
-          "Upload images straight into Media, no CDN link needed. Use Upload image or drop a file anywhere on the page. It takes its name from the file (you can change it) and works as a {{token}} like any other image. PNG, JPG, GIF, WebP, SVG, and AVIF up to 10 MB.",
-          "Replace any image by dropping a file on it, or from its menu: Upload image, Paste link, Copy image link, and Delete or Reset to default.",
-          "Prototypes can use real maps. The setup prompt now carries the team's Mapbox token and style, and tells the AI to follow the hub theme (day and night), run the map full-bleed under the safe areas, keep the attribution, and fall back cleanly when the map can't load. Its snippet starts Mapbox's workers the one way that works inside the hub's sandboxed frame.",
-          "Move a prototype to another group from its menu, or start a new group there. Admins can move any prototype; members can move the ones they created.",
+          "Upload images to Media, or drop them anywhere on the page. They work as {{tokens}}.",
+          "Replace an image by dropping a file on it, or from its menu.",
+          "Prototypes can use real Mapbox maps; the setup prompt carries the token and style.",
+          "Move a prototype to another group, or a new one, from its menu.",
         ],
       },
       {
         label: "Design",
         items: [
-          "Media is calmer: your library comes first, then the built-in logos and presets. Each image shows its token (click to copy) and keeps everything else in a menu, so there is no link field or badge on every card.",
-          "An image that can't load says so instead of showing a broken icon, and an empty library asks for a first upload.",
-        ],
-      },
-      {
-        label: "Under the hood",
-        items: [
-          "Uploads live under library/ in the media bucket, which now accepts images only, 10 MB each. Deleting or replacing an uploaded image removes its file too, unless another token still uses it. Comment screenshots are never removed.",
-          "The Mapbox token comes from the VITE_MAPBOX_TOKEN build variable instead of the source, because GitHub push protection rejects it there. A build without it leaves maps out of the setup prompt.",
-          "The dev preview opens straight to Media with ?workspace-preview&media, and moving a prototype between groups works there.",
+          "Media shows your library first, each image's token one click from your clipboard.",
         ],
       },
     ],
@@ -108,33 +85,20 @@ export const CHANGELOG = [
     date: "2026-09-04",
     title: "Tracking moves into Eon Design",
     image: "changelog/2026-09-04-tracking.png",
-    imageAlt: "Eon Design with a new Tracking group in the sidebar, open on the Websites page: Site-wide attribution & routing.",
+    imageAlt: "Eon Design open on the Websites tracking page.",
     groups: [
       {
         label: "New",
         items: [
-          "Eon Design has a Tracking section. Websites explains the attribution and routing script that runs on every page of eonrides.com, written for anyone on the team: where a click goes, what a campaign link looks like, what the script remembers and for how long, how a button gets its link, how the app opens the right screen, what happens on each device, and six worked examples. Six diagrams carry the parts that are easier to see than read: one example ad link followed all the way through with every value in its own colour, the 30-day memory as a timeline, how a button's link is built, the JSON landing on a phone screen, the Mixpanel ID's two routes, and the name translation to AppsFlyer. Code is shown in terminal-style blocks with syntax colours and a copy control.",
-          "How we work has a placeholder for AI usage principles, to be written with the team.",
-          "Mixpanel is the other Tracking page, built on the trip review plan: a star tapped on the phone becoming a Trip Reviewed event with typed properties, how we name and format things, then Trip Reviewed, Trip Review Details Added, App Store Review Requested, and Page Viewed each with the payload as sent and every property's type, values, and notes.",
+          "Websites explains how eonrides.com tracks a click and opens the right app screen.",
+          "Mixpanel documents the trip review events, with every property and payload.",
         ],
       },
       {
         label: "Behavior",
         items: [
-          "Pages that are still being written say so: Overview, Design principles, Product design process, Design review, AI usage principles, and Common files & tools carry an In progress label in the sidebar and a note under the title.",
-          "The area switcher lists Eon Design, Prototypes, and Prompts. Mixpanel is no longer a separate area; old /tracking links land on the Mixpanel page.",
-        ],
-      },
-      {
-        label: "Under the hood",
-        items: [
-          "The design preview route takes a page: ?design-preview=tracking-websites opens straight to it without signing in.",
-        ],
-      },
-      {
-        label: "Fixes",
-        items: [
-          "Websites no longer describes app redirect pages or a store step. A OneLink opens the app when it is installed and app.eonrides.com otherwise, and the page, the figures, and the tables say so.",
+          "Pages still being written are marked In progress.",
+          "Old /tracking links open the Mixpanel page.",
         ],
       },
     ],
@@ -143,26 +107,19 @@ export const CHANGELOG = [
     date: "2026-08-28",
     title: "Light mode gets its contrast back",
     image: "changelog/2026-08-28-contrast.png",
-    imageAlt: "The prototype state control in both themes: a white pill on a deepened track in light, the light pill on a dark track in dark.",
+    imageAlt: "The state control in light and dark, with the selected pill clearly visible.",
     groups: [
       {
         label: "Design",
         items: [
-          "The selected state pill now reads as selected. It had been one shade off its own track in both themes, 1.15:1 in dark and 1.12:1 in light, which is invisible. Dark mode gives the pill the light surface and dark ink, 12.4:1; light mode keeps the white pill and deepens the track into a well around it.",
-          "Light mode had almost no elevation: the page and the panels sitting on it were 1.04:1 apart. The page steps down to #F4F4F5, control surfaces to #E4E4E7, so a sidebar, a card, and an input no longer all read as the same white.",
-          "Secondary text passes AA everywhere in light mode. It sat at 4.24:1 on control surfaces and 3.74:1 on the review tabs; it is 4.5:1 or better on every surface now, and the shadcn tokens were pulled onto the same value so components stop drifting from the palette.",
+          "The selected state pill is visible in both themes.",
+          "Light mode has real elevation, and secondary text passes AA everywhere.",
         ],
       },
       {
         label: "Behavior",
         items: [
-          "The canvas takes its background from the prototype theme: white for light, black for dark. It used to open on a fixed mid-grey, so every prototype was judged against a colour it was never designed against. Picking a swatch still pins it; picking the one the theme would have chosen hands it back.",
-        ],
-      },
-      {
-        label: "Under the hood",
-        items: [
-          "A changelog entry can carry an image, and this one does. Releases you can see should show it.",
+          "The canvas follows the prototype theme: white for light, black for dark.",
         ],
       },
     ],
@@ -174,52 +131,32 @@ export const CHANGELOG = [
       {
         label: "New",
         items: [
-          "Full view now happens inside the app instead of a new tab: the chrome drops away, and the library or context panel slides back in when the pointer reaches a screen edge. Esc leaves. Touch devices still get the prototype as its own page.",
-          "Pinching on a trackpad zooms the canvas, including over the prototype itself.",
-          "A long list of prototype states now collapses to the current selection with its neighbours peeking in, and expands on hover.",
-          "The setup prompt now tells prototypes to respect the iPhone safe areas, so a search bar or nav no longer ends up sliced by the Dynamic Island.",
-          "The mobile viewport renders inside the iPhone mockup from the media library, so a mobile prototype reads as a phone rather than a floating rectangle. The mobile canvas is now 402x874, an iPhone 17 Pro, which is the screen that mockup frames.",
-          "A local file linked in an earlier session can be reconnected from the Source row instead of picked again from scratch.",
-          "A live-linked file says what it is doing: syncing, synced at a time, or rendering locally when auto-publish is off.",
-          "Eon Design has a Linear section: handoff flow, estimation, and card quality with QA, each on its own page.",
-          "Estimation documents the whole Linear scale as a timeline, 1 through 64, with the dot growing as the estimate does. 4 is about a day, 8 about half a week, 16 about a week; 32 and 64 are marked as too big to keep on one card.",
+          "Full view stays in the app; panels slide in from the screen edges.",
+          "Pinch to zoom the canvas on a trackpad.",
+          "Long state lists collapse around the current state and expand on hover.",
+          "The mobile viewport renders inside an iPhone 17 Pro frame.",
+          "Reconnect a previously linked local file from the Source row.",
+          "Eon Design has Linear pages: handoff flow, estimation, and card quality.",
         ],
       },
       {
         label: "Design",
         items: [
-          "The prototype screen is now three regions: pick one on the left, view it in the middle, everything about it on the right.",
-          "Two toolbar rows collapsed into one, so the canvas gets back roughly 240px of height.",
-          "Uploading prototype HTML opens as a sheet instead of a band that pushed the canvas down and stayed open.",
-          "The context panel shows source, Figma, and Linear as always-visible rows above Comments and History.",
-          "Zoom, theme, and canvas background merged into one cluster in the bottom-right corner.",
-          "Dark mode gained a real elevation ladder, so chrome, panels, and controls no longer all sit on the same black.",
-          "Control labels dropped their shouting capitals, and sidebar comment counts carry an icon that says what they count.",
-          "Status dots lost their outer halo ring, and the loading screen logo lost its container and pulsing ring.",
-          "What's new lists its updates as grouped bullets instead of a card each.",
-          "The prototype state control floats on its own, with no container drawn around it. Collapsed, the pill keeps a solid edge while the labels either side of the selection fade out.",
+          "Three regions: prototypes on the left, the canvas in the middle, context on the right.",
+          "One toolbar row instead of two, and zoom, theme, and background in one corner.",
+          "Dark mode has a proper elevation ladder.",
         ],
       },
       {
         label: "Behavior",
         items: [
-          "A Figma link can be pasted without turning on side-by-side compare first.",
-          "Issue status is stated once in the title bar, and \"saved\" is stated once instead of six times.",
-          "Row menus open above the trigger when they would run off the bottom, and no longer sit behind the panel they belong to.",
-        ],
-      },
-      {
-        label: "Under the hood",
-        items: [
-          "Live file sync survives the way editors actually save: a locked or half-written file is retried instead of ending the link, and a half-flushed read is never published to the team.",
-          "A burst of saves reaches Supabase as one write rather than one per save.",
+          "Paste a Figma link without turning on compare first.",
         ],
       },
       {
         label: "Fixes",
         items: [
-          "Resizing a desktop window down no longer leaves both side panels open on top of each other.",
-          "The state pills no longer sit underneath the zoom controls when Figma compare is on.",
+          "Side panels no longer overlap after shrinking the window.",
         ],
       },
     ],
@@ -231,29 +168,27 @@ export const CHANGELOG = [
       {
         label: "New",
         items: [
-          "The Eon logo now opens one compact area switcher for Eon Design, Prototypes, Prompts, and Mixpanel.",
-          "A new Eon Design home documents principles, product design process, review practices, Linear handoff, and shared resources.",
+          "The Eon logo opens a switcher between the areas of the hub.",
+          "A new Eon Design home for principles, process, reviews, and handoff.",
         ],
       },
       {
         label: "Design",
         items: [
-          "What's new now uses a release timeline with scannable dates, update counts, and grouped change summaries.",
-          "Selected surfaces now stay monochrome while icons and active indicators use the Eon accent gradient.",
-          "Numbered pins and unread badges now use dark text over the accent gradient for clear contrast.",
+          "What's new became a timeline of releases.",
         ],
       },
       {
         label: "Behavior",
         items: [
-          "Prompt edit and delete actions now use the same ellipsis menu and confirmation behavior as prototypes.",
-          "Custom media can now be permanently deleted; resetting a logo or preset removes its saved override.",
+          "Prompts use the same menu and delete confirmation as prototypes.",
+          "Custom media can be deleted; resetting restores the default.",
         ],
       },
       {
         label: "Fixes",
         items: [
-          "Logo loading no longer flashes a placeholder mark; size-matched skeletons hold the space until the real asset is ready.",
+          "Logos no longer flash a placeholder while loading.",
         ],
       },
     ],
@@ -265,9 +200,9 @@ export const CHANGELOG = [
       {
         label: "Behavior",
         items: [
-          "Every shared category and prompt now has a visible trash icon directly in the sidebar.",
-          "Deleting a category keeps every prompt and moves it safely to another category.",
-          "Empty categories now stay visible, and prompt creation uses the team's shared category list.",
+          "Delete categories and prompts from the sidebar.",
+          "Deleting a category moves its prompts to another one.",
+          "Empty categories stay visible.",
         ],
       },
     ],
@@ -279,20 +214,14 @@ export const CHANGELOG = [
       {
         label: "New",
         items: [
-          "Prompts now live in a shared library where the team can create, edit, delete, fill, and copy them.",
-          "Tracking now includes a reusable Mixpanel setup guide, implementation prompt, event contract, and QA checklist.",
-        ],
-      },
-      {
-        label: "Behavior",
-        items: [
-          "Prompt variables now update the visible prompt instantly, with one copy icon inside the preview.",
+          "A shared prompt library the team can create, fill, and copy from.",
+          "A Mixpanel setup guide with a prompt, event contract, and QA checklist.",
         ],
       },
       {
         label: "Design",
         items: [
-          "Prototypes, Prompts, and Tracking now share one system theme, resizable navigation, Eon palette, and changelog.",
+          "Prototypes, Prompts, and Tracking share one theme and navigation.",
         ],
       },
     ],
@@ -304,20 +233,19 @@ export const CHANGELOG = [
       {
         label: "New",
         items: [
-          "Click a pinned comment or its pin number. The canvas restores the saved device, theme, and controls, then scrolls the pinned spot into view.",
+          "Click a pinned comment to restore its device, theme, and state, and scroll to the spot.",
         ],
       },
       {
         label: "Behavior",
         items: [
-          "Pins remember their page position. Pins in long or scrolled prototypes return to the right section after a reload.",
-          "Jumping to a comment on another screen now opens that screen. Pins stay hidden until their screen opens.",
+          "Pins keep their place in long and multi-screen prototypes.",
         ],
       },
       {
         label: "Fixes",
         items: [
-          "Uploaded prototypes no longer vanish after someone edits the Linear or Figma link. Live updates now keep the prototype HTML intact.",
+          "Uploaded prototypes no longer disappear after editing a link.",
         ],
       },
     ],
@@ -329,22 +257,15 @@ export const CHANGELOG = [
       {
         label: "New",
         items: [
-          "Pin a comment to an element in the prototype. The pin tracks the element, and a line connects the comment to its pin.",
-          "The quick-comment ring offers common feedback after you drop a pin. You can also write a comment in place and press Enter.",
-          "Comments support emoji reactions. Hover a pin to preview its comment. A single-emoji comment uses the emoji as its pin.",
-          "Paste, drop, or choose an image to add it to a comment.",
+          "Pin comments to elements; a line connects each comment to its pin.",
+          "A quick-comment ring offers common feedback when you drop a pin.",
+          "Emoji reactions, and images in comments by paste, drop, or upload.",
         ],
       },
       {
         label: "Behavior",
         items: [
-          "Resolve and reopen comments from the Open and Resolved filters. A state chip restores the view where a pin was placed.",
-        ],
-      },
-      {
-        label: "Design",
-        items: [
-          "App start and reload now use the Eon loading screen.",
+          "Resolve comments and filter Open or Resolved.",
         ],
       },
     ],

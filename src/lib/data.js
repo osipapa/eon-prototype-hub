@@ -184,6 +184,19 @@ export async function setCommentResolved(commentId, resolved) {
   return data;
 }
 
+// Authors edit and delete their own comments (admins may delete any); RLS enforces it.
+export async function updateCommentBody(commentId, body) {
+  const { data, error } = await supabase
+    .from("comments").update({ body }).eq("id", commentId).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteComment(commentId) {
+  const { error } = await supabase.from("comments").delete().eq("id", commentId);
+  if (error) throw error;
+}
+
 export function subscribeComments(cb) {
   const ch = supabase
     .channel("comments-changes")

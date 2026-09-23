@@ -15,7 +15,7 @@ import PeekSegmented from "@/components/PeekSegmented";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { Liquid } from "liquid-gooey";
 import {
-  AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, ChevronLeft, Circle, Copy,
+  AlertCircle, ArrowDown, ArrowUp, Camera, Check, ChevronDown, ChevronLeft, Circle, Copy,
   ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, ListChecks, Loader2,
   Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
   Menu, MoreHorizontal, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import {
   CANVAS_PRESETS, HUB, PROTOTYPE_SANDBOX, VIEWPORTS, currentArgs,
-  effectiveStory, parsePrototypeConfig, renderStory,
+  effectiveStory, parsePrototypeConfig, renderStory, stateCombos,
 } from "./prototypes";
 import {
   FigmaEmbed, LinearCard, MediaManager, StateGrid,
@@ -33,6 +33,7 @@ import { buildSetupPrompt } from "./setupPrompt";
 import { issueCount, usePrototypeChecks } from "./checks";
 import ChecksList, { checksSummary, checkTone } from "./ChecksList";
 import PhoneMirrorButton from "./PhoneMirror";
+import PrototypeSwitcher, { SHORTCUT_MOD, rememberRecent } from "./PrototypeSwitcher";
 import {
   anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, isBridgeMessage,
 } from "./anchorBridge";
@@ -48,6 +49,12 @@ const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smar
 // Mouse or trackpad. Touch screens get tap wording, and Return starts a new
 // line there because a phone keyboard has no Shift+Return.
 const hasFinePointer = () => window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? true;
+
+const VIEWPORT_BY_PROTOTYPE = "eon-viewport-by-prototype";
+function readViewportMemory() {
+  try { return JSON.parse(window.localStorage.getItem(VIEWPORT_BY_PROTOTYPE) || "{}"); }
+  catch { return {}; }
+}
 
 function linearIdentifier(project) {
   return project?.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || project?.issue_id || null;
@@ -94,7 +101,7 @@ export default function PrototypeWorkspace({
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
   onPatchProject, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
-  onCreateComment, onResolveComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
+  onCreateComment, onResolveComment, onEditComment, onDeleteComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
   checks = {}, onSaveChecks, mirrorTransport = "supabase",
 }) {
@@ -103,7 +110,17 @@ export default function PrototypeWorkspace({
   const [view, setView] = useState(initialView);
   // A first visit from a phone starts on the phone frame: a laptop frame
   // shrunk to fit a phone is too small to read.
-  const [viewport, setViewport] = useStoredState("eon-viewport", window.matchMedia("(max-width: 680px)").matches ? "mobile" : "laptop");
+  const [viewport, setViewportState] = useStoredState("eon-viewport", window.matchMedia("(max-width: 680px)").matches ? "mobile" : "laptop");
+  // Every viewport change is remembered for the prototype on screen, so each
+  // one reopens in the frame it was last looked at in.
+  const storyIdRef = useRef(null);
+  const setViewport = useCallback((next) => {
+    setViewportState(next);
+    if (!storyIdRef.current) return;
+    try {
+      window.localStorage.setItem(VIEWPORT_BY_PROTOTYPE, JSON.stringify({ ...readViewportMemory(), [storyIdRef.current]: next }));
+    } catch { /* Storage can be unavailable; the global choice still applies. */ }
+  }, [setViewportState]);
   const [layout, setLayout] = useStoredState("eon-layout", "single");
   const [gridBy, setGridBy] = useState("states");
   const [query, setQuery] = useState("");
@@ -151,8 +168,10 @@ export default function PrototypeWorkspace({
   // Full view keeps the prototype and drops the chrome. The panels are still
   // there; they slide back in when the pointer reaches an edge.
   const [focusMode, setFocusMode] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [peek, setPeek] = useState(null); // "nav" | "inspector" | null
   const [reviewLocationKey, setReviewLocationKey] = useState(() => window.location.hash);
+  const [linkedCommentId, setLinkedCommentId] = useState(null);
   const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false, compactControls: false });
   const [anchorMode, setAnchorMode] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState(null);
@@ -190,6 +209,7 @@ export default function PrototypeWorkspace({
 
   const c = HUB[hubTheme];
   const story = projects.find((item) => item.id === activeId) || projects[0];
+  storyIdRef.current = story?.id || null;
   const media = assets;
 
   useEffect(() => {
@@ -250,6 +270,13 @@ export default function PrototypeWorkspace({
     () => (effStory ? currentArgs(effStory, liveArgs[effStory.id]) : {}),
     [effStory, liveArgs],
   );
+  useEffect(() => {
+    if (!story?.id) return;
+    const phone = window.matchMedia("(max-width: 680px)").matches;
+    const next = readViewportMemory()[story.id] || (phone ? null : cfg.viewport);
+    if (VIEWPORTS[next]) setViewportState(next);
+  }, [story?.id]);
+
   // Checks measure what the team sees: the saved HTML, not an unpublished
   // local file, so a live link only borrows the saved config.
   const checkStory = useMemo(
@@ -471,6 +498,19 @@ export default function PrototypeWorkspace({
     else postToFrame(reveal);
   };
 
+  // ?comment=<id> (a comment's timestamp link): open the thread on it and, for
+  // a pin, restore the view it was left in. Waits until the comment has loaded.
+  useEffect(() => {
+    if (!linkedCommentId) return;
+    const comment = storyComments.find((item) => item.id === linkedCommentId);
+    if (!comment) return;
+    setLinkedCommentId(null);
+    setInspectorTab("comments");
+    setInspectorOpen(true);
+    if (comment.anchor) jumpToAnchor(comment);
+    else setActiveAnchorId(comment.id);
+  }, [linkedCommentId, storyComments]);
+
   // A check finding: phone width, the state and theme it showed up in, then
   // scroll the element into view and flash it.
   const jumpToIssue = (issue, where) => {
@@ -600,7 +640,26 @@ export default function PrototypeWorkspace({
     if (Object.keys(linkedArgs).length) {
       setLiveArgs((current) => ({ ...current, [story.id]: { ...current[story.id], ...linkedArgs } }));
     }
+    const linkedComment = params.get("comment");
+    if (linkedComment) setLinkedCommentId(linkedComment);
   }, [story?.id, reviewLocationKey]);
+
+  // Keep the address bar in step with the view, so a copied URL opens exactly
+  // what's on screen. replaceState fires no hashchange, so the reader above
+  // doesn't loop.
+  useEffect(() => {
+    if (view !== "stories" || !effStory) return;
+    const [path] = window.location.hash.slice(1).split("?");
+    if (path !== "/" && path !== `/p/${effStory.slug}`) return;
+    const params = new URLSearchParams({ viewport, theme: protoTheme });
+    if (layout === "grid") params.set("layout", "grid");
+    Object.entries(args).forEach(([key, value]) => {
+      // Plain strings stay readable in the link; the reader falls back to the raw value.
+      if (String(value) !== String(effStory.defaults?.[key])) params.set(`arg.${key}`, typeof value === "string" ? value : JSON.stringify(value));
+    });
+    const next = `#${path}?${params}`;
+    if (window.location.hash !== next) window.history.replaceState(window.history.state, "", next);
+  }, [view, effStory, viewport, protoTheme, layout, args]);
 
   useEffect(() => {
     const linkedProjects = projects
@@ -787,6 +846,86 @@ export default function PrototypeWorkspace({
     setFocusMode(true);
     setPeek(null);
   };
+
+  useEffect(() => { if (story?.id) rememberRecent(story.id); }, [story?.id]);
+
+  // Copy what's on the canvas as a PNG. html-to-image loads on first use and
+  // runs inside the prototype frame, the only place its DOM can be read.
+  const [shotState, setShotState] = useState(null);
+  const renderShot = () => import("html-to-image/dist/html-to-image.js?raw").then(({ default: code }) => new Promise((resolve, reject) => {
+    const frame = frameRef.current;
+    if (!frame) { reject(new Error("No prototype on screen")); return; }
+    const onMessage = (event) => {
+      if (!isBridgeMessage(event, frame) || event.data.type !== "eon-shot-result") return;
+      window.clearTimeout(timer);
+      window.removeEventListener("message", onMessage);
+      if (event.data.blob) resolve(event.data.blob);
+      else reject(new Error(event.data.error || "Couldn't render the prototype"));
+    };
+    const timer = window.setTimeout(() => {
+      window.removeEventListener("message", onMessage);
+      reject(new Error("The prototype took too long to render"));
+    }, 15000);
+    window.addEventListener("message", onMessage);
+    postToFrame({ type: "eon-shot", code, scale: 2 });
+  }));
+  const copyScreenshot = () => {
+    setShotState("working");
+    const blob = renderShot();
+    // The clipboard takes the promise, so the click still counts as the user's gesture.
+    const copied = window.ClipboardItem && navigator.clipboard?.write
+      ? navigator.clipboard.write([new window.ClipboardItem({ "image/png": blob })])
+      : blob.then((png) => {
+        const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(png), download: `${story.slug}.png` });
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      });
+    copied.then(() => setShotState("done"), (error) => {
+      console.warn("Couldn't copy the screenshot.", error);
+      setShotState("error");
+    }).finally(() => window.setTimeout(() => setShotState(null), 2000));
+  };
+
+  // Flip through the declared states like slides; false when there's nothing to flip.
+  const stepState = (direction) => {
+    const combos = stateCombos(effStory);
+    if (!combos || combos.length < 2) return false;
+    const at = combos.findIndex((combo) => Object.entries(combo).every(([key, value]) => String(args[key]) === String(value)));
+    const next = combos[(at + direction + combos.length) % combos.length];
+    setLiveArgs((current) => ({ ...current, [effStory.id]: { ...current[effStory.id], ...next } }));
+    return true;
+  };
+
+  // Keyboard: ⌘K jumps anywhere; on the canvas, arrows step through states,
+  // 1–4 pick the device, G the grid, T the theme, F full view. Nothing fires
+  // while typing, under a dialog, or when a focused control uses the arrows.
+  const shortcutRef = useRef(null);
+  shortcutRef.current = (event) => {
+    if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      setSwitcherOpen((open) => !open);
+      return;
+    }
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || view !== "stories") return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest("input, textarea, select, [contenteditable='true'], [contenteditable='']")) return;
+    if (document.querySelector("[aria-modal='true'], .eon-coach-root")) return;
+    const arrow = event.key === "ArrowLeft" || event.key === "ArrowRight";
+    if (arrow && target?.closest("[role=group], [role=menu], [role=tablist], [role=listbox], [role=radiogroup], [role=slider]")) return;
+    const devices = { 1: "desktop", 2: "laptop", 3: "tablet", 4: "mobile" };
+    if (arrow) { if (layout !== "single" || !stepState(event.key === "ArrowRight" ? 1 : -1)) return; }
+    else if (devices[event.key]) setViewport(devices[event.key]);
+    else if (event.key === "g" || event.key === "G") setLayout((current) => (current === "grid" ? "single" : "grid"));
+    else if (event.key === "t" || event.key === "T") setProtoTheme((current) => (current === "dark" ? "light" : "dark"));
+    else if (event.key === "f" || event.key === "F") { if (focusMode) { setFocusMode(false); setPeek(null); } else openFull(); }
+    else return;
+    event.preventDefault();
+  };
+  useEffect(() => {
+    const onKeyDown = (event) => shortcutRef.current?.(event);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const commitRename = (id, value) => {
     const title = value.trim();
@@ -1011,6 +1150,7 @@ export default function PrototypeWorkspace({
                   c={c} scale={scale} zoom={zoom} setZoom={setZoom} layout={layout} effGridBy={effGridBy}
                   protoTheme={protoTheme} setProtoTheme={setProtoTheme}
                   canvasBg={canvasBg} setCanvasBg={setCanvasBg} segmented={segmented}
+                  onScreenshot={copyScreenshot} shotState={shotState}
                 />
               )}
               {breakpoints.compactControls && layout === "single" && (
@@ -1040,6 +1180,8 @@ export default function PrototypeWorkspace({
           onCreateComment={onCreateComment} patch={patch}
           anchors={{
             pinNumberById, activeAnchorId, setActiveAnchorId, onResolveComment, onToggleReaction,
+            onEditComment, onDeleteComment,
+            commentHref: (id) => `#/p/${story.slug}?comment=${id}`,
             jumpToAnchor, anchorMode, setAnchorMode, canPlacePin, pendingAnchor,
             clearPendingAnchor: () => setPendingAnchor(null),
             canvasState: { viewport, args, theme: protoTheme },
@@ -1084,6 +1226,11 @@ export default function PrototypeWorkspace({
         <NewPrototypeDialog c={c} groups={Object.keys(groups)} restoreFocus={newDialogReturnFocusRef.current} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
       )}
       <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
+      {switcherOpen && (
+        <PrototypeSwitcher c={c} projects={projects} identifierFor={linearIdentifier}
+          onPick={(project) => { setSwitcherOpen(false); setView("stories"); onSelectStory(project); }}
+          onClose={() => setSwitcherOpen(false)} />
+      )}
       {deleteCandidate && (
         <DeletePrototypeDialog c={c} project={deleteCandidate.project} restoreFocus={deleteCandidate.restoreFocus} onClose={() => setDeleteCandidate(null)}
           onConfirm={async () => {
@@ -1183,6 +1330,7 @@ function WorkspaceSidebar({
               <Search aria-hidden="true" />
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" aria-label="Search prototypes"
                 style={{ minHeight: 40, paddingLeft: 34, background: c.raised, borderColor: c.border, color: c.text }} />
+              {!query && <kbd className="eon-search-kbd" title="Jump to any prototype" style={{ color: c.muted, borderColor: c.border }}>{SHORTCUT_MOD}K</kbd>}
             </div>
             <Button className="eon-buttonish eon-sidebar-new" type="button" onClick={onNewProject}
               title="New prototype" aria-label="New prototype"
@@ -1423,7 +1571,7 @@ function WorkspaceToolbar({
                 options={Object.keys(VIEWPORTS).map((key) => ({
                   value: key,
                   Icon: VP_ICON[key],
-                  title: VIEWPORTS[key].label,
+                  title: `${VIEWPORTS[key].label} (${Object.keys(VIEWPORTS).indexOf(key) + 1})`,
                   ariaLabel: `${VIEWPORTS[key].label} viewport`,
                   tutorial: key === "mobile" ? "viewport-mobile" : undefined,
                 }))}
@@ -1435,7 +1583,7 @@ function WorkspaceToolbar({
                 variant="icon"
               />
               <LiquidSegmentedControl
-                options={[["single", Square, "One screen"], ["grid", LayoutGrid, "Every state"]].map(([key, Icon, label]) => ({ value: key, Icon, title: label, ariaLabel: label }))}
+                options={[["single", Square, "One screen"], ["grid", LayoutGrid, "Every state"]].map(([key, Icon, label]) => ({ value: key, Icon, title: `${label} (G)`, ariaLabel: label }))}
                 value={layout}
                 onValueChange={setLayout}
                 c={c}
@@ -1445,7 +1593,7 @@ function WorkspaceToolbar({
               />
             </div>
             {showMirror && <PhoneMirrorButton c={c} view={mirrorView} transport={mirrorTransport} />}
-            <button className="eon-buttonish eon-secondary-button eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view"
+            <button className="eon-buttonish eon-secondary-button eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view (F)"
               style={{ borderColor: c.border, background: c.panel, color: c.secondary }}>
               <Maximize2 size={15} /> <span>Full view</span>
             </button>
@@ -1577,7 +1725,7 @@ function CanvasControlBar({
    always out, theme and background sit one tap behind it. ---- */
 function CanvasViewControls({
   c, scale, zoom, setZoom, layout, effGridBy, protoTheme, setProtoTheme,
-  canvasBg, setCanvasBg, segmented,
+  canvasBg, setCanvasBg, segmented, onScreenshot, shotState,
 }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
@@ -1632,6 +1780,17 @@ function CanvasViewControls({
             <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in" style={{ color: c.muted }}><Plus size={15} /></button>
             <span className="eon-viewctl-divider" style={{ background: c.border }} aria-hidden="true" />
           </>
+        )}
+        {layout === "single" && (
+          <button className="eon-buttonish eon-icon-button" onClick={onScreenshot} disabled={shotState === "working"}
+            aria-label={shotState === "done" ? "Screenshot copied" : shotState === "error" ? "Couldn't copy the screenshot" : "Copy a screenshot of the prototype"}
+            title={shotState === "error" ? "Couldn't copy the screenshot" : "Copy screenshot"}
+            style={{ color: shotState === "done" ? c.brand : shotState === "error" ? "#D98295" : c.muted }}>
+            {shotState === "working" ? <Loader2 size={15} className="eon-spin" />
+              : shotState === "done" ? <Check size={15} />
+              : shotState === "error" ? <AlertCircle size={15} />
+              : <Camera size={15} />}
+          </button>
         )}
         <button className="eon-buttonish eon-icon-button" onClick={() => setOpen((value) => !value)}
           aria-label="Theme and background" aria-expanded={open} title="Theme and background"
@@ -2100,6 +2259,18 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
     }
   };
 
+  // Errors surface in the thread; the bubble stays in edit mode to retry.
+  const editComment = async (comment, body) => {
+    setError("");
+    try { await anchors.onEditComment(comment.id, body); }
+    catch (err) { setError(err.message || "Couldn't save your edit."); throw err; }
+  };
+  const deleteComment = async (comment) => {
+    setError("");
+    try { await anchors.onDeleteComment(comment.id); }
+    catch (err) { setError(err.message || "Couldn't delete the comment."); }
+  };
+
   const toggleReaction = async (comment, emoji) => {
     if (!anchors.onToggleReaction) return;
     setError("");
@@ -2209,7 +2380,10 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
               && !anchorMatchesState(comment.anchor, anchors.canvasState.viewport, anchors.canvasState.args, anchors.canvasState.theme))}
             onJump={() => anchors.jumpToAnchor?.(comment)}
             onToggleResolved={anchors.onResolveComment ? () => toggleResolved(comment) : null}
-            onToggleReaction={anchors.onToggleReaction ? (emoji) => toggleReaction(comment, emoji) : null} />
+            onToggleReaction={anchors.onToggleReaction ? (emoji) => toggleReaction(comment, emoji) : null}
+            onEdit={anchors.onEditComment ? (body) => editComment(comment, body) : null}
+            onDelete={anchors.onDeleteComment ? () => deleteComment(comment) : null}
+            href={anchors.commentHref?.(comment.id)} />
         ))}
       </div>
       <div className="eon-comment-composer" style={{ borderColor: c.border }}
@@ -2269,14 +2443,27 @@ const REACTION_EMOJI = ["👍", "❤️", "🔥", "🎉", "👀", "😕"];
 
 function CommentBubble({
   c, comment, currentUserId, pinNumber, active, onSelect, stateMismatch, onJump, onToggleResolved,
-  onToggleReaction,
+  onToggleReaction, onEdit, onDelete, href,
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  // null, "edit", or "delete": an author's own comment can be changed in place.
+  const [mode, setMode] = useState(null);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
   const author = comment.author || {};
   const name = author.full_name || author.email?.split("@")[0] || "Teammate";
   const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const mine = comment.author_id === currentUserId;
   const resolved = Boolean(comment.resolved_at);
+  const canChange = mine && !comment.pending && onEdit && onDelete;
+  const canSave = Boolean(draft.trim() || comment.image_url) && draft.trim() !== comment.body && !saving;
+  const saveEdit = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    try { await onEdit(draft.trim()); setMode(null); }
+    catch { /* The thread shows the error; keep the draft to retry. */ }
+    finally { setSaving(false); }
+  };
   const reactionGroups = useMemo(() => {
     const groups = new Map();
     (comment.reactions || []).forEach((reaction) => {
@@ -2304,8 +2491,22 @@ function CommentBubble({
             </button>
           )}
           <strong>{mine ? "You" : name}</strong>
-          <time style={{ color: c.muted }} dateTime={comment.created_at}>{relativeTime(comment.created_at)}</time>
+          {href && !comment.pending ? (
+            <a className="eon-comment-time" href={href} title="Link to this comment" style={{ color: c.muted }}>
+              <time dateTime={comment.created_at}>{relativeTime(comment.created_at)}</time>
+            </a>
+          ) : (
+            <time style={{ color: c.muted }} dateTime={comment.created_at}>{relativeTime(comment.created_at)}</time>
+          )}
           {comment.pending && <span className="eon-pending-label" style={{ color: c.muted }}>Sending…</span>}
+          {canChange && !mode && (
+            <span className="eon-comment-actions">
+              <button type="button" className="eon-buttonish eon-comment-action" onClick={() => { setDraft(comment.body || ""); setMode("edit"); }}
+                aria-label="Edit comment" title="Edit" style={{ color: c.muted }}><Pencil size={13} /></button>
+              <button type="button" className="eon-buttonish eon-comment-action" onClick={() => setMode("delete")}
+                aria-label="Delete comment" title="Delete" style={{ color: c.muted }}><Trash2 size={13} /></button>
+            </span>
+          )}
           {!comment.pending && onToggleResolved && (
             <button type="button" className="eon-buttonish eon-resolve-button" onClick={onToggleResolved}
               aria-label={resolved ? "Reopen comment" : "Resolve comment"} title={resolved ? "Reopen" : "Resolve"}
@@ -2314,7 +2515,30 @@ function CommentBubble({
             </button>
           )}
         </div>
-        {comment.body && <p style={{ color: c.secondary }}>{comment.body}</p>}
+        {mode === "edit" ? (
+          <div className="eon-comment-edit">
+            <Textarea value={draft} autoFocus maxLength={4000} aria-label="Edit your comment"
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") { event.stopPropagation(); setMode(null); }
+                if (hasFinePointer() && event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); saveEdit(); }
+              }}
+              style={{ minHeight: 64, background: c.raised, borderColor: c.border, color: c.text, borderRadius: 14, fontSize: 13, lineHeight: 1.5 }} />
+            <div className="eon-comment-edit-actions">
+              <button type="button" className="eon-buttonish eon-text-button" onClick={() => setMode(null)} style={{ color: c.muted }}>Cancel</button>
+              <button type="button" className="eon-buttonish eon-comment-save" onClick={saveEdit} disabled={!canSave}
+                style={{ background: c.primary, color: c.primaryText, opacity: canSave ? 1 : 0.5 }}>{saving ? "Saving…" : "Save"}</button>
+            </div>
+          </div>
+        ) : comment.body && <p style={{ color: c.secondary }}>{comment.body}</p>}
+        {mode === "delete" && (
+          <div className="eon-comment-edit-actions" role="group" aria-label="Delete this comment?">
+            <span style={{ color: c.secondary }}>Delete this comment?</span>
+            <button type="button" className="eon-buttonish eon-text-button" onClick={() => setMode(null)} style={{ color: c.muted }}>Cancel</button>
+            <button type="button" className="eon-buttonish eon-comment-save" onClick={() => { setMode(null); onDelete(); }}
+              style={{ background: "#D98295", color: "#210C12" }}>Delete</button>
+          </div>
+        )}
         {comment.image_url && (
           <a className="eon-comment-image" href={comment.image_url} target="_blank" rel="noreferrer"
             style={{ borderColor: c.border }} aria-label="Open image full size">
