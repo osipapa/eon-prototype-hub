@@ -2,12 +2,13 @@ import { supabase } from "./supabase";
 
 /* Phone mirror. A desktop tab shows a QR code; the phone that scans it opens
    #/mirror/<session> and follows what that tab shows. The channel is named
-   after a random per-tab session id and only carries which prototype, state,
-   and theme to show: the phone loads the prototype itself, through the normal
-   row-level security. The dev preview swaps in a BroadcastChannel so two local
+   after a random per-tab session id and carries which prototype, state, and
+   theme to show, plus what people do in it (taps, typed values, scrolling).
+   The phone loads the prototype itself, through the normal row-level security. The dev preview swaps in a BroadcastChannel so two local
    tabs can stand in for desktop and phone.
 
-   desktop → phone  view   { slug, args, theme }
+   desktop → phone  view   { slug, args, theme, log? } log: replay these on a fresh frame
+   either way       input  a tap, typed value, or scroll to replay (see anchorBridge)
    phone → desktop  hello  just joined: send what you're showing
    phone → desktop  here   every few seconds, so the desktop knows it's there */
 
@@ -39,7 +40,7 @@ export function openMirrorChannel(sessionId, { transport = "supabase", onMessage
   const channel = supabase.channel(`mirror:${sessionId}`, { config: { broadcast: { self: false } } });
   let ready = false;
   let queued = [];
-  ["view", "hello", "here"].forEach((event) => {
+  ["view", "input", "hello", "here"].forEach((event) => {
     channel.on("broadcast", { event }, ({ payload }) => onMessage?.(event, payload));
   });
   channel.subscribe((status) => {
@@ -51,7 +52,8 @@ export function openMirrorChannel(sessionId, { transport = "supabase", onMessage
   return {
     send: (event, payload = {}) => {
       if (ready) channel.send({ type: "broadcast", event, payload });
-      else queued = [...queued.filter(([name]) => name !== event), [event, payload]];
+      // Before the channel connects, only the latest view or ping matters; every input does.
+      else queued = [...queued.filter(([name]) => event === "input" || name !== event), [event, payload]];
     },
     close: () => supabase.removeChannel(channel),
   };

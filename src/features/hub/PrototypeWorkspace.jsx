@@ -1114,6 +1114,7 @@ export default function PrototypeWorkspace({
           showMirror={view === "stories" && hasFinePointer() && !breakpoints.compactControls}
           mirrorView={{ slug: story.slug, args, theme: protoTheme }}
           mirrorTransport={mirrorTransport}
+          frameRef={frameRef}
         />}
 
         {loadError && (
@@ -1545,7 +1546,7 @@ function WorkspaceToolbar({
   navDrawer, navOpen, onOpenNav, inspectorDrawer, inspectorOpen, onToggleInspector,
   openFull, viewport, setViewport, layout, setLayout,
   saveState, onRetrySave, onOpenLinear,
-  showMirror, mirrorView, mirrorTransport,
+  showMirror, mirrorView, mirrorTransport, frameRef,
 }) {
   const linearConnection = linearConnectionState(liveLinear, linearId, c);
   return (
@@ -1620,7 +1621,7 @@ function WorkspaceToolbar({
                 variant="icon"
               />
             </div>
-            {showMirror && <PhoneMirrorButton c={c} view={mirrorView} transport={mirrorTransport} />}
+            {showMirror && <PhoneMirrorButton c={c} view={mirrorView} frameRef={frameRef} transport={mirrorTransport} />}
             <button className="eon-buttonish eon-secondary-button eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view (F)"
               style={{ borderColor: c.border, background: c.panel, color: c.secondary }}>
               <Maximize2 size={15} /> <span>Full view</span>

@@ -27,7 +27,7 @@ export const CHANGELOG = [
       {
         label: "New",
         items: [
-          "Open on your phone: scan the QR next to Full view, and your phone follows what you pick.",
+          "Open on your phone: scan the QR next to Full view. Taps, typing, and scrolling mirror both ways.",
           "Checks test every state at phone width for overflow, tap targets, contrast, and small fields.",
           "⌘K jumps to any prototype, most recent first.",
           "Shortcuts: ← → states, 1 to 4 device, G grid, T theme, F full view.",

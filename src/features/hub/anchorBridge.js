@@ -10,6 +10,8 @@
      { eon:1, type:"eon-anchor-reveal", selector, doc_x, doc_y, flash } show + scroll pin into view;
                                                    flash outlines the element for a moment (check findings)
      { eon:1, type:"eon-shot", code, scale }         render the viewport to a PNG (code is html-to-image)
+     { eon:1, type:"eon-sync", on }                 report what the user does (phone mirror)
+     { eon:1, type:"eon-sync-apply", event }        replay what the other screen reported
    prototype → hub
      { eon:1, type:"eon-anchor-ready" }            bridge is live (iframe mounted)
      { eon:1, type:"eon-anchor-click", selector, rel_x, rel_y, x_pct, y_pct, doc_x, doc_y }
@@ -17,13 +19,17 @@
      { eon:1, type:"eon-anchor-rects", rects, scroll } selector → {x,y,w,h} | {hidden} | null
      { eon:1, type:"eon-anchor-zoom", delta }      trackpad pinch over the prototype
      { eon:1, type:"eon-shot-result", blob | error }
+     { eon:1, type:"eon-sync-event", event }        a tap, typed value, or scroll: { kind, selector, ... }
 
    Multi-screen prototypes (stepped flows toggling [hidden] or display:none)
    report anchors on inactive screens as {hidden:true}. The hub draws no pin
    for them. Reveal switches the screen before scrolling.
 
    Rects are iframe CSS pixels (the viewport space); the hub scales them by the
-   canvas frame scale. The script is inert until the hub speaks to it. */
+   canvas frame scale. The script is inert until the hub speaks to it.
+
+   Sync only reports trusted events, and replays are synthetic, so a replayed
+   tap never echoes back. Scrolls fired by a replay are muted for a moment. */
 
 const BRIDGE_SCRIPT = `<script>(function(){
 var mode=false,watched=[],queued=false,hl=null;
@@ -125,7 +131,51 @@ addEventListener("message",function(e){
         .then(function(blob){if(blob)post({type:"eon-shot-result",blob:blob});else fail("empty image");},fail);
     }catch(err){fail(err);}
   }
+  else if(m.type==="eon-sync")sync=!!m.on;
+  else if(m.type==="eon-sync-apply")replay(m.event);
 });
+var sync=false,quiet={},scrollTimers={};
+function report(ev){if(sync)post({type:"eon-sync-event",event:ev});}
+function onSyncClick(e){
+  if(!sync||mode||!e.isTrusted||!e.target||e.target.nodeType!==1)return;
+  report({kind:"click",selector:selectorFor(e.target)});
+}
+function onSyncValue(e){
+  var el=e.target;
+  if(!sync||!e.isTrusted||!el||el.type==="checkbox"||el.type==="radio")return;
+  if(e.type==="change"&&el.tagName!=="SELECT")return;
+  report({kind:"value",selector:selectorFor(el),value:el.value});
+}
+function onSyncScroll(e){
+  if(!sync)return;
+  var root=document.scrollingElement||document.documentElement;
+  var el=e.target===document?root:e.target,key=el===root?"":selectorFor(el);
+  if((quiet[key]||0)>Date.now())return;
+  clearTimeout(scrollTimers[key]);
+  scrollTimers[key]=setTimeout(function(){report({kind:"scroll",selector:key,x:el.scrollLeft,y:el.scrollTop});},60);
+}
+function replay(ev){
+  if(!ev)return;
+  if(ev.kind==="scroll"){
+    var target=ev.selector?resolve(ev.selector):(document.scrollingElement||document.documentElement);
+    if(target){quiet[ev.selector]=Date.now()+300;target.scrollTo(ev.x||0,ev.y||0);}
+    return;
+  }
+  var el=resolve(ev.selector);
+  if(!el)return;
+  if(ev.kind==="value"){
+    el.value=ev.value;
+    el.dispatchEvent(new Event("input",{bubbles:true}));
+    el.dispatchEvent(new Event("change",{bubbles:true}));
+    return;
+  }
+  var r=el.getBoundingClientRect(),o={bubbles:true,cancelable:true,view:window,clientX:r.left+r.width/2,clientY:r.top+r.height/2};
+  try{el.dispatchEvent(new PointerEvent("pointerdown",o));}catch(err){}
+  el.dispatchEvent(new MouseEvent("mousedown",o));
+  try{el.dispatchEvent(new PointerEvent("pointerup",o));}catch(err){}
+  el.dispatchEvent(new MouseEvent("mouseup",o));
+  el.dispatchEvent(new MouseEvent("click",o));
+}
 function onWheel(e){
   if(!e.ctrlKey&&!e.metaKey)return;
   e.preventDefault();
@@ -133,6 +183,10 @@ function onWheel(e){
 }
 addEventListener("wheel",onWheel,{passive:false,capture:true});
 addEventListener("click",onClick,true);
+addEventListener("click",onSyncClick,true);
+addEventListener("input",onSyncValue,true);
+addEventListener("change",onSyncValue,true);
+addEventListener("scroll",onSyncScroll,true);
 addEventListener("mousemove",onMove,true);
 addEventListener("keydown",onKey,true);
 addEventListener("scroll",queueRects,true);

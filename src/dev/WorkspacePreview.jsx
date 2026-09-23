@@ -4,6 +4,22 @@ import PrototypeWorkspace from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import { validTutorialPersona } from "../features/onboarding/tutorial";
 
+// A small clickable flow, so the preview can exercise interaction mirroring.
+const CHECKOUT_DEMO = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+body{margin:0;font:15px/1.45 system-ui,sans-serif;background:#0b0b0c;color:#fafafa}
+.screen{display:none;padding:28px 22px}.screen.on{display:block}
+h1{margin:0 0 6px;font-size:24px}p{margin:0 0 18px;color:#a1a1aa}
+button{min-height:48px;padding:0 20px;border:0;border-radius:12px;background:#e8e8e8;color:#141414;font:inherit;font-weight:600}
+input{box-sizing:border-box;width:100%;min-height:48px;margin:0 0 14px;padding:0 14px;border:1px solid #333;border-radius:12px;background:#161616;color:inherit;font:inherit;font-size:16px}
+.list{height:240px;margin:0 0 16px;overflow:auto;border:1px solid #333;border-radius:12px}.list div{padding:14px 16px;border-bottom:1px solid #222}
+</style></head><body>
+<section class="screen on" id="plan"><h1>Checkout</h1><p>Pick a plan and continue.</p><button onclick="go('details')">Continue</button></section>
+<section class="screen" id="details"><h1>Your details</h1><p>Where should the receipt go?</p><input aria-label="Email" placeholder="you@example.com">
+<div class="list">${Array.from({ length: 14 }, (_, index) => `<div>Saved card ${index + 1}</div>`).join("")}</div><button onclick="go('paid')">Pay $24.00</button></section>
+<section class="screen" id="paid"><h1>Paid</h1><p>Receipt sent.</p><button onclick="go('plan')">Start over</button></section>
+<script>function go(id){document.querySelectorAll(".screen").forEach(function(s){s.classList.toggle("on",s.id===id);});}</script>
+</body></html>`;
+
 export const initialProjects = [
   {
     id: "preview-dashboard",
@@ -42,6 +58,7 @@ export const initialProjects = [
     title: "Checkout concept",
     group_name: "Growth experiments",
     status: "In review",
+    prototype_html: CHECKOUT_DEMO,
     // Deliberately long, so the preview exercises the collapsed state control.
     controls: [
       { key: "state", label: "State", options: [
