@@ -67,6 +67,7 @@ export const CHANGELOG = [
           "Every option in the Controls sheet gets its own cell again. The sheet had been counting the selection highlight as an option, which pushed the wrong one onto its own row and left a gap.",
           "Moving the selection between rows stays inside the box instead of spilling over its edge.",
           "Screen readers hear the save status on phones and the zoom level on the zoom button.",
+          "Pick a group in New prototype is a real dropdown with every group and a New group… option. It used to suggest groups only as you typed, and Safari showed none at all.",
         ],
       },
     ],

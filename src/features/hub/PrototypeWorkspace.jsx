@@ -2738,9 +2738,13 @@ function DeletePrototypeDialog({ c, project, restoreFocus, onClose, onConfirm })
 /* ---- New-prototype dialog replaces the old window.prompt flow.
    It collects a name, group, and optional prototype HTML by drop, browse, or
    paste. onCreate handles creation and the dialog shows errors inline. ------ */
+const NEW_GROUP = "\u0000new-group";
+
 function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   const [title, setTitle] = useState("");
-  const [group, setGroup] = useState("General");
+  const [group, setGroup] = useState(() => (groups.includes("General") || !groups.length ? "General" : groups[0]));
+  // With no groups yet there's nothing to pick, so the name field shows straight away.
+  const [namingGroup, setNamingGroup] = useState(!groups.length);
   const [html, setHtml] = useState("");
   const [fileName, setFileName] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -2822,11 +2826,23 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
           </div>
           <div className="eon-modal-step">
             <div style={stepHead}><span style={stepBadge}>2</span> Pick a group</div>
-            <Input value={group} onChange={(event) => setGroup(event.target.value)} list="eon-group-options"
-              placeholder="General" aria-label="Prototype group" style={fieldStyle} />
-            <datalist id="eon-group-options">
-              {groups.map((name) => <option key={name} value={name} />)}
-            </datalist>
+            {/* A real list: a datalist only suggests matches as you type, and Safari shows no arrow. */}
+            {groups.length > 0 && (
+              <select className="eon-group-select" value={namingGroup ? NEW_GROUP : group} aria-label="Prototype group"
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setNamingGroup(next === NEW_GROUP);
+                  setGroup(next === NEW_GROUP ? "" : next);
+                }}
+                style={fieldStyle}>
+                {groups.map((name) => <option key={name} value={name}>{name}</option>)}
+                <option value={NEW_GROUP}>New group…</option>
+              </select>
+            )}
+            {namingGroup && (
+              <Input autoFocus={groups.length > 0} value={group} onChange={(event) => setGroup(event.target.value)}
+                placeholder="General" aria-label="New group name" style={fieldStyle} />
+            )}
           </div>
           <div className="eon-modal-step">
             <div style={stepHead}><span style={stepBadge}>3</span> Add the prototype HTML <span style={{ fontSize: 11, fontWeight: 400, color: c.muted }}>optional, you can upload it later</span></div>
