@@ -47,6 +47,7 @@ export const CHANGELOG = [
       {
         label: "Fixes",
         items: [
+          "Full view on phones stays in the hub. Double-tap empty space or go back to leave.",
           "The walkthrough can be finished again.",
           "Dialogs keep your typing when the page updates.",
           "On phones, fields don't zoom, comment actions show, and Return adds a line.",

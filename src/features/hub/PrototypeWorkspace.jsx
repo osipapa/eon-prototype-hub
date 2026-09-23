@@ -35,7 +35,7 @@ import ChecksList, { checksSummary, checkTone } from "./ChecksList";
 import PhoneMirrorButton from "./PhoneMirror";
 import PrototypeSwitcher, { SHORTCUT_MOD, rememberRecent } from "./PrototypeSwitcher";
 import {
-  anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, isBridgeMessage,
+  anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, injectFullViewExit, isBridgeMessage,
 } from "./anchorBridge";
 import {
   ensureReadPermission, forgetFileLink, pickHtmlFile, recallFileLink,
@@ -169,6 +169,8 @@ export default function PrototypeWorkspace({
   // there; they slide back in when the pointer reaches an edge.
   const [focusMode, setFocusMode] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [touchFull, setTouchFull] = useState(false);
+  const touchFullRef = useRef(null);
   const [peek, setPeek] = useState(null); // "nav" | "inspector" | null
   const [reviewLocationKey, setReviewLocationKey] = useState(() => window.location.hash);
   const [linkedCommentId, setLinkedCommentId] = useState(null);
@@ -835,17 +837,36 @@ export default function PrototypeWorkspace({
   const patch = (field, value) => onPatchProject(story.id, { [field]: value });
   const openFull = () => {
     // Focus mode reveals the panels on edge hover. Without a hovering pointer
-    // that is a trap, so touch devices open the prototype as its own page.
+    // that's a trap, so touch gets the prototype alone, full screen, left with
+    // a double-tap or the back gesture (a history entry catches the latter).
     if (!hasFinePointer()) {
-      const wrapper = sandboxedFullView(html, story.title);
-      const url = URL.createObjectURL(new Blob([wrapper], { type: "text/html" }));
-      window.open(url, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      window.history.pushState({ ...window.history.state, eonFull: true }, "");
+      setTouchFull(true);
       return;
     }
     setFocusMode(true);
     setPeek(null);
   };
+  const closeTouchFull = useCallback(() => {
+    if (window.history.state?.eonFull) window.history.back();
+    else setTouchFull(false);
+  }, []);
+  useEffect(() => {
+    if (!touchFull) return undefined;
+    const onPop = () => { if (!window.history.state?.eonFull) setTouchFull(false); };
+    const onMessage = (event) => {
+      if (event.source === touchFullRef.current?.contentWindow && event.data?.eon === 1 && event.data.type === "eon-full-exit") closeTouchFull();
+    };
+    const onKey = (event) => { if (event.key === "Escape") closeTouchFull(); };
+    window.addEventListener("popstate", onPop);
+    window.addEventListener("message", onMessage);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [touchFull, closeTouchFull]);
 
   useEffect(() => { if (story?.id) rememberRecent(story.id); }, [story?.id]);
 
@@ -1226,6 +1247,13 @@ export default function PrototypeWorkspace({
         <NewPrototypeDialog c={c} groups={Object.keys(groups)} restoreFocus={newDialogReturnFocusRef.current} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
       )}
       <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
+      {touchFull && effStory && (
+        <div className="eon-touch-full" style={{ background: canvasBg }}>
+          <iframe ref={touchFullRef} className="eon-touch-full-frame" title={`${effStory.title}, full screen`}
+            sandbox={PROTOTYPE_SANDBOX} srcDoc={injectFullViewExit(renderStory(effStory, protoTheme, media, args))} />
+          <p className="eon-mirror-notice" role="status">Double-tap to exit</p>
+        </div>
+      )}
       {switcherOpen && (
         <PrototypeSwitcher c={c} projects={projects} identifierFor={linearIdentifier}
           onPick={(project) => { setSwitcherOpen(false); setView("stories"); onSelectStory(project); }}
@@ -3161,12 +3189,6 @@ function SaveIndicator({ c, state, onRetry, compact = false }) {
       {content.icon}<span>{content.label}</span>{state === "error" && onRetry && !compact ? <span>· Retry</span> : null}
     </Tag>
   );
-}
-
-function sandboxedFullView(source, title) {
-  const escapedSource = String(source).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-  const escapedTitle = String(title || "Prototype").replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[char]);
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapedTitle}</title><style>*{box-sizing:border-box}html,body,iframe{width:100%;height:100%;margin:0}iframe{display:block;border:0}</style></head><body><iframe title="${escapedTitle}" sandbox="${PROTOTYPE_SANDBOX}" referrerpolicy="no-referrer" allow="clipboard-read; clipboard-write" srcdoc="${escapedSource}"></iframe></body></html>`;
 }
 
 function readStoredJson(key) {

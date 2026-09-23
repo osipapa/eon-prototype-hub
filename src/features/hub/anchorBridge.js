@@ -141,6 +141,27 @@ addEventListener("load",queueRects);
 post({type:"eon-anchor-ready"});
 })();</script>`;
 
+/* Full view on touch: a quick double-tap on anything that isn't a control asks
+   the hub to leave. Taps on buttons, links, and fields are the prototype's own,
+   so tapping a control twice fast never exits. manipulation keeps the browser
+   from zooming on the same gesture. */
+const FULL_EXIT_SCRIPT = `<script>(function(){
+var last=0,lx=0,ly=0,CONTROLS="a,button,input,select,textarea,label,summary,[role=button],[role=link],[role=tab],[role=switch],[role=checkbox],[role=radio],[role=slider],[onclick],[contenteditable=true]";
+document.documentElement.style.touchAction="manipulation";
+addEventListener("pointerup",function(e){
+  if(e.target&&e.target.closest&&e.target.closest(CONTROLS)){last=0;return;}
+  var now=Date.now();
+  if(now-last<350&&Math.abs(e.clientX-lx)<40&&Math.abs(e.clientY-ly)<40){last=0;parent.postMessage({eon:1,type:"eon-full-exit"},"*");return;}
+  last=now;lx=e.clientX;ly=e.clientY;
+},true);
+})();</script>`;
+
+export function injectFullViewExit(html) {
+  if (!html) return html;
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, () => `${FULL_EXIT_SCRIPT}</body>`);
+  return html + FULL_EXIT_SCRIPT;
+}
+
 export function injectAnchorBridge(html) {
   if (!html) return html;
   if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, `${BRIDGE_SCRIPT}</body>`);

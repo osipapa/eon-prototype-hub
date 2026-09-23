@@ -584,6 +584,9 @@ button.eon-save-state { cursor: pointer; }
 .eon-mirror-status { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 500; }
 .eon-mirror-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; }
 .eon-mirror-popover .eon-secondary-button { margin-top: 4px; }
+/* Full view on touch: the prototype alone, over everything. */
+.eon-touch-full { position: fixed; inset: 0; z-index: 90; }
+.eon-touch-full-frame { display: block; width: 100%; height: 100%; border: 0; }
 /* The phone end: the prototype, full screen, and nothing else. */
 .eon-mirror { position: fixed; inset: 0; background: #000000; color: #A1A1AA; }
 .eon-mirror.is-light { background: #FFFFFF; color: #636369; }
