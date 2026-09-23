@@ -17,15 +17,24 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-09-23",
-    title: "Phones, keyboards, and a walkthrough you can finish",
-    image: "changelog/2026-09-23-phones.png",
-    imageAlt: "Three phone screens: the workspace with the full title, a status dot, and the phone frame; comments with Resolve and reactions showing; the walkthrough pointing at the Linear row.",
+    title: "Open prototypes on your phone, and automatic checks",
+    image: "changelog/2026-09-23-phone-and-checks.png",
+    imageAlt: "The workspace with the Open on your phone popover showing a QR code and Phone connected, the Checks row listing what sticks out at 360px, and the phone beside it showing the same prototype full screen.",
     groups: [
+      {
+        label: "New",
+        items: [
+          "Open on your phone. The QR button next to Full view shows a code for the prototype you're on. Scan it and your phone shows the prototype full screen, then follows what you pick on your laptop: another prototype, a different state or theme, a new upload. The popover tells you when the phone is connected, and a phone that isn't signed in yet signs in once and lands on the prototype.",
+          "Checks. Every prototype is rendered 360px wide in each of its states, in light and dark, and checked for what breaks on phones: content sticking out past the edge, tap targets under 44px, low-contrast text, and text fields under 16px, which make iPhone zoom in. It also flags a missing empty, error, or loading state. Findings show in a new Checks row in the context panel and as a count on the prototype in the sidebar; pick one to jump to it on the prototype.",
+          "Checks run on their own when someone opens a prototype on a desktop, and the whole team sees the results. They run again when the HTML or the states change.",
+        ],
+      },
       {
         label: "Design",
         items: [
-          "On phones the header keeps the prototype's name. The Linear status becomes a dot, like the sidebar rows, and Full view is a round button like the ones beside it.",
-          "On laptops with both panels open, the toolbar no longer breaks \"Linear not connected\" and \"Full view\" onto two lines. Full view drops its label first, then the Linear badge becomes a dot.",
+          "Linear tickets show as a chip in the sidebar, like DES-706, tinted with the issue's status colour, instead of a status dot.",
+          "On phones the header keeps the prototype's name, the Linear status shrinks to the ticket chip, and Full view is a round button like the ones beside it.",
+          "On laptops with both panels open, the toolbar no longer breaks \"Linear not connected\" and \"Full view\" onto two lines. Full view drops its label first, then the Linear badge shrinks to the ticket chip.",
         ],
       },
       {
@@ -35,6 +44,14 @@ export const CHANGELOG = [
           "On touch screens, Return in a comment starts a new line, and the hints talk about tapping instead of keys and dragging. Comment pins also get a bigger tap area.",
           "On phones, toasts sit above the Controls button and zoom instead of covering them.",
           "The actions menu on each prototype works from the keyboard: focus moves into it, the arrow keys move through it, and Escape goes back to the button.",
+          "A link into the hub survives signing in: you land where it pointed, not on Prototypes.",
+        ],
+      },
+      {
+        label: "Under the hood",
+        items: [
+          "Check results live in a new prototype_checks table (supabase/migrations/20260923_prototype_checks.sql). Until it's applied, checks still run but stay in each browser.",
+          "The phone follows your laptop over a realtime channel named after a random ID for that browser tab. It only carries which prototype, state, and theme to show; the phone loads the prototype itself, with the same access rules as the hub.",
         ],
       },
       {

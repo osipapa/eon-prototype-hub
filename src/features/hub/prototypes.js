@@ -298,6 +298,21 @@ export function replaceMediaTokens(html, media = {}) {
 // Optional in-HTML config: a prototype can declare its own controls + defaults via
 //   <script type="application/json" id="eon-config">{ "controls":[…], "defaults":{…} }</script>
 // so its states show up in the hub's control bar + grid without touching the DB.
+// Prototype iframes run scripts but never share the hub's origin.
+export const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
+
+// A prototype as it renders: stored controls win, otherwise the ones its HTML
+// declares in eon-config; declared defaults sit under stored ones.
+export function effectiveStory(story, html = story?.prototype_html) {
+  if (!story) return story;
+  const cfg = parsePrototypeConfig(html);
+  return {
+    ...story,
+    controls: story.controls?.length ? story.controls : (cfg.controls || []),
+    defaults: { ...(cfg.defaults || {}), ...(story.defaults || {}) },
+  };
+}
+
 export function parsePrototypeConfig(html) {
   if (!html) return {};
   const m = html.match(/<script[^>]*id=["']eon-config["'][^>]*>([\s\S]*?)<\/script>/i);

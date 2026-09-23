@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import EonMark from "../components/EonMark";
 import { useAuth } from "../lib/auth";
@@ -18,6 +18,8 @@ function PasswordVisibilityIcon({ visible }) {
 
 export default function Login() {
   const { user, configured, signInWithPassword } = useAuth();
+  const location = useLocation();
+  const from = typeof location.state?.from === "string" && location.state.from.startsWith("/") ? location.state.from : "/";
   const [branding, setBranding] = useState(() => {
     const url = readCachedEonLogo();
     return { url, loading: !url };
@@ -40,7 +42,7 @@ export default function Login() {
     return () => { active = false; };
   }, [configured]);
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to={from === "/login" ? "/" : from} replace />;
 
   const submit = async (event) => {
     event.preventDefault();

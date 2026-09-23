@@ -7,7 +7,8 @@
    hub → prototype
      { eon:1, type:"eon-anchor-mode", on }        toggle pin-placement mode
      { eon:1, type:"eon-anchor-query", selectors } selectors to track
-     { eon:1, type:"eon-anchor-reveal", selector, doc_x, doc_y } show + scroll pin into view
+     { eon:1, type:"eon-anchor-reveal", selector, doc_x, doc_y, flash } show + scroll pin into view;
+                                                   flash outlines the element for a moment (check findings)
    prototype → hub
      { eon:1, type:"eon-anchor-ready" }            bridge is live (iframe mounted)
      { eon:1, type:"eon-anchor-click", selector, rel_x, rel_y, x_pct, y_pct, doc_x, doc_y }
@@ -72,6 +73,14 @@ function highlight(el){
   var r=el.getBoundingClientRect();
   hl.style.display="block";hl.style.left=r.left+"px";hl.style.top=r.top+"px";hl.style.width=r.width+"px";hl.style.height=r.height+"px";
 }
+var fl=null,flTimer=0;
+function flash(el){
+  if(!fl){fl=document.createElement("div");fl.style.cssText="position:fixed;pointer-events:none;z-index:2147483647;border:2px solid #F5C451;border-radius:6px;box-shadow:0 0 0 4px rgba(245,196,81,.3);transition:opacity 400ms ease";document.documentElement.appendChild(fl);}
+  var r=el.getBoundingClientRect();
+  fl.style.left=(r.left-3)+"px";fl.style.top=(r.top-3)+"px";fl.style.width=(r.width+6)+"px";fl.style.height=(r.height+6)+"px";
+  fl.style.display="block";fl.style.opacity="1";
+  clearTimeout(flTimer);flTimer=setTimeout(function(){fl.style.opacity="0";},2400);
+}
 function onMove(e){if(!mode)return;highlight(e.target===document.documentElement||e.target===document.body?null:e.target);}
 function onClick(e){
   if(!mode)return;
@@ -100,6 +109,7 @@ addEventListener("message",function(e){
       if(!shown(el))forceShow(el);
       var r=el.getBoundingClientRect();
       scrollTo(pageXOffset+r.left+r.width/2-innerWidth/2,pageYOffset+r.top+r.height/2-innerHeight/2);
+      if(m.flash)flash(el);
     }
     else if(typeof m.doc_x==="number"&&typeof m.doc_y==="number")scrollTo(m.doc_x-innerWidth/2,m.doc_y-innerHeight/2);
     queueRects();

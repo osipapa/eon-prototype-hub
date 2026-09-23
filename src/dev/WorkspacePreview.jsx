@@ -4,7 +4,7 @@ import PrototypeWorkspace from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import { validTutorialPersona } from "../features/onboarding/tutorial";
 
-const initialProjects = [
+export const initialProjects = [
   {
     id: "preview-dashboard",
     slug: "dashboard",
@@ -32,7 +32,7 @@ const initialProjects = [
     defaults: { state: "default" },
     figma_url: "",
     issue_id: "",
-    issue_url: "",
+    issue_url: "https://linear.app/eon/issue/DES-706/rate-your-trip",
     notes: "",
     sort_order: 1,
   },
@@ -153,6 +153,7 @@ export default function WorkspacePreview() {
     "tesla-models": "https://cdn.prod.website-files.com/663a718629c975b39d9e15fa/68d2e3b895888fe9ebd8810a_tesla-model3-2024-grey-light-side-2560x1440.webp",
   });
   const [activity] = useState(initialActivity);
+  const [checks, setChecks] = useState({});
   const [toasts, setToasts] = useState([
     { toastId: "t1", actor_name: "Priya Nair", action: "edited_figma", detail: { to: "x" }, project_title: "Customer dashboard" },
   ]);
@@ -175,6 +176,11 @@ export default function WorkspacePreview() {
         assets={assets}
         comments={comments}
         activity={activity}
+        checks={checks}
+        onSaveChecks={async (projectId, hash, results) => {
+          setChecks((current) => ({ ...current, [projectId]: { project_id: projectId, hash, results, checked_at: new Date().toISOString() } }));
+        }}
+        mirrorTransport="local"
         coViewers={coViewers}
         toasts={toasts}
         onDismissToast={(toastId) => setToasts((items) => items.filter((item) => item.toastId !== toastId))}

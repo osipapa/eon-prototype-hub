@@ -12,6 +12,7 @@ import {
   listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
   setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
+  listPrototypeChecks, savePrototypeChecks, subscribePrototypeChecks,
 } from "../lib/data";
 import { joinTeamPresence } from "../lib/presence";
 
@@ -56,6 +57,7 @@ export default function Hub() {
   const [assets, setAssets] = useState({});
   const [comments, setComments] = useState([]);
   const [activity, setActivity] = useState([]);
+  const [checks, setChecks] = useState({});
   const [viewers, setViewers] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [loadError, setLoadError] = useState(null);
@@ -157,7 +159,7 @@ export default function Hub() {
   async function load() {
     setLoadError(null);
     try {
-      const [projectRows, assetRows, commentRows, activityRows] = await Promise.all([
+      const [projectRows, assetRows, commentRows, activityRows, checkRows] = await Promise.all([
         listProjects(),
         listAssets(),
         listComments().catch((error) => {
@@ -170,15 +172,48 @@ export default function Hub() {
           console.warn("History is unavailable until the activity migration is applied.", error);
           return [];
         }),
+        // Checks are extra: without the table (or on any error) they run per browser.
+        listPrototypeChecks().catch((error) => {
+          console.warn("Saved checks are unavailable; checks will run in this browser.", error);
+          return [];
+        }),
       ]);
       mergeProjectRows(projectRows);
       setAssets(assetMap(assetRows));
       setComments(commentRows);
       setActivity(activityRows);
+      setChecks(Object.fromEntries(checkRows.map((row) => [row.project_id, row])));
     } catch (error) {
       setLoadError(loadErrorMessage(error));
       throw error;
     }
+  }
+
+  function applyChecksChange(payload) {
+    const row = payload?.new;
+    const gone = payload?.eventType === "DELETE" ? payload.old?.project_id : null;
+    if (gone) {
+      setChecks((current) => {
+        const next = { ...current };
+        delete next[gone];
+        return next;
+      });
+    } else if (row?.project_id) {
+      setChecks((current) => ({ ...current, [row.project_id]: row }));
+    }
+  }
+
+  async function onSaveChecks(projectId, hash, results) {
+    if (!profile?.team_id || !user?.id) throw new Error("No team to save checks to.");
+    const row = await savePrototypeChecks({
+      project_id: projectId,
+      team_id: profile.team_id,
+      hash,
+      results,
+      checked_by: user.id,
+      checked_at: new Date().toISOString(),
+    });
+    setChecks((current) => ({ ...current, [projectId]: row }));
   }
 
   // One activity stream feeds two features: the History tab (merge every row)
@@ -266,11 +301,13 @@ export default function Hub() {
     const unsubAssets = subscribeAssets(() => refreshAssets().catch(reportRefreshError));
     const unsubComments = subscribeComments(() => loadComments().catch(reportRefreshError));
     const unsubActivity = subscribeActivity(applyActivityChange);
+    const unsubChecks = subscribePrototypeChecks(applyChecksChange);
     return () => {
       unsubProjects();
       unsubAssets();
       unsubComments();
       unsubActivity();
+      unsubChecks();
       Object.values(timers.current).forEach(clearTimeout);
       Object.values(savedTimers.current).forEach(clearTimeout);
     };
@@ -547,6 +584,8 @@ export default function Hub() {
         assets={assets}
         comments={comments}
         activity={activity}
+        checks={checks}
+        onSaveChecks={onSaveChecks}
         coViewers={coViewers}
         toasts={toasts}
         onDismissToast={dismissToast}

@@ -9,6 +9,7 @@ import { startAnimatedFavicon } from "./lib/animatedFavicon";
 import "./index.css";
 
 const DesignGuidePreview = React.lazy(() => import("./dev/DesignGuidePreview"));
+const MirrorPreview = React.lazy(() => import("./dev/MirrorPreview"));
 
 startAnimatedFavicon();
 
@@ -16,11 +17,14 @@ const previewParams = new URLSearchParams(window.location.search);
 const isWorkspacePreview = import.meta.env.DEV && previewParams.has("workspace-preview");
 const isPromptPreview = import.meta.env.DEV && previewParams.has("prompts-preview");
 const isDesignPreview = import.meta.env.DEV && previewParams.has("design-preview");
+const isMirrorPreview = import.meta.env.DEV && previewParams.has("mirror-preview");
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <EonAccentDefs />
-    {isDesignPreview ? (
+    {isMirrorPreview ? (
+      <React.Suspense fallback={null}><MirrorPreview /></React.Suspense>
+    ) : isDesignPreview ? (
       <React.Suspense fallback={null}><DesignGuidePreview /></React.Suspense>
     ) : isPromptPreview ? (
       <PromptLibraryPreview />

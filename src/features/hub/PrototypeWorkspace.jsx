@@ -16,20 +16,23 @@ import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarRe
 import { Liquid } from "liquid-gooey";
 import {
   AlertCircle, ArrowDown, ArrowUp, Check, ChevronDown, ChevronLeft, Circle, Copy,
-  ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, Loader2,
+  ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, ListChecks, Loader2,
   Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
   Menu, MoreHorizontal, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
-  CANVAS_PRESETS, HUB, VIEWPORTS, currentArgs,
-  parsePrototypeConfig, renderStory,
+  CANVAS_PRESETS, HUB, PROTOTYPE_SANDBOX, VIEWPORTS, currentArgs,
+  effectiveStory, parsePrototypeConfig, renderStory,
 } from "./prototypes";
 import {
   FigmaEmbed, LinearCard, MediaManager, StateGrid,
   UploadPanel, figmaMeta,
 } from "./PrototypeHub";
 import { buildSetupPrompt } from "./setupPrompt";
+import { issueCount, usePrototypeChecks } from "./checks";
+import ChecksList, { checksSummary, checkTone } from "./ChecksList";
+import PhoneMirrorButton from "./PhoneMirror";
 import {
   anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, isBridgeMessage,
 } from "./anchorBridge";
@@ -41,7 +44,6 @@ import { useSystemTheme } from "@/lib/systemTheme";
 import { copyText, useStoredState } from "@/lib/uiState";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
-const PROTOTYPE_SANDBOX = "allow-scripts allow-forms allow-modals allow-popups allow-downloads";
 
 // Mouse or trackpad. Touch screens get tap wording, and Return starts a new
 // line there because a phone keyboard has no Shift+Return.
@@ -94,6 +96,7 @@ export default function PrototypeWorkspace({
   onPatchProject, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
   onCreateComment, onResolveComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
+  checks = {}, onSaveChecks, mirrorTransport = "supabase",
 }) {
   const hubTheme = useSystemTheme();
   const [protoTheme, setProtoTheme] = useStoredState("eon-prototype-theme", "dark");
@@ -246,6 +249,26 @@ export default function PrototypeWorkspace({
   const args = useMemo(
     () => (effStory ? currentArgs(effStory, liveArgs[effStory.id]) : {}),
     [effStory, liveArgs],
+  );
+  // Checks measure what the team sees: the saved HTML, not an unpublished
+  // local file, so a live link only borrows the saved config.
+  const checkStory = useMemo(
+    () => (isLiveLinked ? effectiveStory(story) : effStory),
+    [story, isLiveLinked, effStory],
+  );
+  // A prototype with nothing uploaded renders a placeholder; there's nothing to check.
+  const canCheck = Boolean(checkStory?.prototype_html) || ["signin", "dashboard"].includes(checkStory?.slug);
+  const storyChecks = usePrototypeChecks({
+    story: canCheck ? checkStory : null,
+    media,
+    saved: checks[story?.id],
+    onSave: onSaveChecks,
+    // Phones read results; a desktop does the rendering.
+    auto: view === "stories" && hasFinePointer() && !breakpoints.compactControls,
+  });
+  const checkCountByProject = useMemo(
+    () => Object.fromEntries(Object.entries(checks).map(([id, row]) => [id, issueCount(row?.results)])),
+    [checks],
   );
   const vp = VIEWPORTS[viewport];
   const html = useMemo(
@@ -446,6 +469,24 @@ export default function PrototypeWorkspace({
       || Object.entries(anchor.args || {}).some(([key, value]) => String(value) !== String(args[key]));
     if (willRemount) pendingRevealRef.current = reveal;
     else postToFrame(reveal);
+  };
+
+  // A check finding: phone width, the state and theme it showed up in, then
+  // scroll the element into view and flash it.
+  const jumpToIssue = (issue, where) => {
+    if (!story) return;
+    setLayout("single");
+    setViewport("mobile");
+    if (["light", "dark"].includes(where?.theme)) setProtoTheme(where.theme);
+    const nextArgs = where?.args || {};
+    setLiveArgs((current) => ({ ...current, [story.id]: { ...current[story.id], ...nextArgs } }));
+    if (breakpoints.inspectorDrawer) setInspectorOpen(false);
+    const reveal = { type: "eon-anchor-reveal", selector: issue.selector || null, flash: true };
+    const willRemount = (where?.theme && where.theme !== protoTheme)
+      || Object.entries(nextArgs).some(([key, value]) => String(value) !== String(args[key]));
+    if (willRemount) pendingRevealRef.current = reveal;
+    // Switching to phone width resizes the frame without a remount; let it land first.
+    else window.setTimeout(() => postToFrame(reveal), viewport === "mobile" ? 0 : 220);
   };
 
   useEffect(() => {
@@ -885,7 +926,7 @@ export default function PrototypeWorkspace({
           onOpenDesign={onOpenDesign} onOpenPrompts={onOpenPrompts} onOpenTracking={onOpenTracking} onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
           changelog={changelog}
           linearByProject={linearByProject}
-          unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
+          unreadByProject={unreadByProject} commentCountByProject={commentCountByProject} checkCountByProject={checkCountByProject}
           resize={sidebarResize}
           isDrawer={breakpoints.navDrawer && !focusMode} onClose={() => setNavOpen(false)}
           peeking={focusMode ? peek === "nav" : null} onPeekEnd={() => setPeek(null)} onPeekStart={() => setPeek("nav")}
@@ -909,6 +950,10 @@ export default function PrototypeWorkspace({
           viewport={viewport} setViewport={setViewport} layout={layout} setLayout={setLayout}
           saveState={saveState} onRetrySave={onRetrySave}
           onOpenLinear={openLinearContext}
+          // A phone has nothing to mirror to, and the QR needs a desktop to scan from.
+          showMirror={view === "stories" && hasFinePointer() && !breakpoints.compactControls}
+          mirrorView={{ slug: story.slug, args, theme: protoTheme }}
+          mirrorTransport={mirrorTransport}
         />}
 
         {loadError && (
@@ -1010,6 +1055,7 @@ export default function PrototypeWorkspace({
           rememberedLink={supportsFileLink() && !isLiveLinked ? rememberedLink : null}
           onReconnect={reconnectLocalFile} fileLinkError={fileLinkError}
           openRow={openContextRow} setOpenRow={setOpenContextRow}
+          checks={{ ...storyChecks, available: canCheck }} onJumpToIssue={jumpToIssue}
           resize={inspectorResize}
           isDrawer={breakpoints.inspectorDrawer && !focusMode} onClose={() => setInspectorOpen(false)}
           peeking={focusMode ? peek === "inspector" : null} onPeekEnd={() => setPeek(null)} onPeekStart={() => setPeek("inspector")}
@@ -1060,7 +1106,7 @@ function WorkspaceSidebar({
   onOpenDesign, onOpenPrompts, onOpenTracking,
   changelog,
   linearByProject,
-  unreadByProject, commentCountByProject,
+  unreadByProject, commentCountByProject, checkCountByProject = {},
   resize,
   isDrawer, onClose, peeking = null, onPeekStart, onPeekEnd,
 }) {
@@ -1218,10 +1264,15 @@ function WorkspaceSidebar({
                   ) : (
                     <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose(); }}
                       onDoubleClick={() => isAdmin && setRenamingId(item.id)} title={isAdmin ? "Double-click to rename" : undefined}
-                      aria-label={`${item.title}, ${connection.label}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
-                      <span className="eon-status-dot" aria-hidden="true" style={{ "--status-color": connection.color, background: connection.color }} />
-                      <span>{item.title}</span>
+                      aria-label={`${item.title}, ${identifier ? `${identifier}, ` : ""}${connection.label}${checkCountByProject[item.id] ? `, ${checkCountByProject[item.id]} check issues` : ""}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
+                      {identifier && <span className="eon-issue-chip" aria-hidden="true" style={{ "--status-color": connection.color }}>{identifier}</span>}
+                      <span className="eon-story-title">{item.title}</span>
                       {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}
+                      {checkCountByProject[item.id] > 0 && (
+                        <span className="eon-comment-count" style={{ color: checkTone(c) }} title={`${checkCountByProject[item.id]} check issues at phone width`}>
+                          <ListChecks size={11} aria-hidden="true" />{checkCountByProject[item.id]}
+                        </span>
+                      )}
                       {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && (
                         <span className="eon-comment-count" style={{ color: c.muted }} title={`${commentCountByProject[item.id]} comments`}>
                           <MessageSquare size={11} aria-hidden="true" />{commentCountByProject[item.id]}
@@ -1318,6 +1369,7 @@ function WorkspaceToolbar({
   navDrawer, navOpen, onOpenNav, inspectorDrawer, inspectorOpen, onToggleInspector,
   openFull, viewport, setViewport, layout, setLayout,
   saveState, onRetrySave, onOpenLinear,
+  showMirror, mirrorView, mirrorTransport,
 }) {
   const linearConnection = linearConnectionState(liveLinear, linearId, c);
   return (
@@ -1339,7 +1391,7 @@ function WorkspaceToolbar({
           {view === "stories" && (
             <button
               data-tutorial="review-status"
-              className="eon-buttonish eon-status-button"
+              className={`eon-buttonish eon-status-button${linearId ? "" : " is-unlinked"}`}
               onClick={onOpenLinear}
               aria-label={`${linearConnection.label}. Open the Linear issue in the context panel`}
             >
@@ -1355,7 +1407,8 @@ function WorkspaceToolbar({
                 }}
               >
                 {linearConnection.kind === "error" && <AlertCircle size={12} aria-hidden="true" />}
-                {linearConnection.label}
+                <span className="eon-story-status-label">{linearConnection.label}</span>
+                {linearId && <span className="eon-story-status-id">{linearId}</span>}
               </Badge>
             </button>
           )}
@@ -1391,6 +1444,7 @@ function WorkspaceToolbar({
                 variant="icon"
               />
             </div>
+            {showMirror && <PhoneMirrorButton c={c} view={mirrorView} transport={mirrorTransport} />}
             <button className="eon-buttonish eon-secondary-button eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view"
               style={{ borderColor: c.border, background: c.panel, color: c.secondary }}>
               <Maximize2 size={15} /> <span>Full view</span>
@@ -1603,11 +1657,12 @@ function ReviewInspector({
   liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn, fileSync, autoPublish,
   compare, setCompare, canCompare, onOpenSource,
   rememberedLink, onReconnect, fileLinkError,
-  openRow, setOpenRow,
+  openRow, setOpenRow, checks, onJumpToIssue,
   resize, isDrawer, onClose, peeking = null, onPeekStart, onPeekEnd,
 }) {
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   const figma = figmaMeta(story.figma_url || "");
+  const checkIssues = issueCount(checks.results);
   const linearConnection = linearConnectionState(liveLinear, linearId, c);
   const toggleRow = (key) => setOpenRow((current) => (current === key ? null : key));
 
@@ -1744,6 +1799,20 @@ function ReviewInspector({
               {linearConnection.kind === "error" ? "Paste an issue URL to pull its status, assignee, and description." : linearConnection.label}
             </p>
           )}
+        </ContextRow>
+
+        <ContextRow
+          c={c} rowKey="checks" icon={ListChecks} label="Checks" value={checksSummary(checks)}
+          valueTone={checkIssues ? checkTone(c) : c.muted}
+          open={openRow === "checks"} onToggle={() => toggleRow("checks")}
+          actions={(
+            <button className="eon-buttonish eon-context-action" onClick={checks.run} disabled={Boolean(checks.running) || !checks.available}
+              style={{ borderColor: c.border, color: c.secondary, opacity: checks.running || !checks.available ? 0.5 : 1 }}>
+              {checks.results || checks.outdated ? "Run again" : "Run"}
+            </button>
+          )}
+        >
+          <ChecksList c={c} checks={checks} onJump={onJumpToIssue} />
         </ContextRow>
 
       </div>
