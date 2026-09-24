@@ -101,15 +101,16 @@ export default function CanvasPane({
   const deviceMargin = viewport === "mobile" ? 34 * frameScale : 0;
 
   return (
-    <div className={`eon-canvas-zone${pane ? " is-pane" : ""}${pane && active ? " is-active" : ""}`}
+    <div data-pane-id={story.id} className={`eon-canvas-zone${pane ? " is-pane" : ""}${pane && active ? " is-active" : ""}`}
       style={pane ? { flex: `${pane.flex} 1 0%`, order: pane.side === "left" ? 0 : 2 } : undefined}
       onPointerDownCapture={pane && !active
         // The header has its own controls: its title activates, and dragging it
-        // swaps sides without changing which pane is active.
-        ? (event) => { if (!event.target.closest(".eon-pane-head")) pane.onActivate(); }
+        // swaps sides without changing which pane is active. Zoom, theme, and the
+        // screenshot are shared, so using them changes nothing either.
+        ? (event) => { if (!event.target.closest(".eon-pane-head, .eon-viewctl-float")) pane.onActivate(); }
         : undefined}>
       {pane && <PaneHeader c={c} story={sourceProject} active={active} pane={pane} />}
-      <section data-tutorial={active ? "prototype-canvas" : undefined} ref={canvasRef} className="eon-canvas"
+      <section data-tutorial={active ? "prototype-canvas" : undefined} ref={canvasRef} className="eon-canvas" tabIndex={-1}
         aria-label={`${story.title} prototype canvas`} style={{ background: canvasBg }}>
         {layout === "single" ? (
           <div className="eon-canvas-stage" style={{ width: Math.max(size.width, frameWidth + deviceMargin + 64), height: Math.max(size.height, frameHeight + deviceMargin + 64) }}>

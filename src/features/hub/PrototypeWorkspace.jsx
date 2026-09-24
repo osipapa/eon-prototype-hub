@@ -325,7 +325,7 @@ export default function PrototypeWorkspace({
     if (!story?.id) return;
     // Both panes share the device, so while split view is open (or a pane is
     // handing over to the other one) the device only changes when asked.
-    if (panes || paneSwitchRef.current === story.id) return;
+    if (splitOpen || paneSwitchRef.current === story.id) return;
     const phone = window.matchMedia("(max-width: 680px)").matches;
     const next = readViewportMemory()[story.id] || (phone ? null : cfg.viewport);
     if (VIEWPORTS[next]) setViewportState(next);
@@ -696,7 +696,12 @@ export default function PrototypeWorkspace({
     const linkedSplit = projects.find((item) => item.slug === params.get("split"));
     if (linkedSplit && linkedSplit.id !== story.id) {
       const side = params.get("split-side") === "left" ? "left" : "right";
-      setPanes(placePane({ [flipSide(side)]: story.id }, side, linkedSplit.id));
+      setPanes((current) => {
+        const next = placePane({ [flipSide(side)]: story.id }, side, linkedSplit.id);
+        const samePair = current && [current.left, current.right].includes(next.left)
+          && [current.left, current.right].includes(next.right);
+        return samePair ? { ...next, first: current.first } : next;
+      });
     }
   }, [story?.id, reviewLocationKey]);
 
@@ -859,6 +864,49 @@ export default function PrototypeWorkspace({
     if (fileLink && localHtml != null) patchProjectRef.current(fileLink.projectId, { prototype_html: localHtml });
   };
 
+  // A row that re-renders into another section mid-drag (a Linear status
+  // landing, a teammate regrouping) never gets its dragend, which would leave
+  // the drop halves over the canvas. Pointer events pause during a drag, so
+  // the first one after it ends the drag here too.
+  useEffect(() => {
+    if (!dragId && !paneDragId) return undefined;
+    const end = () => {
+      setDragId(null);
+      setDropTargetId(null);
+      setPaneDragId(null);
+    };
+    window.addEventListener("pointermove", end);
+    window.addEventListener("drop", end);
+    return () => {
+      window.removeEventListener("pointermove", end);
+      window.removeEventListener("drop", end);
+    };
+  }, [dragId, paneDragId]);
+
+  // The button that was pressed disappears with the sidebar (or the toolbar
+  // slot), so focus moves to the one that brings it back.
+  const navToggledRef = useRef(false);
+  useEffect(() => {
+    if (!navToggledRef.current) return;
+    navToggledRef.current = false;
+    const selector = navCollapsed ? ".eon-toolbar [data-sidebar-toggle]" : ".eon-sidebar [data-sidebar-toggle]";
+    document.querySelector(selector)?.focus({ preventScroll: true });
+  }, [navCollapsed]);
+
+  // Escape puts a peeking sidebar away.
+  useEffect(() => {
+    if (peek !== "nav" || !navCollapsed) return undefined;
+    const onKey = (event) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      setPeek(null);
+      if (document.activeElement?.closest(".eon-sidebar")) {
+        document.querySelector(".eon-toolbar [data-sidebar-toggle]")?.focus({ preventScroll: true });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [peek, navCollapsed]);
+
   if (!story) {
     return (
       <div className={`${hubTheme === "dark" ? "" : "light"} eon-empty-workspace`} style={{ background: c.bg, color: c.text }}>
@@ -900,8 +948,10 @@ export default function PrototypeWorkspace({
   };
   const closePane = (id) => {
     if (!splitOpen) return;
-    if (id !== story.id) { setPanes(null); return; }
     const remaining = id === panes.left ? rightProject : leftProject;
+    // The Close button goes away with its pane; the canvas left behind takes focus.
+    window.setTimeout(() => document.querySelector(`[data-pane-id="${remaining.id}"] .eon-canvas`)?.focus({ preventScroll: true }), 0);
+    if (id !== story.id) { setPanes(null); return; }
     paneSwitchRef.current = remaining.id;
     closingPaneRef.current = id;
     onSelectStory(remaining, { replace: true });
@@ -959,14 +1009,18 @@ export default function PrototypeWorkspace({
     const titleOf = (side) => (side === "left" ? leftProject : rightProject).title;
     return { left: `Replace ${titleOf("left")}`, right: `Replace ${titleOf("right")}` };
   })();
+  const setNavCollapsedFromUser = (collapsed) => {
+    navToggledRef.current = true;
+    setNavCollapsed(collapsed);
+    setPeek(null);
+  };
   const toggleNav = () => {
     if (breakpoints.navDrawer) {
       if (!navOpen) setInspectorOpen(false);
       setNavOpen(!navOpen);
       return;
     }
-    setNavCollapsed(!navCollapsed);
-    setPeek(null);
+    setNavCollapsedFromUser(!navCollapsed);
   };
   const patch = (field, value) => onPatchProject(story.id, { [field]: value });
   const openFull = () => {
@@ -1147,12 +1201,15 @@ export default function PrototypeWorkspace({
     ordered.splice(last === -1 ? ordered.length : last + 1, 0, id);
     onReorder(ordered, { [id]: name });
   };
+  // Move up / down steps past the neighbour in the section on screen, which
+  // under status grouping is rarely the neighbour in the saved order.
   const moveStory = (id, direction) => {
-    const ordered = projects.map((item) => item.id);
-    const from = ordered.indexOf(id);
-    const to = Math.min(ordered.length - 1, Math.max(0, from + direction));
-    if (from < 0 || from === to || !onReorder) return;
-    [ordered[from], ordered[to]] = [ordered[to], ordered[from]];
+    const items = sections.find((section) => section.items.some((item) => item.id === id))?.items || [];
+    const neighbour = items[items.findIndex((item) => item.id === id) + direction];
+    if (!neighbour || !onReorder) return;
+    const ordered = projects.map((item) => item.id).filter((itemId) => itemId !== id);
+    const at = ordered.indexOf(neighbour.id);
+    ordered.splice(direction < 0 ? at : at + 1, 0, id);
     onReorder(ordered);
   };
 
@@ -1247,7 +1304,7 @@ export default function PrototypeWorkspace({
             const project = projects.find((item) => item.id === id);
             if (project) setDeleteCandidate({ project, restoreFocus });
           }}
-          moveStory={moveStory} projectOrder={projects.map((item) => item.id)}
+          moveStory={moveStory}
           moveToGroup={moveToGroup} allGroups={allGroups}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
           onOpenDesign={onOpenDesign} onOpenPrompts={onOpenPrompts} onOpenTracking={onOpenTracking} onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
@@ -1257,7 +1314,7 @@ export default function PrototypeWorkspace({
           resize={sidebarResize}
           isDrawer={breakpoints.navDrawer && !focusMode} onClose={() => setNavOpen(false)}
           collapsed={navCollapsed}
-          onToggleCollapse={focusMode || breakpoints.navDrawer ? null : () => { setNavCollapsed(!navCollapsed); setPeek(null); }}
+          onToggleCollapse={focusMode || breakpoints.navDrawer ? null : () => setNavCollapsedFromUser(!navCollapsed)}
           peeking={focusMode || navCollapsed ? peek === "nav" : null} onPeekEnd={() => setPeek(null)} onPeekStart={() => setPeek("nav")}
         />
       )}
@@ -1269,7 +1326,7 @@ export default function PrototypeWorkspace({
             setNavOpen(true);
             setInspectorOpen(false);
           }}
-          navCollapsed={navCollapsed} onExpandNav={() => { setNavCollapsed(false); setPeek(null); }}
+          navCollapsed={navCollapsed} onExpandNav={() => setNavCollapsedFromUser(false)}
           inspectorDrawer={breakpoints.inspectorDrawer} inspectorOpen={inspectorOpen}
           onToggleInspector={() => {
             const opening = !inspectorOpen;
@@ -1451,7 +1508,7 @@ function WorkspaceSidebar({
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
-  onDeleteProject, moveStory, projectOrder, moveToGroup, allGroups, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
+  onDeleteProject, moveStory, moveToGroup, allGroups, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
   onOpenDesign, onOpenPrompts, onOpenTracking,
   changelog,
   linearByProject,
@@ -1495,6 +1552,7 @@ function WorkspaceSidebar({
       onMouseEnter={peeking === null ? undefined : onPeekStart}
       onMouseLeave={peeking === null ? undefined : onPeekEnd}
       onFocusCapture={peeking === null ? undefined : onPeekStart}
+      onBlurCapture={peeking === null ? undefined : (event) => endPeekOnBlur(event, onPeekEnd)}
       style={{
         background: c.nav,
         borderColor: c.border,
@@ -1516,7 +1574,7 @@ function WorkspaceSidebar({
           />
           {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close prototype navigation" style={{ color: c.muted }}><X size={17} /></button>}
           {!isDrawer && onToggleCollapse && (
-            <button className="eon-buttonish eon-icon-button" onClick={onToggleCollapse}
+            <button data-sidebar-toggle className="eon-buttonish eon-icon-button" onClick={onToggleCollapse}
               aria-label={collapsed ? "Keep the sidebar open" : "Collapse the sidebar"}
               title={collapsed ? "Keep the sidebar open ([)" : "Collapse the sidebar ([)"}
               style={{ color: c.muted }}>
@@ -1610,7 +1668,7 @@ function WorkspaceSidebar({
                 )}
               </div>
             )}
-            {!collapsedGroups[section.key] && section.items.map((item) => {
+            {!collapsedGroups[section.key] && section.items.map((item, itemIndex) => {
               const active = activeId === item.id;
               const inSplit = splitId === item.id;
               const identifier = linearIdentifier(item);
@@ -1673,8 +1731,8 @@ function WorkspaceSidebar({
                               </button>
                             )}
                             <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>
-                            <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>
-                            <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
+                            <button className="eon-buttonish" role="menuitem" disabled={itemIndex === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>
+                            <button className="eon-buttonish" role="menuitem" disabled={itemIndex === section.items.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
                             <button className="eon-buttonish" role="menuitem" aria-haspopup="menu" onClick={() => setMenuPanel("groups")} style={{ color: c.text }}><FolderInput size={14} /> Move to group</button>
                             <button className="eon-buttonish" role="menuitem" onClick={() => {
                               const restoreFocus = menuTriggerRef.current;
@@ -1764,6 +1822,7 @@ function WorkspaceToolbar({
         {!navDrawer && navCollapsed && (
           <button
             data-tutorial="nav-toggle"
+            data-sidebar-toggle
             className="eon-buttonish eon-icon-button"
             onClick={onExpandNav}
             aria-label="Show the sidebar"
@@ -2085,6 +2144,7 @@ function ReviewInspector({
       onMouseEnter={peeking === null ? undefined : onPeekStart}
       onMouseLeave={peeking === null ? undefined : onPeekEnd}
       onFocusCapture={peeking === null ? undefined : onPeekStart}
+      onBlurCapture={peeking === null ? undefined : (event) => endPeekOnBlur(event, onPeekEnd)}
       style={{
         background: c.nav,
         borderColor: c.border,
@@ -3299,6 +3359,14 @@ function relativeTime(value) {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
   return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// A peeking edge panel opened by focus closes when Tab takes focus somewhere
+// else. Row menus render in a portal, so moving into one counts as staying.
+function endPeekOnBlur(event, onPeekEnd) {
+  const next = event.relatedTarget;
+  if (!next || event.currentTarget.contains(next) || next.closest?.("[data-story-menu]")) return;
+  onPeekEnd?.();
 }
 
 function hubShadow() {
