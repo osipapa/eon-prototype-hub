@@ -504,16 +504,15 @@ create policy "admin manage profiles" on public.profiles for update
 create policy "admin delete profiles" on public.profiles for delete
   using (public.is_admin() and team_id = public.current_team_id() and id <> auth.uid());
 
--- projects: any team member reads + writes; admins delete.
+-- projects: any team member reads, writes, and deletes.
 create policy "team read projects" on public.projects for select
   using (team_id = public.current_team_id());
 create policy "team insert projects" on public.projects for insert
   with check (team_id = public.current_team_id());
 create policy "team update projects" on public.projects for update
   using (team_id = public.current_team_id());
--- Creators may delete their own prototype; admins may delete any.
-create policy "member or admin delete projects" on public.projects for delete
-  using ((public.is_admin() or created_by = auth.uid()) and team_id = public.current_team_id());
+create policy "team delete projects" on public.projects for delete
+  using (team_id = public.current_team_id());
 
 -- assets: same pattern.
 create policy "team read assets" on public.assets for select

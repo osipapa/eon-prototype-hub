@@ -27,8 +27,8 @@ Storage + Realtime) · GitHub Pages.
 
 ## Roles
 
-- **Member**: view and edit prototypes, prompts, links, comments, and media; copy tracking references.
-- **Admin**: everything a member can do, plus manage roles (`/admin`) and delete content.
+- **Member**: view, edit, rename, reorder, and delete prototypes; edit prompts, links, comments, and media; copy tracking references.
+- **Admin**: everything a member can do, plus manage accounts and roles (`/admin`) and delete anyone's prompts.
 
 ## Structure
 

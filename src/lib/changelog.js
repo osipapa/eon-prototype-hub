@@ -19,6 +19,21 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-09-24",
+    title: "Everyone manages prototypes",
+    image: "changelog/2026-09-24-manage-prototypes.png",
+    imageAlt: "A prototype's menu with Rename, Move up, Move down, Move to group, and Delete.",
+    groups: [
+      {
+        label: "Behavior",
+        items: [
+          "Anyone on the team can rename, reorder, regroup, and delete any prototype from its menu.",
+          "Double-click a prototype to rename it, drag it to reorder, or use the pencil to rename a group.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-09-23",
     title: "Your phone, automatic checks, and shortcuts",
     image: "changelog/2026-09-23-phone-and-checks.png",

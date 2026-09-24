@@ -1070,7 +1070,7 @@ export default function PrototypeWorkspace({
       {(navOpen || focusMode) && (
         <WorkspaceSidebar
           c={c} media={media} view={view} setView={setView} query={query} setQuery={setQuery}
-          groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin} currentUserId={profile?.id}
+          groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin}
           onNewProject={(event) => { newDialogReturnFocusRef.current = event.currentTarget; setShowNewDialog(true); }} dragId={dragId} setDragId={setDragId}
           dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop}
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
@@ -1273,7 +1273,7 @@ export default function PrototypeWorkspace({
 }
 
 function WorkspaceSidebar({
-  c, media, view, setView, query, setQuery, groups, activeId, onSelect, isAdmin, currentUserId,
+  c, media, view, setView, query, setQuery, groups, activeId, onSelect, isAdmin,
   onNewProject, dragId, setDragId, dropTargetId, setDropTargetId, handleDrop,
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
@@ -1406,21 +1406,17 @@ function WorkspaceSidebar({
                   aria-expanded={!collapsedGroups[group]} style={{ color: c.muted }}>
                   <ChevronDown size={13} className={collapsedGroups[group] ? "is-collapsed" : ""} /> {group}
                 </button>
-                {isAdmin && (
-                  <button className="eon-buttonish eon-group-edit" onClick={() => setRenamingGroup(group)} aria-label={`Rename group ${group}`} title="Rename group" style={{ color: c.muted }}>
-                    <Pencil size={12} />
-                  </button>
-                )}
+                <button className="eon-buttonish eon-group-edit" onClick={() => setRenamingGroup(group)} aria-label={`Rename group ${group}`} title="Rename group" style={{ color: c.muted }}>
+                  <Pencil size={12} />
+                </button>
               </div>
             )}
             {!collapsedGroups[group] && items.map((item) => {
               const active = activeId === item.id;
               const identifier = linearIdentifier(item);
               const connection = linearConnectionState(linearByProject[item.id], identifier, c);
-              // Members can delete only prototypes they created; admins manage anything.
-              const canDelete = isAdmin || item.created_by === currentUserId;
               return (
-                <div className="eon-story-row" key={item.id} draggable={isAdmin} data-story-menu={item.id}
+                <div className="eon-story-row" key={item.id} draggable data-story-menu={item.id}
                   onDragStart={() => setDragId(item.id)}
                   onDragEnd={() => { setDragId(null); setDropTargetId(null); }}
                   onDragOver={(event) => { if (dragId) { event.preventDefault(); setDropTargetId(item.id); } }}
@@ -1440,7 +1436,7 @@ function WorkspaceSidebar({
                     </div>
                   ) : (
                     <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose(); }}
-                      onDoubleClick={() => isAdmin && setRenamingId(item.id)} title={isAdmin ? "Double-click to rename" : undefined}
+                      onDoubleClick={() => setRenamingId(item.id)} title="Double-click to rename"
                       aria-label={`${item.title}, ${identifier ? `${identifier}, ` : ""}${connection.label}${checkCountByProject[item.id] ? `, ${checkCountByProject[item.id]} check issues` : ""}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
                       {identifier && <span className="eon-issue-chip" aria-hidden="true" style={{ "--status-color": connection.color }}>{identifier}</span>}
                       <span className="eon-story-title">{item.title}</span>
@@ -1457,7 +1453,7 @@ function WorkspaceSidebar({
                       )}
                     </button>
                   )}
-                  {canDelete && renamingId !== item.id && (
+                  {renamingId !== item.id && (
                     <div style={{ position: "relative", flexShrink: 0 }}>
                       <button ref={(node) => { if (storyMenuId === item.id) menuTriggerRef.current = node; }}
                         className="eon-buttonish eon-icon-button"
@@ -1472,11 +1468,11 @@ function WorkspaceSidebar({
                       </button>
                       {storyMenuId === item.id && menuRect && (
                         <FloatingMenu c={c} anchor={menuRect} storyId={item.id} triggerRef={menuTriggerRef} onClose={() => setStoryMenuId(null)}
-                          itemCount={menuPanel === "actions" ? (isAdmin ? 5 : 2) : Math.min(allGroups.length, 6) + 2}>
+                          itemCount={menuPanel === "actions" ? 5 : Math.min(allGroups.length, 6) + 2}>
                           {menuPanel === "actions" ? <>
-                            {isAdmin && <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>}
-                            {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>}
-                            {isAdmin && <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>}
+                            <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>
+                            <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>
+                            <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
                             <button className="eon-buttonish" role="menuitem" aria-haspopup="menu" onClick={() => setMenuPanel("groups")} style={{ color: c.text }}><FolderInput size={14} /> Move to group</button>
                             <button className="eon-buttonish" role="menuitem" onClick={() => {
                               const restoreFocus = menuTriggerRef.current;
