@@ -38,7 +38,7 @@ export const CHANGELOG = [
           "Prototypes are grouped by their Linear status. Switch to Groups for your own groups.",
           "Anyone on the team can rename, reorder, regroup, and delete any prototype from its menu.",
           "Double-click a prototype to rename it, drag it to reorder, or use the pencil to rename a group.",
-          "Checks and the embedded Figma preview are gone. The Figma link stays.",
+          "Checks and Figma links are gone from the context panel.",
         ],
       },
     ],

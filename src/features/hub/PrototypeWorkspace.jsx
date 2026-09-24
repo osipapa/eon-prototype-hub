@@ -27,7 +27,7 @@ import {
 } from "./prototypes";
 import {
   LinearCard, MediaManager,
-  UploadPanel, figmaMeta,
+  UploadPanel,
 } from "./PrototypeHub";
 import { buildSetupPrompt } from "./setupPrompt";
 import CanvasPane from "./CanvasPane";
@@ -179,7 +179,6 @@ export default function PrototypeWorkspace({
   const [renamingId, setRenamingId] = useState(null);
   const [renamingGroup, setRenamingGroup] = useState(null);
   const [storyMenuId, setStoryMenuId] = useState(null);
-  const [editFigma, setEditFigma] = useState(false);
   const [editLinear, setEditLinear] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [linearByProject, setLinearByProject] = useState({});
@@ -745,7 +744,6 @@ export default function PrototypeWorkspace({
 
   useEffect(() => {
     setStoryMenuId(null);
-    setEditFigma(false);
     setEditLinear(false);
     setOpenContextRow(null);
     setShowUpload(false);
@@ -1441,7 +1439,6 @@ export default function PrototypeWorkspace({
             currentUserId: profile?.id,
           }}
           editLinear={editLinear} setEditLinear={setEditLinear}
-          editFigma={editFigma} setEditFigma={setEditFigma}
           liveLinear={liveLinear} linearId={linearId}
           isLiveLinked={isLiveLinked} fileLink={fileLink?.projectId === story.id ? fileLink : null} isBuiltIn={isBuiltIn}
           fileSync={fileSync} autoPublish={autoPublish}
@@ -2110,7 +2107,7 @@ function ToolGroup({ label, c, children }) {
    two things that stream in over time. ---- */
 function ReviewInspector({
   c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
-  anchors, editLinear, setEditLinear, editFigma, setEditFigma,
+  anchors, editLinear, setEditLinear,
   liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn, fileSync, autoPublish,
   onOpenSource,
   rememberedLink, onReconnect, fileLinkError,
@@ -2118,7 +2115,6 @@ function ReviewInspector({
   resize, isDrawer, onClose, peeking = null, onPeekStart, onPeekEnd,
 }) {
   const drawerRef = useDrawerFocus(isDrawer, onClose);
-  const figma = figmaMeta(story.figma_url || "");
   const linearConnection = linearConnectionState(liveLinear, linearId, c);
   const toggleRow = (key) => setOpenRow((current) => (current === key ? null : key));
 
@@ -2202,25 +2198,6 @@ function ReviewInspector({
                     : "Upload an HTML file to render this prototype."}
           </p>
           {fileLinkError && <p className="eon-context-note" role="alert" style={{ color: "#FF7A8A" }}>{fileLinkError}</p>}
-        </ContextRow>
-
-        <ContextRow
-          c={c} rowKey="figma" icon={FigmaIcon} label="Figma" value={figma.valid ? figma.title : "Not linked"}
-          valueTone={figma.valid ? undefined : c.muted}
-          open={openRow === "figma"} onToggle={() => toggleRow("figma")}
-          actions={figma.valid ? (
-            <a className="eon-buttonish eon-icon-button eon-context-icon" href={story.figma_url} target="_blank" rel="noreferrer"
-              aria-label="Open in Figma" title="Open in Figma" style={{ color: c.muted }}>
-              <ExternalLink size={14} />
-            </a>
-          ) : null}
-        >
-          {figma.node && <p className="eon-context-note" style={{ color: c.muted }}>Node {figma.node}</p>}
-          <ContextLinkField
-            c={c} label="Figma share URL" value={story.figma_url || ""} placeholder="Paste a Figma share URL"
-            hasValue={figma.valid} editing={editFigma} setEditing={setEditFigma}
-            onChange={(value) => patch("figma_url", value)}
-          />
         </ContextRow>
 
         <ContextRow
@@ -2983,6 +2960,7 @@ const ACTIVITY_META = {
   removed_html:   { icon: Trash2,        text: () => "removed the uploaded HTML" },
   status_changed: { icon: Circle,        text: (d) => (d?.to ? `set status to ${d.to}` : "changed the status") },
   renamed:        { icon: Pencil,        text: (d) => (d?.to ? `renamed it to "${d.to}"` : "renamed the prototype") },
+  // Figma links are gone, but older history still has these.
   edited_figma:   { icon: FigmaIcon,     text: (d) => (d?.to ? "updated the Figma link" : "cleared the Figma link") },
   edited_linear:  { icon: LinearIcon,    text: (d) => (d?.to ? "updated the Linear link" : "cleared the Linear link") },
   moved_group:    { icon: LayoutGrid,    text: (d) => (d?.to ? `moved it to "${d.to}"` : "moved it to another group") },

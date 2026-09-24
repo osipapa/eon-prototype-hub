@@ -44,7 +44,6 @@ export const initialProjects = [
       { key: "state", label: "State", options: ["default", "empty", "loading"] },
     ],
     defaults: { plan: "pro", state: "default" },
-    figma_url: "",
     issue_id: "",
     issue_url: "",
     notes: "Validate the empty and loading states with Product before handoff.",
@@ -58,7 +57,6 @@ export const initialProjects = [
     status: "Handoff",
     controls: [{ key: "state", label: "State", options: ["default", "error", "loading"] }],
     defaults: { state: "default" },
-    figma_url: "",
     issue_id: "",
     issue_url: "https://linear.app/eon/issue/DES-706/rate-your-trip",
     notes: "",
@@ -80,7 +78,6 @@ export const initialProjects = [
       ] },
     ],
     defaults: { state: "mixed" },
-    figma_url: "",
     issue_id: "",
     notes: "",
     sort_order: 2,
@@ -164,7 +161,7 @@ const initialActivity = [
   { id: "act-1", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-1", actor_name: "Alex Chen", action: "uploaded_html", detail: {}, created_at: new Date(Date.now() - 52 * 60 * 1000).toISOString() },
   { id: "act-2", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-1", actor_name: "Alex Chen", action: "status_changed", detail: { from: "Backlog", to: "In review" }, created_at: new Date(Date.now() - 40 * 60 * 1000).toISOString() },
   { id: "act-3", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "preview-user", actor_name: "Mate", action: "edited_notes", detail: {}, created_at: new Date(Date.now() - 22 * 60 * 1000).toISOString() },
-  { id: "act-4", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-2", actor_name: "Priya Nair", action: "edited_figma", detail: { to: "https://figma.com/x" }, created_at: new Date(Date.now() - 8 * 60 * 1000).toISOString() },
+  { id: "act-4", project_id: "preview-dashboard", project_title: "Customer dashboard", actor_id: "teammate-2", actor_name: "Priya Nair", action: "updated_html", detail: null, created_at: new Date(Date.now() - 8 * 60 * 1000).toISOString() },
 ];
 
 export default function WorkspacePreview() {
@@ -183,7 +180,7 @@ export default function WorkspacePreview() {
   });
   const [activity] = useState(initialActivity);
   const [toasts, setToasts] = useState([
-    { toastId: "t1", actor_name: "Priya Nair", action: "edited_figma", detail: { to: "x" }, project_title: "Customer dashboard" },
+    { toastId: "t1", actor_name: "Priya Nair", action: "updated_html", detail: null, project_title: "Customer dashboard" },
   ]);
   const coViewers = [
     { id: "teammate-1", name: "Alex Chen", email: "alex@example.com", project_id: "preview-dashboard" },

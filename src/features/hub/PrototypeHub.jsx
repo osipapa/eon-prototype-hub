@@ -24,10 +24,6 @@ function parseHttpUrl(value) {
   }
 }
 
-function decodeUrlPart(value) {
-  try { return decodeURIComponent(value); } catch { return value; }
-}
-
 function renderMarkdownInline(value, keyPrefix) {
   const text = String(value || "");
   const tokenPattern = /(\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|`([^`]+)`|\*\*([^*]+)\*\*|__([^_]+)__|~~([^~]+)~~)/g;
@@ -259,21 +255,6 @@ function StatesNotice({ c, prompt }) {
       </button>
     </div>
   );
-}
-
-// Parse file name + node from a Figma URL, e.g. .../design/KEY/Orion---Core-App?node-id=14010-9626
-export function figmaMeta(url = "") {
-  const parsed = parseHttpUrl(url);
-  const host = parsed?.hostname.toLowerCase() || "";
-  const valid = Boolean(parsed)
-    && (host === "figma.com" || host.endsWith(".figma.com"))
-    && !/REPLACE/i.test(url);
-  let title = "Figma file", node = null;
-  if (!valid) return { valid: false, title, node };
-  const match = parsed.pathname.match(/^\/(?:file|design|proto|board)\/[^/]+\/([^/]+)/i);
-  if (match) title = decodeUrlPart(match[1]).replace(/-+/g, " ").trim() || title;
-  node = parsed.searchParams.get("node-id") || null;
-  return { valid, title, node };
 }
 
 /* ---- Linear issue card: live via edge function, static preview fallback.
