@@ -20,15 +20,25 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-09-24",
-    title: "Everyone manages prototypes",
-    image: "changelog/2026-09-24-manage-prototypes.png",
-    imageAlt: "A prototype's menu with Rename, Move up, Move down, Move to group, and Delete.",
+    title: "Split view and status sections",
+    image: "changelog/2026-09-24-split-view.png",
+    imageAlt: "Two prototypes side by side, with the sidebar grouped by Linear status.",
     groups: [
+      {
+        label: "New",
+        items: [
+          "Split view: drag a prototype onto the canvas to open it beside the one you're on. Its menu has Open in split view too.",
+          "Click a pane to make it active. Comments, pins, and shortcuts follow it; device, theme, and zoom apply to both.",
+          "Collapse the sidebar from its header or with [. Hover the left edge to bring it back over the canvas.",
+        ],
+      },
       {
         label: "Behavior",
         items: [
+          "Prototypes are grouped by their Linear status. Switch to Groups for your own groups.",
           "Anyone on the team can rename, reorder, regroup, and delete any prototype from its menu.",
           "Double-click a prototype to rename it, drag it to reorder, or use the pencil to rename a group.",
+          "Checks and the embedded Figma preview are gone. The Figma link stays.",
         ],
       },
     ],

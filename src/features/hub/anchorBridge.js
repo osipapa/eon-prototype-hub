@@ -20,6 +20,7 @@
      { eon:1, type:"eon-anchor-zoom", delta }      trackpad pinch over the prototype
      { eon:1, type:"eon-shot-result", blob | error }
      { eon:1, type:"eon-sync-event", event }        a tap, typed value, or scroll: { kind, selector, ... }
+     { eon:1, type:"eon-frame-pointer" }            any press inside (split view makes this pane active)
 
    Multi-screen prototypes (stepped flows toggling [hidden] or display:none)
    report anchors on inactive screens as {hidden:true}. The hub draws no pin
@@ -182,6 +183,7 @@ function onWheel(e){
   post({type:"eon-anchor-zoom",delta:e.deltaY});
 }
 addEventListener("wheel",onWheel,{passive:false,capture:true});
+addEventListener("pointerdown",function(){post({type:"eon-frame-pointer"});},true);
 addEventListener("click",onClick,true);
 addEventListener("click",onSyncClick,true);
 addEventListener("input",onSyncValue,true);

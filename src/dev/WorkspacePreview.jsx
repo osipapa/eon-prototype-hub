@@ -20,6 +20,18 @@ input{box-sizing:border-box;width:100%;min-height:48px;margin:0 0 14px;padding:0
 <script>function go(id){document.querySelectorAll(".screen").forEach(function(s){s.classList.toggle("on",s.id===id);});}</script>
 </body></html>`;
 
+// Stands in for the linear-issue edge function, so status sections render.
+const PREVIEW_ISSUES = {
+  "DES-706": { title: "Rate your trip", state: { name: "In Review", color: "#4CB782", type: "started" } },
+  "DES-712": { title: "Checkout concept", state: { name: "In Progress", color: "#F2C94C", type: "started" } },
+};
+const loadPreviewIssue = (identifier) => new Promise((resolve) => {
+  window.setTimeout(() => {
+    const issue = PREVIEW_ISSUES[identifier];
+    resolve(issue ? { identifier, updatedAt: new Date().toISOString(), description: "", labels: [], ...issue } : null);
+  }, 250);
+});
+
 export const initialProjects = [
   {
     id: "preview-dashboard",
@@ -59,6 +71,7 @@ export const initialProjects = [
     group_name: "Growth experiments",
     status: "In review",
     prototype_html: CHECKOUT_DEMO,
+    issue_url: "https://linear.app/eon/issue/DES-712/checkout-concept",
     // Deliberately long, so the preview exercises the collapsed state control.
     controls: [
       { key: "state", label: "State", options: [
@@ -69,7 +82,6 @@ export const initialProjects = [
     defaults: { state: "mixed" },
     figma_url: "",
     issue_id: "",
-    issue_url: "",
     notes: "",
     sort_order: 2,
   },
@@ -170,7 +182,6 @@ export default function WorkspacePreview() {
     "tesla-models": "https://cdn.prod.website-files.com/663a718629c975b39d9e15fa/68d2e3b895888fe9ebd8810a_tesla-model3-2024-grey-light-side-2560x1440.webp",
   });
   const [activity] = useState(initialActivity);
-  const [checks, setChecks] = useState({});
   const [toasts, setToasts] = useState([
     { toastId: "t1", actor_name: "Priya Nair", action: "edited_figma", detail: { to: "x" }, project_title: "Customer dashboard" },
   ]);
@@ -193,11 +204,8 @@ export default function WorkspacePreview() {
         assets={assets}
         comments={comments}
         activity={activity}
-        checks={checks}
-        onSaveChecks={async (projectId, hash, results) => {
-          setChecks((current) => ({ ...current, [projectId]: { project_id: projectId, hash, results, checked_at: new Date().toISOString() } }));
-        }}
         mirrorTransport="local"
+        loadLinearIssue={loadPreviewIssue}
         coViewers={coViewers}
         toasts={toasts}
         onDismissToast={(toastId) => setToasts((items) => items.filter((item) => item.toastId !== toastId))}

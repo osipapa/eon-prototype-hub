@@ -88,7 +88,9 @@ export default function PhoneMirrorButton({ c, view, frameRef, transport = "supa
       window.removeEventListener("message", onMessage);
       frameRef?.current?.contentWindow?.postMessage({ eon: 1, type: "eon-sync", on: false }, "*");
     };
-  }, [active, frameRef]);
+    // A new slug can mean split view handed the frame to the other pane,
+    // which is already loaded and won't announce itself again.
+  }, [active, frameRef, view.slug]);
 
   useEffect(() => {
     if (!open) return undefined;

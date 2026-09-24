@@ -35,28 +35,6 @@ export function subscribeProjects(cb) {
   return () => supabase.removeChannel(ch);
 }
 
-/* Automatic checks (one row per prototype) ---------------------------------*/
-export async function listPrototypeChecks() {
-  const { data, error } = await supabase.from("prototype_checks").select("*");
-  if (error) throw error;
-  return data;
-}
-
-export async function savePrototypeChecks(row) {
-  const { data, error } = await supabase
-    .from("prototype_checks").upsert(row, { onConflict: "project_id" }).select().single();
-  if (error) throw error;
-  return data;
-}
-
-export function subscribePrototypeChecks(cb) {
-  const ch = supabase
-    .channel("prototype-checks-changes")
-    .on("postgres_changes", { event: "*", schema: "public", table: "prototype_checks" }, cb)
-    .subscribe();
-  return () => supabase.removeChannel(ch);
-}
-
 /* Prompt library -----------------------------------------------------------*/
 export async function listPrompts() {
   const { data, error } = await supabase

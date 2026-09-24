@@ -16,9 +16,9 @@ import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarRe
 import { Liquid } from "liquid-gooey";
 import {
   AlertCircle, ArrowDown, ArrowUp, Camera, Check, ChevronDown, ChevronLeft, Circle, Copy,
-  ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, ListChecks, Loader2,
+  ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, Loader2,
   Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
-  Menu, MoreHorizontal, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
+  Menu, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
@@ -26,12 +26,13 @@ import {
   effectiveStory, parsePrototypeConfig, renderStory, stateCombos,
 } from "./prototypes";
 import {
-  FigmaEmbed, LinearCard, MediaManager, StateGrid,
+  LinearCard, MediaManager,
   UploadPanel, figmaMeta,
 } from "./PrototypeHub";
 import { buildSetupPrompt } from "./setupPrompt";
-import { issueCount, usePrototypeChecks } from "./checks";
-import ChecksList, { checksSummary, checkTone } from "./ChecksList";
+import CanvasPane from "./CanvasPane";
+import SplitDropZones, { startPrototypeDrag } from "./SplitDropZones";
+import { buildSections, mergeStatusCache, readStatusCache } from "./statusGroups";
 import PhoneMirrorButton from "./PhoneMirror";
 import PrototypeSwitcher, { SHORTCUT_MOD, rememberRecent } from "./PrototypeSwitcher";
 import {
@@ -96,6 +97,40 @@ function linearConnectionState(issue, identifier, c) {
   };
 }
 
+// What a pane that isn't the active one shows: the prototype as it renders
+// (stored or declared states, a live-linked file), its state, and its HTML.
+function usePaneModel(project, { localHtml, linkedId, liveArgs, theme, media }) {
+  const live = Boolean(project && localHtml != null && linkedId === project.id);
+  const story = useMemo(
+    () => (project ? effectiveStory(live ? { ...project, prototype_html: localHtml } : project) : null),
+    [project, live, localHtml],
+  );
+  const override = story ? liveArgs[story.id] : undefined;
+  const args = useMemo(() => (story ? currentArgs(story, override) : {}), [story, override]);
+  const html = useMemo(
+    () => (story ? injectAnchorBridge(renderStory(story, theme, media, args)) : ""),
+    [story, theme, media, args],
+  );
+  return story ? { story, args, html } : null;
+}
+
+const flipSide = (side) => (side === "left" ? "right" : "left");
+
+// Put a prototype on one side of the split. `first` is the pane that comes
+// first in the page: a new pane mounts where it is seen, and a pane already on
+// screen never moves in the page (that would reload its frame), so only a
+// swap leaves the page order and the screen order apart.
+function placePane(current, side, id) {
+  const next = { ...current, [side]: id };
+  return { ...next, first: next.left };
+}
+
+// Where a prototype's states come from, as the setup prompt explains it.
+function controlSourceOf(project, effective) {
+  if (project?.controls?.length) return "stored project controls (these override embedded eon-config controls)";
+  return effective?.controls?.length ? "embedded eon-config" : "none";
+}
+
 export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], activity = [], coViewers = [],
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
@@ -103,7 +138,7 @@ export default function PrototypeWorkspace({
   onPatchProject, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
   onCreateComment, onResolveComment, onEditComment, onDeleteComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
-  checks = {}, onSaveChecks, mirrorTransport = "supabase",
+  mirrorTransport = "supabase", loadLinearIssue = fetchLinearIssue,
 }) {
   const hubTheme = useSystemTheme();
   const [protoTheme, setProtoTheme] = useStoredState("eon-prototype-theme", "dark");
@@ -158,10 +193,26 @@ export default function PrototypeWorkspace({
     { initial: 380, min: 320, max: 560, edge: "left" },
   );
   const [navOpen, setNavOpen] = useState(() => window.innerWidth > 900);
+  // Desktop only: a collapsed sidebar leaves the canvas and waits at the left
+  // edge, where hovering slides it back over the canvas.
+  const [navCollapsedValue, setNavCollapsedValue] = useStoredState("eon-sidebar-collapsed", "open");
+  const [groupBy, setGroupBy] = useStoredState("eon-sidebar-group-by", "status");
   const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth > 1180);
-  const [compare, setCompare] = useState(false);
+  // Split view: which prototype sits on each side. The active pane is the one
+  // showing the prototype in the address bar. Sides are stored, not derived,
+  // because the router updates the address in a transition: a pane switch is
+  // only a navigation, and nothing on screen moves while it lands.
+  const [panes, setPanes] = useState(null); // { left: id, right: id, first: id }
+  const [paneDragId, setPaneDragId] = useState(null);
+  const [activeScale, setActiveScale] = useState(1);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [splitDragging, setSplitDragging] = useState(false);
+  // The prototype a pane switch is moving to. Leaving a pane for the other one
+  // is not a new visit, so it keeps full view and the shared device.
+  const paneSwitchRef = useRef(null);
+  // The active pane being closed: the split stays until the address bar has
+  // moved to the other prototype, so its frame never reloads.
+  const closingPaneRef = useRef(null);
   const [inspectorTab, setInspectorTab] = useState("comments");
   // Which context row is unfurled. One at a time keeps the panel a list.
   const [openContextRow, setOpenContextRow] = useState(null);
@@ -205,14 +256,24 @@ export default function PrototypeWorkspace({
   const patchProjectRef = useRef(onPatchProject);
   patchProjectRef.current = onPatchProject;
   const compareRef = useRef(null);
-  const canvasRef = useRef(null);
   const newDialogReturnFocusRef = useRef(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 960, height: 640 });
+  const [statusCache, setStatusCache] = useState(readStatusCache);
 
   const c = HUB[hubTheme];
   const story = projects.find((item) => item.id === activeId) || projects[0];
   storyIdRef.current = story?.id || null;
   const media = assets;
+  const navCollapsed = navCollapsedValue === "collapsed" && !breakpoints.navDrawer;
+  const setNavCollapsed = (collapsed) => setNavCollapsedValue(collapsed ? "collapsed" : "open");
+  const leftProject = panes ? projects.find((item) => item.id === panes.left) : null;
+  const rightProject = panes ? projects.find((item) => item.id === panes.right) : null;
+  // Split view needs the room of a desktop; narrower screens keep one pane.
+  const splitOpen = Boolean(story && leftProject && rightProject && leftProject.id !== rightProject.id && !breakpoints.noCompare);
+  const activeSide = !splitOpen ? null
+    : panes.left === story.id ? "left"
+    : panes.right === story.id ? "right"
+    : null;
+  const otherProject = activeSide === "left" ? rightProject : activeSide === "right" ? leftProject : null;
 
   useEffect(() => {
     // Only the moment a panel *becomes* a drawer should close it. Reacting to
@@ -239,16 +300,6 @@ export default function PrototypeWorkspace({
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  useEffect(() => {
-    const node = canvasRef.current;
-    if (!node) return undefined;
-    const observer = new ResizeObserver(([entry]) => {
-      setCanvasSize({ width: entry.contentRect.width, height: entry.contentRect.height });
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [view, navOpen, inspectorOpen]);
-
   // While the linked prototype is active, render straight from the local file
   // (every editor save shows instantly, publish toggle or not).
   const isLiveLinked = Boolean(fileLink && localHtml != null && fileLink.projectId === story?.id);
@@ -265,50 +316,31 @@ export default function PrototypeWorkspace({
     };
   }, [story, cfg, isLiveLinked, localHtml]);
   const isBuiltIn = ["signin", "dashboard"].includes(story?.slug);
-  const setupControlSource = story?.controls?.length
-    ? "stored project controls (these override embedded eon-config controls)"
-    : cfg.controls?.length ? "embedded eon-config" : "none";
+  const setupControlSource = controlSourceOf(story, effStory);
   const args = useMemo(
     () => (effStory ? currentArgs(effStory, liveArgs[effStory.id]) : {}),
     [effStory, liveArgs],
   );
   useEffect(() => {
     if (!story?.id) return;
+    // Both panes share the device, so while split view is open (or a pane is
+    // handing over to the other one) the device only changes when asked.
+    if (panes || paneSwitchRef.current === story.id) return;
     const phone = window.matchMedia("(max-width: 680px)").matches;
     const next = readViewportMemory()[story.id] || (phone ? null : cfg.viewport);
     if (VIEWPORTS[next]) setViewportState(next);
   }, [story?.id]);
 
-  // Checks measure what the team sees: the saved HTML, not an unpublished
-  // local file, so a live link only borrows the saved config.
-  const checkStory = useMemo(
-    () => (isLiveLinked ? effectiveStory(story) : effStory),
-    [story, isLiveLinked, effStory],
-  );
-  // A prototype with nothing uploaded renders a placeholder; there's nothing to check.
-  const canCheck = Boolean(checkStory?.prototype_html) || ["signin", "dashboard"].includes(checkStory?.slug);
-  const storyChecks = usePrototypeChecks({
-    story: canCheck ? checkStory : null,
-    media,
-    saved: checks[story?.id],
-    onSave: onSaveChecks,
-    // Phones read results; a desktop does the rendering.
-    auto: view === "stories" && hasFinePointer() && !breakpoints.compactControls,
-  });
-  const checkCountByProject = useMemo(
-    () => Object.fromEntries(Object.entries(checks).map(([id, row]) => [id, issueCount(row?.results)])),
-    [checks],
-  );
   const vp = VIEWPORTS[viewport];
   const html = useMemo(
     () => (effStory ? injectAnchorBridge(renderStory(effStory, protoTheme, media, args)) : ""),
     [effStory, args, protoTheme, media],
   );
-  const scale = useMemo(() => Math.min(
-    Math.max(0.2, (canvasSize.width - 64) / vp.w),
-    Math.max(0.2, (canvasSize.height - 64) / vp.h),
-    1,
-  ), [canvasSize, vp]);
+  // A pane that isn't active renders exactly like the active one would, so
+  // making it active later leaves its frame untouched instead of reloading it.
+  const paneRender = { localHtml, linkedId: fileLink?.projectId, liveArgs, theme: protoTheme, media };
+  const leftModel = usePaneModel(splitOpen && leftProject.id !== story.id ? leftProject : null, paneRender);
+  const rightModel = usePaneModel(splitOpen && rightProject.id !== story.id ? rightProject : null, paneRender);
 
   const unreadByProject = useMemo(() => {
     const counts = {};
@@ -331,14 +363,22 @@ export default function PrototypeWorkspace({
     [projects],
   );
 
-  const groups = useMemo(() => {
-    const q = query.toLowerCase();
-    const grouped = {};
-    projects
-      .filter((item) => item.title.toLowerCase().includes(q) || (item.group_name || "").toLowerCase().includes(q))
-      .forEach((item) => { (grouped[item.group_name || "General"] ||= []).push(item); });
-    return grouped;
-  }, [projects, query]);
+  const sections = useMemo(() => buildSections(projects, {
+    by: groupBy === "groups" ? "groups" : "status",
+    query,
+    issuesByProject: linearByProject,
+    statusCache,
+    identifierFor: linearIdentifier,
+  }), [projects, query, groupBy, linearByProject, statusCache]);
+  const allGroups = useMemo(
+    () => [...new Set(projects.map((item) => item.group_name || "General"))],
+    [projects],
+  );
+
+  useEffect(() => {
+    const next = mergeStatusCache(statusCache, projects, linearByProject, linearIdentifier);
+    if (next !== statusCache) setStatusCache(next);
+  }, [linearByProject]);
 
   const storyComments = useMemo(
     () => comments.filter((comment) => comment.project_id === story?.id),
@@ -377,8 +417,9 @@ export default function PrototypeWorkspace({
   const postToFrame = (message) => frameRef.current?.contentWindow?.postMessage({ eon: 1, ...message }, "*");
   const pinchZoom = (delta) => setZoom((value) => Math.min(4, Math.max(0.25, +(value * Math.exp(-delta / 240)).toFixed(3))));
 
-  // One listener covers the bridge's whole vocabulary. The iframe remounts on
-  // state changes, so "ready" re-syncs mode + watched selectors every time.
+  // One listener covers the active frame's pin vocabulary (each pane handles
+  // its own pinch zoom). The iframe remounts on state changes, so "ready"
+  // re-syncs mode + watched selectors every time.
   useEffect(() => {
     const onMessage = (event) => {
       if (!isBridgeMessage(event, frameRef.current)) return;
@@ -390,8 +431,6 @@ export default function PrototypeWorkspace({
           postToFrame(pendingRevealRef.current);
           pendingRevealRef.current = null;
         }
-      } else if (message.type === "eon-anchor-zoom") {
-        if (layout === "single") pinchZoom(message.delta);
       } else if (message.type === "eon-anchor-rects") {
         setAnchorRects(message.rects || {});
         setAnchorScroll(message.scroll || { x: 0, y: 0 });
@@ -414,27 +453,15 @@ export default function PrototypeWorkspace({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [anchorMode, watchedSelectors, viewport, args, protoTheme, layout]);
+  }, [anchorMode, watchedSelectors, viewport, args, protoTheme]);
 
-  // Pinching over the canvas around the frame. The prototype iframe swallows
-  // its own wheel events, so the bridge forwards those separately.
-  useEffect(() => {
-    const node = canvasRef.current;
-    if (!node || layout !== "single") return undefined;
-    const onWheel = (event) => {
-      if (!event.ctrlKey && !event.metaKey) return;
-      event.preventDefault();
-      pinchZoom(event.deltaY);
-    };
-    node.addEventListener("wheel", onWheel, { passive: false });
-    return () => node.removeEventListener("wheel", onWheel);
-  }, [layout, view]);
-
-  useEffect(() => { postToFrame({ type: "eon-anchor-mode", on: anchorMode }); }, [anchorMode]);
-  useEffect(() => { postToFrame({ type: "eon-anchor-query", selectors: watchedSelectors }); }, [watchedSelectors]);
+  // A pane switch hands the pins to a frame that is already loaded and will
+  // not say "ready" again, so the new active frame is told directly.
+  useEffect(() => { postToFrame({ type: "eon-anchor-mode", on: anchorMode }); }, [anchorMode, story?.id]);
+  useEffect(() => { postToFrame({ type: "eon-anchor-query", selectors: watchedSelectors }); }, [watchedSelectors, story?.id]);
 
   // Placement is a single-view affair; leaving it cancels cleanly.
-  const canPlacePin = view === "stories" && layout === "single" && !(compare && !breakpoints.noCompare);
+  const canPlacePin = view === "stories" && layout === "single";
   useEffect(() => { if (!canPlacePin) setAnchorMode(false); }, [canPlacePin]);
   useEffect(() => {
     if (!anchorMode && !ringOpen && !pinWriteOpen) return undefined;
@@ -479,7 +506,14 @@ export default function PrototypeWorkspace({
     setPendingAnchor((current) =>
       current && !anchorMatchesState(current, viewport, args, protoTheme) ? null : current);
   }, [viewport, args, protoTheme]);
-  useEffect(() => { setPendingAnchor(null); setActiveAnchorId(null); setAnchorMode(false); pendingRevealRef.current = null; }, [story?.id]);
+  useEffect(() => {
+    setPendingAnchor(null);
+    setActiveAnchorId(null);
+    setAnchorMode(false);
+    setAnchorRects({});
+    setAnchorScroll({ x: 0, y: 0 });
+    pendingRevealRef.current = null;
+  }, [story?.id]);
 
   // Restore the exact canvas state a pin was placed in, then scroll the
   // prototype so the pinned spot is actually on screen.
@@ -512,24 +546,6 @@ export default function PrototypeWorkspace({
     if (comment.anchor) jumpToAnchor(comment);
     else setActiveAnchorId(comment.id);
   }, [linkedCommentId, storyComments]);
-
-  // A check finding: phone width, the state and theme it showed up in, then
-  // scroll the element into view and flash it.
-  const jumpToIssue = (issue, where) => {
-    if (!story) return;
-    setLayout("single");
-    setViewport("mobile");
-    if (["light", "dark"].includes(where?.theme)) setProtoTheme(where.theme);
-    const nextArgs = where?.args || {};
-    setLiveArgs((current) => ({ ...current, [story.id]: { ...current[story.id], ...nextArgs } }));
-    if (breakpoints.inspectorDrawer) setInspectorOpen(false);
-    const reveal = { type: "eon-anchor-reveal", selector: issue.selector || null, flash: true };
-    const willRemount = (where?.theme && where.theme !== protoTheme)
-      || Object.entries(nextArgs).some(([key, value]) => String(value) !== String(args[key]));
-    if (willRemount) pendingRevealRef.current = reveal;
-    // Switching to phone width resizes the frame without a remount; let it land first.
-    else window.setTimeout(() => postToFrame(reveal), viewport === "mobile" ? 0 : 220);
-  };
 
   useEffect(() => {
     if (!story?.id || !inspectorOpen || inspectorTab !== "comments" || storyComments.length === 0) return;
@@ -574,9 +590,39 @@ export default function PrototypeWorkspace({
     return () => query.removeEventListener("change", check);
   }, [focusMode]);
 
-  // Full view is about one prototype, so switching prototypes leaves it.
-  useEffect(() => { setFocusMode(false); setPeek(null); }, [story?.id]);
+  // Full view is about what's on screen, so opening another prototype leaves
+  // it. Moving between the two panes of a split does not.
+  useEffect(() => {
+    if (paneSwitchRef.current === story?.id) return;
+    setFocusMode(false);
+    setPeek(null);
+  }, [story?.id]);
   useEffect(() => { if (view !== "stories") { setFocusMode(false); setPeek(null); } }, [view]);
+
+  // Keep the split pointing at something real. A prototype opened some other
+  // way (a link, Back) takes the side of the one it replaced; one opened from
+  // the other pane just makes that pane active.
+  const previousStoryIdRef = useRef(story?.id);
+  useEffect(() => {
+    const previous = previousStoryIdRef.current;
+    previousStoryIdRef.current = story?.id;
+    if (closingPaneRef.current) {
+      if (closingPaneRef.current === story?.id) return;
+      closingPaneRef.current = null;
+      setPanes(null);
+      return;
+    }
+    setPanes((current) => {
+      if (!current || !story) return current;
+      const exists = (id) => projects.some((item) => item.id === id);
+      if (!exists(current.left) || !exists(current.right)) return null;
+      if (current.left === story.id || current.right === story.id || previous === story.id) return current;
+      const side = current.left === previous ? "left" : current.right === previous ? "right" : null;
+      return side ? placePane(current, side, story.id) : null;
+    });
+  }, [story?.id, projects]);
+  // Runs after every effect that asks whether this was a pane switch.
+  useEffect(() => { paneSwitchRef.current = null; }, [story?.id]);
 
   useEffect(() => {
     if (!(breakpoints.navDrawer || breakpoints.inspectorDrawer)) return undefined;
@@ -594,6 +640,7 @@ export default function PrototypeWorkspace({
       const { panel, tab } = event.detail || {};
       if (panel === "library") {
         setNavOpen(true);
+        setNavCollapsedValue("open");
         if (breakpoints.navDrawer) setInspectorOpen(false);
       }
       if (panel === "review") {
@@ -644,6 +691,13 @@ export default function PrototypeWorkspace({
     }
     const linkedComment = params.get("comment");
     if (linkedComment) setLinkedCommentId(linkedComment);
+    // ?split=<slug>: that prototype opens beside this one, on the right unless
+    // split-side says left.
+    const linkedSplit = projects.find((item) => item.slug === params.get("split"));
+    if (linkedSplit && linkedSplit.id !== story.id) {
+      const side = params.get("split-side") === "left" ? "left" : "right";
+      setPanes(placePane({ [flipSide(side)]: story.id }, side, linkedSplit.id));
+    }
   }, [story?.id, reviewLocationKey]);
 
   // Keep the address bar in step with the view, so a copied URL opens exactly
@@ -659,9 +713,13 @@ export default function PrototypeWorkspace({
       // Plain strings stay readable in the link; the reader falls back to the raw value.
       if (String(value) !== String(effStory.defaults?.[key])) params.set(`arg.${key}`, typeof value === "string" ? value : JSON.stringify(value));
     });
+    if (otherProject) {
+      params.set("split", otherProject.slug);
+      if (activeSide === "right") params.set("split-side", "left");
+    }
     const next = `#${path}?${params}`;
     if (window.location.hash !== next) window.history.replaceState(window.history.state, "", next);
-  }, [view, effStory, viewport, protoTheme, layout, args]);
+  }, [view, effStory, viewport, protoTheme, layout, args, otherProject?.slug, activeSide]);
 
   useEffect(() => {
     const linkedProjects = projects
@@ -673,7 +731,7 @@ export default function PrototypeWorkspace({
 
     Promise.all(linkedProjects.map(async ({ projectId, identifier }) => [
       projectId,
-      await fetchLinearIssue(identifier),
+      await loadLinearIssue(identifier),
     ])).then((entries) => {
       if (!stale) setLinearByProject(Object.fromEntries(entries));
     });
@@ -820,20 +878,96 @@ export default function PrototypeWorkspace({
   // States always leads; StateGrid explains itself when none are declared.
   const gridOptions = ["states", "themes", "screens"];
   const effGridBy = gridOptions.includes(gridBy) ? gridBy : gridOptions[0];
-  const effCompare = compare && !breakpoints.noCompare;
   const linearId = linearIdentifier(story);
   const liveLinear = linearByProject[story.id];
-  const frameScale = scale * zoom;
-  const frameWidth = vp.w * frameScale;
-  const frameHeight = vp.h * frameScale;
-  // The phone shell is drawn outside the frame box, so the stage has to leave
-  // room for it or the rail clips against the canvas edge.
-  const deviceMargin = viewport === "mobile" ? 34 * frameScale : 0;
 
-  const setArg = (key, value) => setLiveArgs((previous) => ({
+  const setArgFor = (id) => (key, value) => setLiveArgs((previous) => ({
     ...previous,
-    [story.id]: { ...previous[story.id], [key]: value },
+    [id]: { ...previous[id], [key]: value },
   }));
+  const setArg = setArgFor(story.id);
+
+  /* ---- Split view ---- */
+
+  // Moving to the other pane is a navigation that swaps nothing on screen, so
+  // it replaces the history entry instead of adding one.
+  const activatePane = (id) => {
+    if (!splitOpen || id === story.id || (panes.left !== id && panes.right !== id)) return;
+    const project = projects.find((item) => item.id === id);
+    if (!project) return;
+    paneSwitchRef.current = id;
+    onSelectStory(project, { replace: true });
+  };
+  const closePane = (id) => {
+    if (!splitOpen) return;
+    if (id !== story.id) { setPanes(null); return; }
+    const remaining = id === panes.left ? rightProject : leftProject;
+    paneSwitchRef.current = remaining.id;
+    closingPaneRef.current = id;
+    onSelectStory(remaining, { replace: true });
+  };
+  const swapPanes = () => setPanes((current) => current && { ...current, left: current.right, right: current.left });
+  // Opening a prototype from the sidebar or ⌘K replaces the active pane. The
+  // one already in the other pane just becomes active.
+  const selectStory = (project) => {
+    if (splitOpen && project && (panes.left === project.id || panes.right === project.id)) {
+      activatePane(project.id);
+      return;
+    }
+    if (splitOpen && project && activeSide) setPanes((current) => placePane(current, activeSide, project.id));
+    onSelectStory(project);
+  };
+  const openInSplit = (project) => {
+    if (!project || project.id === story.id) return;
+    setView("stories");
+    if (splitOpen && activeSide) setPanes((current) => placePane(current, flipSide(activeSide), project.id));
+    else setPanes(placePane({ left: story.id }, "right", project.id));
+  };
+  const endDrags = () => {
+    setDragId(null);
+    setDropTargetId(null);
+    setPaneDragId(null);
+  };
+  // A drop puts the prototype on that side. Dropping one that is already on
+  // screen onto the other half swaps the panes.
+  const dropOnSide = (id, side) => {
+    const draggedId = id || dragId || paneDragId;
+    endDrags();
+    setPeek(null);
+    const project = projects.find((item) => item.id === draggedId);
+    if (!project) return;
+    if (!splitOpen) {
+      if (project.id !== story.id) setPanes(placePane({ [flipSide(side)]: story.id }, side, project.id));
+      return;
+    }
+    const occupant = panes[side];
+    if (occupant === project.id) return;
+    if (panes[flipSide(side)] === project.id) { swapPanes(); return; }
+    setPanes((current) => placePane(current, side, project.id));
+    if (occupant === story.id) onSelectStory(project);
+  };
+  // What each half of the canvas says while a prototype is dragged over it.
+  const draggingId = dragId || paneDragId;
+  const dropHalves = (() => {
+    if (!draggingId || view !== "stories" || breakpoints.noCompare) return null;
+    if (!splitOpen) {
+      if (draggingId === story.id) return null;
+      return { left: "Open on the left", right: "Open on the right" };
+    }
+    const onScreen = panes.left === draggingId ? "left" : panes.right === draggingId ? "right" : null;
+    if (onScreen) return { [onScreen]: null, [flipSide(onScreen)]: "Swap sides" };
+    const titleOf = (side) => (side === "left" ? leftProject : rightProject).title;
+    return { left: `Replace ${titleOf("left")}`, right: `Replace ${titleOf("right")}` };
+  })();
+  const toggleNav = () => {
+    if (breakpoints.navDrawer) {
+      if (!navOpen) setInspectorOpen(false);
+      setNavOpen(!navOpen);
+      return;
+    }
+    setNavCollapsed(!navCollapsed);
+    setPeek(null);
+  };
   const patch = (field, value) => onPatchProject(story.id, { [field]: value });
   const openFull = () => {
     // Focus mode reveals the panels on edge hover. Without a hovering pointer
@@ -917,9 +1051,10 @@ export default function PrototypeWorkspace({
     return true;
   };
 
-  // Keyboard: ⌘K jumps anywhere; on the canvas, arrows step through states,
-  // 1–4 pick the device, G the grid, T the theme, F full view. Nothing fires
-  // while typing, under a dialog, or when a focused control uses the arrows.
+  // Keyboard: ⌘K jumps anywhere; [ shows or hides the sidebar; on the canvas,
+  // arrows step through states, 1–4 pick the device, G the grid, T the theme,
+  // F full view. Nothing fires while typing, under a dialog, or when a focused
+  // control uses the arrows.
   const shortcutRef = useRef(null);
   shortcutRef.current = (event) => {
     if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "k") {
@@ -927,10 +1062,16 @@ export default function PrototypeWorkspace({
       setSwitcherOpen((open) => !open);
       return;
     }
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || view !== "stories") return;
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
     const target = event.target instanceof Element ? event.target : null;
     if (target?.closest("input, textarea, select, [contenteditable='true'], [contenteditable='']")) return;
     if (document.querySelector("[aria-modal='true'], .eon-coach-root")) return;
+    if (event.key === "[" && !focusMode) {
+      event.preventDefault();
+      toggleNav();
+      return;
+    }
+    if (view !== "stories") return;
     const arrow = event.key === "ArrowLeft" || event.key === "ArrowRight";
     if (arrow && target?.closest("[role=group], [role=menu], [role=tablist], [role=listbox], [role=radiogroup], [role=slider]")) return;
     const devices = { 1: "desktop", 2: "laptop", 3: "tablet", 4: "mobile" };
@@ -980,15 +1121,20 @@ export default function PrototypeWorkspace({
       window.setTimeout(() => setCopiedPrompt(false), 1600);
     } catch { /* Clipboard may be blocked by the browser. */ }
   };
+  // By group, a prototype dropped into another group joins it. By status, the
+  // section comes from Linear, so a drop only changes the order.
   const handleDrop = (targetId) => {
     setDropTargetId(null);
     if (!dragId || dragId === targetId || !onReorder) return;
     const ordered = projects.map((item) => item.id).filter((id) => id !== dragId);
     ordered.splice(ordered.indexOf(targetId), 0, dragId);
     const targetGroup = projects.find((item) => item.id === targetId)?.group_name;
-    onReorder(ordered, targetGroup ? { [dragId]: targetGroup } : {});
+    onReorder(ordered, targetGroup && groupBy === "groups" ? { [dragId]: targetGroup } : {});
     setDragId(null);
   };
+  const sectionById = Object.fromEntries(
+    sections.flatMap((section) => section.items.map((item) => [item.id, section.key])));
+  const canDropOn = (targetId) => Boolean(dragId) && (groupBy === "groups" || sectionById[dragId] === sectionById[targetId]);
   // A prototype moved to a group lands at the end of it; a new group starts
   // at the bottom of the list.
   const moveToGroup = (id, group) => {
@@ -1010,7 +1156,7 @@ export default function PrototypeWorkspace({
     onReorder(ordered);
   };
 
-  // Divider drag for the compare split; iframes get pointer-events:none while
+  // Divider drag for split view; iframes get pointer-events:none while
   // dragging (via .is-dragging) so the drag survives crossing them.
   const startSplitDrag = (event) => {
     event.preventDefault();
@@ -1047,13 +1193,32 @@ export default function PrototypeWorkspace({
     />
   );
 
+  // One pane, or two in split view, in page order (see placePane). Each takes
+  // its side from CSS order, so no swap or pane switch moves a frame, which
+  // would reload it.
+  const paneViews = (splitOpen
+    ? [["left", leftProject, leftModel], ["right", rightProject, rightModel]]
+    : [[null, story, null]])
+    .map(([side, project, model]) => {
+      const active = project.id === story.id;
+      return {
+        side, project, active,
+        story: active ? effStory : model.story,
+        args: active ? args : model.args,
+        html: active ? html : model.html,
+      };
+    })
+    .sort((a, b) => (a.project.id === panes?.first ? -1 : b.project.id === panes?.first ? 1 : 0));
+
   return (
-    <div data-tutorial="workspace" className={`${hubTheme === "dark" ? "" : "light"} eon-workspace${focusMode ? " is-focus" : ""}`} style={{ background: c.bg, color: c.text }}>
+    <div data-tutorial="workspace" className={`${hubTheme === "dark" ? "" : "light"} eon-workspace${focusMode ? " is-focus" : ""}${navCollapsed ? " is-nav-collapsed" : ""}`} style={{ background: c.bg, color: c.text }}>
+      {(focusMode || navCollapsed) && (
+        <div className={`eon-peek-zone is-left${focusMode ? "" : " is-below-toolbar"}`} onMouseEnter={() => setPeek("nav")} aria-hidden="true" />
+      )}
       {focusMode && (
         <>
-          <div className="eon-peek-zone is-left" onMouseEnter={() => setPeek("nav")} aria-hidden="true" />
           <div className="eon-peek-zone is-right" onMouseEnter={() => setPeek("inspector")} aria-hidden="true" />
-          <button className="eon-buttonish eon-focus-exit" onClick={() => { setFocusMode(false); setPeek(null); }}
+          <button className={`eon-buttonish eon-focus-exit${splitOpen ? " is-split" : ""}`} onClick={() => { setFocusMode(false); setPeek(null); }}
             aria-label="Exit full view" title="Exit full view (Esc)"
             style={{ background: c.panel, borderColor: c.border, color: c.secondary, boxShadow: hubShadow(c) }}>
             <Minimize2 size={15} aria-hidden="true" /> <span>Exit full view</span>
@@ -1070,9 +1235,11 @@ export default function PrototypeWorkspace({
       {(navOpen || focusMode) && (
         <WorkspaceSidebar
           c={c} media={media} view={view} setView={setView} query={query} setQuery={setQuery}
-          groups={groups} activeId={story.id} onSelect={onSelectStory} isAdmin={isAdmin}
+          sections={sections} groupBy={groupBy === "groups" ? "groups" : "status"} setGroupBy={setGroupBy}
+          activeId={story.id} splitId={otherProject?.id || null} onSelect={selectStory} isAdmin={isAdmin}
+          canSplit={!breakpoints.noCompare} onOpenSplit={openInSplit}
           onNewProject={(event) => { newDialogReturnFocusRef.current = event.currentTarget; setShowNewDialog(true); }} dragId={dragId} setDragId={setDragId}
-          dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop}
+          dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop} canDropOn={canDropOn} onDragEnd={endDrags}
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
           renamingGroup={renamingGroup} setRenamingGroup={setRenamingGroup} commitGroupRename={commitGroupRename}
           storyMenuId={storyMenuId} setStoryMenuId={setStoryMenuId}
@@ -1081,15 +1248,17 @@ export default function PrototypeWorkspace({
             if (project) setDeleteCandidate({ project, restoreFocus });
           }}
           moveStory={moveStory} projectOrder={projects.map((item) => item.id)}
-          moveToGroup={moveToGroup} allGroups={[...new Set(projects.map((item) => item.group_name || "General"))]}
+          moveToGroup={moveToGroup} allGroups={allGroups}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
           onOpenDesign={onOpenDesign} onOpenPrompts={onOpenPrompts} onOpenTracking={onOpenTracking} onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
           changelog={changelog}
           linearByProject={linearByProject}
-          unreadByProject={unreadByProject} commentCountByProject={commentCountByProject} checkCountByProject={checkCountByProject}
+          unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
           resize={sidebarResize}
           isDrawer={breakpoints.navDrawer && !focusMode} onClose={() => setNavOpen(false)}
-          peeking={focusMode ? peek === "nav" : null} onPeekEnd={() => setPeek(null)} onPeekStart={() => setPeek("nav")}
+          collapsed={navCollapsed}
+          onToggleCollapse={focusMode || breakpoints.navDrawer ? null : () => { setNavCollapsed(!navCollapsed); setPeek(null); }}
+          peeking={focusMode || navCollapsed ? peek === "nav" : null} onPeekEnd={() => setPeek(null)} onPeekStart={() => setPeek("nav")}
         />
       )}
 
@@ -1100,6 +1269,7 @@ export default function PrototypeWorkspace({
             setNavOpen(true);
             setInspectorOpen(false);
           }}
+          navCollapsed={navCollapsed} onExpandNav={() => { setNavCollapsed(false); setPeek(null); }}
           inspectorDrawer={breakpoints.inspectorDrawer} inspectorOpen={inspectorOpen}
           onToggleInspector={() => {
             const opening = !inspectorOpen;
@@ -1129,67 +1299,71 @@ export default function PrototypeWorkspace({
           <div className="eon-media-scroll"><MediaManager c={c} assets={assets} onSetAsset={onSetAsset} onDeleteAsset={onDeleteAsset} /></div>
         ) : (
           <div ref={compareRef} className={`eon-compare${splitDragging ? " is-dragging" : ""}`}>
-            <div className="eon-canvas-zone" style={{ flex: effCompare ? `${splitRatio} 1 0%` : undefined }}>
-              <section data-tutorial="prototype-canvas" ref={canvasRef} className="eon-canvas" aria-label={`${story.title} prototype canvas`} style={{ background: canvasBg }}>
-                {layout === "single" ? (
-                  <div className="eon-canvas-stage" style={{ width: Math.max(canvasSize.width, frameWidth + deviceMargin + 64), height: Math.max(canvasSize.height, frameHeight + deviceMargin + 64) }}>
-                    <div className={`eon-stage-frame${viewport === "mobile" ? " is-device" : ""}${viewport === "mobile" && media.iPhone ? " has-mockup" : ""}`}
-                      style={{ width: frameWidth, height: frameHeight, flexShrink: 0, position: "relative", "--device-scale": frameScale }}>
-                      {viewport === "mobile" && <DeviceShell frame={media.iPhone} scale={frameScale} />}
-                      <iframe data-tutorial="prototype-frame" ref={frameRef} className="eon-prototype-frame" key={`${story.id}-${JSON.stringify(args)}-${protoTheme}`}
-                        title={story.title} srcDoc={html}
-                        sandbox={PROTOTYPE_SANDBOX}
-                        referrerPolicy="no-referrer"
-                        allow="clipboard-read; clipboard-write"
-                        style={{ width: vp.w, height: vp.h, colorScheme: protoTheme, transform: `scale(${frameScale})`, transformOrigin: "top left" }} />
-                      <PinOverlay
-                        c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects} scroll={anchorScroll}
-                        vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId} currentUserId={profile?.id}
-                        ringOpen={ringOpen} pinWriteOpen={pinWriteOpen} onQuickComment={quickComment}
-                        onWriteComment={writeComment} onCancelRing={cancelRing}
-                        onPickPin={(comment) => {
-                          setActiveAnchorId((current) => (current === comment.id ? null : comment.id));
-                          setInspectorTab("comments");
-                          setInspectorOpen(true);
-                        }} />
+            {paneViews.map((pane) => {
+              const identifier = splitOpen ? linearIdentifier(pane.project) : null;
+              return (
+                <CanvasPane key={pane.project.id}
+                  c={c} story={pane.story} sourceProject={pane.project} args={pane.args} html={pane.html}
+                  theme={protoTheme} viewport={viewport} zoom={zoom} onPinch={pinchZoom} media={media} canvasBg={canvasBg}
+                  layout={layout} gridBy={effGridBy} setupControlSource={controlSourceOf(pane.project, pane.story)}
+                  active={pane.active} frameRef={pane.active ? frameRef : undefined} onScale={setActiveScale}
+                  renderFrameOverlay={pane.active ? ({ frameScale }) => (
+                    <PinOverlay
+                      c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects} scroll={anchorScroll}
+                      vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId} currentUserId={profile?.id}
+                      ringOpen={ringOpen} pinWriteOpen={pinWriteOpen} onQuickComment={quickComment}
+                      onWriteComment={writeComment} onCancelRing={cancelRing}
+                      onPickPin={(comment) => {
+                        setActiveAnchorId((current) => (current === comment.id ? null : comment.id));
+                        setInspectorTab("comments");
+                        setInspectorOpen(true);
+                      }} />
+                  ) : undefined}
+                  pane={splitOpen ? {
+                    side: pane.side,
+                    flex: pane.side === "left" ? splitRatio : 1 - splitRatio,
+                    chip: identifier ? { identifier, color: linearConnectionState(linearByProject[pane.project.id], identifier, c).color } : null,
+                    onActivate: () => activatePane(pane.project.id),
+                    onClose: () => closePane(pane.project.id),
+                    onSwap: swapPanes,
+                    onDragStart: setPaneDragId,
+                    onDragEnd: endDrags,
+                  } : null}>
+                  <CanvasControlBar
+                    c={c} layout={layout} effStory={pane.story} args={pane.args} setArg={setArgFor(pane.project.id)}
+                    gridOptions={gridOptions} effGridBy={effGridBy} setGridBy={setGridBy}
+                    protoTheme={protoTheme} setProtoTheme={setProtoTheme} canvasBg={canvasBg}
+                    setCanvasBg={setCanvasBg} segmented={segmented} compact={breakpoints.compactControls}
+                  />
+                  {/* Zoom, theme, and background are shared, so they live once, bottom right. */}
+                  {!breakpoints.compactControls && (!splitOpen || pane.side === "right") && (
+                    <CanvasViewControls
+                      c={c} scale={activeScale} zoom={zoom} setZoom={setZoom} layout={layout} effGridBy={effGridBy}
+                      protoTheme={protoTheme} setProtoTheme={setProtoTheme}
+                      canvasBg={canvasBg} setCanvasBg={setCanvasBg} segmented={segmented}
+                      onScreenshot={copyScreenshot} shotState={shotState}
+                    />
+                  )}
+                  {breakpoints.compactControls && layout === "single" && (
+                    <div className="eon-zoom eon-zoom-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+                      <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out" style={{ color: c.muted }}><Minus size={15} /></button>
+                      <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" aria-label={`Zoom ${Math.round(activeScale * zoom * 100)}%. Fit prototype to canvas`} style={{ color: c.text }}>{Math.round(activeScale * zoom * 100)}%</button>
+                      <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in" style={{ color: c.muted }}><Plus size={15} /></button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="eon-grid-stage">
-                    <StateGrid c={c} story={effStory} sourceProject={story} currentArgs={args} controlSource={setupControlSource}
-                      media={media} theme={protoTheme} viewport={viewport} by={effGridBy} />
-                  </div>
-                )}
-              </section>
-              <CanvasControlBar
-                c={c} layout={layout} effStory={effStory} args={args} setArg={setArg}
-                gridOptions={gridOptions} effGridBy={effGridBy} setGridBy={setGridBy}
-                protoTheme={protoTheme} setProtoTheme={setProtoTheme} canvasBg={canvasBg}
-                setCanvasBg={setCanvasBg} segmented={segmented} compact={breakpoints.compactControls}
-              />
-              {!breakpoints.compactControls && (
-                <CanvasViewControls
-                  c={c} scale={scale} zoom={zoom} setZoom={setZoom} layout={layout} effGridBy={effGridBy}
-                  protoTheme={protoTheme} setProtoTheme={setProtoTheme}
-                  canvasBg={canvasBg} setCanvasBg={setCanvasBg} segmented={segmented}
-                  onScreenshot={copyScreenshot} shotState={shotState}
-                />
-              )}
-              {breakpoints.compactControls && layout === "single" && (
-                <div className="eon-zoom eon-zoom-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
-                  <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out" style={{ color: c.muted }}><Minus size={15} /></button>
-                  <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" aria-label={`Zoom ${Math.round(scale * zoom * 100)}%. Fit prototype to canvas`} style={{ color: c.text }}>{Math.round(scale * zoom * 100)}%</button>
-                  <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in" style={{ color: c.muted }}><Plus size={15} /></button>
-                </div>
-              )}
-            </div>
-            {effCompare && (
-              <>
-                <div className="eon-compare-divider" role="separator" tabIndex={0} onPointerDown={startSplitDrag} onKeyDown={nudgeSplit}
-                  aria-orientation="vertical" aria-label="Resize the Figma comparison"
-                  style={{ color: c.border }} />
-                <FigmaPane c={c} story={story} ratio={splitRatio} />
-              </>
+                  )}
+                </CanvasPane>
+              );
+            })}
+            {splitOpen && (
+              <div className="eon-compare-divider" role="separator" tabIndex={0} onPointerDown={startSplitDrag} onKeyDown={nudgeSplit}
+                onDoubleClick={() => setSplitRatio(0.5)}
+                aria-orientation="vertical" aria-label="Resize the split view" title="Drag to resize, double-click to even out"
+                aria-valuemin={25} aria-valuemax={75} aria-valuenow={Math.round(splitRatio * 100)}
+                style={{ color: c.border, order: 1 }} />
+            )}
+            {dropHalves && (
+              <SplitDropZones c={c} halves={dropHalves} onDrop={dropOnSide}
+                onDragEnter={() => { if (peek === "nav") setPeek(null); }} />
             )}
           </div>
         )}
@@ -1214,12 +1388,10 @@ export default function PrototypeWorkspace({
           liveLinear={liveLinear} linearId={linearId}
           isLiveLinked={isLiveLinked} fileLink={fileLink?.projectId === story.id ? fileLink : null} isBuiltIn={isBuiltIn}
           fileSync={fileSync} autoPublish={autoPublish}
-          compare={effCompare} setCompare={setCompare} canCompare={!breakpoints.noCompare}
           onOpenSource={() => setShowUpload(true)}
           rememberedLink={supportsFileLink() && !isLiveLinked ? rememberedLink : null}
           onReconnect={reconnectLocalFile} fileLinkError={fileLinkError}
           openRow={openContextRow} setOpenRow={setOpenContextRow}
-          checks={{ ...storyChecks, available: canCheck }} onJumpToIssue={jumpToIssue}
           resize={inspectorResize}
           isDrawer={breakpoints.inspectorDrawer && !focusMode} onClose={() => setInspectorOpen(false)}
           peeking={focusMode ? peek === "inspector" : null} onPeekEnd={() => setPeek(null)} onPeekStart={() => setPeek("inspector")}
@@ -1245,7 +1417,7 @@ export default function PrototypeWorkspace({
       )}
 
       {showNewDialog && (
-        <NewPrototypeDialog c={c} groups={Object.keys(groups)} restoreFocus={newDialogReturnFocusRef.current} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
+        <NewPrototypeDialog c={c} groups={allGroups} restoreFocus={newDialogReturnFocusRef.current} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
       )}
       <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
       {touchFull && effStory && (
@@ -1257,7 +1429,7 @@ export default function PrototypeWorkspace({
       )}
       {switcherOpen && (
         <PrototypeSwitcher c={c} projects={projects} identifierFor={linearIdentifier}
-          onPick={(project) => { setSwitcherOpen(false); setView("stories"); onSelectStory(project); }}
+          onPick={(project) => { setSwitcherOpen(false); setView("stories"); selectStory(project); }}
           onClose={() => setSwitcherOpen(false)} />
       )}
       {deleteCandidate && (
@@ -1273,8 +1445,9 @@ export default function PrototypeWorkspace({
 }
 
 function WorkspaceSidebar({
-  c, media, view, setView, query, setQuery, groups, activeId, onSelect, isAdmin,
-  onNewProject, dragId, setDragId, dropTargetId, setDropTargetId, handleDrop,
+  c, media, view, setView, query, setQuery, sections, groupBy, setGroupBy, activeId, splitId, onSelect, isAdmin,
+  canSplit, onOpenSplit,
+  onNewProject, dragId, setDragId, dropTargetId, setDropTargetId, handleDrop, canDropOn, onDragEnd,
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
@@ -1282,12 +1455,12 @@ function WorkspaceSidebar({
   onOpenDesign, onOpenPrompts, onOpenTracking,
   changelog,
   linearByProject,
-  unreadByProject, commentCountByProject, checkCountByProject = {},
+  unreadByProject, commentCountByProject,
   resize,
-  isDrawer, onClose, peeking = null, onPeekStart, onPeekEnd,
+  isDrawer, onClose, collapsed = false, onToggleCollapse, peeking = null, onPeekStart, onPeekEnd,
 }) {
-  const hasResults = Object.keys(groups).length > 0;
-  const prototypeCount = Object.values(groups).reduce((total, items) => total + items.length, 0);
+  const hasResults = sections.length > 0;
+  const prototypeCount = sections.reduce((total, section) => total + section.items.length, 0);
   const mediaCount = Object.keys(media || {}).length;
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const [menuRect, setMenuRect] = useState(null);
@@ -1342,6 +1515,14 @@ function WorkspaceSidebar({
             }}
           />
           {isDrawer && <button data-drawer-close className="eon-buttonish eon-icon-button" onClick={onClose} aria-label="Close prototype navigation" style={{ color: c.muted }}><X size={17} /></button>}
+          {!isDrawer && onToggleCollapse && (
+            <button className="eon-buttonish eon-icon-button" onClick={onToggleCollapse}
+              aria-label={collapsed ? "Keep the sidebar open" : "Collapse the sidebar"}
+              title={collapsed ? "Keep the sidebar open ([)" : "Collapse the sidebar ([)"}
+              style={{ color: c.muted }}>
+              {collapsed ? <PanelLeftOpen size={17} aria-hidden="true" /> : <PanelLeftClose size={17} aria-hidden="true" />}
+            </button>
+          )}
         </div>
         <Tabs value={view} onValueChange={(item) => { setView(item); if (isDrawer) onClose(); }}>
           <TabsList variant="line" className="eon-sidebar-tabs" aria-label="Prototype library view" style={{ borderColor: c.border }}>
@@ -1369,12 +1550,22 @@ function WorkspaceSidebar({
           </div>
         )}
         {view === "stories" && (
-          <button data-tutorial="setup-prompt" className="eon-buttonish eon-sidebar-setup" type="button" onClick={copySetupPrompt}
-            title="Copy the prompt that teaches an AI how to build for this hub"
-            style={{ color: copiedPrompt ? c.brand : c.muted }}>
-            {copiedPrompt ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
-            {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
-          </button>
+          <div className="eon-sidebar-tools">
+            <button data-tutorial="setup-prompt" className="eon-buttonish eon-sidebar-setup" type="button" onClick={copySetupPrompt}
+              title="Copy the prompt that teaches an AI how to build for this hub"
+              style={{ color: copiedPrompt ? c.brand : c.muted }}>
+              {copiedPrompt ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+              {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
+            </button>
+            <LiquidSegmentedControl
+              options={[{ value: "status", label: "Status" }, { value: "groups", label: "Groups" }]}
+              value={groupBy}
+              onValueChange={setGroupBy}
+              c={c}
+              className="eon-group-by"
+              ariaLabel="Organize prototypes by"
+            />
+          </div>
         )}
       </div>
 
@@ -1387,13 +1578,13 @@ function WorkspaceSidebar({
               <span>Try a different name or group.</span>
             </div>
           )}
-          {Object.entries(groups).map(([group, items]) => (
-          <div key={group} style={{ marginBottom: 10 }}>
-            {renamingGroup === group ? (
+          {sections.map((section) => (
+          <div key={section.key} style={{ marginBottom: 10 }}>
+            {section.kind === "group" && renamingGroup === section.label ? (
               <div className="eon-group-label">
                 <ChevronDown size={13} color={c.muted} />
-                <input autoFocus defaultValue={group} aria-label={`Rename group ${group}`} className="eon-group-rename"
-                  onBlur={(event) => commitGroupRename(group, event.target.value)}
+                <input autoFocus defaultValue={section.label} aria-label={`Rename group ${section.label}`} className="eon-group-rename"
+                  onBlur={(event) => commitGroupRename(section.label, event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") event.currentTarget.blur();
                     if (event.key === "Escape") setRenamingGroup(null);
@@ -1402,24 +1593,33 @@ function WorkspaceSidebar({
               </div>
             ) : (
               <div className="eon-group-label-row">
-                <button className="eon-buttonish eon-group-toggle" onClick={() => setCollapsedGroups((current) => ({ ...current, [group]: !current[group] }))}
-                  aria-expanded={!collapsedGroups[group]} style={{ color: c.muted }}>
-                  <ChevronDown size={13} className={collapsedGroups[group] ? "is-collapsed" : ""} /> {group}
+                <button className="eon-buttonish eon-group-toggle" onClick={() => setCollapsedGroups((current) => ({ ...current, [section.key]: !current[section.key] }))}
+                  aria-expanded={!collapsedGroups[section.key]} style={{ color: c.muted }}>
+                  <ChevronDown size={13} className={collapsedGroups[section.key] ? "is-collapsed" : ""} />
+                  {section.kind === "status" && (
+                    <span className={`eon-status-dot${section.empty ? " is-empty" : ""}`} aria-hidden="true"
+                      style={{ "--status-color": section.color || c.muted }} />
+                  )}
+                  {section.label}
                 </button>
-                <button className="eon-buttonish eon-group-edit" onClick={() => setRenamingGroup(group)} aria-label={`Rename group ${group}`} title="Rename group" style={{ color: c.muted }}>
-                  <Pencil size={12} />
-                </button>
+                {/* Statuses come from Linear, so only the team's own groups can be renamed. */}
+                {section.kind === "group" && (
+                  <button className="eon-buttonish eon-group-edit" onClick={() => setRenamingGroup(section.label)} aria-label={`Rename group ${section.label}`} title="Rename group" style={{ color: c.muted }}>
+                    <Pencil size={12} />
+                  </button>
+                )}
               </div>
             )}
-            {!collapsedGroups[group] && items.map((item) => {
+            {!collapsedGroups[section.key] && section.items.map((item) => {
               const active = activeId === item.id;
+              const inSplit = splitId === item.id;
               const identifier = linearIdentifier(item);
               const connection = linearConnectionState(linearByProject[item.id], identifier, c);
               return (
                 <div className="eon-story-row" key={item.id} draggable data-story-menu={item.id}
-                  onDragStart={() => setDragId(item.id)}
-                  onDragEnd={() => { setDragId(null); setDropTargetId(null); }}
-                  onDragOver={(event) => { if (dragId) { event.preventDefault(); setDropTargetId(item.id); } }}
+                  onDragStart={(event) => { startPrototypeDrag(event, item.id); setDragId(item.id); }}
+                  onDragEnd={onDragEnd}
+                  onDragOver={(event) => { if (canDropOn(item.id)) { event.preventDefault(); setDropTargetId(item.id); } }}
                   onDragLeave={() => setDropTargetId((current) => current === item.id ? null : current)}
                   onDrop={() => handleDrop(item.id)}
                   style={{ background: active ? c.active : "transparent", borderTopColor: dropTargetId === item.id && dragId !== item.id ? c.brand : "transparent", opacity: dragId === item.id ? 0.45 : 1 }}>
@@ -1436,16 +1636,12 @@ function WorkspaceSidebar({
                     </div>
                   ) : (
                     <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose(); }}
-                      onDoubleClick={() => setRenamingId(item.id)} title="Double-click to rename"
-                      aria-label={`${item.title}, ${identifier ? `${identifier}, ` : ""}${connection.label}${checkCountByProject[item.id] ? `, ${checkCountByProject[item.id]} check issues` : ""}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
+                      onDoubleClick={() => setRenamingId(item.id)} title={canSplit ? "Double-click to rename · drag onto the canvas to open side by side" : "Double-click to rename"}
+                      aria-label={`${item.title}, ${identifier ? `${identifier}, ` : ""}${connection.label}${inSplit ? ", open in split view" : ""}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
                       {identifier && <span className="eon-issue-chip" aria-hidden="true" style={{ "--status-color": connection.color }}>{identifier}</span>}
                       <span className="eon-story-title">{item.title}</span>
+                      {inSplit && <Columns2 className="eon-story-split" size={13} aria-hidden="true" style={{ color: c.muted }} />}
                       {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}
-                      {checkCountByProject[item.id] > 0 && (
-                        <span className="eon-comment-count" style={{ color: checkTone(c) }} title={`${checkCountByProject[item.id]} check issues at phone width`}>
-                          <ListChecks size={11} aria-hidden="true" />{checkCountByProject[item.id]}
-                        </span>
-                      )}
                       {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && (
                         <span className="eon-comment-count" style={{ color: c.muted }} title={`${commentCountByProject[item.id]} comments`}>
                           <MessageSquare size={11} aria-hidden="true" />{commentCountByProject[item.id]}
@@ -1468,8 +1664,14 @@ function WorkspaceSidebar({
                       </button>
                       {storyMenuId === item.id && menuRect && (
                         <FloatingMenu c={c} anchor={menuRect} storyId={item.id} triggerRef={menuTriggerRef} onClose={() => setStoryMenuId(null)}
-                          itemCount={menuPanel === "actions" ? 5 : Math.min(allGroups.length, 6) + 2}>
+                          itemCount={menuPanel === "actions" ? (canSplit ? 6 : 5) : Math.min(allGroups.length, 6) + 2}>
                           {menuPanel === "actions" ? <>
+                            {canSplit && (
+                              <button className="eon-buttonish" role="menuitem" disabled={active || inSplit}
+                                onClick={() => { onOpenSplit(item); setStoryMenuId(null); if (isDrawer) onClose(); }} style={{ color: c.text }}>
+                                <Columns2 size={14} /> Open in split view
+                              </button>
+                            )}
                             <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>
                             <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>
                             <button className="eon-buttonish" role="menuitem" disabled={projectOrder.indexOf(item.id) === projectOrder.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
@@ -1539,7 +1741,7 @@ function WorkspaceSidebar({
    context panel, not up here. ---- */
 function WorkspaceToolbar({
   c, view, story, liveLinear, linearId, coViewers = [],
-  navDrawer, navOpen, onOpenNav, inspectorDrawer, inspectorOpen, onToggleInspector,
+  navDrawer, navOpen, onOpenNav, navCollapsed, onExpandNav, inspectorDrawer, inspectorOpen, onToggleInspector,
   openFull, viewport, setViewport, layout, setLayout,
   saveState, onRetrySave, onOpenLinear,
   showMirror, mirrorView, mirrorTransport, frameRef,
@@ -1557,6 +1759,18 @@ function WorkspaceToolbar({
             style={{ color: c.muted, boxShadow: hubShadow(c) }}
           >
             <Menu size={17} />
+          </button>
+        )}
+        {!navDrawer && navCollapsed && (
+          <button
+            data-tutorial="nav-toggle"
+            className="eon-buttonish eon-icon-button"
+            onClick={onExpandNav}
+            aria-label="Show the sidebar"
+            title="Show the sidebar ([)"
+            style={{ color: c.muted }}
+          >
+            <PanelLeftOpen size={17} />
           </button>
         )}
         <div data-tutorial="prototype-title" className="eon-toolbar-title">
@@ -1839,14 +2053,13 @@ function ReviewInspector({
   c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
   anchors, editLinear, setEditLinear, editFigma, setEditFigma,
   liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn, fileSync, autoPublish,
-  compare, setCompare, canCompare, onOpenSource,
+  onOpenSource,
   rememberedLink, onReconnect, fileLinkError,
-  openRow, setOpenRow, checks, onJumpToIssue,
+  openRow, setOpenRow,
   resize, isDrawer, onClose, peeking = null, onPeekStart, onPeekEnd,
 }) {
   const drawerRef = useDrawerFocus(isDrawer, onClose);
   const figma = figmaMeta(story.figma_url || "");
-  const checkIssues = issueCount(checks.results);
   const linearConnection = linearConnectionState(liveLinear, linearId, c);
   const toggleRow = (key) => setOpenRow((current) => (current === key ? null : key));
 
@@ -1935,23 +2148,12 @@ function ReviewInspector({
           c={c} rowKey="figma" icon={FigmaIcon} label="Figma" value={figma.valid ? figma.title : "Not linked"}
           valueTone={figma.valid ? undefined : c.muted}
           open={openRow === "figma"} onToggle={() => toggleRow("figma")}
-          actions={(
-            <>
-              {canCompare && figma.valid && (
-                <button data-tutorial="figma-compare" className="eon-buttonish eon-icon-button eon-context-icon" onClick={() => setCompare((value) => !value)}
-                  aria-label="Compare with Figma side by side" aria-pressed={compare} title="Compare side by side"
-                  style={{ color: compare ? c.brand : c.muted, background: compare ? c.active : "transparent" }}>
-                  <Columns2 size={15} />
-                </button>
-              )}
-              {figma.valid && (
-                <a className="eon-buttonish eon-icon-button eon-context-icon" href={story.figma_url} target="_blank" rel="noreferrer"
-                  aria-label="Open in Figma" title="Open in Figma" style={{ color: c.muted }}>
-                  <ExternalLink size={14} />
-                </a>
-              )}
-            </>
-          )}
+          actions={figma.valid ? (
+            <a className="eon-buttonish eon-icon-button eon-context-icon" href={story.figma_url} target="_blank" rel="noreferrer"
+              aria-label="Open in Figma" title="Open in Figma" style={{ color: c.muted }}>
+              <ExternalLink size={14} />
+            </a>
+          ) : null}
         >
           {figma.node && <p className="eon-context-note" style={{ color: c.muted }}>Node {figma.node}</p>}
           <ContextLinkField
@@ -1985,20 +2187,6 @@ function ReviewInspector({
           )}
         </ContextRow>
 
-        <ContextRow
-          c={c} rowKey="checks" icon={ListChecks} label="Checks" value={checksSummary(checks)}
-          valueTone={checkIssues ? checkTone(c) : c.muted}
-          open={openRow === "checks"} onToggle={() => toggleRow("checks")}
-          actions={(
-            <button className="eon-buttonish eon-context-action" onClick={checks.run} disabled={Boolean(checks.running) || !checks.available}
-              style={{ borderColor: c.border, color: c.secondary, opacity: checks.running || !checks.available ? 0.5 : 1 }}>
-              {checks.results || checks.outdated ? "Run again" : "Run"}
-            </button>
-          )}
-        >
-          <ChecksList c={c} checks={checks} onJump={onJumpToIssue} />
-        </ContextRow>
-
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
@@ -2014,59 +2202,6 @@ function ReviewInspector({
         </TabsContent>
       </Tabs>
     </aside>
-  );
-}
-
-/* ---- Device shell for the mobile viewport. Drawn around the iframe with
-   negative offsets so the frame box, the pin coordinates, and the scaling all
-   stay exactly as they were: this is decoration, not layout.
-
-   The media library's `iPhone` mockup takes over when it is there. It is a
-   cut-out: the screen is transparent, so it lays over the iframe and its bezel
-   masks the corners. PHONE_SCREEN_INSET is measured from that file, where the
-   hole is 1206x2622 in a 1350x2760 image, exactly 3x an iPhone 17 Pro screen,
-   which is why VIEWPORTS.mobile matches that device. Without the asset, the
-   built-in bezel draws the same phone in CSS and stays sharp at any zoom. ---- */
-const PHONE_SCREEN_INSET = { top: 0.025, right: 0.05333, bottom: 0.025, left: 0.05333 };
-
-function DeviceShell({ frame, scale }) {
-  const px = (value) => `${value * scale}px`;
-  if (frame) {
-    // Grow the image so its screen area lands exactly on the iframe.
-    const width = 1 / (1 - PHONE_SCREEN_INSET.left - PHONE_SCREEN_INSET.right);
-    const height = 1 / (1 - PHONE_SCREEN_INSET.top - PHONE_SCREEN_INSET.bottom);
-    return (
-      <img
-        className="eon-device-png"
-        src={frame}
-        alt=""
-        aria-hidden="true"
-        style={{
-          width: `${width * 100}%`,
-          height: `${height * 100}%`,
-          left: `${-PHONE_SCREEN_INSET.left * width * 100}%`,
-          top: `${-PHONE_SCREEN_INSET.top * height * 100}%`,
-        }}
-      />
-    );
-  }
-  return (
-    <span
-      className="eon-device-shell"
-      aria-hidden="true"
-      style={{
-        inset: `-${px(15)}`,
-        borderRadius: px(66),
-        borderWidth: px(3),
-        boxShadow: `inset 0 0 0 ${px(12)} #050505, 0 ${px(22)} ${px(60)} rgba(0,0,0,.42)`,
-      }}
-    >
-      <span className="eon-device-island" style={{ top: px(24), width: px(122), height: px(35), borderRadius: px(20) }} />
-      <span className="eon-device-key is-action" style={{ left: px(-4), top: px(120), width: px(4), height: px(34), borderRadius: px(3) }} />
-      <span className="eon-device-key is-up" style={{ left: px(-4), top: px(178), width: px(4), height: px(62), borderRadius: px(3) }} />
-      <span className="eon-device-key is-down" style={{ left: px(-4), top: px(254), width: px(4), height: px(62), borderRadius: px(3) }} />
-      <span className="eon-device-key is-power" style={{ right: px(-4), top: px(196), width: px(4), height: px(96), borderRadius: px(3) }} />
-    </span>
   );
 }
 
@@ -2200,46 +2335,6 @@ function ContextLinkField({ c, label, value, placeholder, hasValue, editing, set
   );
 }
 
-
-/* ---- Large Figma pane for the side-by-side compare: slim unfurl header over
-   the full-bleed embed. Looking only; the link is owned by the context panel. ---- */
-function FigmaPane({ c, story, ratio }) {
-  const meta = figmaMeta(story.figma_url || "");
-  return (
-    <div className="eon-compare-pane" style={{ flex: `${1 - ratio} 1 0%`, background: c.nav, borderColor: c.border }}>
-      {meta.valid ? (
-        <>
-          <div className="eon-compare-head" style={{ borderColor: c.border }}>
-            <FigmaIcon size={15} />
-            <div className="eon-compare-meta">
-              <strong>{meta.title}</strong>
-              {meta.node && <span style={{ color: c.muted }}>Node {meta.node}</span>}
-            </div>
-            <a className="eon-buttonish eon-secondary-button" href={story.figma_url} target="_blank" rel="noreferrer"
-              style={{ borderColor: c.border, background: c.raised, color: c.secondary, textDecoration: "none" }}>
-              <ExternalLink size={13} aria-hidden="true" /> Open in Figma
-            </a>
-          </div>
-          <div className="eon-compare-embed"><FigmaEmbed url={story.figma_url} /></div>
-        </>
-      ) : (
-        <div className="eon-compare-empty">
-          <ReferenceEmpty c={c} icon={FigmaIcon} title="No Figma frame linked" body="Add a share URL under Figma in the context panel to compare here." />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ReferenceEmpty({ c, icon: Icon, title, body }) {
-  return (
-    <div className="eon-reference-empty" style={{ color: c.muted, boxShadow: `inset 0 0 0 1px ${c.border}` }}>
-      <Icon size={22} />
-      <strong style={{ color: c.text }}>{title}</strong>
-      <span>{body}</span>
-    </div>
-  );
-}
 
 function CommentThread({ c, comments, profile, projectId, onCreateComment, anchors = {} }) {
   const [draft, setDraft] = useState("");

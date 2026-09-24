@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FigmaIcon, LinearIcon } from "@/components/BrandIcons";
+import { LinearIcon } from "@/components/BrandIcons";
 import {
   ExternalLink, ChevronDown, Upload, Trash2, Copy, Check, AlertCircle, Loader2, LayoutGrid,
   ImageOff, Link2, MoreHorizontal, RotateCcw,
@@ -261,19 +261,6 @@ function StatesNotice({ c, prompt }) {
   );
 }
 
-/* ---- Figma embed, memoized on the URL so it doesn't reload on every parent
-   re-render (typing notes, toggling theme, realtime updates). ---- */
-export const FigmaEmbed = memo(function FigmaEmbed({ url }) {
-  const src = `https://www.figma.com/embed?embed_host=eon-hub&url=${encodeURIComponent(url)}`;
-  // Overflow-hidden wrapper + a taller iframe pushes Figma's bottom info bar
-  // (file name / "edited …" / lock) out of view.
-  return (
-    <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
-      <iframe title="Figma preview" src={src} allowFullScreen style={{ width: "100%", height: "calc(100% + 44px)", border: "none", display: "block" }} />
-    </div>
-  );
-});
-
 // Parse file name + node from a Figma URL, e.g. .../design/KEY/Orion---Core-App?node-id=14010-9626
 export function figmaMeta(url = "") {
   const parsed = parseHttpUrl(url);
@@ -287,33 +274,6 @@ export function figmaMeta(url = "") {
   if (match) title = decodeUrlPart(match[1]).replace(/-+/g, " ").trim() || title;
   node = parsed.searchParams.get("node-id") || null;
   return { valid, title, node };
-}
-
-/* ---- Figma unfurl card: icon + file name + Open in Figma, over a live preview.
-   Mirrors how Linear renders an embedded link. ---- */
-export function FigmaCard({ c, url }) {
-  const meta = figmaMeta(url);
-  return (
-    <div style={{ height: 360, borderRadius: 12, overflow: "hidden", border: `1px solid ${c.border}`, background: c.bg, display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderBottom: `1px solid ${c.border}`, flexShrink: 0 }}>
-        <FigmaIcon size={15} />
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: c.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta.title}</div>
-          {meta.node && <div style={{ fontSize: 11, color: c.muted }}>Node {meta.node}</div>}
-        </div>
-        {meta.valid && (
-          <a href={url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, fontSize: 12, color: c.text, background: c.raised, border: `1px solid ${c.border}`, borderRadius: 8, padding: "5px 10px", textDecoration: "none" }}>
-            <ExternalLink style={{ width: 13, height: 13 }} /> Open in Figma
-          </a>
-        )}
-      </div>
-      <div style={{ flex: 1, minHeight: 0, background: "#1e1e1e" }}>
-        {meta.valid
-          ? <FigmaEmbed url={url} />
-          : <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: c.muted, fontSize: 12, padding: 16, textAlign: "center" }}>Use a valid figma.com share URL to embed this frame.</div>}
-      </div>
-    </div>
-  );
 }
 
 /* ---- Linear issue card: live via edge function, static preview fallback.

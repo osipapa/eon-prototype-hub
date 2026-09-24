@@ -72,7 +72,7 @@ export default function PrototypeSwitcher({ c, projects, identifierFor, onPick, 
           {!items.length && <li className="eon-switcher-empty" style={{ color: c.muted }}>Nothing matches “{query.trim()}”</li>}
         </ul>
         <p className="eon-switcher-keys" style={{ color: c.muted, borderColor: c.border }}>
-          <kbd>←</kbd> <kbd>→</kbd> states · <kbd>1</kbd> to <kbd>4</kbd> device · <kbd>G</kbd> grid · <kbd>T</kbd> theme · <kbd>F</kbd> full view
+          <kbd>←</kbd> <kbd>→</kbd> states · <kbd>1</kbd> to <kbd>4</kbd> device · <kbd>G</kbd> grid · <kbd>T</kbd> theme · <kbd>F</kbd> full view · <kbd>[</kbd> sidebar
         </p>
       </div>
     </div>
