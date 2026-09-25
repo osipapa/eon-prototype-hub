@@ -37,28 +37,43 @@ export function applyEdit(html: string, oldString: string, newString: string, re
   return { ok: true, html: next, count: replaceAll ? count : 1, firstIndex };
 }
 
-export const PAGE_CHAR_BUDGET = 60_000;
+export const PAGE_CHAR_BUDGET = 40_000;
 
-export type Page = { text: string; startLine: number; endLine: number; totalLines: number; nextStartLine: number | null };
+export type Page = {
+  text: string; startLine: number; startChar: number; endLine: number; totalLines: number;
+  nextStartLine: number | null; nextStartChar: number;
+};
 
 // Numbered lines ("12\t<div>…"), capped by characters so a page fits in one
-// MCP result. A line longer than the budget still comes back whole.
-export function pageLines(html: string, startLine = 1, endLine?: number, budget = PAGE_CHAR_BUDGET): Page {
+// MCP result. A line longer than the budget (minified HTML, inline data:
+// URIs) comes back in chunks: continue with nextStartLine + nextStartChar.
+export function pageLines(html: string, startLine = 1, endLine?: number, budget = PAGE_CHAR_BUDGET, startChar = 0): Page {
   const lines = html.split("\n");
   const totalLines = lines.length;
   const start = Math.min(Math.max(1, Math.floor(startLine)), totalLines);
   const last = Math.max(start, Math.min(endLine ? Math.floor(endLine) : totalLines, totalLines));
+  const fromChar = Math.max(0, Math.floor(startChar));
+  const firstRest = lines[start - 1].slice(fromChar);
+  if (firstRest.length > budget) {
+    return {
+      text: `${start}\t${firstRest.slice(0, budget)}`, startLine: start, startChar: fromChar, endLine: start,
+      totalLines, nextStartLine: start, nextStartChar: fromChar + budget,
+    };
+  }
   const rows: string[] = [];
   let used = 0;
   let n = start;
   for (; n <= last; n++) {
-    const row = `${n}\t${lines[n - 1]}`;
+    const row = `${n}\t${n === start ? firstRest : lines[n - 1]}`;
     if (rows.length > 0 && used + row.length + 1 > budget) break;
     rows.push(row);
     used += row.length + 1;
   }
   const shownEnd = n - 1;
-  return { text: rows.join("\n"), startLine: start, endLine: shownEnd, totalLines, nextStartLine: shownEnd < last ? shownEnd + 1 : null };
+  return {
+    text: rows.join("\n"), startLine: start, startChar: fromChar, endLine: shownEnd, totalLines,
+    nextStartLine: shownEnd < last ? shownEnd + 1 : null, nextStartChar: 0,
+  };
 }
 
 export type Match = { line: number; text: string };

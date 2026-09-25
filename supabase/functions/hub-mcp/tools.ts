@@ -52,13 +52,17 @@ export function createTools(store: PrototypeStore) {
       return ok(await store.list());
     },
 
-    async read_prototype({ slug, start_line, end_line }: { slug: string; start_line?: number; end_line?: number }): Promise<ToolResult> {
+    async read_prototype(
+      { slug, start_line, end_line, start_char }: { slug: string; start_line?: number; end_line?: number; start_char?: number },
+    ): Promise<ToolResult> {
       const row = await store.get(slug);
       if (!row) return notFound(slug);
       if (row.prototype_html == null) return noHtml(slug);
-      const page = pageLines(row.prototype_html, start_line ?? 1, end_line);
-      const more = page.nextStartLine ? ` · more: call read_prototype with start_line=${page.nextStartLine}` : "";
-      return ok(`slug: ${slug} · version: ${row.html_version} · lines ${page.startLine}-${page.endLine} of ${page.totalLines}${more}\n\n${page.text}`);
+      const page = pageLines(row.prototype_html, start_line ?? 1, end_line, undefined, start_char ?? 0);
+      const from = page.startChar ? ` (line ${page.startLine} from char ${page.startChar})` : "";
+      const next = page.nextStartChar ? `start_line=${page.nextStartLine}, start_char=${page.nextStartChar}` : `start_line=${page.nextStartLine}`;
+      const more = page.nextStartLine ? ` · more: call read_prototype with ${next}` : "";
+      return ok(`slug: ${slug} · version: ${row.html_version} · lines ${page.startLine}-${page.endLine} of ${page.totalLines}${from}${more}\n\n${page.text}`);
     },
 
     async search_prototype({ slug, pattern, regex }: { slug: string; pattern: string; regex?: boolean }): Promise<ToolResult> {

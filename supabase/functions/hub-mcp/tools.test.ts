@@ -156,3 +156,13 @@ Deno.test("guard turns unexpected errors into tool errors", async () => {
   assert(r.isError);
   assertStringIncludes(r.text, "boom");
 });
+
+Deno.test("read_prototype pages inside a minified line with start_char", async () => {
+  const { store } = fakeStore({ min: "z".repeat(50_000) });
+  const tools = createTools(store);
+  const first = await tools.read_prototype({ slug: "min" });
+  assertStringIncludes(first.text, "start_line=1, start_char=40000");
+  const rest = await tools.read_prototype({ slug: "min", start_line: 1, start_char: 40_000 });
+  assertStringIncludes(rest.text, "from char 40000");
+  assert(!rest.text.includes("more:"));
+});

@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
-import { applyEdit, clipAround, contextAround, decodeJwtPayload, pageLines, searchLines } from "./lib.ts";
+import { applyEdit, clipAround, contextAround, decodeJwtPayload, PAGE_CHAR_BUDGET, pageLines, searchLines } from "./lib.ts";
 
 const b64url = (value: unknown) =>
   btoa(JSON.stringify(value)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
@@ -55,11 +55,29 @@ Deno.test("pageLines numbers lines and pages by budget", () => {
   assertEquals(rest.nextStartLine, null);
 });
 
-Deno.test("pageLines returns a single huge line whole", () => {
+Deno.test("pageLines chunks a line longer than the budget", () => {
   const html = "x".repeat(100_000);
-  const page = pageLines(html);
-  assertEquals(page.text.length, 100_002); // "1\t" + line
-  assertEquals(page.nextStartLine, null);
+  const first = pageLines(html);
+  assertEquals(first.text.length, 40_002); // "1\t" + 40k chars
+  assertEquals(first.nextStartLine, 1);
+  assertEquals(first.nextStartChar, 40_000);
+  const last = pageLines(html, 1, undefined, PAGE_CHAR_BUDGET, 80_000);
+  assertEquals(last.text.length, 20_002);
+  assertEquals(last.startChar, 80_000);
+  assertEquals(last.nextStartLine, null);
+});
+
+Deno.test("pageLines continues past a chunked line", () => {
+  const html = ["a", "y".repeat(50), "b"].join("\n");
+  const p1 = pageLines(html, 1, undefined, 20);
+  assertEquals(p1.text, "1\ta");
+  assertEquals([p1.nextStartLine, p1.nextStartChar], [2, 0]);
+  const p2 = pageLines(html, 2, undefined, 20);
+  assertEquals(p2.text, "2\t" + "y".repeat(20));
+  assertEquals([p2.nextStartLine, p2.nextStartChar], [2, 20]);
+  const p3 = pageLines(html, 2, undefined, 20, 40);
+  assertEquals(p3.text, "2\t" + "y".repeat(10) + "\n3\tb");
+  assertEquals(p3.nextStartLine, null);
 });
 
 Deno.test("pageLines clamps out-of-range lines", () => {
