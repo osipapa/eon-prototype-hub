@@ -3057,8 +3057,8 @@ function AnchorLeaderLine({ c, commentId }) {
 const ACTIVITY_META = {
   created:        { icon: Plus,          text: () => "created this prototype" },
   deleted:        { icon: Trash2,        text: () => "deleted this prototype" },
-  uploaded_html:  { icon: Upload,        text: () => "uploaded prototype HTML" },
-  updated_html:   { icon: Upload,        text: () => "updated the prototype HTML" },
+  uploaded_html:  { icon: Upload,        text: (d) => (d?.via === "claude" ? "uploaded prototype HTML via Claude" : "uploaded prototype HTML") },
+  updated_html:   { icon: Upload,        text: (d) => (d?.via === "claude" ? "updated the prototype HTML via Claude" : "updated the prototype HTML") },
   removed_html:   { icon: Trash2,        text: () => "removed the uploaded HTML" },
   status_changed: { icon: Circle,        text: (d) => (d?.to ? `set status to ${d.to}` : "changed the status") },
   renamed:        { icon: Pencil,        text: (d) => (d?.to ? `renamed it to "${d.to}"` : "renamed the prototype") },

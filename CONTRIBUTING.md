@@ -69,6 +69,23 @@ automatically — usually within a minute or two.
 **Forking instead of collaborator access:** `gh repo fork --clone`, push to your
 fork, then `gh pr create` against `osipapa/eon-prototype-hub`.
 
+## Connect your Claude to the hub
+
+Use your own Claude app, claude.ai, or Claude Code to read and edit prototypes as you.
+Open **Connect Claude** (the plug in the sidebar footer) for the URL and steps:
+
+- **Claude app or claude.ai:** Settings → Connectors → Add custom connector →
+  `https://ytysycblrxehxebgctbk.supabase.co/functions/v1/hub-mcp` → Connect →
+  sign in with your hub account → Allow.
+- **Claude Code:** `claude mcp add --transport http eon-hub https://ytysycblrxehxebgctbk.supabase.co/functions/v1/hub-mcp`,
+  then `/mcp` → eon-hub → sign in.
+
+Tools: `list_prototypes`, `read_prototype`, `search_prototype`, `edit_prototype`
+(exact-text replace, safe alongside a teammate's edits), `write_prototype`
+(whole file, rejected if someone saved since your `base_version`),
+`list_revisions`, `restore_revision`, `whoami`.
+The server is `supabase/functions/hub-mcp` (deploy with `verify_jwt: false`).
+
 ## Guardrails
 
 - Only the **public anon key** belongs in the client. Never add the Supabase

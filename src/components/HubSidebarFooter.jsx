@@ -1,5 +1,6 @@
 import { LogOut, Shield } from "lucide-react";
 import { HubChangelogButton } from "@/components/HubChangelog";
+import { ConnectClaudeButton } from "@/components/ConnectClaude";
 
 export default function HubSidebarFooter({
   c,
@@ -13,6 +14,7 @@ export default function HubSidebarFooter({
     <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
       <span title={userEmail || ""} style={{ color: c.muted }}>{userEmail || "Team member"}</span>
       <HubChangelogButton c={c} hasNew={changelog.hasNew} onOpen={changelog.open} />
+      <ConnectClaudeButton c={c} />
       {isAdmin && (
         <button
           className="eon-buttonish eon-icon-button"

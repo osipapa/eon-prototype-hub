@@ -1213,6 +1213,14 @@ button.eon-save-state { cursor: pointer; }
 /* New-prototype dialog */
 .eon-modal-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .62); backdrop-filter: blur(8px); }
 .eon-modal { display: flex; width: min(600px, 100%); max-height: 100%; flex-direction: column; border: 1px solid; border-radius: 24px; box-shadow: var(--shadow-surface), 0 24px 80px rgba(0, 0, 0, .32); transition: transform 180ms var(--ease-out), opacity 140ms var(--ease-out); }
+.eon-connect-dialog { width: min(520px, 100%); }
+.eon-modal-body.eon-connect-body { display: grid; gap: 18px; padding: 18px 20px 22px; overflow: auto; font-size: 13px; line-height: 1.5; }
+.eon-connect-body section { display: grid; gap: 8px; }
+.eon-connect-body h3 { margin: 0; font-size: 13px; font-weight: 600; }
+.eon-connect-body ol { margin: 0; padding-left: 18px; list-style: decimal; }
+.eon-connect-body p { margin: 0; }
+.eon-connect-field { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 6px 6px 12px; border: 1px solid; border-radius: 12px; }
+.eon-connect-field code { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
 @starting-style { .eon-modal { opacity: 0; transform: scale(.97) translateY(6px); } }
 .eon-modal-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px 20px; border-bottom: 1px solid; }
 .eon-modal-head strong { flex: 1; font-size: 15px; letter-spacing: -.01em; }
