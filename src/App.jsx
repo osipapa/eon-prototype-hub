@@ -9,6 +9,7 @@ const Design = lazy(() => import("./routes/Design"));
 const Prompts = lazy(() => import("./routes/Prompts"));
 const Admin = lazy(() => import("./routes/Admin"));
 const Mirror = lazy(() => import("./routes/Mirror"));
+const OAuthConsent = lazy(() => import("./routes/OAuthConsent"));
 
 function Splash({ children }) {
   return <LoadingScreen>{children}</LoadingScreen>;
@@ -62,6 +63,7 @@ export default function App() {
             <Route path="/tracking/*" element={<Navigate to="/design/tracking-mixpanel" replace />} />
             <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
             <Route path="/mirror/:session" element={<RequireAuth><Mirror /></RequireAuth>} />
+            <Route path="/oauth/consent" element={<RequireAuth><OAuthConsent /></RequireAuth>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

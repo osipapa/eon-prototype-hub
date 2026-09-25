@@ -19,6 +19,18 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-09-25",
+    title: "Connect Claude",
+    groups: [
+      {
+        label: "Under the hood",
+        items: [
+          "Groundwork for connecting your own Claude to the hub: a sign-in consent page.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-09-24",
     title: "Split view and status sections",
     image: "changelog/2026-09-24-split-view.png",

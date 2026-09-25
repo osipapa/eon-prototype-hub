@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Eon · Connecting Claude</title>
+  <script>
+    // Supabase Auth sends OAuth consent to Site URL + Authorization Path. The
+    // hub routes with a hash, so hand the request to #/oauth/consent.
+    var base = location.pathname.replace(/oauth\/consent\/?(index\.html)?$/, "");
+    location.replace(base + "#/oauth/consent" + location.search);
+  </script>
+</head>
+<body style="background:#0b0b0c"></body>
+</html>
