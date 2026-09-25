@@ -3,9 +3,10 @@
 export const CONNECTOR_URL = `${import.meta.env?.VITE_SUPABASE_URL}/functions/v1/hub-mcp`;
 export const CLAUDE_CODE_COMMAND = `claude mcp add --transport http eon-hub ${CONNECTOR_URL}`;
 
-// "ready" | "off" | "unknown" from the OAuth discovery response.
+// "ready" | "no-registration" | "off" | "unknown" from the OAuth discovery
+// response. Claude registers itself (DCR), so it needs registration_endpoint.
 export function signInStatus(status, body) {
-  if (status === 200) return "ready";
+  if (status === 200) return body?.registration_endpoint ? "ready" : "no-registration";
   if (status === 404 && body?.error_code === "feature_disabled") return "off";
   return "unknown";
 }

@@ -1,8 +1,12 @@
 import { assertEquals } from "jsr:@std/assert@1";
 import { signInStatus } from "./claudeConnect.js";
 
-Deno.test("discovery answers: Claude sign-in is ready", () => {
-  assertEquals(signInStatus(200, { issuer: "https://x.supabase.co/auth/v1" }), "ready");
+Deno.test("discovery answers with a registration endpoint: Claude sign-in is ready", () => {
+  assertEquals(signInStatus(200, { issuer: "https://x.supabase.co/auth/v1", registration_endpoint: "https://x.supabase.co/auth/v1/oauth/clients/register" }), "ready");
+});
+
+Deno.test("OAuth on but dynamic registration off: Claude can't register itself", () => {
+  assertEquals(signInStatus(200, { issuer: "https://x.supabase.co/auth/v1" }), "no-registration");
 });
 
 Deno.test("Supabase says the OAuth server is off", () => {

@@ -144,15 +144,17 @@ function SignInStatus({ c, status, isAdmin }) {
       </p>
     );
   }
-  if (status !== "off") return null;
+  if (status !== "off" && status !== "no-registration") return null;
+  const title = status === "off" ? "Claude sign-in isn’t on yet." : "Almost: Claude can’t register itself yet.";
+  const adminFix = status === "off"
+    ? "In Supabase, open Authentication → OAuth Server, turn it on, set the authorization path to /oauth/consent/, and allow dynamic client registration."
+    : "In Supabase, open Authentication → OAuth Server and turn on dynamic client registration.";
   return (
     <div className="eon-connect-status is-off" role="status" style={{ background: c.raised, borderColor: c.border, color: c.secondary }}>
       <span className="eon-connect-dot" style={{ background: "#F2C94C" }} aria-hidden="true" />
       <p>
-        <strong style={{ color: c.text }}>Claude sign-in isn’t on yet.</strong>{" "}
-        {isAdmin
-          ? "In Supabase, open Authentication → OAuth Server, turn it on, set the authorization path to /oauth/consent/, and allow dynamic client registration."
-          : "Ask a hub admin to turn it on, then come back here."}
+        <strong style={{ color: c.text }}>{title}</strong>{" "}
+        {isAdmin ? adminFix : "Ask a hub admin to finish setup, then come back here."}
       </p>
     </div>
   );
