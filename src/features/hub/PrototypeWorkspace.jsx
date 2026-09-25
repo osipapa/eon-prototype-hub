@@ -35,7 +35,7 @@ import SplitDropZones, { startPrototypeDrag } from "./SplitDropZones";
 import { buildSections, mergeStatusCache, readStatusCache } from "./statusGroups";
 import PhoneMirrorButton from "./PhoneMirror";
 import PrototypeSwitcher, { SHORTCUT_MOD, rememberRecent } from "./PrototypeSwitcher";
-import { isForeignChange } from "./fileSyncGuard";
+import { isForeignChange, reconnectPlan } from "./fileSyncGuard";
 import {
   anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, injectFullViewExit, isBridgeMessage,
 } from "./anchorBridge";
@@ -136,7 +136,7 @@ export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], activity = [], coViewers = [],
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
-  onPatchProject, onPublishHtml, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
+  onPatchProject, onPublishHtml, onFetchHtml, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
   onCreateComment, onResolveComment, onEditComment, onDeleteComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
   mirrorTransport = "supabase", loadLinearIssue = fetchLinearIssue,
@@ -255,12 +255,16 @@ export default function PrototypeWorkspace({
   autoPublishRef.current = autoPublish;
   const publishHtmlRef = useRef(onPublishHtml);
   publishHtmlRef.current = onPublishHtml;
+  const fetchHtmlRef = useRef(onFetchHtml);
+  fetchHtmlRef.current = onFetchHtml;
   const fileLinkRef = useRef(null);
   fileLinkRef.current = fileLink;
   const fileSyncRef = useRef(null);
   fileSyncRef.current = fileSync;
   // Versions this browser published, so their realtime echoes never conflict.
   const ownVersionsRef = useRef(new Set());
+  // Publishes still awaiting a response; conflicts aren't judged meanwhile.
+  const publishingRef = useRef(0);
   const compareRef = useRef(null);
   const newDialogReturnFocusRef = useRef(null);
   const [statusCache, setStatusCache] = useState(readStatusCache);
@@ -764,18 +768,25 @@ export default function PrototypeWorkspace({
     const baseVersion = fileLinkRef.current?.projectId === projectId ? fileLinkRef.current.baseVersion : undefined;
     if (baseVersion == null) return;
     setFileSync({ phase: "syncing", at: Date.now() });
+    publishingRef.current += 1;
     try {
       const result = await publishHtmlRef.current(projectId, content, baseVersion);
       if (result?.conflict) {
         setFileSync({ phase: "conflict", at: Date.now() });
+        // Our state missed their save; catch up so the banner acts on it.
+        fetchHtmlRef.current?.(projectId).catch(() => {});
         return;
       }
       ownVersionsRef.current.add(result.version);
       setFileLink((current) => (current?.projectId === projectId ? { ...current, baseVersion: result.version } : current));
+      const link = fileLinkRef.current;
+      if (link?.projectId === projectId) rememberFileLink(projectId, link.handle, link.name, result.version);
       setFileSync({ phase: "synced", at: Date.now() });
     } catch (error) {
       setFileLinkError(error?.message || "Couldn't publish the file. It still renders here.");
       setFileSync({ phase: "local", at: Date.now() });
+    } finally {
+      publishingRef.current -= 1;
     }
   };
 
@@ -826,10 +837,12 @@ export default function PrototypeWorkspace({
   const linkedProject = fileLink ? projects.find((item) => item.id === fileLink.projectId) : null;
   useEffect(() => {
     if (!fileLink || !linkedProject) return;
-    if (isForeignChange(linkedProject.html_version, fileLink.baseVersion, ownVersionsRef.current)) {
+    if (isForeignChange(linkedProject.html_version, fileLink.baseVersion, ownVersionsRef.current, publishingRef.current > 0)) {
       setFileSync((current) => (current?.phase === "conflict" ? current : { phase: "conflict", at: Date.now() }));
     }
-  }, [linkedProject?.html_version, fileLink?.baseVersion]);
+    // fileSync.at changes when a publish settles, so a change that arrived
+    // while it was in flight is judged then.
+  }, [linkedProject?.html_version, fileLink?.baseVersion, fileSync?.at]);
 
   useEffect(() => {
     if (fileSync?.phase === "conflict") setOpenContextRow("source");
@@ -852,8 +865,10 @@ export default function PrototypeWorkspace({
     if (breakpoints.inspectorDrawer) setNavOpen(false);
   };
 
-  const adoptFile = (handle, name, file, content) => {
-    const baseVersion = story.html_version ?? 0;
+  // A fresh link publishes over whatever is there (the user chose this file).
+  // A reconnect passes `plan` from reconnectPlan, which may pause instead.
+  const adoptFile = (handle, name, file, content, plan = null) => {
+    const baseVersion = plan?.baseVersion ?? story.html_version ?? 0;
     setLocalHtml(content);
     const link = {
       handle, name, projectId: story.id, baseVersion,
@@ -861,9 +876,13 @@ export default function PrototypeWorkspace({
     };
     setFileLink(link);
     fileLinkRef.current = link;
-    setRememberedLink({ handle, name });
+    setRememberedLink({ handle, name, baseVersion });
+    rememberFileLink(story.id, handle, name, baseVersion);
+    if (plan?.conflict) {
+      setFileSync({ phase: "conflict", at: Date.now() });
+      return;
+    }
     setFileSync({ phase: autoPublishRef.current ? "syncing" : "local", at: Date.now() });
-    rememberFileLink(story.id, handle, name);
     if (autoPublishRef.current) publishGuarded(story.id, content);
   };
 
@@ -882,17 +901,31 @@ export default function PrototypeWorkspace({
     const saved = rememberedLink;
     if (!saved?.handle) return;
     setFileLinkError("");
+    let file;
+    let content;
     try {
       if (!(await ensureReadPermission(saved.handle))) {
         setFileLinkError("The browser did not grant access to that file. Link it again.");
         return;
       }
-      const file = await saved.handle.getFile();
-      adoptFile(saved.handle, saved.name || file.name, file, await file.text());
+      file = await saved.handle.getFile();
+      content = await file.text();
     } catch {
       setFileLinkError("That file is no longer reachable. Link it again.");
       setRememberedLink(null);
       forgetFileLink(story.id);
+      return;
+    }
+    // Someone may have saved while we were away: compare before publishing.
+    try {
+      const server = await fetchHtmlRef.current(story.id);
+      const plan = reconnectPlan({
+        storedBase: saved.baseVersion, fileContent: content,
+        serverHtml: server.prototype_html, serverVersion: server.html_version,
+      });
+      adoptFile(saved.handle, saved.name || file.name, file, content, plan);
+    } catch (error) {
+      setFileLinkError(error?.message || "Couldn't reach the hub. Try again.");
     }
   };
 
@@ -909,36 +942,46 @@ export default function PrototypeWorkspace({
   };
 
   // Conflict: write the team's version into the linked file, then resume.
+  // Reads the server first: local state may have missed their save.
   const pullIntoFile = async () => {
     const link = fileLink;
-    const project = link ? projects.find((item) => item.id === link.projectId) : null;
-    if (!link?.handle || project?.prototype_html == null) return;
+    if (!link?.handle) return;
     setFileLinkError("");
     try {
+      // Ask first, while the click still counts as a user gesture.
       if (!(await ensureWritePermission(link.handle))) {
         setFileLinkError("The browser did not allow writing to that file.");
         return;
       }
+      const project = await fetchHtmlRef.current(link.projectId);
+      if (project?.prototype_html == null) return;
       const written = await writeFileText(link.handle, project.prototype_html);
       setLocalHtml(project.prototype_html);
       const next = { ...link, baseVersion: project.html_version, lastModified: written.lastModified, size: written.size, lastSyncAt: Date.now() };
       setFileLink(next);
       fileLinkRef.current = next;
+      rememberFileLink(link.projectId, link.handle, link.name, project.html_version);
       setFileSync({ phase: "synced", at: Date.now() });
     } catch (error) {
       setFileLinkError(error?.message || "Couldn't write to that file.");
     }
   };
 
-  // Conflict: publish the linked file over the team's newer version.
-  const overwriteWithFile = () => {
+  // Conflict: publish the linked file over the team's newer version, using
+  // the server's current version rather than what state last heard.
+  const overwriteWithFile = async () => {
     const link = fileLink;
-    const project = link ? projects.find((item) => item.id === link.projectId) : null;
-    if (!link || localHtml == null || !project) return;
-    const next = { ...link, baseVersion: project.html_version };
-    setFileLink(next);
-    fileLinkRef.current = next;
-    publishGuarded(link.projectId, localHtml);
+    if (!link || localHtml == null) return;
+    setFileLinkError("");
+    try {
+      const project = await fetchHtmlRef.current(link.projectId);
+      const next = { ...link, baseVersion: project.html_version };
+      setFileLink(next);
+      fileLinkRef.current = next;
+      await publishGuarded(link.projectId, localHtml);
+    } catch (error) {
+      setFileLinkError(error?.message || "Couldn't reach the hub. Try again.");
+    }
   };
 
   // A row that re-renders into another section mid-drag (a Linear status

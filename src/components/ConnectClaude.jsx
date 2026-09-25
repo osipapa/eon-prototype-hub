@@ -32,17 +32,21 @@ function CopyField({ c, label, value }) {
 
 function ConnectClaudeDialog({ c, onClose }) {
   const dialogRef = useRef(null);
+  // Held in a ref so a parent re-render (realtime, presence) can't re-run the
+  // mount effect and yank focus back to Close.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     const returnFocusTo = document.activeElement;
     dialogRef.current?.querySelector("button")?.focus();
-    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    const onKey = (event) => { if (event.key === "Escape") onCloseRef.current(); };
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
       returnFocusTo?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>

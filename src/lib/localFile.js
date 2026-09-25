@@ -94,8 +94,10 @@ async function withStore(mode, run) {
 }
 
 // A remembered link is a hint for the next session, never a live connection.
-export async function rememberFileLink(projectId, handle, name) {
-  try { await withStore("readwrite", (store) => store.put({ handle, name }, projectId)); }
+// baseVersion: the server version the file last synced against, so a later
+// reconnect can tell whether someone saved in between.
+export async function rememberFileLink(projectId, handle, name, baseVersion) {
+  try { await withStore("readwrite", (store) => store.put({ handle, name, baseVersion }, projectId)); }
   catch { /* private mode or a blocked store just means no reconnect offer */ }
 }
 

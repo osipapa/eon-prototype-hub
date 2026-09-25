@@ -194,22 +194,48 @@ export default function WorkspacePreview() {
     setProjects((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
   };
 
+  // The "server": what Supabase holds, which can run ahead of what this hub
+  // has heard (a missed realtime event). Seeded lazily from the preview rows.
   const projectsRef = useRef(projects);
   projectsRef.current = projects;
+  const serverRef = useRef({});
+  const serverRow = (id) => {
+    if (!serverRef.current[id]) {
+      const row = projectsRef.current.find((item) => item.id === id);
+      serverRef.current[id] = { prototype_html: row?.prototype_html ?? null, html_version: row?.html_version ?? 0 };
+    }
+    return serverRef.current[id];
+  };
   // Stand-in for Hub's guarded publish: same compare-and-swap on html_version.
   const publishHtml = async (id, html, baseVersion) => {
-    const current = projectsRef.current.find((item) => item.id === id);
-    if ((current?.html_version ?? 0) !== baseVersion) return { conflict: true };
-    const version = baseVersion + 1;
-    setProjects((items) => items.map((item) => (item.id === id ? { ...item, prototype_html: html, html_version: version } : item)));
-    return { version };
+    const current = serverRow(id);
+    if (current.html_version !== baseVersion) return { conflict: true };
+    serverRef.current[id] = { prototype_html: html, html_version: baseVersion + 1 };
+    // Like Supabase at its worst: the realtime echo lands before the response.
+    setProjects((items) => items.map((item) => (item.id === id ? { ...item, ...serverRef.current[id] } : item)));
+    await new Promise((resolve) => { window.setTimeout(resolve, 250); });
+    return { version: baseVersion + 1 };
+  };
+  // Stand-in for Hub's onFetchHtml: read the server copy and catch the hub up.
+  const fetchHtml = async (id) => {
+    const row = serverRow(id);
+    setProjects((items) => items.map((item) => (item.id === id ? { ...item, ...row } : item)));
+    return { id, ...row };
   };
 
   // Dev only: simulate a teammate's save, to exercise the linked-file guard.
+  // { missed: true } skips telling the hub, like a dropped realtime event.
   useEffect(() => {
-    window.__eonPreviewTeammateSave = (slug) => setProjects((items) => items.map((item) => (item.slug === slug
-      ? { ...item, prototype_html: `${item.prototype_html || ""}\n<!-- teammate edit -->`, html_version: (item.html_version ?? 0) + 1 }
-      : item)));
+    window.__eonPreviewTeammateSave = (slug, { missed = false } = {}) => {
+      const item = projectsRef.current.find((row) => row.slug === slug);
+      if (!item) return;
+      const current = serverRow(item.id);
+      serverRef.current[item.id] = {
+        prototype_html: `${current.prototype_html || ""}\n<!-- teammate edit -->`,
+        html_version: current.html_version + 1,
+      };
+      if (!missed) setProjects((items) => items.map((row) => (row.id === item.id ? { ...row, ...serverRef.current[item.id] } : row)));
+    };
     return () => { delete window.__eonPreviewTeammateSave; };
   }, []);
 
@@ -232,6 +258,7 @@ export default function WorkspacePreview() {
         onSelectStory={(project) => setActiveId(project?.id)}
         onPatchProject={patchProject}
         onPublishHtml={publishHtml}
+        onFetchHtml={fetchHtml}
         onSetAsset={(key, url) => setAssets((current) => ({ ...current, [key]: url }))}
         onDeleteAsset={(key) => setAssets((current) => {
           const next = { ...current };

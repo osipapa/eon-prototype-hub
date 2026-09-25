@@ -15,13 +15,25 @@ export async function patchProject(id, patch) {
   return data;
 }
 
-// Publish HTML only if nobody saved since `baseVersion`. Returns the saved
-// row, or null when someone else saved first (a linked file then asks).
+// Publish HTML only if nobody saved since `baseVersion`. Returns the new
+// {id, html_version, updated_at}, or null when someone else saved first (a
+// linked file then asks).
 export async function publishHtmlIfUnchanged(id, html, baseVersion) {
   const { data, error } = await supabase
     .from("projects").update({ prototype_html: html })
     .eq("id", id).eq("html_version", baseVersion)
-    .select().maybeSingle();
+    // Just the new version: echoing the HTML back would download it again.
+    .select("id,html_version,updated_at").maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// The server's current HTML and version. Realtime can miss events (sleep,
+// reconnects), so conflict handling reads this instead of trusting state.
+export async function fetchProjectHtml(id) {
+  const { data, error } = await supabase
+    .from("projects").select("id,prototype_html,html_version,updated_at")
+    .eq("id", id).single();
   if (error) throw error;
   return data;
 }

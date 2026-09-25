@@ -9,7 +9,7 @@ import {
   firstNameFor, TUTORIAL_METADATA_KEY, tutorialStorageKey, validTutorialPersona,
 } from "../features/onboarding/tutorial";
 import {
-  listProjects, patchProject as dbPatch, publishHtmlIfUnchanged, createProject, deleteProject, subscribeProjects,
+  listProjects, patchProject as dbPatch, publishHtmlIfUnchanged, fetchProjectHtml, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
   setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
   updateCommentBody, deleteComment,
@@ -373,8 +373,16 @@ export default function Hub() {
     const saved = await publishHtmlIfUnchanged(id, html, baseVersion);
     if (!saved) return { conflict: true };
     setProjects((current) => current?.map((project) =>
-      project.id === id ? withLocalDraft({ ...project, ...saved }) : project) ?? current);
+      project.id === id ? withLocalDraft({ ...project, prototype_html: html, ...saved }) : project) ?? current);
     return { version: saved.html_version };
+  }
+
+  // Catch this prototype's HTML up with the server before acting on a conflict.
+  async function onFetchHtml(id) {
+    const fresh = await fetchProjectHtml(id);
+    setProjects((current) => current?.map((project) =>
+      project.id === id ? withLocalDraft({ ...project, ...fresh }) : project) ?? current);
+    return fresh;
   }
 
   // An uploaded file goes once its asset stops pointing at it, unless another
@@ -586,6 +594,7 @@ export default function Hub() {
         onSelectStory={(project, options) => navigate(project?.slug ? `/p/${project.slug}` : "/", options)}
         onPatchProject={onPatchProject}
         onPublishHtml={onPublishHtml}
+        onFetchHtml={onFetchHtml}
         onSetAsset={onSetAsset}
         onDeleteAsset={onDeleteAsset}
         onNewProject={onNewProject}
