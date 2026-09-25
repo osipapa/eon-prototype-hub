@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LoadingScreen from "../components/LoadingScreen";
 import PrototypeWorkspace from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
@@ -194,6 +194,25 @@ export default function WorkspacePreview() {
     setProjects((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
   };
 
+  const projectsRef = useRef(projects);
+  projectsRef.current = projects;
+  // Stand-in for Hub's guarded publish: same compare-and-swap on html_version.
+  const publishHtml = async (id, html, baseVersion) => {
+    const current = projectsRef.current.find((item) => item.id === id);
+    if ((current?.html_version ?? 0) !== baseVersion) return { conflict: true };
+    const version = baseVersion + 1;
+    setProjects((items) => items.map((item) => (item.id === id ? { ...item, prototype_html: html, html_version: version } : item)));
+    return { version };
+  };
+
+  // Dev only: simulate a teammate's save, to exercise the linked-file guard.
+  useEffect(() => {
+    window.__eonPreviewTeammateSave = (slug) => setProjects((items) => items.map((item) => (item.slug === slug
+      ? { ...item, prototype_html: `${item.prototype_html || ""}\n<!-- teammate edit -->`, html_version: (item.html_version ?? 0) + 1 }
+      : item)));
+    return () => { delete window.__eonPreviewTeammateSave; };
+  }, []);
+
   return (
     <>
       <PrototypeWorkspace
@@ -212,6 +231,7 @@ export default function WorkspacePreview() {
         activeId={activeId}
         onSelectStory={(project) => setActiveId(project?.id)}
         onPatchProject={patchProject}
+        onPublishHtml={publishHtml}
         onSetAsset={(key, url) => setAssets((current) => ({ ...current, [key]: url }))}
         onDeleteAsset={(key) => setAssets((current) => {
           const next = { ...current };

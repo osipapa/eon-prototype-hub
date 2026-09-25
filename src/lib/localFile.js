@@ -37,15 +37,32 @@ export async function pickHtmlFile() {
 /* Permission -------------------------------------------------------------- */
 
 // Chromium can drop a granted handle between sessions. requestPermission only
-// resolves inside a user gesture, so only call this straight from a click.
-export async function ensureReadPermission(handle) {
-  const options = { mode: "read" };
+// resolves inside a user gesture, so only call these straight from a click.
+async function ensurePermission(handle, mode) {
+  const options = { mode };
   try {
     if (await handle.queryPermission?.(options) === "granted") return true;
     return await handle.requestPermission?.(options) === "granted";
   } catch {
     return false;
   }
+}
+
+export function ensureReadPermission(handle) {
+  return ensurePermission(handle, "read");
+}
+
+export function ensureWritePermission(handle) {
+  return ensurePermission(handle, "readwrite");
+}
+
+// Replace the file's contents with `text`. Returns what the watcher compares.
+export async function writeFileText(handle, text) {
+  const writable = await handle.createWritable();
+  await writable.write(text);
+  await writable.close();
+  const file = await handle.getFile();
+  return { lastModified: file.lastModified, size: file.size };
 }
 
 /* Remembered handles ------------------------------------------------------ */

@@ -9,7 +9,7 @@ import {
   firstNameFor, TUTORIAL_METADATA_KEY, tutorialStorageKey, validTutorialPersona,
 } from "../features/onboarding/tutorial";
 import {
-  listProjects, patchProject as dbPatch, createProject, deleteProject, subscribeProjects,
+  listProjects, patchProject as dbPatch, publishHtmlIfUnchanged, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
   setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
   updateCommentBody, deleteComment,
@@ -367,6 +367,16 @@ export default function Hub() {
     scheduleSave(id);
   }
 
+  // Linked-file publishes skip the debounced queue: the caller needs to know
+  // right away whether someone else saved first.
+  async function onPublishHtml(id, html, baseVersion) {
+    const saved = await publishHtmlIfUnchanged(id, html, baseVersion);
+    if (!saved) return { conflict: true };
+    setProjects((current) => current?.map((project) =>
+      project.id === id ? withLocalDraft({ ...project, ...saved }) : project) ?? current);
+    return { version: saved.html_version };
+  }
+
   // An uploaded file goes once its asset stops pointing at it, unless another
   // asset still does. Best effort: the asset change has already landed.
   function releaseMediaFile(url, remaining) {
@@ -575,6 +585,7 @@ export default function Hub() {
         onRetryLoad={retryLoad}
         onSelectStory={(project, options) => navigate(project?.slug ? `/p/${project.slug}` : "/", options)}
         onPatchProject={onPatchProject}
+        onPublishHtml={onPublishHtml}
         onSetAsset={onSetAsset}
         onDeleteAsset={onDeleteAsset}
         onNewProject={onNewProject}

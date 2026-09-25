@@ -15,6 +15,17 @@ export async function patchProject(id, patch) {
   return data;
 }
 
+// Publish HTML only if nobody saved since `baseVersion`. Returns the saved
+// row, or null when someone else saved first (a linked file then asks).
+export async function publishHtmlIfUnchanged(id, html, baseVersion) {
+  const { data, error } = await supabase
+    .from("projects").update({ prototype_html: html })
+    .eq("id", id).eq("html_version", baseVersion)
+    .select().maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function createProject(project) {
   const { data, error } = await supabase.from("projects").insert(project).select().single();
   if (error) throw error;

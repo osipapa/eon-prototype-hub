@@ -35,12 +35,13 @@ import SplitDropZones, { startPrototypeDrag } from "./SplitDropZones";
 import { buildSections, mergeStatusCache, readStatusCache } from "./statusGroups";
 import PhoneMirrorButton from "./PhoneMirror";
 import PrototypeSwitcher, { SHORTCUT_MOD, rememberRecent } from "./PrototypeSwitcher";
+import { isForeignChange } from "./fileSyncGuard";
 import {
   anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, injectFullViewExit, isBridgeMessage,
 } from "./anchorBridge";
 import {
-  ensureReadPermission, forgetFileLink, pickHtmlFile, recallFileLink,
-  rememberFileLink, supportsFileLink, watchFile,
+  ensureReadPermission, ensureWritePermission, forgetFileLink, pickHtmlFile, recallFileLink,
+  rememberFileLink, supportsFileLink, watchFile, writeFileText,
 } from "@/lib/localFile";
 import { useSystemTheme } from "@/lib/systemTheme";
 import { copyText, useStoredState } from "@/lib/uiState";
@@ -135,7 +136,7 @@ export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], activity = [], coViewers = [],
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
-  onPatchProject, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
+  onPatchProject, onPublishHtml, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
   onCreateComment, onResolveComment, onEditComment, onDeleteComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
   mirrorTransport = "supabase", loadLinearIssue = fetchLinearIssue,
@@ -239,7 +240,7 @@ export default function PrototypeWorkspace({
   const [seenComments, setSeenComments] = useState(() => readStoredJson(seenStorageKey));
   // Live local file link: one at a time, tied to the prototype it was linked
   // from. File handles last for the current session and cannot survive a reload.
-  const [fileLink, setFileLink] = useState(null); // {handle, name, projectId, lastModified, lastSyncAt}
+  const [fileLink, setFileLink] = useState(null); // {handle, name, projectId, baseVersion, lastModified, lastSyncAt}
   const [autoPublish, setAutoPublish] = useState(true);
   const [localHtml, setLocalHtml] = useState(null);
   const [fileLinkError, setFileLinkError] = useState("");
@@ -247,13 +248,19 @@ export default function PrototypeWorkspace({
   // the browser only regrants file access inside a user gesture.
   const [rememberedLink, setRememberedLink] = useState(null);
   // What the live link is doing right now, so the Source row can say so.
-  const [fileSync, setFileSync] = useState(null); // { phase: "syncing"|"synced"|"local", at }
+  const [fileSync, setFileSync] = useState(null); // { phase: "syncing"|"synced"|"local"|"conflict", at }
   const publishTimerRef = useRef(0);
   const pendingPublishRef = useRef(null);
   const autoPublishRef = useRef(autoPublish);
   autoPublishRef.current = autoPublish;
-  const patchProjectRef = useRef(onPatchProject);
-  patchProjectRef.current = onPatchProject;
+  const publishHtmlRef = useRef(onPublishHtml);
+  publishHtmlRef.current = onPublishHtml;
+  const fileLinkRef = useRef(null);
+  fileLinkRef.current = fileLink;
+  const fileSyncRef = useRef(null);
+  fileSyncRef.current = fileSync;
+  // Versions this browser published, so their realtime echoes never conflict.
+  const ownVersionsRef = useRef(new Set());
   const compareRef = useRef(null);
   const newDialogReturnFocusRef = useRef(null);
   const [statusCache, setStatusCache] = useState(readStatusCache);
@@ -751,6 +758,27 @@ export default function PrototypeWorkspace({
 
   // Watch the linked file. Keeps running (and publishing) even while another
   // prototype is selected, so background syncs aren't lost.
+  // Publish the linked file's HTML, but only over the version it last synced
+  // against. If a teammate (or their Claude) saved since, pause and ask.
+  const publishGuarded = async (projectId, content) => {
+    const baseVersion = fileLinkRef.current?.projectId === projectId ? fileLinkRef.current.baseVersion : undefined;
+    if (baseVersion == null) return;
+    setFileSync({ phase: "syncing", at: Date.now() });
+    try {
+      const result = await publishHtmlRef.current(projectId, content, baseVersion);
+      if (result?.conflict) {
+        setFileSync({ phase: "conflict", at: Date.now() });
+        return;
+      }
+      ownVersionsRef.current.add(result.version);
+      setFileLink((current) => (current?.projectId === projectId ? { ...current, baseVersion: result.version } : current));
+      setFileSync({ phase: "synced", at: Date.now() });
+    } catch (error) {
+      setFileLinkError(error?.message || "Couldn't publish the file. It still renders here.");
+      setFileSync({ phase: "local", at: Date.now() });
+    }
+  };
+
   // A burst of saves (format-on-save, a build writing twice) should reach the
   // team as one write, not one per keystroke.
   const queuePublish = (projectId, content) => {
@@ -761,8 +789,7 @@ export default function PrototypeWorkspace({
       const pending = pendingPublishRef.current;
       pendingPublishRef.current = null;
       if (!pending) return;
-      patchProjectRef.current(pending.projectId, { prototype_html: pending.content });
-      setFileSync({ phase: "synced", at: Date.now() });
+      publishGuarded(pending.projectId, pending.content);
     }, 700);
   };
   useEffect(() => () => window.clearTimeout(publishTimerRef.current), []);
@@ -779,6 +806,8 @@ export default function PrototypeWorkspace({
         setFileLink((current) => (current?.handle === handle
           ? { ...current, lastModified: mtime, lastSyncAt: Date.now() }
           : current));
+        // A paused (conflicted) link keeps rendering saves but stops publishing.
+        if (fileSyncRef.current?.phase === "conflict") return;
         setFileSync({ phase: "syncing", at: Date.now() });
         if (autoPublishRef.current) queuePublish(projectId, content);
         else setFileSync({ phase: "local", at: Date.now() });
@@ -791,6 +820,20 @@ export default function PrototypeWorkspace({
       },
     );
   }, [fileLink?.handle]);
+
+  // A teammate's save while our file is linked: pause before our next save
+  // would overwrite theirs.
+  const linkedProject = fileLink ? projects.find((item) => item.id === fileLink.projectId) : null;
+  useEffect(() => {
+    if (!fileLink || !linkedProject) return;
+    if (isForeignChange(linkedProject.html_version, fileLink.baseVersion, ownVersionsRef.current)) {
+      setFileSync((current) => (current?.phase === "conflict" ? current : { phase: "conflict", at: Date.now() }));
+    }
+  }, [linkedProject?.html_version, fileLink?.baseVersion]);
+
+  useEffect(() => {
+    if (fileSync?.phase === "conflict") setOpenContextRow("source");
+  }, [fileSync?.phase]);
 
   // Offer to pick the previous session's file back up.
   useEffect(() => {
@@ -810,15 +853,18 @@ export default function PrototypeWorkspace({
   };
 
   const adoptFile = (handle, name, file, content) => {
+    const baseVersion = story.html_version ?? 0;
     setLocalHtml(content);
-    setFileLink({
-      handle, name, projectId: story.id,
+    const link = {
+      handle, name, projectId: story.id, baseVersion,
       lastModified: file.lastModified, size: file.size, lastSyncAt: Date.now(),
-    });
+    };
+    setFileLink(link);
+    fileLinkRef.current = link;
     setRememberedLink({ handle, name });
-    setFileSync({ phase: autoPublishRef.current ? "synced" : "local", at: Date.now() });
+    setFileSync({ phase: autoPublishRef.current ? "syncing" : "local", at: Date.now() });
     rememberFileLink(story.id, handle, name);
-    if (autoPublishRef.current) patchProjectRef.current(story.id, { prototype_html: content });
+    if (autoPublishRef.current) publishGuarded(story.id, content);
   };
 
   const linkLocalFile = async () => {
@@ -859,7 +905,40 @@ export default function PrototypeWorkspace({
     forgetFileLink(story.id);
   };
   const publishLocalFile = () => {
-    if (fileLink && localHtml != null) patchProjectRef.current(fileLink.projectId, { prototype_html: localHtml });
+    if (fileLink && localHtml != null) publishGuarded(fileLink.projectId, localHtml);
+  };
+
+  // Conflict: write the team's version into the linked file, then resume.
+  const pullIntoFile = async () => {
+    const link = fileLink;
+    const project = link ? projects.find((item) => item.id === link.projectId) : null;
+    if (!link?.handle || project?.prototype_html == null) return;
+    setFileLinkError("");
+    try {
+      if (!(await ensureWritePermission(link.handle))) {
+        setFileLinkError("The browser did not allow writing to that file.");
+        return;
+      }
+      const written = await writeFileText(link.handle, project.prototype_html);
+      setLocalHtml(project.prototype_html);
+      const next = { ...link, baseVersion: project.html_version, lastModified: written.lastModified, size: written.size, lastSyncAt: Date.now() };
+      setFileLink(next);
+      fileLinkRef.current = next;
+      setFileSync({ phase: "synced", at: Date.now() });
+    } catch (error) {
+      setFileLinkError(error?.message || "Couldn't write to that file.");
+    }
+  };
+
+  // Conflict: publish the linked file over the team's newer version.
+  const overwriteWithFile = () => {
+    const link = fileLink;
+    const project = link ? projects.find((item) => item.id === link.projectId) : null;
+    if (!link || localHtml == null || !project) return;
+    const next = { ...link, baseVersion: project.html_version };
+    setFileLink(next);
+    fileLinkRef.current = next;
+    publishGuarded(link.projectId, localHtml);
   };
 
   // A row that re-renders into another section mid-drag (a Linear status
@@ -1442,6 +1521,10 @@ export default function PrototypeWorkspace({
           liveLinear={liveLinear} linearId={linearId}
           isLiveLinked={isLiveLinked} fileLink={fileLink?.projectId === story.id ? fileLink : null} isBuiltIn={isBuiltIn}
           fileSync={fileSync} autoPublish={autoPublish}
+          conflictBy={fileSync?.phase === "conflict"
+            ? (activity.find((item) => item.project_id === story.id && item.action?.endsWith("_html") && item.actor_id !== profile?.id)?.actor_name || "A teammate")
+            : null}
+          onPullTheirs={pullIntoFile} onOverwriteTheirs={overwriteWithFile}
           onOpenSource={() => setShowUpload(true)}
           rememberedLink={supportsFileLink() && !isLiveLinked ? rememberedLink : null}
           onReconnect={reconnectLocalFile} fileLinkError={fileLinkError}
@@ -2109,6 +2192,7 @@ function ReviewInspector({
   c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
   anchors, editLinear, setEditLinear,
   liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn, fileSync, autoPublish,
+  conflictBy, onPullTheirs, onOverwriteTheirs,
   onOpenSource,
   rememberedLink, onReconnect, fileLinkError,
   openRow, setOpenRow,
@@ -2124,7 +2208,8 @@ function ReviewInspector({
     : "Nothing uploaded";
 
   const syncedAt = fileSync?.at || fileLink?.lastSyncAt;
-  const syncLabel = fileSync?.phase === "syncing" ? "Syncing"
+  const syncLabel = fileSync?.phase === "conflict" ? "Paused"
+    : fileSync?.phase === "syncing" ? "Syncing"
     : !autoPublish ? "Local only"
     : syncedAt ? `Synced ${new Date(syncedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
     : "Watching";
@@ -2186,7 +2271,9 @@ function ReviewInspector({
         >
           <p className="eon-context-note" style={{ color: c.muted }}>
             {isLiveLinked
-              ? autoPublish
+              ? fileSync?.phase === "conflict"
+                ? `Watching ${fileLink?.name} on your machine. Saves render here but aren't published.`
+                : autoPublish
                 ? `Watching ${fileLink?.name} on your machine. Every save renders here and publishes to your team.`
                 : `Watching ${fileLink?.name} on your machine. Saves render here only until you publish.`
               : rememberedLink
@@ -2198,6 +2285,21 @@ function ReviewInspector({
                     : "Upload an HTML file to render this prototype."}
           </p>
           {fileLinkError && <p className="eon-context-note" role="alert" style={{ color: "#FF7A8A" }}>{fileLinkError}</p>}
+          {isLiveLinked && fileSync?.phase === "conflict" && (
+            <div className="eon-sync-conflict" role="alert">
+              <p className="eon-context-note" style={{ color: c.text }}>
+                {conflictBy} changed this since your last sync. Publishing is paused.
+              </p>
+              <div className="eon-sync-conflict-actions">
+                <button className="eon-buttonish eon-context-action" onClick={onPullTheirs} style={{ borderColor: c.border, color: c.brand }}>
+                  Pull theirs into my file
+                </button>
+                <button className="eon-buttonish eon-context-action" onClick={onOverwriteTheirs} style={{ borderColor: c.border, color: c.secondary }}>
+                  Overwrite with mine
+                </button>
+              </div>
+            </div>
+          )}
         </ContextRow>
 
         <ContextRow
