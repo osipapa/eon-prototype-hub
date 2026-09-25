@@ -22,12 +22,13 @@ export const CHANGELOG = [
     date: "2026-09-25",
     title: "Connect Claude",
     image: "changelog/2026-09-25-connect-claude.png",
-    imageAlt: "The Connect Claude dialog with the connector URL and the Claude Code command.",
+    imageAlt: "The Connect Claude guide: four illustrated steps from Settings to your first request.",
     groups: [
       {
         label: "New",
         items: [
           "Connect Claude: use your own Claude app, claude.ai, or Claude Code to read and edit prototypes as you. Open it from the plug in the sidebar footer.",
+          "Connect Claude walks you through it step by step, for the Claude app or Claude Code, and says whether sign-in is on yet.",
           "Two people's Claudes can edit one prototype at once. Edits to different parts both land, and everyone sees them live.",
           "History says when a change came through Claude.",
         ],
@@ -41,7 +42,7 @@ export const CHANGELOG = [
       {
         label: "Under the hood",
         items: [
-          "Every prototype keeps its last 30 versions, and Claude can restore any of them.",
+          "Every prototype keeps its last 30 saved revisions, and Claude can restore any of them.",
         ],
       },
     ],

@@ -14,7 +14,7 @@ export default function HubSidebarFooter({
     <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
       <span title={userEmail || ""} style={{ color: c.muted }}>{userEmail || "Team member"}</span>
       <HubChangelogButton c={c} hasNew={changelog.hasNew} onOpen={changelog.open} />
-      <ConnectClaudeButton c={c} />
+      <ConnectClaudeButton c={c} isAdmin={isAdmin} />
       {isAdmin && (
         <button
           className="eon-buttonish eon-icon-button"
