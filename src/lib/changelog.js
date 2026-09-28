@@ -19,6 +19,18 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-09-28",
+    title: "No zooming on phones",
+    groups: [
+      {
+        label: "Behavior",
+        items: [
+          "Pinch and double-tap no longer zoom on phones, so a double-tap in full view just leaves the prototype.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-09-25",
     title: "Connect Claude",
     image: "changelog/2026-09-25-connect-claude.png",

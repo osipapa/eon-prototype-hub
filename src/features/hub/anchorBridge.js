@@ -199,12 +199,14 @@ post({type:"eon-anchor-ready"});
 
 /* Full view on touch: a quick double-tap on anything that isn't a control asks
    the hub to leave. Taps on buttons, links, and fields are the prototype's own,
-   so tapping a control twice fast never exits. manipulation keeps the browser
-   from zooming on the same gesture. */
+   so tapping a control twice fast never exits, and neither does lifting two
+   fingers. Zoom is off in every rendered prototype (NO_ZOOM_STYLE in
+   prototypes.js), so the browser never claims the same gesture. */
 const FULL_EXIT_SCRIPT = `<script>(function(){
-var last=0,lx=0,ly=0,CONTROLS="a,button,input,select,textarea,label,summary,[role=button],[role=link],[role=tab],[role=switch],[role=checkbox],[role=radio],[role=slider],[onclick],[contenteditable=true]";
-document.documentElement.style.touchAction="manipulation";
+var last=0,lx=0,ly=0,multi=false,CONTROLS="a,button,input,select,textarea,label,summary,[role=button],[role=link],[role=tab],[role=switch],[role=checkbox],[role=radio],[role=slider],[onclick],[contenteditable=true]";
+addEventListener("pointerdown",function(e){if(e.isPrimary)multi=false;else{multi=true;last=0;}},true);
 addEventListener("pointerup",function(e){
+  if(multi||!e.isPrimary){last=0;return;}
   if(e.target&&e.target.closest&&e.target.closest(CONTROLS)){last=0;return;}
   var now=Date.now();
   if(now-last<350&&Math.abs(e.clientX-lx)<40&&Math.abs(e.clientY-ly)<40){last=0;parent.postMessage({eon:1,type:"eon-full-exit"},"*");return;}
