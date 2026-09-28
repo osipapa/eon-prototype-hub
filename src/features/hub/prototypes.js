@@ -152,15 +152,9 @@ function proto(theme) {
         rFill: "#FEE2E2", rText: "#B91C1C", nFill: "#F1F5F9", nText: "#475569" };
 }
 
-/* Prototypes never zoom on phones, same as the hub around them (see
-   index.css). The hub's rule can't reach into the iframe, so every rendered
-   document carries its own. */
-const NO_ZOOM_STYLE = "<style>:where(html,html *){touch-action:pan-x pan-y}</style>";
-
 function docWrap(body, p) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-${NO_ZOOM_STYLE}
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 body{background:${p.bg};color:${p.text};-webkit-font-smoothing:antialiased}
@@ -278,7 +272,7 @@ export function decorateUploadedHtml(html, theme, args = {}, media = {}) {
 function apply(){[document.documentElement,document.body].forEach(function(el){if(!el)return;el.classList.remove('light','dark');el.classList.add(s.theme);el.setAttribute('data-theme',s.theme);el.setAttribute('data-color-mode',s.theme);});
 if(document.documentElement){document.documentElement.style.colorScheme=s.theme;Object.keys(s.args||{}).forEach(function(k){document.documentElement.setAttribute('data-'+k,String(s.args[k]));});}}
 try{var mm=window.matchMedia?window.matchMedia.bind(window):null;window.matchMedia=function(q){if(/prefers-color-scheme/i.test(q)){var asksDark=/dark/i.test(q),isDark=s.theme==='dark',m=asksDark?isDark:!isDark;return{matches:m,media:q,onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false;}};}return mm?mm(q):{matches:false,media:q,onchange:null,addListener:function(){},removeListener:function(){},addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false;}};};}catch(e){}
-window.__story=s;apply();document.addEventListener('DOMContentLoaded',apply);})();</script>${NO_ZOOM_STYLE}`;
+window.__story=s;apply();document.addEventListener('DOMContentLoaded',apply);})();</script>`;
   if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => m + script);
   if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (m) => m + script);
   return script + html;
