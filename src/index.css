@@ -612,6 +612,27 @@ button.eon-save-state { cursor: pointer; }
 .eon-mirror-notice { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom)); left: 50%; z-index: 2; margin: 0; padding: 8px 14px; border-radius: 999px; background: rgba(20, 20, 20, .86); color: #FFFFFF; font: 600 12px/1.2 "DM Sans", sans-serif; translate: -50%; pointer-events: none; animation: eon-mirror-notice 2400ms ease both; }
 @keyframes eon-mirror-notice { 0% { opacity: 0; transform: translateY(6px); } 12%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .eon-mirror-notice { animation: none; } }
+.eon-mirror-message a { display: inline-flex; min-height: 44px; align-items: center; padding: 0 18px; border-radius: 12px; background: #E8E8E8; color: #141414; font-weight: 600; text-decoration: none; }
+/* A prototype embedded in another page: a thin bar over the frame, fit to the space. */
+.eon-embed { position: fixed; inset: 0; display: flex; flex-direction: column; font-family: "DM Sans", sans-serif; }
+.eon-embed-bar { display: flex; min-height: 44px; flex: 0 0 auto; align-items: center; gap: 10px; padding: 0 6px 0 12px; border-bottom: 1px solid; }
+.eon-embed-title { display: inline-flex; min-width: 0; flex: 0 1 auto; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; letter-spacing: -.01em; text-decoration: none; }
+.eon-embed-title > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eon-embed-logo { flex: 0 0 auto; overflow: hidden; border-radius: 5px; }
+.eon-embed-states { display: flex; min-width: 0; flex: 1 1 0; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.eon-embed-states::-webkit-scrollbar { display: none; }
+.eon-embed-select { display: inline-flex; height: 28px; flex: 0 0 auto; align-items: center; gap: 6px; padding: 0 8px 0 10px; border-radius: 8px; font-size: 12px; white-space: nowrap; }
+.eon-embed-select select { padding: 0 18px 0 0; border: 0; background: transparent; font: inherit; font-weight: 500; cursor: pointer; appearance: none; }
+.eon-embed-select select:focus-visible { outline: none; }
+.eon-embed-select:has(select:focus-visible) { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.eon-embed-select svg { flex: 0 0 auto; margin-left: -22px; pointer-events: none; }
+.eon-embed-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; margin-left: auto; }
+.eon-embed-open { display: inline-flex; height: 30px; align-items: center; gap: 6px; padding: 0 12px; border-radius: 8px; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.eon-embed-stage { display: flex; min-height: 0; flex: 1; align-items: center; justify-content: center; overflow: hidden; }
+@media (max-width: 520px) {
+  .eon-embed-open { width: 32px; justify-content: center; padding: 0; }
+  .eon-embed-open span { display: none; }
+}
 .eon-context-field { display: flex; align-items: center; gap: 8px; }
 .eon-context-field > *:first-child { min-width: 0; flex: 1; }
 .eon-context-edit { display: inline-flex; align-self: flex-start; align-items: center; gap: 5px; }

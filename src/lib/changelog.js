@@ -19,6 +19,23 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-09-29",
+    title: "Embed prototypes anywhere",
+    image: "changelog/2026-09-29-embeds.png",
+    imageAlt: "A hub prototype embedded in a doc, with its states and Open in Eon above it.",
+    groups: [
+      {
+        label: "New",
+        items: [
+          "Paste a prototype link into Notion, Confluence, or Miro as an embed and the live prototype plays right there, like a Figma link.",
+          "Embeds open in the device, theme, and state the link had. Anyone can switch states and theme, or open it in the hub.",
+          "Copy embed link in a prototype's menu.",
+          "Embeds don't need sign-in, so anyone who can see the page sees the prototype.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-09-25",
     title: "Connect Claude",
     image: "changelog/2026-09-25-connect-claude.png",

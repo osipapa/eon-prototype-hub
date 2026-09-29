@@ -15,7 +15,7 @@ import PeekSegmented from "@/components/PeekSegmented";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { Liquid } from "liquid-gooey";
 import {
-  AlertCircle, ArrowDown, ArrowUp, Camera, Check, ChevronDown, ChevronLeft, Circle, Copy,
+  AlertCircle, ArrowDown, ArrowUp, Camera, Check, ChevronDown, ChevronLeft, Circle, Code2, Copy,
   ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, Loader2,
   Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
   Menu, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
@@ -45,6 +45,7 @@ import {
 } from "@/lib/localFile";
 import { useSystemTheme } from "@/lib/systemTheme";
 import { copyText, useStoredState } from "@/lib/uiState";
+import { embedQueryFromHash, embedUrl } from "@/lib/embed";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 
@@ -1646,6 +1647,7 @@ function WorkspaceSidebar({
   const [menuRect, setMenuRect] = useState(null);
   // Which face of the row menu is showing: its actions, or the group picker.
   const [menuPanel, setMenuPanel] = useState("actions");
+  const [copiedEmbedId, setCopiedEmbedId] = useState(null);
   const menuTriggerRef = useRef(null);
   const listRef = useRef(null);
   const drawerRef = useDrawerFocus(isDrawer, onClose);
@@ -1845,7 +1847,7 @@ function WorkspaceSidebar({
                       </button>
                       {storyMenuId === item.id && menuRect && (
                         <FloatingMenu c={c} anchor={menuRect} storyId={item.id} triggerRef={menuTriggerRef} onClose={() => setStoryMenuId(null)}
-                          itemCount={menuPanel === "actions" ? (canSplit ? 6 : 5) : Math.min(allGroups.length, 6) + 2}>
+                          itemCount={menuPanel === "actions" ? (canSplit ? 7 : 6) : Math.min(allGroups.length, 6) + 2}>
                           {menuPanel === "actions" ? <>
                             {canSplit && (
                               <button className="eon-buttonish" role="menuitem" disabled={active || inSplit}
@@ -1853,6 +1855,14 @@ function WorkspaceSidebar({
                                 <Columns2 size={14} /> Open in split view
                               </button>
                             )}
+                            <button className="eon-buttonish" role="menuitem" onClick={async () => {
+                              // The one on screen embeds in the view it's in; others in their defaults.
+                              await copyText(embedUrl(item.slug, active ? embedQueryFromHash() : ""));
+                              setCopiedEmbedId(item.id);
+                              window.setTimeout(() => { setCopiedEmbedId(null); setStoryMenuId(null); }, 900);
+                            }} title="Paste into Notion, Confluence, or Miro as an embed" style={{ color: copiedEmbedId === item.id ? c.brand : c.text }}>
+                              {copiedEmbedId === item.id ? <><Check size={14} /> Copied</> : <><Code2 size={14} /> Copy embed link</>}
+                            </button>
                             <button className="eon-buttonish" role="menuitem" onClick={() => { setRenamingId(item.id); setStoryMenuId(null); }} style={{ color: c.text }}><Pencil size={14} /> Rename</button>
                             <button className="eon-buttonish" role="menuitem" disabled={itemIndex === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>
                             <button className="eon-buttonish" role="menuitem" disabled={itemIndex === section.items.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
