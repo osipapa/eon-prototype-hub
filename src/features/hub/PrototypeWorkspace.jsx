@@ -59,7 +59,7 @@ function readViewportMemory() {
   catch { return {}; }
 }
 
-function linearIdentifier(project) {
+export function linearIdentifier(project) {
   return project?.issue_url?.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1] || project?.issue_id || null;
 }
 

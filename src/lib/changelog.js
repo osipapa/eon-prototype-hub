@@ -31,6 +31,7 @@ export const CHANGELOG = [
           "Embeds open in the device, theme, and state the link had. Anyone can switch states and theme, or open it in the hub.",
           "Copy embed link in a prototype's menu.",
           "Embeds don't need sign-in, so anyone who can see the page sees the prototype.",
+          "A prototype linked to a Linear issue shows up in that issue's links, and follows renames and relinks. Linear can't play embeds, so this is how it appears there.",
         ],
       },
     ],

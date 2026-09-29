@@ -380,3 +380,12 @@ export async function fetchLinearIssue(identifier) {
   if (error || data?.error) return null;
   return data?.issue ?? null;
 }
+
+// Linear can't embed hub pages, so a prototype shows up on its Linear issue as
+// a link (the linear-attach edge function), moved when the issue changes and
+// removed when it's unlinked or deleted. Reads the saved row. Best effort.
+export async function syncLinearAttachment(slug, { deleted = false } = {}) {
+  const { data, error } = await supabase.functions.invoke("linear-attach", { body: { slug, deleted } });
+  if (error || data?.error) return null;
+  return data;
+}

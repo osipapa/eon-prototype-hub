@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { cacheEonLogo } from "../lib/branding";
 import LoadingScreen from "../components/LoadingScreen";
-import PrototypeHub from "../features/hub/PrototypeWorkspace";
+import PrototypeHub, { linearIdentifier } from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import {
   firstNameFor, TUTORIAL_METADATA_KEY, tutorialStorageKey, validTutorialPersona,
@@ -12,12 +12,24 @@ import {
   listProjects, patchProject as dbPatch, publishHtmlIfUnchanged, fetchProjectHtml, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
   setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
-  updateCommentBody, deleteComment,
+  updateCommentBody, deleteComment, syncLinearAttachment,
 } from "../lib/data";
 import { joinTeamPresence } from "../lib/presence";
 
 const SAVE_DEBOUNCE_MS = 600;
 const SAVED_VISIBLE_MS = 1800;
+
+// A prototype's link on its Linear issue. One sync at a time per prototype, so
+// an older one can't land after a newer one. Each prototype also syncs once per
+// session when opened, which fills in links for ones linked before this and
+// catches changes made outside the hub.
+const linearSyncs = {};
+const linearOpened = new Set();
+function syncLinearLink(slug, options) {
+  linearSyncs[slug] = (linearSyncs[slug] || Promise.resolve())
+    .then(() => syncLinearAttachment(slug, options))
+    .catch(() => {});
+}
 
 function sortProjects(rows) {
   return [...rows].sort((a, b) =>
@@ -301,6 +313,13 @@ export default function Hub() {
     presenceRef.current?.setProject(activeId);
   }, [projects, slug]);
 
+  useEffect(() => {
+    const open = projects?.find((project) => project.slug === slug) || projects?.[0];
+    if (!open || linearOpened.has(open.slug) || !linearIdentifier(open)) return;
+    linearOpened.add(open.slug);
+    syncLinearLink(open.slug);
+  }, [projects, slug]);
+
   function markSaved(id) {
     clearTimeout(savedTimers.current[id]);
     setSaveStates((states) => ({ ...states, [id]: "saved" }));
@@ -330,6 +349,9 @@ export default function Hub() {
 
     try {
       const saved = await dbPatch(id, body);
+      if ("issue_url" in body || "issue_id" in body || ("title" in body && linearIdentifier(saved))) {
+        syncLinearLink(saved.slug);
+      }
       setProjects((current) => current?.map((project) =>
         project.id === id
           ? { ...saved, ...(pending.current[id] || {}) }
@@ -526,6 +548,7 @@ export default function Hub() {
     const project = projects.find((item) => item.id === id);
     try {
       await deleteProject(id);
+      if (project && linearIdentifier(project)) syncLinearLink(project.slug, { deleted: true });
       clearProjectDraft(id);
       setProjects((rows) => rows.filter((item) => item.id !== id));
       if (project?.slug === slug) navigate("/", { replace: true });
