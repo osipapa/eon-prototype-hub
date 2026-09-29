@@ -15,10 +15,10 @@ import PeekSegmented from "@/components/PeekSegmented";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { Liquid } from "liquid-gooey";
 import {
-  AlertCircle, ArrowDown, ArrowUp, Camera, Check, ChevronDown, ChevronLeft, Circle, Code2, Copy,
+  AlertCircle, Archive, ArchiveRestore, ArrowDown, ArrowUp, Camera, Check, ChevronDown, ChevronLeft, Circle, Code2, Copy,
   ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, Loader2,
   Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
-  Menu, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square,
+  Menu, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square, SquareCheck, SquareMinus,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
@@ -186,7 +186,7 @@ export default function PrototypeWorkspace({
   const [linearByProject, setLinearByProject] = useState({});
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
-  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [errorToasts, setErrorToasts] = useState([]);
   const changelog = useHubChangelog();
   const sidebarResize = useResizableSidebar("eon-sidebar-width");
   const inspectorResize = useResizableSidebar(
@@ -271,7 +271,8 @@ export default function PrototypeWorkspace({
   const [statusCache, setStatusCache] = useState(readStatusCache);
 
   const c = HUB[hubTheme];
-  const story = projects.find((item) => item.id === activeId) || projects[0];
+  const story = projects.find((item) => item.id === activeId)
+    || projects.find((item) => !item.archived_at) || projects[0];
   storyIdRef.current = story?.id || null;
   const media = assets;
   const navCollapsed = navCollapsedValue === "collapsed" && !breakpoints.navDrawer;
@@ -1309,18 +1310,35 @@ export default function PrototypeWorkspace({
   };
   const sectionById = Object.fromEntries(
     sections.flatMap((section) => section.items.map((item) => [item.id, section.key])));
-  const canDropOn = (targetId) => Boolean(dragId) && (groupBy === "groups" || sectionById[dragId] === sectionById[targetId]);
-  // A prototype moved to a group lands at the end of it; a new group starts
-  // at the bottom of the list.
-  const moveToGroup = (id, group) => {
+  const inArchive = (id) => sectionById[id] === "archived";
+  const canDropOn = (targetId) => Boolean(dragId) && inArchive(dragId) === inArchive(targetId)
+    && (groupBy === "groups" || sectionById[dragId] === sectionById[targetId]);
+  // Prototypes moved to a group land at the end of it, in their current
+  // order; a new group starts at the bottom of the list.
+  const moveToGroup = (ids, group) => {
     const name = group.trim();
-    const current = projects.find((item) => item.id === id);
-    if (!name || !current || (current.group_name || "General") === name || !onReorder) return;
     const groupOf = (itemId) => projects.find((item) => item.id === itemId)?.group_name || "General";
-    const ordered = projects.map((item) => item.id).filter((itemId) => itemId !== id);
+    const moving = projects.map((item) => item.id).filter((itemId) => ids.includes(itemId) && groupOf(itemId) !== name);
+    if (!name || !moving.length || !onReorder) return;
+    const ordered = projects.map((item) => item.id).filter((itemId) => !moving.includes(itemId));
     const last = ordered.findLastIndex((itemId) => groupOf(itemId) === name);
-    ordered.splice(last === -1 ? ordered.length : last + 1, 0, id);
-    onReorder(ordered, { [id]: name });
+    ordered.splice(last === -1 ? ordered.length : last + 1, 0, ...moving);
+    onReorder(ordered, Object.fromEntries(moving.map((itemId) => [itemId, name])));
+  };
+  const showError = (message) =>
+    setErrorToasts((current) => [...current, { toastId: `error-${Date.now()}`, kind: "error", message }].slice(-2));
+  // Deleting asks nothing; archiving is the way to keep something out of sight.
+  const deleteProjects = async (ids) => {
+    const results = await Promise.allSettled(ids.map((id) => onDeleteProject?.(id)));
+    const failed = results.filter((result) => result.status === "rejected").length;
+    if (!failed) return;
+    showError(ids.length === 1 ? "Couldn't delete that prototype. Try again." : `Couldn't delete ${failed} of ${ids.length} prototypes. Try again.`);
+  };
+  const archiveProjects = (ids, archive) => {
+    const archived_at = archive ? new Date().toISOString() : null;
+    projects
+      .filter((item) => ids.includes(item.id) && Boolean(item.archived_at) !== archive)
+      .forEach((item) => onPatchProject(item.id, { archived_at }));
   };
   // Move up / down steps past the neighbour in the section on screen, which
   // under status grouping is rarely the neighbour in the saved order.
@@ -1421,10 +1439,7 @@ export default function PrototypeWorkspace({
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
           renamingGroup={renamingGroup} setRenamingGroup={setRenamingGroup} commitGroupRename={commitGroupRename}
           storyMenuId={storyMenuId} setStoryMenuId={setStoryMenuId}
-          onDeleteProject={(id, restoreFocus) => {
-            const project = projects.find((item) => item.id === id);
-            if (project) setDeleteCandidate({ project, restoreFocus });
-          }}
+          deleteProjects={deleteProjects} archiveProjects={archiveProjects}
           moveStory={moveStory}
           moveToGroup={moveToGroup} allGroups={allGroups}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
@@ -1613,14 +1628,10 @@ export default function PrototypeWorkspace({
           onPick={(project) => { setSwitcherOpen(false); setView("stories"); selectStory(project); }}
           onClose={() => setSwitcherOpen(false)} />
       )}
-      {deleteCandidate && (
-        <DeletePrototypeDialog c={c} project={deleteCandidate.project} restoreFocus={deleteCandidate.restoreFocus} onClose={() => setDeleteCandidate(null)}
-          onConfirm={async () => {
-            await onDeleteProject?.(deleteCandidate.project.id);
-            setDeleteCandidate(null);
-          }} />
-      )}
-      <ToastHost c={c} toasts={toasts} onDismiss={onDismissToast} />
+      <ToastHost c={c} toasts={[...toasts, ...errorToasts]} onDismiss={(toastId) => {
+        if (errorToasts.some((toast) => toast.toastId === toastId)) setErrorToasts((current) => current.filter((toast) => toast.toastId !== toastId));
+        else onDismissToast?.(toastId);
+      }} />
     </div>
   );
 }
@@ -1632,7 +1643,7 @@ function WorkspaceSidebar({
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
-  onDeleteProject, moveStory, moveToGroup, allGroups, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
+  deleteProjects, archiveProjects, moveStory, moveToGroup, allGroups, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
   onOpenDesign, onOpenPrompts, onOpenTracking,
   changelog,
   linearByProject,
@@ -1641,9 +1652,63 @@ function WorkspaceSidebar({
   isDrawer, onClose, collapsed = false, onToggleCollapse, peeking = null, onPeekStart, onPeekEnd,
 }) {
   const hasResults = sections.length > 0;
-  const prototypeCount = sections.reduce((total, section) => total + section.items.length, 0);
+  const prototypeCount = sections.reduce((total, section) => total + (section.kind === "archived" ? 0 : section.items.length), 0);
   const mediaCount = Object.keys(media || {}).length;
   const [collapsedGroups, setCollapsedGroups] = useState({});
+  // Archived stays folded until opened, searched, or holding the open prototype.
+  const isCollapsed = (section) => collapsedGroups[section.key]
+    ?? (section.kind === "archived" && !query.trim() && !section.items.some((item) => item.id === activeId));
+  const itemsById = Object.fromEntries(sections.flatMap((section) => section.items.map((item) => [item.id, item])));
+  // Bulk selection: a row's Select, or Cmd/Ctrl- or Shift-click, gives every
+  // row a checkbox and docks a bar of actions above the footer.
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const anchorRef = useRef(null);
+  const selected = [...selectedIds].filter((id) => itemsById[id]);
+  const allArchived = selected.length > 0 && selected.every((id) => itemsById[id].archived_at);
+  const visibleIds = sections.flatMap((section) => (isCollapsed(section) ? [] : section.items.map((item) => item.id)));
+  const toggleSelected = (id, range) => {
+    const anchor = anchorRef.current ?? (selecting ? null : activeId);
+    setSelectedIds((current) => {
+      const next = new Set(selecting ? current : []);
+      if (range && visibleIds.includes(anchor)) {
+        const [from, to] = [visibleIds.indexOf(anchor), visibleIds.indexOf(id)].sort((a, b) => a - b);
+        visibleIds.slice(from, to + 1).forEach((itemId) => next.add(itemId));
+      } else if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    if (!range) anchorRef.current = id;
+    setSelecting(true);
+  };
+  const toggleSection = (section) => {
+    const ids = section.items.map((item) => item.id);
+    const all = ids.every((id) => selectedIds.has(id));
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      ids.forEach((id) => (all ? next.delete(id) : next.add(id)));
+      return next;
+    });
+  };
+  const exitSelecting = () => {
+    setSelecting(false);
+    setSelectedIds(new Set());
+    anchorRef.current = null;
+    if (storyMenuId === "bulk") setStoryMenuId(null);
+  };
+  // Escape ends selecting before anything else, a drawer included. Shift-click
+  // keeps focus where it was, so this listens on the document, not the list.
+  useEffect(() => {
+    if (!selecting) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key !== "Escape" || storyMenuId || event.target.closest?.("input, textarea")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      exitSelecting();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [selecting, storyMenuId]);
   const [menuRect, setMenuRect] = useState(null);
   // Which face of the row menu is showing: its actions, or the group picker.
   const [menuPanel, setMenuPanel] = useState("actions");
@@ -1666,6 +1731,33 @@ function WorkspaceSidebar({
       window.removeEventListener("resize", close);
     };
   }, [storyMenuId, setStoryMenuId]);
+
+  // The group list both a row's menu and the bulk bar move prototypes with.
+  const groupPicker = (ids, onDone) => <>
+    <div className="eon-menu-groups">
+      {allGroups.map((group) => {
+        const isCurrent = ids.every((id) => (itemsById[id]?.group_name || "General") === group);
+        return (
+          <button key={group} className="eon-buttonish" role="menuitemradio" aria-checked={isCurrent}
+            onClick={() => { moveToGroup(ids, group); onDone(); }} style={{ color: c.text }}>
+            <span className="eon-menu-check">{isCurrent && <Check size={14} />}</span>
+            <span className="eon-menu-label">{group}</span>
+          </button>
+        );
+      })}
+    </div>
+    {menuPanel === "new-group" ? (
+      <input autoFocus className="eon-menu-input" placeholder="Group name" aria-label="New group name"
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && event.currentTarget.value.trim()) { moveToGroup(ids, event.currentTarget.value); onDone(); }
+          if (event.key === "Escape") { event.stopPropagation(); setMenuPanel("groups"); }
+        }}
+        style={{ background: c.raised, borderColor: c.brand, color: c.text }} />
+    ) : (
+      <button className="eon-buttonish" role="menuitem" onClick={() => setMenuPanel("new-group")} style={{ color: c.text }}><Plus size={14} /> New group…</button>
+    )}
+  </>;
+
   return (
     <aside
       data-tutorial="prototype-library"
@@ -1776,9 +1868,21 @@ function WorkspaceSidebar({
               </div>
             ) : (
               <div className="eon-group-label-row">
-                <button className="eon-buttonish eon-group-toggle" onClick={() => setCollapsedGroups((current) => ({ ...current, [section.key]: !current[section.key] }))}
-                  aria-expanded={!collapsedGroups[section.key]} style={{ color: c.muted }}>
-                  <ChevronDown size={13} className={collapsedGroups[section.key] ? "is-collapsed" : ""} />
+                {selecting && (() => {
+                  const count = section.items.filter((item) => selectedIds.has(item.id)).length;
+                  const all = count === section.items.length;
+                  const SectionCheck = all ? SquareCheck : count ? SquareMinus : Square;
+                  return (
+                    <button className="eon-buttonish eon-section-check" onClick={() => toggleSection(section)} aria-pressed={all}
+                      aria-label={`${all ? "Deselect" : "Select"} every prototype in ${section.label}`} style={{ color: count ? c.brand : c.muted }}>
+                      <SectionCheck size={15} aria-hidden="true" />
+                    </button>
+                  );
+                })()}
+                <button className="eon-buttonish eon-group-toggle" onClick={() => setCollapsedGroups((current) => ({ ...current, [section.key]: !isCollapsed(section) }))}
+                  aria-expanded={!isCollapsed(section)} style={{ color: c.muted }}>
+                  <ChevronDown size={13} className={isCollapsed(section) ? "is-collapsed" : ""} />
+                  {section.kind === "archived" && <Archive size={12} aria-hidden="true" />}
                   {section.kind === "status" && (
                     <span className={`eon-status-dot${section.empty ? " is-empty" : ""}`} aria-hidden="true"
                       style={{ "--status-color": section.color || c.muted }} />
@@ -1793,19 +1897,20 @@ function WorkspaceSidebar({
                 )}
               </div>
             )}
-            {!collapsedGroups[section.key] && section.items.map((item, itemIndex) => {
+            {!isCollapsed(section) && section.items.map((item, itemIndex) => {
               const active = activeId === item.id;
+              const checked = selecting && selectedIds.has(item.id);
               const inSplit = splitId === item.id;
               const identifier = linearIdentifier(item);
               const connection = linearConnectionState(linearByProject[item.id], identifier, c);
               return (
-                <div className="eon-story-row" key={item.id} draggable data-story-menu={item.id}
+                <div className={`eon-story-row${checked ? " is-selected" : ""}`} key={item.id} draggable data-story-menu={item.id}
                   onDragStart={(event) => { startPrototypeDrag(event, item.id); setDragId(item.id); }}
                   onDragEnd={onDragEnd}
                   onDragOver={(event) => { if (canDropOn(item.id)) { event.preventDefault(); setDropTargetId(item.id); } }}
                   onDragLeave={() => setDropTargetId((current) => current === item.id ? null : current)}
                   onDrop={() => handleDrop(item.id)}
-                  style={{ background: active ? c.active : "transparent", borderTopColor: dropTargetId === item.id && dragId !== item.id ? c.brand : "transparent", opacity: dragId === item.id ? 0.45 : 1 }}>
+                  style={{ "--row-selected": `color-mix(in srgb, ${c.brand} 14%, transparent)`, background: active ? c.active : "transparent", borderTopColor: dropTargetId === item.id && dragId !== item.id ? c.brand : "transparent", opacity: dragId === item.id ? 0.45 : 1 }}>
                   {renamingId === item.id ? (
                     <div className="eon-story-rename">
                       <Circle size={13} color={c.brand} />
@@ -1818,9 +1923,22 @@ function WorkspaceSidebar({
                         style={{ background: c.raised, borderColor: c.brand, color: c.text }} />
                     </div>
                   ) : (
-                    <button className="eon-buttonish eon-story-select" onClick={() => { onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose(); }}
-                      onDoubleClick={() => setRenamingId(item.id)} title={canSplit ? "Double-click to rename · drag onto the canvas to open side by side" : "Double-click to rename"}
-                      aria-label={`${item.title}, ${identifier ? `${identifier}, ` : ""}${connection.label}${inSplit ? ", open in split view" : ""}`} aria-current={active ? "page" : undefined} style={{ color: active ? c.text : c.secondary, fontWeight: active ? 600 : 400 }}>
+                    <button className="eon-buttonish eon-story-select"
+                      onMouseDown={(event) => { if (event.shiftKey) event.preventDefault(); }}
+                      onClick={(event) => {
+                        if (selecting || event.metaKey || event.ctrlKey || event.shiftKey) { toggleSelected(item.id, event.shiftKey); return; }
+                        onSelect(item); setView("stories"); setStoryMenuId(null); if (isDrawer) onClose();
+                      }}
+                      onDoubleClick={selecting ? undefined : () => setRenamingId(item.id)}
+                      title={selecting ? undefined : `Double-click to rename · ${SHORTCUT_MOD.trim()}-click to select${canSplit ? " · drag onto the canvas to open side by side" : ""}`}
+                      aria-pressed={selecting ? checked : undefined}
+                      aria-label={`${item.title}, ${identifier ? `${identifier}, ` : ""}${connection.label}${item.archived_at ? ", archived" : ""}${inSplit ? ", open in split view" : ""}`} aria-current={active ? "page" : undefined}
+                      style={{ color: active ? c.text : item.archived_at ? c.muted : c.secondary, fontWeight: active ? 600 : 400 }}>
+                      {selecting && (
+                        <span className="eon-story-check" aria-hidden="true" style={{ color: checked ? c.brand : c.muted }}>
+                          {checked ? <SquareCheck size={15} /> : <Square size={15} />}
+                        </span>
+                      )}
                       {identifier && <span className="eon-issue-chip" aria-hidden="true" style={{ "--status-color": connection.color }}>{identifier}</span>}
                       <span className="eon-story-title">{item.title}</span>
                       {inSplit && <Columns2 className="eon-story-split" size={13} aria-hidden="true" style={{ color: c.muted }} />}
@@ -1832,7 +1950,7 @@ function WorkspaceSidebar({
                       )}
                     </button>
                   )}
-                  {renamingId !== item.id && (
+                  {renamingId !== item.id && !selecting && (
                     <div style={{ position: "relative", flexShrink: 0 }}>
                       <button ref={(node) => { if (storyMenuId === item.id) menuTriggerRef.current = node; }}
                         className="eon-buttonish eon-icon-button"
@@ -1847,7 +1965,7 @@ function WorkspaceSidebar({
                       </button>
                       {storyMenuId === item.id && menuRect && (
                         <FloatingMenu c={c} anchor={menuRect} storyId={item.id} triggerRef={menuTriggerRef} onClose={() => setStoryMenuId(null)}
-                          itemCount={menuPanel === "actions" ? (canSplit ? 7 : 6) : Math.min(allGroups.length, 6) + 2}>
+                          itemCount={menuPanel === "actions" ? (canSplit ? 9 : 8) : Math.min(allGroups.length, 6) + 2}>
                           {menuPanel === "actions" ? <>
                             {canSplit && (
                               <button className="eon-buttonish" role="menuitem" disabled={active || inSplit}
@@ -1867,35 +1985,14 @@ function WorkspaceSidebar({
                             <button className="eon-buttonish" role="menuitem" disabled={itemIndex === 0} onClick={() => { moveStory(item.id, -1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowUp size={14} /> Move up</button>
                             <button className="eon-buttonish" role="menuitem" disabled={itemIndex === section.items.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
                             <button className="eon-buttonish" role="menuitem" aria-haspopup="menu" onClick={() => setMenuPanel("groups")} style={{ color: c.text }}><FolderInput size={14} /> Move to group</button>
-                            <button className="eon-buttonish" role="menuitem" onClick={() => {
-                              const restoreFocus = menuTriggerRef.current;
-                              setStoryMenuId(null);
-                              onDeleteProject?.(item.id, restoreFocus);
-                            }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
+                            <button className="eon-buttonish" role="menuitem" onClick={() => { setStoryMenuId(null); toggleSelected(item.id, false); }} style={{ color: c.text }}><SquareCheck size={14} /> Select</button>
+                            <button className="eon-buttonish" role="menuitem" onClick={() => { archiveProjects([item.id], !item.archived_at); setStoryMenuId(null); }} style={{ color: c.text }}>
+                              {item.archived_at ? <><ArchiveRestore size={14} /> Restore</> : <><Archive size={14} /> Archive</>}
+                            </button>
+                            <button className="eon-buttonish" role="menuitem" onClick={() => { setStoryMenuId(null); deleteProjects([item.id]); }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
                           </> : <>
                             <button autoFocus className="eon-buttonish eon-menu-back" role="menuitem" onClick={() => setMenuPanel("actions")} style={{ color: c.muted }}><ChevronLeft size={14} /> Move to group</button>
-                            <div className="eon-menu-groups">
-                              {allGroups.map((group) => {
-                                const isCurrent = (item.group_name || "General") === group;
-                                return (
-                                  <button key={group} className="eon-buttonish" role="menuitemradio" aria-checked={isCurrent}
-                                    onClick={() => { moveToGroup(item.id, group); setStoryMenuId(null); }} style={{ color: c.text }}>
-                                    <span className="eon-menu-check">{isCurrent && <Check size={14} />}</span>
-                                    <span className="eon-menu-label">{group}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                            {menuPanel === "new-group" ? (
-                              <input autoFocus className="eon-menu-input" placeholder="Group name" aria-label="New group name"
-                                onKeyDown={(event) => {
-                                  if (event.key === "Enter" && event.currentTarget.value.trim()) { moveToGroup(item.id, event.currentTarget.value); setStoryMenuId(null); }
-                                  if (event.key === "Escape") { event.stopPropagation(); setMenuPanel("groups"); }
-                                }}
-                                style={{ background: c.raised, borderColor: c.brand, color: c.text }} />
-                            ) : (
-                              <button className="eon-buttonish" role="menuitem" onClick={() => setMenuPanel("new-group")} style={{ color: c.text }}><Plus size={14} /> New group…</button>
-                            )}
+                            {groupPicker([item.id], () => setStoryMenuId(null))}
                           </>}
                         </FloatingMenu>
                       )}
@@ -1914,6 +2011,41 @@ function WorkspaceSidebar({
           </div>
         )}
       </div>
+
+      {selecting && view === "stories" && (
+        <div className="eon-bulk-bar" role="toolbar" aria-label="Selected prototypes" style={{ background: c.panel, borderColor: c.border, boxShadow: hubShadow(c) }}>
+          <div className="eon-bulk-head">
+            <span aria-live="polite" style={{ color: c.text }}>{selected.length ? `${selected.length} selected` : "Select prototypes"}</span>
+            <button className="eon-buttonish eon-bulk-done" onClick={exitSelecting} title="Done (Esc)" style={{ color: c.brand }}>Done</button>
+          </div>
+          <div className="eon-bulk-actions">
+            <button className="eon-buttonish" data-story-menu="bulk" disabled={!selected.length}
+              onClick={(event) => {
+                const opening = storyMenuId !== "bulk";
+                menuTriggerRef.current = event.currentTarget;
+                setMenuRect(opening ? event.currentTarget.getBoundingClientRect() : null);
+                setStoryMenuId(opening ? "bulk" : null);
+              }}
+              aria-haspopup="menu" aria-expanded={storyMenuId === "bulk"} style={{ borderColor: c.border, color: c.text }}>
+              <FolderInput size={14} aria-hidden="true" /> Move
+            </button>
+            <button className="eon-buttonish" disabled={!selected.length} onClick={() => { archiveProjects(selected, !allArchived); exitSelecting(); }}
+              style={{ borderColor: c.border, color: c.text }}>
+              {allArchived ? <><ArchiveRestore size={14} aria-hidden="true" /> Restore</> : <><Archive size={14} aria-hidden="true" /> Archive</>}
+            </button>
+            <button className="eon-buttonish" disabled={!selected.length} onClick={() => { deleteProjects(selected); exitSelecting(); }}
+              style={{ borderColor: c.border, color: "#D98295" }}>
+              <Trash2 size={14} aria-hidden="true" /> Delete
+            </button>
+          </div>
+          {storyMenuId === "bulk" && menuRect && (
+            <FloatingMenu c={c} anchor={menuRect} storyId="bulk" triggerRef={menuTriggerRef} onClose={() => setStoryMenuId(null)}
+              itemCount={Math.min(allGroups.length, 6) + 1}>
+              {groupPicker(selected, exitSelecting)}
+            </FloatingMenu>
+          )}
+        </div>
+      )}
 
       <HubSidebarFooter
         c={c}
@@ -3119,6 +3251,8 @@ const ACTIVITY_META = {
   edited_figma:   { icon: FigmaIcon,     text: (d) => (d?.to ? "updated the Figma link" : "cleared the Figma link") },
   edited_linear:  { icon: LinearIcon,    text: (d) => (d?.to ? "updated the Linear link" : "cleared the Linear link") },
   moved_group:    { icon: LayoutGrid,    text: (d) => (d?.to ? `moved it to "${d.to}"` : "moved it to another group") },
+  archived:       { icon: Archive,       text: () => "archived this prototype" },
+  unarchived:     { icon: ArchiveRestore, text: () => "restored it from the archive" },
 };
 
 function activityMeta(action) {
@@ -3205,69 +3339,19 @@ function Toast({ c, toast, onDismiss }) {
     const timer = setTimeout(() => dismissRef.current?.(toast.toastId), 6000);
     return () => clearTimeout(timer);
   }, [toast.toastId]);
-  const meta = activityMeta(toast.action);
-  const Icon = meta.icon;
+  const error = toast.kind === "error";
+  const danger = error || isDangerAction(toast.action);
+  const Icon = error ? AlertCircle : activityMeta(toast.action).icon;
   return (
     <div className="eon-toast" style={{ background: c.panel, borderColor: c.border, boxShadow: hubShadow(c) }}>
-      <span className={`eon-toast-icon${isDangerAction(toast.action) ? "" : " eon-accent-icon"}`} style={{ background: c.raised, color: isDangerAction(toast.action) ? "#D98295" : c.brand }}>
+      <span className={`eon-toast-icon${danger ? "" : " eon-accent-icon"}`} style={{ background: c.raised, color: danger ? "#D98295" : c.brand }}>
         <Icon size={14} />
       </span>
       <div className="eon-toast-body">
-        <p style={{ color: c.text }}><strong>{toast.actor_name || "A teammate"}</strong> {meta.text(toast.detail)}</p>
+        <p style={{ color: c.text }}>{error ? toast.message : <><strong>{toast.actor_name || "A teammate"}</strong> {activityMeta(toast.action).text(toast.detail)}</>}</p>
         {toast.project_title && <span style={{ color: c.muted }}>{toast.project_title}</span>}
       </div>
       <button className="eon-buttonish eon-icon-button" onClick={() => onDismiss?.(toast.toastId)} aria-label="Dismiss notification" style={{ color: c.muted }}><X size={14} /></button>
-    </div>
-  );
-}
-
-function DeletePrototypeDialog({ c, project, restoreFocus, onClose, onConfirm }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const dialogRef = useRef(null);
-  const busyRef = useRef(busy);
-  const closeRef = useRef(onClose);
-  busyRef.current = busy;
-  closeRef.current = onClose;
-
-  useEffect(() => {
-    const previousFocus = restoreFocus || document.activeElement;
-    const onKeyDown = (event) => {
-      if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
-      if (event.key !== "Tab") return;
-      const controls = [...(dialogRef.current?.querySelectorAll("button:not(:disabled)") || [])];
-      if (!controls.length) return;
-      if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
-      else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      previousFocus?.focus?.();
-    };
-  }, []);
-
-  const remove = async () => {
-    setBusy(true);
-    setError("");
-    try { await onConfirm(); }
-    catch (err) { setError(err.message || "Couldn't delete this prototype."); setBusy(false); }
-  };
-
-  return (
-    <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
-      <div ref={dialogRef} className="eon-modal eon-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="eon-delete-title" aria-describedby="eon-delete-body" style={{ background: c.panel, borderColor: c.border }}>
-        <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
-        <h2 id="eon-delete-title">Delete "{project.title}"?</h2>
-        <p id="eon-delete-body" style={{ color: c.muted }}>This removes the prototype, its shared feedback, and linked review context for everyone. This can't be undone.</p>
-        {error && <p role="alert" className="eon-copy-error">{error}</p>}
-        <div className="eon-confirm-actions">
-          <button autoFocus className="eon-buttonish eon-secondary-button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, color: c.secondary }}>Cancel</button>
-          <Button className="eon-buttonish" onClick={remove} disabled={busy} style={{ minHeight: 40, background: "#D98295", color: "#210C12", borderRadius: 10, fontWeight: 650 }}>
-            {busy ? "Deleting…" : "Delete prototype"}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

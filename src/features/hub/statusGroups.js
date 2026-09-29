@@ -52,17 +52,21 @@ function statusSection(identifier, issue, cached) {
 export function buildSections(projects, { by, query = "", issuesByProject = {}, statusCache = {}, identifierFor }) {
   const needle = query.trim().toLowerCase();
   const sections = new Map();
+  const archived = [];
   projects.forEach((project) => {
     const identifier = identifierFor(project);
     const group = project.group_name || "General";
     const status = statusSection(identifier, issuesByProject[project.id], statusCache[project.id]);
     const haystack = `${project.title} ${group} ${identifier || ""} ${status.label}`.toLowerCase();
     if (needle && !haystack.includes(needle)) return;
+    if (project.archived_at) { archived.push(project); return; }
     const section = by === "status" ? status : { key: `group:${group}`, label: group, kind: "group" };
     if (!sections.has(section.key)) sections.set(section.key, { ...section, items: [] });
     sections.get(section.key).items.push(project);
   });
   const list = [...sections.values()];
   if (by === "status") list.sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label));
+  // Archived prototypes wait at the bottom, apart from any status or group.
+  if (archived.length) list.push({ key: "archived", label: "Archived", kind: "archived", items: archived });
   return list;
 }

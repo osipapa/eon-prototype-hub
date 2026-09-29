@@ -20,7 +20,7 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-09-29",
-    title: "Embed prototypes anywhere",
+    title: "Embeds, archive, and bulk select",
     image: "changelog/2026-09-29-embeds.png",
     imageAlt: "A hub prototype embedded in a doc, with its states and Open in Eon above it.",
     groups: [
@@ -32,6 +32,14 @@ export const CHANGELOG = [
           "Copy embed link in a prototype's menu.",
           "Embeds don't need sign-in, so anyone who can see the page sees the prototype.",
           "A prototype linked to a Linear issue shows up in that issue's links, and follows renames and relinks. Linear can't play embeds, so this is how it appears there.",
+          "Archive a prototype to keep it without seeing it. Archived ones wait in a folded section at the bottom of the sidebar, and Restore brings them back.",
+          "Select several prototypes at once: pick Select in a prototype's menu, or Cmd/Ctrl-click or Shift-click rows. Then move, archive, or delete them together.",
+        ],
+      },
+      {
+        label: "Behavior",
+        items: [
+          "Delete no longer asks first. Archive anything you might want again.",
         ],
       },
     ],

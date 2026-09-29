@@ -592,7 +592,7 @@ export default function Hub() {
   }
 
   const active = projects.find((project) => project.slug === slug);
-  const currentProjectId = active?.id || projects[0]?.id;
+  const currentProjectId = active?.id || (projects.find((project) => !project.archived_at) || projects[0])?.id;
   const coViewers = viewers.filter((viewer) =>
     viewer.id !== user?.id && viewer.project_id === currentProjectId);
 

@@ -309,6 +309,17 @@ svg.eon-accent-icon,
 .eon-story-select { display: flex; min-width: 0; min-height: 40px; flex: 1; align-items: center; gap: 9px; padding: 0 8px 0 12px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; text-align: left; font-size: 13px; }
 .eon-story-select span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eon-story-select > .eon-story-title { min-width: 0; flex: 1; }
+/* Bulk selection: rows take checkboxes and a bar docks above the footer. The
+   list prefix outranks the row hover so a selected row keeps its tint. */
+.eon-story-check { display: inline-flex; flex: 0 0 auto; }
+.eon-story-list .eon-story-row.is-selected { background: var(--row-selected) !important; }
+.eon-section-check { display: flex; width: 34px; height: 34px; flex: 0 0 auto; align-items: center; padding: 0 0 0 12px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+.eon-bulk-bar { display: grid; gap: 8px; margin: 0 8px 8px; padding: 10px; border: 1px solid; border-radius: 14px; }
+.eon-bulk-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-left: 4px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.eon-bulk-done { min-height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; }
+.eon-bulk-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.eon-bulk-actions button { display: inline-flex; min-width: 0; min-height: 40px; align-items: center; justify-content: center; gap: 6px; padding: 0 6px; border: 1px solid; border-radius: 10px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 600; }
+.eon-bulk-actions button:disabled { cursor: not-allowed; opacity: .4; }
 /* The linked Linear ticket, tinted with its status colour. */
 .eon-issue-chip { flex: 0 0 auto; padding: 2px 6px; border-radius: 6px; background: color-mix(in srgb, var(--status-color) 16%, transparent); color: var(--status-color); font-size: 11px; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; transition: color 160ms var(--ease-out), background-color 160ms var(--ease-out); }
 .light .eon-issue-chip { color: color-mix(in srgb, var(--status-color) 58%, #000); background: color-mix(in srgb, var(--status-color) 22%, transparent); }
