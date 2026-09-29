@@ -3357,15 +3357,26 @@ function Toast({ c, toast, onDismiss }) {
 }
 
 /* ---- New-prototype dialog replaces the old window.prompt flow.
-   It collects a name, group, and optional prototype HTML by drop, browse, or
-   paste. onCreate handles creation and the dialog shows errors inline. ------ */
+   It collects a name, the Linear ticket (required), a group, and optional
+   prototype HTML by drop or browse. onCreate handles creation and the dialog
+   shows errors inline. ------ */
 const NEW_GROUP = "\u0000new-group";
+
+// A Linear issue URL, or just its key (DES-712).
+function parseLinearTicket(value) {
+  const text = value.trim();
+  const fromUrl = text.match(/linear\.app\/.+\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/i)?.[1];
+  if (fromUrl) return { issue_url: text, issue_id: fromUrl.toUpperCase() };
+  if (/^[A-Za-z][A-Za-z0-9]*-\d+$/.test(text)) return { issue_url: null, issue_id: text.toUpperCase() };
+  return null;
+}
 
 function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   const [title, setTitle] = useState("");
   const [group, setGroup] = useState(() => (groups.includes("General") || !groups.length ? "General" : groups[0]));
   // With no groups yet there's nothing to pick, so the name field shows straight away.
   const [namingGroup, setNamingGroup] = useState(!groups.length);
+  const [ticket, setTicket] = useState("");
   const [html, setHtml] = useState("");
   const [fileName, setFileName] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -3379,6 +3390,8 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   closeRef.current = onClose;
 
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const issue = parseLinearTicket(ticket);
+  const ready = Boolean(title.trim() && issue);
 
   // Runs once: onClose is a new function on every parent render, and
   // re-running this would hand focus back to the opener mid-typing.
@@ -3387,7 +3400,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
     const onKey = (event) => {
       if (event.key === "Escape" && !busyRef.current) closeRef.current?.();
       if (event.key !== "Tab") return;
-      const focusable = dialogRef.current?.querySelectorAll('button:not(:disabled), input:not(:disabled):not([tabindex="-1"]), textarea:not(:disabled), [tabindex="0"]');
+      const focusable = dialogRef.current?.querySelectorAll('button:not(:disabled), input:not(:disabled):not([tabindex="-1"]), select:not(:disabled), [tabindex="0"]');
       if (!focusable?.length) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -3414,11 +3427,11 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
   };
 
   const submit = async () => {
-    if (!title.trim() || busy) return;
+    if (!ready || busy) return;
     setBusy(true);
     setError("");
     try {
-      await onCreate({ title: title.trim(), group: group.trim() || "General", html: html.trim() || null });
+      await onCreate({ title: title.trim(), group: group.trim() || "General", html: html.trim() || null, issue });
       onClose();
     } catch (err) {
       setError(err.message || "Couldn't create the prototype.");
@@ -3446,7 +3459,17 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
             {slug && <span style={{ fontSize: 11, color: c.muted }}>Will live at <code style={{ color: c.text }}>#/p/{slug}</code></span>}
           </div>
           <div className="eon-modal-step">
-            <div style={stepHead}><span style={stepBadge}>2</span> Pick a group</div>
+            <div style={stepHead}><span style={stepBadge}>2</span> Link the Linear ticket</div>
+            <Input value={ticket} onChange={(event) => setTicket(event.target.value)} required aria-required="true"
+              aria-invalid={Boolean(ticket.trim() && !issue)} aria-describedby="eon-new-ticket-hint"
+              onKeyDown={(event) => { if (event.key === "Enter") submit(); }}
+              placeholder="Paste the issue URL or DES-123" aria-label="Linear ticket" style={fieldStyle} />
+            <span id="eon-new-ticket-hint" style={{ fontSize: 11, color: ticket.trim() && !issue ? "#D98295" : c.muted }}>
+              {ticket.trim() && !issue ? "That isn't a Linear issue URL or key." : issue ? <>Linked to <code style={{ color: c.text }}>{issue.issue_id}</code></> : "Required. Every prototype tracks a ticket."}
+            </span>
+          </div>
+          <div className="eon-modal-step">
+            <div style={stepHead}><span style={stepBadge}>3</span> Pick a group</div>
             {/* A real list: a datalist only suggests matches as you type, and Safari shows no arrow. */}
             {groups.length > 0 && (
               <select className="eon-group-select" value={namingGroup ? NEW_GROUP : group} aria-label="Prototype group"
@@ -3466,7 +3489,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
             )}
           </div>
           <div className="eon-modal-step">
-            <div style={stepHead}><span style={stepBadge}>3</span> Add the prototype HTML <span style={{ fontSize: 11, fontWeight: 400, color: c.muted }}>optional, you can upload it later</span></div>
+            <div style={stepHead}><span style={stepBadge}>4</span> Add the prototype HTML <span style={{ fontSize: 11, fontWeight: 400, color: c.muted }}>optional, you can upload it later</span></div>
             <div className="eon-dropzone"
               onDragOver={(event) => { event.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
@@ -3483,10 +3506,6 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
                   onChange={(event) => readFile(event.target.files?.[0])} className="eon-visually-hidden" tabIndex={-1} />
               </label>
             </div>
-            <Textarea value={html} onChange={(event) => { setHtml(event.target.value); setFileName(""); }} spellCheck={false}
-              placeholder="…or paste a self-contained HTML document here"
-              aria-label="Prototype HTML source"
-              style={{ minHeight: 96, maxHeight: 220, background: c.raised, borderColor: c.border, color: c.text, fontSize: 12, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", resize: "vertical", borderRadius: 20 }} />
             <span style={{ fontSize: 11, color: c.muted, lineHeight: 1.5 }}>
               "Copy setup prompt" gives an AI the theming rules, states, and media tokens such as <code style={{ color: c.text }}>{"{{heroImage}}"}</code>.
             </span>
@@ -3495,8 +3514,8 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
         <div className="eon-modal-foot" style={{ borderColor: c.border }}>
           <span role="alert" style={{ flex: 1, fontSize: 12, color: "#D98295" }}>{error}</span>
           <button className="eon-buttonish eon-secondary-button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, background: "transparent", color: c.secondary }}>Cancel</button>
-          <Button className="eon-buttonish" onClick={submit} disabled={!title.trim() || busy}
-            style={{ minHeight: 40, padding: "0 16px", borderRadius: 999, background: c.primary, color: c.primaryText, fontSize: 13, fontWeight: 600, opacity: !title.trim() || busy ? 0.5 : 1 }}>
+          <Button className="eon-buttonish" onClick={submit} disabled={!ready || busy}
+            style={{ minHeight: 40, padding: "0 16px", borderRadius: 999, background: c.primary, color: c.primaryText, fontSize: 13, fontWeight: 600, opacity: !ready || busy ? 0.5 : 1 }}>
             {busy ? "Creating…" : "Create prototype"}
           </Button>
         </div>

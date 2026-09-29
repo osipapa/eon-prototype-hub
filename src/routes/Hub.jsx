@@ -444,17 +444,19 @@ export default function Hub() {
 
   // Called by the workspace's new-prototype dialog; errors propagate back to
   // it so they show inline instead of an alert.
-  async function onNewProject({ title, group, html }) {
+  async function onNewProject({ title, group, html, issue }) {
     const newSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
       || `prototype-${Date.now().toString(36)}`;
     const created = await createProject({
       team_id: profile.team_id, slug: newSlug, title, group_name: group || "General",
       status: "In review", controls: [], defaults: {},
       prototype_html: html || null,
+      issue_url: issue?.issue_url || null, issue_id: issue?.issue_id || null,
       sort_order: (projects?.length || 0),
       ...(profile?.id ? { created_by: profile.id } : {}),
     });
     setProjects((rows) => sortProjects([...(rows || []).filter((item) => item.id !== created.id), created]));
+    if (linearIdentifier(created)) syncLinearLink(created.slug);
     navigate(`/p/${newSlug}`);
   }
 

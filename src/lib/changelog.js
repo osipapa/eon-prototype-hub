@@ -40,6 +40,7 @@ export const CHANGELOG = [
         label: "Behavior",
         items: [
           "Delete no longer asks first. Archive anything you might want again.",
+          "New prototypes need a Linear ticket (its URL or key, like DES-123). HTML comes in by dropping or browsing for a file; the paste box is gone.",
         ],
       },
     ],
