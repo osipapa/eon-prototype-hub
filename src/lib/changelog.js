@@ -27,7 +27,7 @@ export const CHANGELOG = [
       {
         label: "New",
         items: [
-          "Assets, at the top of a prototype's sidebar: each animation on its own, to preview, replay, and download as an HTML page, or all of them as a zip.",
+          "Assets, at the top of a prototype's sidebar: each animation on its own, to preview and replay. Open one, or all of them, on a hosted Animations page with its timing, both themes, and code to copy. Every animation has its own link to share.",
           "The setup prompt asks prototypes to declare every animation as a standalone demo. Assets lists only those, so rebuild older prototypes to fill it.",
           "Admins see a new password in full when they set it, with Generate and Copy. It stays in the member's row until you leave the page.",
           "Everyone's icon is their Slack photo, with their Slack name: in the sidebar, on comments, on who's viewing, and on the admin page. Anyone without a photo gets a coloured initial.",
@@ -53,7 +53,8 @@ export const CHANGELOG = [
           "Eon Design opens on Handoff flow and hides pages that aren't written yet.",
           "A prototype with no Linear issue says so quietly instead of in red.",
           "Notifications show at the top of the screen, clear of the comment box.",
-          "In status view, issue keys on prototype rows are grey, since the group already shows the status.",
+          "Issue keys on prototype rows are outlined in their Linear status colour.",
+          "Status / Groups sits full width above the prototype list instead of beside Copy setup prompt.",
           "Copy embed link is gone. Embeds didn't play in Notion, Confluence, or Miro, so share the prototype's hub link instead.",
           "Prototype links need sign-in again everywhere, including inside other pages.",
         ],

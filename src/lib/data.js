@@ -38,6 +38,16 @@ export async function fetchProjectHtml(id) {
   return data;
 }
 
+// One prototype by its slug, for pages outside the workspace (the hosted
+// Animations page). Null when there's no such prototype.
+export async function fetchProjectBySlug(slug) {
+  const { data, error } = await supabase
+    .from("projects").select("id,slug,title,prototype_html")
+    .eq("slug", slug).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function createProject(project) {
   const { data, error } = await supabase.from("projects").insert(project).select().single();
   if (error) throw error;

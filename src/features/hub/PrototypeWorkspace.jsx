@@ -1822,17 +1822,22 @@ function WorkspaceSidebar({
               {copiedPrompt ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
               {copiedPrompt ? "Copied setup prompt" : "Copy setup prompt"}
             </button>
-            <LiquidSegmentedControl
-              options={[{ value: "status", label: "Status" }, { value: "groups", label: "Groups" }]}
-              value={groupBy}
-              onValueChange={setGroupBy}
-              c={c}
-              className="eon-group-by"
-              ariaLabel="Organize prototypes by"
-            />
           </div>
         )}
       </div>
+
+      {view === "stories" && (
+        <div className="eon-sidebar-group-by">
+          <LiquidSegmentedControl
+            options={[{ value: "status", label: "Status" }, { value: "groups", label: "Groups" }]}
+            value={groupBy}
+            onValueChange={setGroupBy}
+            c={c}
+            className="eon-group-by"
+            ariaLabel="Organize prototypes by"
+          />
+        </div>
+      )}
 
       <div ref={listRef} className="eon-story-list">
         {view === "stories" ? <>
@@ -1929,7 +1934,7 @@ function WorkspaceSidebar({
                           {checked ? <SquareCheck size={15} /> : <Square size={15} />}
                         </span>
                       )}
-                      {identifier && <span className="eon-issue-chip" aria-hidden="true" style={{ "--status-color": groupBy === "status" ? c.muted : connection.color }}>{identifier}</span>}
+                      {identifier && <span className="eon-issue-chip" aria-hidden="true" style={{ "--status-color": connection.color }}>{identifier}</span>}
                       <span className="eon-story-title">{item.title}</span>
                       {inSplit && <Columns2 className="eon-story-split" size={13} aria-hidden="true" style={{ color: c.muted }} />}
                       {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}

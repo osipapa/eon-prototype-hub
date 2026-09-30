@@ -12,6 +12,7 @@ const DesignGuidePreview = React.lazy(() => import("./dev/DesignGuidePreview"));
 const MirrorPreview = React.lazy(() => import("./dev/MirrorPreview"));
 const ConsentPreview = React.lazy(() => import("./dev/ConsentPreview"));
 const AdminPreview = React.lazy(() => import("./dev/AdminPreview"));
+const AnimationsPreview = React.lazy(() => import("./dev/AnimationsPreview"));
 
 startAnimatedFavicon();
 
@@ -22,11 +23,14 @@ const isDesignPreview = import.meta.env.DEV && previewParams.has("design-preview
 const isMirrorPreview = import.meta.env.DEV && previewParams.has("mirror-preview");
 const isConsentPreview = import.meta.env.DEV && previewParams.has("consent-preview");
 const isAdminPreview = import.meta.env.DEV && previewParams.has("admin-preview");
+const isAnimationsPreview = import.meta.env.DEV && previewParams.has("animations-preview");
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <EonAccentDefs />
-    {isAdminPreview ? (
+    {isAnimationsPreview ? (
+      <React.Suspense fallback={null}><AnimationsPreview /></React.Suspense>
+    ) : isAdminPreview ? (
       <React.Suspense fallback={null}><AdminPreview /></React.Suspense>
     ) : isConsentPreview ? (
       <React.Suspense fallback={null}><ConsentPreview /></React.Suspense>

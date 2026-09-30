@@ -10,6 +10,7 @@ const Prompts = lazy(() => import("./routes/Prompts"));
 const Admin = lazy(() => import("./routes/Admin"));
 const Mirror = lazy(() => import("./routes/Mirror"));
 const OAuthConsent = lazy(() => import("./routes/OAuthConsent"));
+const Animations = lazy(() => import("./routes/Animations"));
 
 function Splash({ children }) {
   return <LoadingScreen>{children}</LoadingScreen>;
@@ -55,6 +56,8 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<RequireAuth><Hub /></RequireAuth>} />
             <Route path="/p/:slug" element={<RequireAuth><Hub /></RequireAuth>} />
+            <Route path="/animations/:slug" element={<RequireAuth><Animations /></RequireAuth>} />
+            <Route path="/animations/:slug/:animationId" element={<RequireAuth><Animations /></RequireAuth>} />
             <Route path="/design" element={<RequireAuth><Design /></RequireAuth>} />
             <Route path="/design/:slug" element={<RequireAuth><Design /></RequireAuth>} />
             <Route path="/prompts" element={<RequireAuth><Prompts /></RequireAuth>} />

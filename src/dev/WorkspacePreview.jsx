@@ -5,7 +5,7 @@ import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import { validTutorialPersona } from "../features/onboarding/tutorial";
 
 // A small clickable flow, so the preview can exercise interaction mirroring.
-const CHECKOUT_DEMO = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+export const CHECKOUT_DEMO = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 body{margin:0;font:15px/1.45 system-ui,sans-serif;background:#0b0b0c;color:#fafafa}
 .screen{display:none;padding:28px 22px}.screen.on{display:block;animation:screen-in .28s cubic-bezier(.2,.8,.2,1)}
 @keyframes screen-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}

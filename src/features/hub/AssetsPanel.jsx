@@ -1,17 +1,6 @@
 import { useState } from "react";
-import { Download, Play, RotateCcw } from "lucide-react";
-import { animationDocument, animationFileName, animationStageDocument, zipFiles } from "./animations";
-
-function saveFile(content, filename, type) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+import { ExternalLink, Play, RotateCcw } from "lucide-react";
+import { animationStageDocument, animationsHref } from "./animations";
 
 // What the Assets row reads when collapsed: the animation names, or that there are none.
 export function assetsSummary(animations) {
@@ -19,17 +8,10 @@ export function assetsSummary(animations) {
 }
 
 /* The prototype's animations, each isolated so a developer can watch it on its
-   own and download it as a standalone page (or all of them as a zip). */
+   own here or open it on the hosted Animations page, with its code. */
 export default function AssetsList({ c, animations, story, theme }) {
   const [openId, setOpenId] = useState(null);
   const [replay, setReplay] = useState(0);
-  const docFor = (animation) => animationDocument(animation, { theme, prototypeTitle: story.title });
-  const download = (animation) => saveFile(docFor(animation), animationFileName(animation, story.slug), "text/html");
-  const downloadAll = () => saveFile(
-    zipFiles(animations.map((animation) => ({ name: animationFileName(animation, story.slug), content: docFor(animation) }))),
-    `${story.slug || "prototype"}-animations.zip`,
-    "application/zip",
-  );
 
   if (!animations.length) {
     return (
@@ -58,10 +40,11 @@ export default function AssetsList({ c, animations, story, theme }) {
                     {meta && <small style={{ color: c.muted }}>{meta}</small>}
                   </span>
                 </button>
-                <button className="eon-buttonish eon-icon-button eon-asset-download" onClick={() => download(animation)}
-                  aria-label={`Download ${animation.name}`} title="Download as HTML" style={{ color: c.muted }}>
-                  <Download size={15} />
-                </button>
+                <a className="eon-buttonish eon-icon-button eon-asset-open" href={animationsHref(story.slug, animation.id)}
+                  target="_blank" rel="noopener" aria-label={`Open ${animation.name} with its code`} title="Open with its code"
+                  style={{ color: c.muted }}>
+                  <ExternalLink size={15} />
+                </a>
               </div>
               {open && (
                 <div className="eon-asset-stage">
@@ -78,9 +61,10 @@ export default function AssetsList({ c, animations, story, theme }) {
           );
         })}
       </ul>
-      <button className="eon-buttonish eon-context-action eon-assets-all" onClick={downloadAll} style={{ borderColor: c.border, color: c.secondary }}>
-        <Download size={13} aria-hidden="true" /> Download all (.zip)
-      </button>
+      <a className="eon-buttonish eon-context-action eon-assets-all" href={animationsHref(story.slug)} target="_blank" rel="noopener"
+        style={{ borderColor: c.border, color: c.secondary }}>
+        <ExternalLink size={13} aria-hidden="true" /> Open all animations
+      </a>
     </>
   );
 }
