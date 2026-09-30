@@ -2901,7 +2901,7 @@ function CommentBubble({
         ? (event) => { if (!event.target.closest("button, a, textarea, input")) onJump(); }
         : undefined}
       style={{ opacity: comment.pending ? 0.6 : resolved ? 0.75 : 1, boxShadow: active ? `inset 2px 0 0 ${c.brand}` : "none", cursor: comment.anchor && onJump ? "pointer" : undefined }}>
-      <ProfileIcon email={author.email} name={name} size={32} className="eon-comment-avatar" />
+      <ProfileIcon email={author.email} name={name} src={author.avatar_url} size={32} className="eon-comment-avatar" />
       <div className="eon-comment-body">
         <div className="eon-comment-meta">
           {comment.anchor && (
@@ -3283,7 +3283,7 @@ function PresenceAvatars({ c, viewers }) {
     <div className="eon-presence" title={label} aria-label={label}>
       {shown.map((viewer) => (
         <span key={viewer.id} className="eon-presence-avatar" title={viewer.name} style={{ background: c.nav, borderColor: c.nav }}>
-          <ProfileIcon email={viewer.email} name={viewer.name} size={22} />
+          <ProfileIcon email={viewer.email} name={viewer.name} src={viewer.avatar_url} size={22} />
         </span>
       ))}
       {extra > 0 && (

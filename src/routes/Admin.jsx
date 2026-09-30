@@ -319,7 +319,7 @@ export default function Admin({ api = data, auth: authOverride }) {
                       <tr key={member.id}>
                         <td data-label="Member">
                           <div className="admin-person">
-                            <ProfileIcon email={member.email} name={name} size={36} />
+                            <ProfileIcon email={member.email} name={name} src={member.avatar_url} size={36} />
                             <div>
                               <div className="admin-person-line">
                                 <strong>{name || member.email}</strong>

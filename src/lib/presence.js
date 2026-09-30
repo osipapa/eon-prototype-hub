@@ -7,9 +7,9 @@ import { supabase } from "./supabase";
    decides how to render it (e.g. avatars of co-viewers on the active prototype).
 
    joinTeamPresence(teamId, me, onSync) -> { setProject(projectId), leave() }
-     me:     { id, name, email }
+     me:     { id, name, email, avatar_url }
      onSync: (viewers) => void, where viewers is
-             [{ id, name, email, project_id, online_at }]
+             [{ id, name, email, avatar_url, project_id, online_at }]
 */
 export function joinTeamPresence(teamId, me, onSync) {
   if (!teamId || !me?.id) return { setProject() {}, leave() {} };
@@ -23,6 +23,7 @@ export function joinTeamPresence(teamId, me, onSync) {
     id: me.id,
     name: me.name || me.email || "Teammate",
     email: me.email || null,
+    avatar_url: me.avatar_url || null,
     project_id: projectId,
     online_at: new Date().toISOString(),
   });

@@ -295,7 +295,7 @@ export default function Hub() {
     if (!user?.id || !profile?.team_id) return undefined;
     const handle = joinTeamPresence(
       profile.team_id,
-      { id: user.id, name: profile.full_name, email: user.email },
+      { id: user.id, name: profile.full_name, email: user.email, avatar_url: profile.avatar_url },
       setViewers,
     );
     presenceRef.current = handle;
@@ -303,7 +303,7 @@ export default function Hub() {
       handle.leave();
       presenceRef.current = null;
     };
-  }, [user?.id, profile?.team_id, profile?.full_name, user?.email]);
+  }, [user?.id, profile?.team_id, profile?.full_name, profile?.avatar_url, user?.email]);
 
   // Broadcast which prototype this browser is viewing so teammates see it.
   useEffect(() => {
@@ -475,7 +475,7 @@ export default function Hub() {
       anchor,
       created_at: new Date().toISOString(),
       pending: true,
-      author: { id: user.id, email: user.email, full_name: profile.full_name },
+      author: { id: user.id, email: user.email, full_name: profile.full_name, avatar_url: profile.avatar_url },
     };
     setComments((items) => [...items, optimistic]);
     try {

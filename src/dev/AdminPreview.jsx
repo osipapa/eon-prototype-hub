@@ -3,13 +3,16 @@ import Admin from "../routes/Admin";
 
 // Dev-only: ?admin-preview renders the admin page with mock members, so it can
 // be checked and screenshotted without signing in. Nothing is saved.
+// A stand-in photo, inline so the preview makes no network requests.
+const PHOTO = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b3f58"/><circle cx="32" cy="25" r="11" fill="#c9cbe0"/><rect x="14" y="40" width="36" height="24" rx="12" fill="#c9cbe0"/></svg>')}`;
+
 const MEMBERS = [
-  { id: "me", email: "mate@eonrides.com", role: "admin", tutorial_persona: "engineer" },
-  { id: "vy", email: "vy@eonrides.com", role: "member", tutorial_persona: "designer" },
-  { id: "derrick", email: "derrick@eonrides.com", role: "member", tutorial_persona: "operations" },
-  { id: "rei", email: "rei@eonrides.com", full_name: "Rei Tanaka", role: "member", tutorial_persona: "operations" },
-  { id: "michael", email: "michael@eonrides.com", role: "member", tutorial_persona: "engineer" },
-  { id: "paul", email: "paul@eonrides.com", role: "member" },
+  { id: "me", email: "alex@example.com", full_name: "Alex Rivera", avatar_url: PHOTO, role: "admin", tutorial_persona: "engineer" },
+  { id: "sam", email: "sam@example.com", full_name: "Sam Lee", role: "member", tutorial_persona: "designer" },
+  { id: "jordan", email: "jordan@example.com", role: "member", tutorial_persona: "operations" },
+  { id: "priya", email: "priya@example.com", full_name: "Priya Nair", avatar_url: "https://example.invalid/missing.png", role: "member", tutorial_persona: "operations" },
+  { id: "chris", email: "chris@example.com", role: "member", tutorial_persona: "engineer" },
+  { id: "morgan", email: "morgan@example.com", role: "member" },
 ];
 
 let rows = MEMBERS;

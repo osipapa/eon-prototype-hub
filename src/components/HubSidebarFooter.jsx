@@ -2,6 +2,7 @@ import { LogOut, Shield } from "lucide-react";
 import { HubChangelogButton } from "@/components/HubChangelog";
 import { ConnectClaudeButton } from "@/components/ConnectClaude";
 import ProfileIcon from "@/components/ProfileIcon";
+import { useAuth } from "@/lib/auth";
 
 export default function HubSidebarFooter({
   c,
@@ -11,10 +12,12 @@ export default function HubSidebarFooter({
   onSignOut,
   changelog,
 }) {
+  // Previews render without an auth provider, so the profile may be missing.
+  const profile = useAuth()?.profile;
   return (
     <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
       <div className="eon-sidebar-profile" title={userEmail || ""}>
-        <ProfileIcon email={userEmail} size={28} />
+        <ProfileIcon email={userEmail} name={profile?.full_name} src={profile?.avatar_url} size={28} />
         <span style={{ color: c.secondary }}>{userEmail || "Team member"}</span>
       </div>
       <div className="eon-sidebar-foot-actions">

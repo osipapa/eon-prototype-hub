@@ -324,6 +324,8 @@ svg.eon-accent-icon,
 .eon-sidebar-foot-actions { display: flex; align-items: center; gap: 6px; }
 .eon-profile-icon { display: inline-grid; flex: 0 0 auto; place-items: center; border-radius: 50%; background: hsl(var(--profile-hue) 70% 60% / .2); color: hsl(var(--profile-hue) 85% 80%); font-weight: 700; line-height: 1; }
 .light .eon-profile-icon { background: hsl(var(--profile-hue) 70% 50% / .14); color: hsl(var(--profile-hue) 75% 30%); }
+.eon-profile-icon { overflow: hidden; }
+.eon-profile-icon > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .eon-sidebar-empty, .eon-sidebar-mode-info { display: flex; min-height: 220px; align-items: center; justify-content: center; flex-direction: column; gap: 7px; padding: 28px 18px; text-align: center; }
 .eon-sidebar-empty strong, .eon-sidebar-mode-info strong { margin-top: 4px; font-size: 13px; }
 .eon-sidebar-empty span, .eon-sidebar-mode-info > span:last-child { font-size: 12px; line-height: 1.5; }

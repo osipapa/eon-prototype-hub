@@ -141,7 +141,7 @@ export function subscribePromptCategories(cb) {
 
 /* Comments ---------------------------------------------------------------*/
 const COMMENT_SELECT =
-  "*, author:profiles!comments_author_id_fkey(id,email,full_name), reactions:comment_reactions(emoji,profile_id)";
+  "*, author:profiles!comments_author_id_fkey(id,email,full_name,avatar_url), reactions:comment_reactions(emoji,profile_id)";
 
 export async function listComments() {
   const { data, error } = await supabase
