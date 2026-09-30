@@ -11,6 +11,9 @@ import DesignHubSwitcher from "@/components/DesignHubSwitcher";
 import { HubChangelogDialog, useHubChangelog } from "@/components/HubChangelog";
 import HubSidebarFooter from "@/components/HubSidebarFooter";
 import LiquidSegmentedControl from "@/components/LiquidSegmentedControl";
+import AssetsList, { assetsSummary } from "./AssetsPanel";
+import { extractAnimations } from "./animations";
+import ProfileIcon from "@/components/ProfileIcon";
 import PeekSegmented from "@/components/PeekSegmented";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
 import { Liquid } from "liquid-gooey";
@@ -18,7 +21,7 @@ import {
   AlertCircle, Archive, ArchiveRestore, ArrowDown, ArrowUp, Camera, Check, ChevronDown, ChevronLeft, Circle, Copy,
   ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, Loader2,
   Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
-  Menu, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square, SquareCheck, SquareMinus,
+  Menu, MoreHorizontal, Package, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square, SquareCheck, SquareMinus,
   Tablet, Trash2, Upload, X,
 } from "lucide-react";
 import {
@@ -70,13 +73,8 @@ function linearTeamKey(issue, identifier) {
 
 function linearConnectionState(issue, identifier, c) {
   const team = linearTeamKey(issue, identifier);
-  if (!identifier) {
-    return {
-      kind: "error",
-      label: "Linear not connected",
-      color: c.bg === "#000000" ? "#FF7A8A" : "#B42335",
-    };
-  }
+  // No linked issue is a normal state, not an error: stay quiet about it.
+  if (!identifier) return { kind: "none", label: "No Linear issue", color: c.muted };
   if (issue?.state) {
     return {
       kind: "connected",
@@ -1563,7 +1561,7 @@ export default function PrototypeWorkspace({
 
       {view === "stories" && (inspectorOpen || focusMode) && (
         <ReviewInspector
-          c={c} story={story} comments={storyComments} activity={storyActivity} profile={profile}
+          c={c} story={story} html={sourceHtml} protoTheme={protoTheme} comments={storyComments} activity={storyActivity} profile={profile}
           tab={inspectorTab} setTab={setInspectorTab}
           onCreateComment={onCreateComment} patch={patch}
           anchors={{
@@ -1931,7 +1929,7 @@ function WorkspaceSidebar({
                           {checked ? <SquareCheck size={15} /> : <Square size={15} />}
                         </span>
                       )}
-                      {identifier && <span className="eon-issue-chip" aria-hidden="true" style={{ "--status-color": connection.color }}>{identifier}</span>}
+                      {identifier && <span className="eon-issue-chip" aria-hidden="true" style={{ "--status-color": groupBy === "status" ? c.muted : connection.color }}>{identifier}</span>}
                       <span className="eon-story-title">{item.title}</span>
                       {inSplit && <Columns2 className="eon-story-split" size={13} aria-hidden="true" style={{ color: c.muted }} />}
                       {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}
@@ -2353,7 +2351,7 @@ function ToolGroup({ label, c, children }) {
    and the three links stay visible without a tab; the tabs below hold only the
    two things that stream in over time. ---- */
 function ReviewInspector({
-  c, story, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
+  c, story, html, protoTheme, comments, activity = [], profile, tab, setTab, onCreateComment, patch,
   anchors, editLinear, setEditLinear,
   liveLinear, linearId, isLiveLinked, fileLink, isBuiltIn, fileSync, autoPublish,
   conflictBy, onPullTheirs, onOverwriteTheirs,
@@ -2379,6 +2377,7 @@ function ReviewInspector({
     : "Watching";
 
   const hasResolved = comments.some((comment) => comment.resolved_at);
+  const animations = useMemo(() => extractAnimations(html), [html]);
   return (
     <aside
       data-tutorial="review-panel"
@@ -2406,6 +2405,14 @@ function ReviewInspector({
       )}
 
       <div className="eon-context" style={{ borderColor: c.border }}>
+        <ContextRow
+          c={c} rowKey="assets" icon={Package} label="Assets" value={assetsSummary(animations)}
+          valueTone={animations.length ? undefined : c.muted}
+          open={openRow === "assets"} onToggle={() => toggleRow("assets")}
+        >
+          <AssetsList c={c} animations={animations} story={story} theme={protoTheme} />
+        </ContextRow>
+
         <ContextRow
           c={c} rowKey="source" icon={Upload} label="Source"
           valueText={isLiveLinked ? `${sourceValue}, ${syncLabel}` : sourceValue}
@@ -2486,7 +2493,7 @@ function ReviewInspector({
           {linearId && <LinearCard c={c} story={story} live={liveLinear} identifier={linearId} issueUrl={story.issue_url} />}
           {!linearId && (
             <p className="eon-context-note" style={{ color: c.muted }}>
-              {linearConnection.kind === "error" ? "Paste an issue URL to pull its status, assignee, and description." : linearConnection.label}
+              {linearConnection.kind === "none" ? "Paste an issue URL to pull its status, assignee, and description." : linearConnection.label}
             </p>
           )}
         </ContextRow>
@@ -2807,7 +2814,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
         onDrop={onDrop}>
         {anchors.pendingAnchor && (
           <div className="eon-composer-pin" style={{ borderColor: c.border, background: c.raised, color: c.secondary }}>
-            <span className="eon-pin-dot" style={{ background: c.brand, color: "var(--eon-accent-foreground)" }}><Pin size={11} /></span>
+            <span className="eon-pin-dot" style={{ background: c.brand, color: c.primaryText }}><Pin size={11} /></span>
             <span>Pinned · {anchorStateLabel(anchors.pendingAnchor)}</span>
             <button type="button" className="eon-buttonish eon-text-button" onClick={() => anchors.clearPendingAnchor?.()}
               aria-label="Remove pin" style={{ color: c.muted }}><X size={13} /></button>
@@ -2867,7 +2874,6 @@ function CommentBubble({
   const [saving, setSaving] = useState(false);
   const author = comment.author || {};
   const name = author.full_name || author.email?.split("@")[0] || "Teammate";
-  const initials = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const mine = comment.author_id === currentUserId;
   const resolved = Boolean(comment.resolved_at);
   const canChange = mine && !comment.pending && onEdit && onDelete;
@@ -2895,13 +2901,13 @@ function CommentBubble({
         ? (event) => { if (!event.target.closest("button, a, textarea, input")) onJump(); }
         : undefined}
       style={{ opacity: comment.pending ? 0.6 : resolved ? 0.75 : 1, boxShadow: active ? `inset 2px 0 0 ${c.brand}` : "none", cursor: comment.anchor && onJump ? "pointer" : undefined }}>
-      <div className="eon-comment-avatar" style={{ background: mine ? c.active : c.raised, color: mine ? c.brand : c.secondary }}>{initials || "T"}</div>
+      <ProfileIcon email={author.email} name={name} size={32} className="eon-comment-avatar" />
       <div className="eon-comment-body">
         <div className="eon-comment-meta">
           {comment.anchor && (
             <button type="button" className="eon-buttonish eon-pin-dot" onClick={onSelect}
               aria-label={`Show pin ${pinNumber || ""} on the prototype`} aria-pressed={active}
-              style={{ background: active ? c.brand : c.raised, color: active ? "var(--eon-accent-foreground)" : c.brand, border: `1px solid ${active ? c.brand : c.border}` }}>
+              style={{ background: active ? c.brand : c.raised, color: active ? c.primaryText : c.brand, border: `1px solid ${active ? c.brand : c.border}` }}>
               {pinNumber || <Pin size={10} />}
             </button>
           )}
@@ -3137,7 +3143,7 @@ function PinOverlay({
             className={`eon-buttonish eon-canvas-pin${emoji ? " eon-canvas-pin-emoji" : ""}`}
             onClick={() => onPickPin(comment)}
             aria-label={`Comment pin ${number} by ${name}: ${comment.body || "image"}`} aria-pressed={active}
-            style={{ left: point.left, top: point.top, background: active ? c.brand : c.panel, color: active ? "var(--eon-accent-foreground)" : c.brand, borderColor: c.brand, transform: active ? "scale(1.15)" : undefined }}>
+            style={{ left: point.left, top: point.top, background: active ? c.brand : c.panel, color: active ? c.primaryText : c.brand, borderColor: c.brand, transform: active ? "scale(1.15)" : undefined }}>
             {emoji || number}
             <span className="eon-pin-card" data-below={point.top < 130 || undefined} aria-hidden="true"
               style={{ background: c.panel, borderColor: c.border, boxShadow: "0 10px 30px rgba(0,0,0,.35)" }}>
@@ -3149,7 +3155,7 @@ function PinOverlay({
         );
       })}
       {pendingPoint && (
-        <span className="eon-canvas-pin eon-canvas-pin-pending" style={{ left: pendingPoint.left, top: pendingPoint.top, background: c.brand, color: "var(--eon-accent-foreground)", borderColor: c.brand }}>
+        <span className="eon-canvas-pin eon-canvas-pin-pending" style={{ left: pendingPoint.left, top: pendingPoint.top, background: c.brand, color: c.primaryText, borderColor: c.brand }}>
           <Pin size={12} />
         </span>
       )}
@@ -3234,10 +3240,6 @@ function isDangerAction(action) {
   return action === "deleted" || action === "removed_html";
 }
 
-function initialsOf(name) {
-  return (name || "T").trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "T";
-}
-
 function HistoryTimeline({ c, activity, currentUserId }) {
   if (!activity.length) {
     return (
@@ -3270,7 +3272,7 @@ function HistoryTimeline({ c, activity, currentUserId }) {
   );
 }
 
-/* ---- Presence: initials-avatars of teammates viewing the same prototype,
+/* ---- Presence: profile icons of teammates viewing the same prototype,
    fed by the shared realtime presence channel. ---- */
 function PresenceAvatars({ c, viewers }) {
   if (!viewers.length) return null;
@@ -3280,9 +3282,8 @@ function PresenceAvatars({ c, viewers }) {
   return (
     <div className="eon-presence" title={label} aria-label={label}>
       {shown.map((viewer) => (
-        <span key={viewer.id} className="eon-presence-avatar" title={viewer.name}
-          style={{ background: c.active, color: c.brand, borderColor: c.nav }}>
-          {initialsOf(viewer.name)}
+        <span key={viewer.id} className="eon-presence-avatar" title={viewer.name} style={{ background: c.nav, borderColor: c.nav }}>
+          <ProfileIcon email={viewer.email} name={viewer.name} size={22} />
         </span>
       ))}
       {extra > 0 && (

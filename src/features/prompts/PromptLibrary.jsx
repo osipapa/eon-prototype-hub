@@ -383,8 +383,7 @@ function PromptSidebar({
         </div>
         <div className="eon-sidebar-library-heading">
           <div>
-            <span style={{ color: c.muted }}>Library</span>
-            <strong>Prompts</strong>
+            <strong id="eon-prompt-library-title">Prompts</strong>
           </div>
         </div>
         <div className="eon-prompt-search">
@@ -433,9 +432,6 @@ function PromptSidebar({
 
       <div className="eon-prompt-sidebar-scroll">
         <section className="eon-prompt-library-nav" aria-labelledby="eon-prompt-library-title">
-          <div className="eon-prompt-nav-label" id="eon-prompt-library-title" style={{ color: c.muted }}>
-            Prompts
-          </div>
           {groupedPrompts.length ? groupedPrompts.map(([category, items]) => {
             const collapsed = !query.trim() && Boolean(collapsedTopics[category]);
             const categoryRecord = categories.find((item) => item.name === category);

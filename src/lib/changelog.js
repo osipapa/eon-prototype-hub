@@ -20,13 +20,25 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-09-30",
-    title: "Estimation, one tab style, less noise",
+    title: "Animation assets, cleaner admin, less noise",
     image: "changelog/2026-09-30-estimation.png",
     imageAlt: "The Estimation page: one working week per point size, filled from Monday.",
     groups: [
       {
+        label: "New",
+        items: [
+          "Assets, at the top of a prototype's sidebar: each animation on its own, to preview, replay, and download as an HTML page, or all of them as a zip.",
+          "The setup prompt asks new prototypes to declare every animation as a standalone demo. Older prototypes show the CSS animations the hub can find.",
+          "Admins see a new password in full when they set it, with Generate and Copy. It stays in the member's row until you leave the page.",
+          "Everyone has their own profile icon: in the sidebar, on comments, on who's viewing, and on the admin page.",
+        ],
+      },
+      {
         label: "Design",
         items: [
+          "No more all-capitals labels, small text is bigger, and the leftover gradients are gone (icons keep theirs).",
+          "The sidebar footer shows your profile and email above the buttons. What's new has a megaphone instead of sparkles.",
+          "Admin has one Member column, a Password column, and a menu for walkthroughs and deleting an account.",
           "Estimation shows every point size on one chart: a row per size, each a working week filled from Monday, so the doubling is easy to see.",
           "Sizes past 16 sit under a split line.",
           "Two worked examples: splitting a 32 into cards that each ship, and re-pointing a card with a reason.",
@@ -38,6 +50,10 @@ export const CHANGELOG = [
         label: "Behavior",
         items: [
           "Resolved comments have their own tab next to Comments and History, instead of a second row of tabs.",
+          "Eon Design opens on Handoff flow and hides pages that aren't written yet.",
+          "A prototype with no Linear issue says so quietly instead of in red.",
+          "Notifications show at the top of the screen, clear of the comment box.",
+          "In status view, issue keys on prototype rows are grey, since the group already shows the status.",
           "Copy embed link is gone. Embeds didn't play in Notion, Confluence, or Miro, so share the prototype's hub link instead.",
           "Prototype links need sign-in again everywhere, including inside other pages.",
         ],

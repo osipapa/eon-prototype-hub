@@ -7,7 +7,8 @@ import { validTutorialPersona } from "../features/onboarding/tutorial";
 // A small clickable flow, so the preview can exercise interaction mirroring.
 const CHECKOUT_DEMO = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 body{margin:0;font:15px/1.45 system-ui,sans-serif;background:#0b0b0c;color:#fafafa}
-.screen{display:none;padding:28px 22px}.screen.on{display:block}
+.screen{display:none;padding:28px 22px}.screen.on{display:block;animation:screen-in .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes screen-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 h1{margin:0 0 6px;font-size:24px}p{margin:0 0 18px;color:#a1a1aa}
 button{min-height:48px;padding:0 20px;border:0;border-radius:12px;background:#e8e8e8;color:#141414;font:inherit;font-weight:600}
 input{box-sizing:border-box;width:100%;min-height:48px;margin:0 0 14px;padding:0 14px;border:1px solid #333;border-radius:12px;background:#161616;color:inherit;font:inherit;font-size:16px}
@@ -18,6 +19,20 @@ input{box-sizing:border-box;width:100%;min-height:48px;margin:0 0 14px;padding:0
 <div class="list">${Array.from({ length: 14 }, (_, index) => `<div>Saved card ${index + 1}</div>`).join("")}</div><button onclick="go('paid')">Pay $24.00</button></section>
 <section class="screen" id="paid"><h1>Paid</h1><p>Receipt sent.</p><button onclick="go('plan')">Start over</button></section>
 <script>function go(id){document.querySelectorAll(".screen").forEach(function(s){s.classList.toggle("on",s.id===id);});}</script>
+<template data-eon-animation="screen-in" data-name="Step enter" data-trigger="Each checkout step opens" data-duration="280ms" data-easing="cubic-bezier(.2, .8, .2, 1)" data-reduced-motion="Appears without moving">
+  <style>
+    .card{width:220px;padding:22px;border-radius:16px;background:#161616;color:#fafafa;font:600 15px system-ui;animation:screen-in .28s cubic-bezier(.2,.8,.2,1) both}
+    @keyframes screen-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  </style>
+  <div class="card">Your details</div>
+</template>
+<template data-eon-animation="paid-check" data-name="Paid check" data-trigger="Payment succeeds" data-duration="420ms" data-easing="ease-out" data-reduced-motion="Shows the check fully drawn">
+  <style>
+    svg{width:88px;height:88px}circle{fill:#1f3a2a}path{fill:none;stroke:#8fe0a8;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .42s ease-out .1s forwards}
+    @keyframes draw{to{stroke-dashoffset:0}}
+  </style>
+  <svg viewBox="0 0 88 88" aria-hidden="true"><circle cx="44" cy="44" r="44"/><path d="M26 45l12 12 24-26"/></svg>
+</template>
 </body></html>`;
 
 // Stands in for the linear-issue edge function, so status sections render.

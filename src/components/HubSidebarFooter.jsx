@@ -1,6 +1,7 @@
 import { LogOut, Shield } from "lucide-react";
 import { HubChangelogButton } from "@/components/HubChangelog";
 import { ConnectClaudeButton } from "@/components/ConnectClaude";
+import ProfileIcon from "@/components/ProfileIcon";
 
 export default function HubSidebarFooter({
   c,
@@ -12,31 +13,36 @@ export default function HubSidebarFooter({
 }) {
   return (
     <div className="eon-sidebar-foot" style={{ borderColor: c.border }}>
-      <span title={userEmail || ""} style={{ color: c.muted }}>{userEmail || "Team member"}</span>
-      <HubChangelogButton c={c} hasNew={changelog.hasNew} onOpen={changelog.open} />
-      <ConnectClaudeButton c={c} isAdmin={isAdmin} />
-      {isAdmin && (
+      <div className="eon-sidebar-profile" title={userEmail || ""}>
+        <ProfileIcon email={userEmail} size={28} />
+        <span style={{ color: c.secondary }}>{userEmail || "Team member"}</span>
+      </div>
+      <div className="eon-sidebar-foot-actions">
+        <HubChangelogButton c={c} hasNew={changelog.hasNew} onOpen={changelog.open} />
+        <ConnectClaudeButton c={c} isAdmin={isAdmin} />
+        {isAdmin && (
+          <button
+            className="eon-buttonish eon-icon-button"
+            type="button"
+            onClick={onOpenAdmin}
+            aria-label="Admin dashboard"
+            title="Admin dashboard"
+            style={{ color: c.muted, boxShadow: "var(--shadow-surface)" }}
+          >
+            <Shield size={15} />
+          </button>
+        )}
         <button
           className="eon-buttonish eon-icon-button"
           type="button"
-          onClick={onOpenAdmin}
-          aria-label="Admin dashboard"
-          title="Admin dashboard"
+          onClick={onSignOut}
+          aria-label="Sign out"
+          title="Sign out"
           style={{ color: c.muted, boxShadow: "var(--shadow-surface)" }}
         >
-          <Shield size={15} />
+          <LogOut size={15} />
         </button>
-      )}
-      <button
-        className="eon-buttonish eon-icon-button"
-        type="button"
-        onClick={onSignOut}
-        aria-label="Sign out"
-        title="Sign out"
-        style={{ color: c.muted, boxShadow: "var(--shadow-surface)" }}
-      >
-        <LogOut size={15} />
-      </button>
+      </div>
     </div>
   );
 }

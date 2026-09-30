@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import DesignGuide from "@/features/design/DesignGuide";
+import DesignGuide, { DEFAULT_DESIGN_PAGE } from "@/features/design/DesignGuide";
 import { useAuth } from "@/lib/auth";
 import { cacheEonLogo } from "@/lib/branding";
 import { listAssets } from "@/lib/data";
@@ -8,7 +8,7 @@ import { listAssets } from "@/lib/data";
 export default function Design() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const { slug = "overview" } = useParams();
+  const { slug = DEFAULT_DESIGN_PAGE } = useParams();
   const [assets, setAssets] = useState(null);
 
   useEffect(() => {

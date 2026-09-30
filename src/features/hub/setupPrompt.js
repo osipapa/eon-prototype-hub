@@ -86,7 +86,7 @@ export function buildSetupPrompt({
   const mapboxBase = `https://api.mapbox.com/mapbox-gl-js/v${MAPBOX.glVersion}`;
 
   const context = {
-    contractVersion: 3,
+    contractVersion: 4,
     activePrototype: project ? {
       title: project.title || "Untitled prototype",
       slug: project.slug || null,
@@ -215,14 +215,30 @@ ${mapsSection}
 - Use semantic controls, associated labels, keyboard operation, visible :focus-visible treatment, useful alt text, and sufficient contrast in both themes.
 - Respect prefers-reduced-motion and avoid decorative motion that blocks or delays interaction.
 
-8) SANDBOX LIMITS
+8) ANIMATIONS
+- Declare every piece of motion in the prototype once more as an isolated demo: entrances, exits, state changes, loaders, micro-interactions, and JavaScript-driven motion. Developers preview and download these demos from the Assets panel in the hub.
+- Use this syntax:
+    <template data-eon-animation="sheet-enter" data-name="Bottom sheet enter" data-trigger="Tapping Rate trip opens the sheet" data-duration="320ms" data-easing="cubic-bezier(.2, .8, .2, 1)" data-reduced-motion="Fades in without sliding">
+      <style>…</style>
+      <div class="sheet">…</div>
+    </template>
+- Put the templates at the end of <body>. Templates are inert, so they never render inside the prototype.
+- The data-eon-animation id is kebab-case and unique. data-name is a short label, and data-trigger says what starts the motion in the prototype.
+- Make each demo self-contained: its own <style> with only what it needs, and minimal markup with neutral stand-in shapes and short text. Copy the token values it uses; do not reference page classes or CSS variables defined outside the template. No {{media tokens}} and no network requests.
+- Use the exact keyframes, durations, delays, and easings the prototype uses, so the demo and the prototype never drift.
+- The demo plays once on load. Put JavaScript-driven motion in a <script> inside the template that starts on load. The hub replays a demo by reloading it, so do not add your own replay button.
+- Demos always play: do not wrap them in prefers-reduced-motion. Describe what reduced motion does in data-reduced-motion instead. The prototype itself still honors prefers-reduced-motion as section 7 says.
+- Leave out purely decorative motion the brief does not need rather than declaring it.
+
+9) SANDBOX LIMITS
 - The frame has an opaque origin: do not depend on localStorage, sessionStorage, cookies, service workers, authentication, parent-page DOM access, or same-origin behavior.
 - Remote fetches may fail because of CORS or network restrictions. The prototype must still work without a backend.
 - Do not navigate the top page, request real credentials, or perform real destructive/network mutations. Simulate product behavior locally.
 
-9) FINAL CHECK
+10) FINAL CHECK
 - Validate the HTML, both themes, all declared control options, all four viewports, keyboard navigation, focus visibility, overflow, and offline/CDN failure behavior.
 - At the mobile size, confirm nothing readable or tappable falls under the Dynamic Island or the home indicator.
 - If the prototype has a map, confirm it renders in both themes and that the fallback background holds the layout together when the Mapbox script is blocked.
+- Confirm every animation in the prototype has a matching <template data-eon-animation> demo that plays on its own.
 - Confirm that media remains expressed as {{tokens}} and that the output contains no Markdown or prose outside the HTML document.`;
 }

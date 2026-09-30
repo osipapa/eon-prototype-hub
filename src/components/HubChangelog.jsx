@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { Megaphone, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   CHANGELOG, CHANGELOG_SEEN_KEY, changelogGroups,
@@ -45,7 +45,7 @@ export function HubChangelogButton({ c, hasNew, onOpen }) {
       title="What's new"
       style={{ color: hasNew ? c.brand : c.muted, boxShadow: "var(--shadow-surface)" }}
     >
-      <Sparkles className="eon-accent-icon" size={15} />
+      <Megaphone className="eon-accent-icon" size={15} />
       {hasNew && <span className="eon-changelog-dot" style={{ background: c.brand }} aria-hidden="true" />}
     </button>
   );
@@ -94,7 +94,7 @@ export function HubChangelogDialog({ c, open, onClose }) {
       >
         <div className="eon-modal-head" style={{ borderColor: c.border }}>
           <span className="eon-changelog-mark eon-accent-icon" style={{ background: c.active, color: c.brand }}>
-            <Sparkles size={15} />
+            <Megaphone size={15} />
           </span>
           <div className="eon-changelog-heading">
             <strong id="eon-changelog-title" style={{ color: c.text }}>What's new</strong>

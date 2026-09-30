@@ -1,22 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  AlertCircle, ArrowLeft, CheckCircle2, Code2, Eye, EyeOff, KeyRound,
-  ListChecks, Loader2, Palette, PlayCircle, RefreshCw, ShieldCheck,
-  Trash2, UserPlus, Users, X,
+  AlertCircle, ArrowLeft, Check, CheckCircle2, Code2, Copy, Eye, EyeOff, KeyRound,
+  ListChecks, Loader2, MoreHorizontal, Palette, PlayCircle, RefreshCw, ShieldCheck,
+  Shuffle, Trash2, UserPlus, Users, X,
 } from "lucide-react";
+import ProfileIcon from "../components/ProfileIcon";
+import { copyText } from "../lib/uiState";
 import { useAuth } from "../lib/auth";
-import {
-  createAccount, deleteAccount, listProfiles, requestProfileTutorial,
-  setAccountPassword, setProfileRole,
-} from "../lib/data";
+import * as data from "../lib/data";
 import { TUTORIAL_PERSONAS, validTutorialPersona } from "../features/onboarding/tutorial";
 import "./routes.css";
 
 const PERSONA_ICONS = { designer: Palette, operations: ListChecks, engineer: Code2 };
 
-export default function Admin() {
-  const { user, refreshProfile } = useAuth();
+// `api` and `auth` are swapped for mocks by the dev-only ?admin-preview route.
+export default function Admin({ api = data, auth: authOverride }) {
+  const auth = useAuth();
+  const { user, refreshProfile } = authOverride || auth;
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,10 +25,15 @@ export default function Admin() {
   const [pending, setPending] = useState({});
   const [message, setMessage] = useState(null);
   const [form, setForm] = useState({ email: "", password: "", role: "member" });
-  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(true);
+  // Passwords set on this page, kept in memory only so the admin can read and
+  // share them until they leave. Stored passwords are hashes and can't be read back.
+  const [setPasswords, setSetPasswords] = useState({});
+  const [created, setCreated] = useState(null);
+  const [menu, setMenu] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
   const [resetValue, setResetValue] = useState("");
-  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [tutorialTarget, setTutorialTarget] = useState(null);
   const [tutorialPersona, setTutorialPersona] = useState("designer");
@@ -44,7 +50,7 @@ export default function Admin() {
     if (!silent) setLoading(true);
     setLoadError("");
     try {
-      setRows(await listProfiles());
+      setRows(await api.listProfiles());
     } catch (error) {
       setLoadError(error.message || "We couldn't load the team members.");
     } finally {
@@ -53,6 +59,23 @@ export default function Admin() {
   }
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (!menu) return undefined;
+    const close = (event) => {
+      if (event.type === "keydown" && event.key !== "Escape") return;
+      if (event.type === "mousedown" && event.target.closest?.(".admin-menu, .admin-menu-trigger")) return;
+      setMenu(null);
+    };
+    window.addEventListener("mousedown", close);
+    window.addEventListener("keydown", close);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("resize", close);
+    };
+  }, [menu]);
 
   useEffect(() => {
     if (!resetTarget && !deleteTarget && !tutorialTarget) return undefined;
@@ -123,7 +146,7 @@ export default function Admin() {
     setRows((current) => current.map((row) => row.id === member.id ? { ...row, role } : row));
     const success = await run(
       `role-${member.id}`,
-      () => setProfileRole(member.id, role),
+      () => api.setProfileRole(member.id, role),
       `${member.email} is now ${role === "admin" ? "an admin" : "a member"}.`,
     );
     if (!success) {
@@ -134,21 +157,22 @@ export default function Admin() {
   const addAccount = async (event) => {
     event.preventDefault();
     const email = form.email.trim();
+    const password = form.password;
     const success = await run(
       "create",
-      () => createAccount(email, form.password, form.role),
+      () => api.createAccount(email, password, form.role),
       `Account created for ${email}.`,
     );
     if (success) {
+      setCreated({ email, password });
       setForm({ email: "", password: "", role: "member" });
-      setShowCreatePassword(false);
     }
   };
 
   const openPasswordReset = (member, trigger) => {
     modalReturnFocusRef.current = trigger;
-    setResetValue("");
-    setShowResetPassword(false);
+    setResetValue(generatePassword());
+    setShowResetPassword(true);
     setResetTarget(member);
   };
 
@@ -166,7 +190,7 @@ export default function Admin() {
     const success = await run(
       `tutorial-${target.id}`,
       async () => {
-        await requestProfileTutorial(target.id, persona);
+        await api.requestProfileTutorial(target.id, persona);
         if (target.id === user?.id) await refreshProfile();
       },
       target.id === user?.id
@@ -181,19 +205,23 @@ export default function Admin() {
   const resetPassword = async (event) => {
     event.preventDefault();
     if (!resetTarget) return;
+    const target = resetTarget;
+    const password = resetValue;
     const success = await run(
-      `password-${resetTarget.id}`,
-      () => setAccountPassword(resetTarget.id, resetValue),
-      `Password updated for ${resetTarget.email}.`,
+      `password-${target.id}`,
+      () => api.setAccountPassword(target.id, password),
+      `Password updated for ${target.email}. It shows in their row until you leave this page.`,
     );
-    if (success) setResetTarget(null);
+    if (!success) return;
+    setSetPasswords((current) => ({ ...current, [target.id]: password }));
+    setResetTarget(null);
   };
 
   const removeAccount = async () => {
     if (!deleteTarget) return;
     const success = await run(
       `delete-${deleteTarget.id}`,
-      () => deleteAccount(deleteTarget.id),
+      () => api.deleteAccount(deleteTarget.id),
       `Deleted ${deleteTarget.email}.`,
     );
     if (success) setDeleteTarget(null);
@@ -267,7 +295,7 @@ export default function Admin() {
             <div className="admin-table-wrap">
               <table className="admin-table">
                 <thead>
-                  <tr><th>Member</th><th>Email</th><th>Role</th><th><span className="route-sr-only">Account actions</span></th></tr>
+                  <tr><th>Member</th><th>Role</th><th>Password</th><th><span className="route-sr-only">More actions</span></th></tr>
                 </thead>
                 <tbody>
                   {rows.length === 0 ? (
@@ -284,50 +312,57 @@ export default function Admin() {
                     const deletePending = pending[`delete-${member.id}`];
                     const tutorialPending = pending[`tutorial-${member.id}`];
                     const rowBusy = passwordPending || deletePending || tutorialPending;
-                    const displayName = member.full_name || member.email?.split("@")[0] || "Team member";
+                    const name = member.full_name && member.full_name !== member.email ? member.full_name : null;
+                    const track = validTutorialPersona(member.tutorial_persona) ? `${TUTORIAL_PERSONAS[member.tutorial_persona].shortLabel} track` : null;
+                    const isMe = member.id === user?.id;
                     return (
                       <tr key={member.id}>
                         <td data-label="Member">
                           <div className="admin-person">
-                            <span className="admin-avatar" aria-hidden="true">{initials(displayName)}</span>
+                            <ProfileIcon email={member.email} name={name} size={36} />
                             <div>
-                              <strong>{displayName}</strong>
-                              {member.id === user?.id && <span className="admin-you-badge">You</span>}
+                              <div className="admin-person-line">
+                                <strong>{name || member.email}</strong>
+                                {isMe && <span className="admin-you-badge">You</span>}
+                              </div>
+                              {(name || track) && <small>{[name && member.email, track].filter(Boolean).join(" · ")}</small>}
                             </div>
                           </div>
                         </td>
-                        <td data-label="Email"><span className="admin-email">{member.email}</span></td>
                         <td data-label="Role">
                           <div className="admin-role-control">
                             <select className="route-select" value={member.role}
-                              disabled={Boolean(rolePending) || member.id === user?.id}
-                              title={member.id === user?.id ? "You can't change your own role" : undefined}
+                              disabled={Boolean(rolePending) || isMe}
+                              title={isMe ? "You can't change your own role" : undefined}
                               aria-label={`Role for ${member.email}`}
                               onChange={(event) => changeRole(member, event.target.value)}>
                               <option value="member">Member</option>
                               <option value="admin">Admin</option>
                             </select>
                             {rolePending && <Loader2 className="route-spinner" size={15} aria-label="Updating role" />}
-                            {validTutorialPersona(member.tutorial_persona) && <span className="admin-tutorial-track">{TUTORIAL_PERSONAS[member.tutorial_persona].shortLabel} track</span>}
+                          </div>
+                        </td>
+                        <td data-label="Password">
+                          <div className="admin-password-cell">
+                            {setPasswords[member.id] && <SecretValue value={setPasswords[member.id]} label={`New password for ${member.email}`} />}
+                            <button className="route-button route-button--quiet route-pressable admin-small-button" onClick={(event) => openPasswordReset(member, event.currentTarget)}
+                              disabled={Boolean(rowBusy)} aria-label={`Change password for ${member.email}`}>
+                              {passwordPending ? <Loader2 className="route-spinner" size={15} /> : <KeyRound size={15} aria-hidden="true" />}
+                              Change
+                            </button>
                           </div>
                         </td>
                         <td data-label="Actions">
                           <div className="admin-row-actions">
-                            <button className="route-icon-button route-pressable" onClick={(event) => openTutorial(member, event.currentTarget)}
-                              disabled={Boolean(rowBusy)} title="Start onboarding tutorial" aria-label={`Start onboarding tutorial for ${member.email}`}>
-                              {tutorialPending ? <Loader2 className="route-spinner" size={16} /> : <PlayCircle size={16} />}
+                            <button className="route-icon-button route-pressable admin-menu-trigger" aria-haspopup="menu" aria-expanded={menu?.id === member.id}
+                              disabled={Boolean(rowBusy)} aria-label={`More actions for ${member.email}`}
+                              onClick={(event) => {
+                                const rect = event.currentTarget.getBoundingClientRect();
+                                modalReturnFocusRef.current = event.currentTarget;
+                                setMenu((current) => (current?.id === member.id ? null : { id: member.id, member, top: rect.bottom + 6, right: window.innerWidth - rect.right }));
+                              }}>
+                              {tutorialPending || deletePending ? <Loader2 className="route-spinner" size={16} /> : <MoreHorizontal size={16} />}
                             </button>
-                            <button className="route-icon-button route-pressable" onClick={(event) => openPasswordReset(member, event.currentTarget)}
-                              disabled={Boolean(rowBusy)} title="Set password" aria-label={`Set password for ${member.email}`}>
-                              {passwordPending ? <Loader2 className="route-spinner" size={16} /> : <KeyRound size={16} />}
-                            </button>
-                            {member.id !== user?.id && (
-                              <button className="route-icon-button route-icon-button--danger route-pressable"
-                                onClick={(event) => { modalReturnFocusRef.current = event.currentTarget; setDeleteTarget(member); }} disabled={Boolean(rowBusy)}
-                                title="Delete account" aria-label={`Delete account ${member.email}`}>
-                                {deletePending ? <Loader2 className="route-spinner" size={16} /> : <Trash2 size={16} />}
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -338,6 +373,19 @@ export default function Admin() {
             </div>
           )}
         </section>
+
+        {menu && (
+          <div className="admin-menu" role="menu" aria-label={`Actions for ${menu.member.email}`} style={{ top: menu.top, right: menu.right }}>
+            <button role="menuitem" className="route-pressable" onClick={() => { const member = menu.member; setMenu(null); openTutorial(member, modalReturnFocusRef.current); }}>
+              <PlayCircle size={15} aria-hidden="true" /> Start walkthrough
+            </button>
+            {menu.member.id !== user?.id && (
+              <button role="menuitem" className="route-pressable admin-menu-danger" onClick={() => { const member = menu.member; setMenu(null); setDeleteTarget(member); }}>
+                <Trash2 size={15} aria-hidden="true" /> Delete account
+              </button>
+            )}
+          </div>
+        )}
 
         <section className="route-card admin-create-card" aria-labelledby="create-account-heading">
           <div className="route-card-header admin-create-heading">
@@ -355,7 +403,13 @@ export default function Admin() {
                 onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
             </div>
             <div className="route-field admin-password-field">
-              <label htmlFor="admin-new-password">Temporary password</label>
+              <div className="admin-field-label">
+                <label htmlFor="admin-new-password">Temporary password</label>
+                <button type="button" className="admin-link-button route-pressable"
+                  onClick={() => { setForm((current) => ({ ...current, password: generatePassword() })); setShowCreatePassword(true); }}>
+                  <Shuffle size={13} aria-hidden="true" /> Generate
+                </button>
+              </div>
               <div className="route-input-wrap">
                 <input id="admin-new-password" className="route-input route-input--with-action"
                   type={showCreatePassword ? "text" : "password"} required minLength={8}
@@ -382,7 +436,22 @@ export default function Admin() {
               {pending.create ? "Creating…" : "Create account"}
             </button>
           </form>
-          <p className="admin-create-note">There is no self-signup. Use the key action beside any member to set a new password later.</p>
+          {created && (
+            <div className="admin-created" role="status">
+              <div>
+                <strong>Share these with {created.email}</strong>
+                <dl>
+                  <dt>Email</dt><dd>{created.email}</dd>
+                  <dt>Password</dt><dd><SecretValue value={created.password} label={`Password for ${created.email}`} /></dd>
+                </dl>
+              </div>
+              <div className="admin-created-actions">
+                <CopyButton text={`Eon Design Hub\n${window.location.origin}${window.location.pathname}\nEmail: ${created.email}\nPassword: ${created.password}`} label="Copy login" />
+                <button className="route-icon-button route-pressable" type="button" onClick={() => setCreated(null)} aria-label="Hide login details"><X size={15} /></button>
+              </div>
+            </div>
+          )}
+          <p className="admin-create-note">There's no self-signup. Passwords are stored encrypted, so nobody can read a current one. Set a new one from the member's row and it stays visible there until you leave this page.</p>
         </section>
       </div>
 
@@ -392,14 +461,20 @@ export default function Admin() {
             <div className="route-modal-header">
               <div>
                 <h2 id="reset-password-title">Set a new password</h2>
-                <p id="reset-password-description">Update the credentials for {resetTarget.email}.</p>
+                <p id="reset-password-description">For {resetTarget.email}. Their current password stops working.</p>
               </div>
               <button className="route-icon-button route-pressable" onClick={() => setResetTarget(null)} disabled={Boolean(pending[`password-${resetTarget.id}`])} aria-label="Close password dialog"><X size={17} /></button>
             </div>
             <form onSubmit={resetPassword}>
               <div className="route-modal-body">
                 <div className="route-field">
-                  <label htmlFor="admin-reset-password">New password</label>
+                  <div className="admin-field-label">
+                    <label htmlFor="admin-reset-password">New password</label>
+                    <button type="button" className="admin-link-button route-pressable"
+                      onClick={() => { setResetValue(generatePassword()); setShowResetPassword(true); }}>
+                      <Shuffle size={13} aria-hidden="true" /> Generate
+                    </button>
+                  </div>
                   <div className="route-input-wrap">
                     <input data-autofocus id="admin-reset-password" className="route-input route-input--with-action"
                       type={showResetPassword ? "text" : "password"} required minLength={8}
@@ -412,7 +487,7 @@ export default function Admin() {
                       <PasswordVisibilityIcon visible={showResetPassword} />
                     </button>
                   </div>
-                  <span className="route-field-help">Use at least 8 characters.</span>
+                  <span className="route-field-help">At least 8 characters. After you save, it shows in their row so you can copy it.</span>
                 </div>
               </div>
               <div className="route-modal-footer">
@@ -489,8 +564,40 @@ export default function Admin() {
   );
 }
 
-function initials(name) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "T";
+// Readable and strong: no look-alike characters (0/O, 1/l/I).
+function generatePassword(length = 14) {
+  const alphabet = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint32Array(length));
+  return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join("");
+}
+
+function CopyButton({ text, label = "Copy" }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button className="route-button route-button--quiet route-pressable admin-small-button" type="button"
+      onClick={async () => { await copyText(text); setCopied(true); window.setTimeout(() => setCopied(false), 1400); }}>
+      {copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+      {copied ? "Copied" : label}
+    </button>
+  );
+}
+
+function SecretValue({ value, label }) {
+  const [visible, setVisible] = useState(true);
+  const [copied, setCopied] = useState(false);
+  return (
+    <span className="admin-secret" aria-label={label}>
+      <code>{visible ? value : "•".repeat(Math.min(value.length, 12))}</code>
+      <button className="route-pressable" type="button" onClick={() => setVisible((current) => !current)}
+        aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible}>
+        {visible ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+      <button className="route-pressable" type="button" aria-label="Copy password"
+        onClick={async () => { await copyText(value); setCopied(true); window.setTimeout(() => setCopied(false), 1400); }}>
+        {copied ? <Check size={14} /> : <Copy size={14} />}
+      </button>
+    </span>
+  );
 }
 
 function PasswordVisibilityIcon({ visible }) {

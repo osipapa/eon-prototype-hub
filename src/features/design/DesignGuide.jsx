@@ -54,6 +54,13 @@ const PAGE_GROUPS = [
 
 const ALL_PAGES = PAGE_GROUPS.flatMap((group) => group.pages);
 
+// Pages still being written stay out of the navigation until they have content.
+// A direct link still opens one, and says it's in progress.
+const NAV_GROUPS = PAGE_GROUPS
+  .map((group) => ({ ...group, pages: group.pages.filter((page) => !page.wip) }))
+  .filter((group) => group.pages.length);
+export const DEFAULT_DESIGN_PAGE = NAV_GROUPS[0].pages[0].slug;
+
 const PAGE_CONTENT = {
   overview: {
     kicker: "Eon Design",
@@ -183,7 +190,6 @@ const PAGE_CONTENT = {
         title: "From idea to Engineering QA",
         body: "The columns below mirror the live Design and Engineering workflows. The card remains the source of truth throughout the process; ownership changes at explicit gates, but the designer stays connected through Engineering QA.",
         linearFlow: {
-          source: "Live Eon Linear workflows · Design + Engineering",
           ticket: {
             id: "DES-###",
             template: "Feature template",
@@ -392,8 +398,8 @@ export default function DesignGuide({
   const c = HUB[hubTheme];
   const changelog = useHubChangelog();
   const sidebarResize = useResizableSidebar("eon-sidebar-width");
-  const page = PAGE_CONTENT[activeSlug] || PAGE_CONTENT.overview;
-  const pageRecord = ALL_PAGES.find((item) => item.slug === activeSlug) || ALL_PAGES[0];
+  const pageRecord = ALL_PAGES.find((item) => item.slug === activeSlug) || ALL_PAGES.find((item) => item.slug === DEFAULT_DESIGN_PAGE);
+  const page = PAGE_CONTENT[pageRecord.slug];
 
   useEffect(() => {
     const update = () => {
@@ -434,7 +440,7 @@ export default function DesignGuide({
             </div>
           </div>
           <div className="eon-design-sidebar-scroll">
-            {PAGE_GROUPS.map((group) => (
+            {NAV_GROUPS.map((group) => (
               <DesignNavGroup key={group.label} group={group} activeSlug={pageRecord.slug} c={c} onSelect={selectPage} />
             ))}
           </div>
@@ -466,7 +472,7 @@ export default function DesignGuide({
                 <DesignSection key={section.id} section={section} c={c} onSelectPage={selectPage} navigateProduct={navigateProduct} onOpenPrompts={onOpenPrompts} />
               ))}
             </article>
-            {!pageRecord.wip && (
+            {!pageRecord.wip && page.sections.length > 1 && (
               <aside className="eon-design-toc" aria-label="On this page">
                 <div style={{ borderColor: c.border }}>
                   <strong>On this page</strong>
@@ -505,7 +511,6 @@ function DesignNavGroup({ group, activeSlug, c, onSelect }) {
         return (
           <button key={page.slug} className="eon-buttonish eon-design-nav-item" type="button" onClick={() => onSelect(page)} aria-current={selected ? "page" : undefined} style={{ background: selected ? c.active : "transparent", color: selected ? c.text : c.secondary }}>
             <span>{page.title}</span>
-            {page.wip && <small style={{ color: c.muted }}>In progress</small>}
           </button>
         );
       })}
@@ -693,9 +698,7 @@ function LinearHandoffFlow({ flow, c }) {
         <div>
           <GitBranch className="eon-accent-icon" size={16} aria-hidden="true" style={{ color: c.brand }} />
           <strong>Ticket path</strong>
-          <span style={{ color: c.muted }}>{flow.source}</span>
         </div>
-        <small style={{ color: c.muted }}>Scroll horizontally →</small>
       </div>
 
       <div className="eon-linear-board" role="list" tabIndex="0" aria-label="Linear workflow columns">
@@ -710,7 +713,6 @@ function LinearHandoffFlow({ flow, c }) {
               <div>
                 <span className="eon-linear-status-dot" aria-hidden="true" />
                 <strong>{column.status}</strong>
-                <em style={{ color: c.muted }}>{String(index + 1).padStart(2, "0")}</em>
               </div>
               <p><span style={{ color: c.muted }}>{column.board} board</span><b style={{ color: column.color }}>{column.type}</b></p>
             </header>
