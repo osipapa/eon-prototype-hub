@@ -1622,21 +1622,47 @@ button.eon-save-state { cursor: pointer; }
 .eon-design-steps li > div { padding: 5px 0 24px; }
 .eon-design-steps strong { font-size: 14px; font-weight: 650; }
 .eon-design-steps p { max-width: 680px; margin: 6px 0 0; font-size: 12px; line-height: 1.58; }
-/* Estimate scale as a timeline: the dot grows with the estimate, and the rail
-   runs behind it so the jump from one point to the next is visible. */
-/* Estimate scale on a calendar: each tile is four working weeks, Monday to
-   Friday, filled from the first day, so the doubling is something you see. */
-.eon-design-calendar { display: grid; margin: 22px 0 0; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
-.eon-cal-card { display: flex; margin: 0; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px; }
-.eon-cal-card.is-oversized { opacity: .72; }
-.eon-cal-head { display: flex; align-items: baseline; gap: 8px; }
-.eon-cal-head strong { font-size: 19px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.eon-cal-head span { min-width: 0; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.eon-cal-grid { display: grid; gap: 4px; grid-template-columns: repeat(5, 1fr); }
-.eon-cal-day { padding-bottom: 1px; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-align: center; }
-.eon-cal-cell { position: relative; overflow: hidden; height: 16px; border-radius: 4px; }
-.eon-cal-cell i { position: absolute; inset: 0 auto 0 0; display: block; height: 100%; border-radius: 4px; }
-.eon-cal-card figcaption { font-size: 12px; line-height: 1.5; }
+/* Estimate scale: one row per size, each a single working week filled from
+   Monday, so the doubling reads as bars growing against the same five days. */
+.eon-est { margin: 24px 0 0; padding: 20px 22px 24px; border-radius: 24px; }
+.eon-est-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 22px; font-size: 11px; }
+.eon-est-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.eon-est-legend i { display: block; width: 14px; height: 10px; border-radius: 3px; }
+.eon-est-axis, .eon-est-row { display: grid; grid-template-columns: 136px minmax(0, 1fr) 76px; column-gap: 16px; }
+.eon-est-axis { margin-bottom: 10px; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.eon-est-axis > div { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; text-align: center; }
+.eon-est-axis b { font-weight: inherit; }
+.eon-est-axis .is-short { display: none; }
+.eon-est-rows { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 28px; list-style: none; }
+.eon-est-row { position: relative; grid-template-areas: "num week more" "meaning note note"; align-items: center; row-gap: 6px; }
+.eon-est-points { grid-area: num; font-size: 22px; font-weight: 700; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.eon-est-meaning { grid-area: meaning; align-self: start; font-size: 12px; line-height: 1.5; }
+.eon-est-week { display: grid; grid-area: week; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+.eon-est-week > span { position: relative; overflow: hidden; height: 20px; border-radius: 4px; }
+.eon-est-week i { position: absolute; inset: 0 auto 0 0; display: block; border-radius: 4px; }
+.eon-est-more { grid-area: more; font-size: 11px; font-weight: 650; white-space: nowrap; }
+.eon-est-note { grid-area: note; align-self: start; margin: 0; font-size: 12px; line-height: 1.5; text-wrap: pretty; }
+.eon-est-double { position: absolute; top: -21px; left: 1px; font-size: 10px; font-weight: 700; }
+.eon-est-row.is-oversized .eon-est-points { opacity: .6; }
+.eon-est-split { display: flex; align-items: center; gap: 12px; margin: 2px 0 -4px; font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.eon-est-split::before, .eon-est-split::after { content: ""; height: 1px; flex: 1; background: currentColor; opacity: .3; }
+.eon-est-split + .eon-est-row .eon-est-double { display: none; }
+
+.eon-est-examples { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 14px; margin-top: 14px; }
+.eon-est-examples > figure { display: flex; margin: 0; flex-direction: column; gap: 16px; padding: 18px; border-radius: 24px; }
+.eon-est-examples figcaption strong { font-size: 14px; font-weight: 650; letter-spacing: -.01em; }
+.eon-est-examples figcaption p { margin: 4px 0 0; font-size: 12px; line-height: 1.55; text-wrap: pretty; }
+.eon-est-demo { display: flex; flex-direction: column; gap: 8px; }
+.eon-est-ticket { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 12px; border-radius: 12px; }
+.eon-est-ticket > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.eon-est-ticket small { font-size: 9px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.eon-est-ticket strong { font-size: 12px; font-weight: 650; }
+.eon-est-pill { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.eon-est-demo-arrow { display: flex; align-items: center; gap: 6px; padding: 2px 12px; font-size: 10px; font-weight: 650; }
+.eon-est-comment { display: flex; align-items: flex-start; gap: 10px; margin-left: 16px; padding: 12px; border-radius: 12px; }
+.eon-est-comment > span { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 9px; font-size: 9px; font-weight: 700; }
+.eon-est-comment strong { font-size: 11px; font-weight: 650; }
+.eon-est-comment p { margin: 3px 0 0; font-size: 11px; line-height: 1.5; text-wrap: pretty; }
 
 .eon-design-checklist { display: flex; overflow: hidden; margin: 28px 0 0; padding: 0; flex-direction: column; border-radius: 24px; list-style: none; }
 .eon-design-checklist li { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; border-top: 1px solid rgba(144, 148, 165, .15); }
@@ -1759,4 +1785,15 @@ button.eon-save-state { cursor: pointer; }
   .eon-linear-column { min-height: 500px; }
   .eon-qa-protocol { grid-template-columns: minmax(0, 1fr); gap: 22px; }
   .eon-qa-reply { margin-left: 16px; }
+  .eon-est { padding: 18px 16px 20px; }
+  .eon-est-axis, .eon-est-row { grid-template-columns: 34px minmax(0, 1fr) auto; column-gap: 12px; }
+  .eon-est-axis > span { visibility: hidden; }
+  .eon-est-axis > div { grid-column: 2 / 4; }
+  .eon-est-axis .is-long { display: none; }
+  .eon-est-axis .is-short { display: inline; }
+  .eon-est-row { grid-template-areas: "num meaning more" ". week week" ". note note"; }
+  .eon-est-points { font-size: 20px; }
+  .eon-est-meaning { align-self: center; font-weight: 650; }
+  .eon-est-double { top: -20px; }
+  .eon-est-examples { grid-template-columns: minmax(0, 1fr); }
 }

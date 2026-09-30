@@ -19,6 +19,22 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-09-30",
+    title: "A clearer estimation scale",
+    image: "changelog/2026-09-30-estimation.png",
+    imageAlt: "The Estimation page: one working week per point size, filled from Monday.",
+    groups: [
+      {
+        label: "Design",
+        items: [
+          "Estimation shows every point size on one chart: a row per size, each a working week filled from Monday, so the doubling is easy to see.",
+          "Sizes past 16 sit under a split line and say how many extra weeks they'd take.",
+          "Two worked examples: splitting a 32 into cards that each ship, and re-pointing a card with a reason.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-09-29",
     title: "Embeds, archive, and bulk select",
     image: "changelog/2026-09-29-embeds.png",

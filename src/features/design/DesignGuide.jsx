@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
-  ArrowRight, BookOpen, Boxes, Check, ChevronDown, ChevronRight, ExternalLink,
+  ArrowDown, ArrowRight, BookOpen, Boxes, Check, ChevronDown, ChevronRight, ExternalLink,
   FileCheck2, FolderOpen, GitBranch, Lightbulb, ListChecks, Menu,
   MessageSquareText, Milestone, MousePointer2, ShieldCheck, Sparkles,
   Workflow, X, BarChart3,
@@ -253,8 +253,8 @@ const PAGE_CONTENT = {
       {
         id: "point-scale",
         title: "What a point is worth",
-        body: "Our board uses Linear's doubling scale. Each calendar below is four working weeks, Monday to Friday, with the estimate filled in from the first day. Points describe effort, not a delivery date: use them to place a card against the others. The accent fill marks 4, 8, and 16, the anchors the team agreed; 1 and 2 follow the same doubling, and the greyed calendars are sizes a card should be split before it reaches.",
-        calendar: [
+        body: "Our board uses Linear's doubling scale, so each size is twice the one before. Each row is one working week, filled from Monday. Points describe effort, not a delivery date: use them to place a card against the others.",
+        scale: [
           { points: "1", days: 0.25, meaning: "A couple of hours", note: "A small, well understood change with nothing to investigate first." },
           { points: "2", days: 0.5, meaning: "Half a day", note: "Clear scope and a handful of states." },
           { points: "4", days: 1, anchor: true, meaning: "About a day", note: "One focused day with the shape already clear." },
@@ -275,6 +275,7 @@ const PAGE_CONTENT = {
           "If a card would go past 16, split it into cards that each deliver something on their own.",
           "Re-point when scope changes, and say on the card why the number moved.",
         ],
+        estimateExamples: true,
       },
     ],
   },
@@ -558,39 +559,132 @@ function DesignSection({ section, c, onSelectPage, navigateProduct, onOpenPrompt
           ))}
         </div>
       )}
-      {section.calendar && (
-        <div className="eon-design-calendar">
-          {section.calendar.map((step) => {
-            const fill = step.oversized ? c.muted : step.anchor ? c.brand : c.secondary;
-            return (
-              <figure key={step.points} className={`eon-cal-card${step.oversized ? " is-oversized" : ""}`} style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
-                <div className="eon-cal-head">
-                  <strong style={{ color: c.text }}>{step.points}</strong>
-                  <span style={{ color: c.secondary }}>{step.meaning}</span>
-                </div>
-                <div className="eon-cal-grid" role="img" aria-label={`${step.points} points fills ${step.days} of twenty working days`}>
-                  {["M", "T", "W", "T", "F"].map((day, index) => (
-                    <span key={`day-${index}`} className="eon-cal-day" style={{ color: c.muted }}>{day}</span>
-                  ))}
-                  {Array.from({ length: 20 }, (_, index) => {
-                    const filled = Math.max(0, Math.min(1, step.days - index));
-                    return (
-                      <span key={index} className="eon-cal-cell" style={{ background: c.raised }}>
-                        {filled > 0 && <i style={{ width: `${filled * 100}%`, background: fill }} />}
-                      </span>
-                    );
-                  })}
-                </div>
-                <figcaption style={{ color: c.muted }}>{step.note}</figcaption>
-              </figure>
-            );
-          })}
-        </div>
-      )}
+      {section.scale && <EstimateScale scale={section.scale} c={c} />}
+      {section.estimateExamples && <EstimateExamples c={c} />}
       {section.linearFlow && <LinearHandoffFlow flow={section.linearFlow} c={c} />}
       {section.qaProtocol && <QaCommentProtocol c={c} />}
       {section.tracking && <TrackingBlock block={section.tracking} c={c} onOpenPrompts={onOpenPrompts} />}
     </section>
+  );
+}
+
+const WEEKDAYS = [["Mon", "M"], ["Tue", "T"], ["Wed", "W"], ["Thu", "T"], ["Fri", "F"]];
+
+const hatchFill = (color) => `repeating-linear-gradient(135deg, ${color} 0 1px, transparent 1px 5px)`;
+
+// Spoken length of an estimate, for the row a screen reader reads instead of the bars.
+const estimateLength = (days) => (days < 1 ? `about ${days * 8} hours` : `about ${days} working ${days === 1 ? "day" : "days"}`);
+
+/* One row per size, each a single working week filled from Monday, so the
+   doubling reads as bars growing against the same five days. Sizes past a
+   week fill it with hatching and say how many more weeks they need. */
+function EstimateScale({ scale, c }) {
+  const hatch = hatchFill(c.muted);
+  return (
+    <figure className="eon-est" aria-label="Estimate scale" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+      <figcaption className="eon-est-legend" style={{ color: c.secondary }}>
+        <span><i style={{ background: c.brand }} />Team anchors</span>
+        <span><i style={{ background: c.secondary }} />Under a day</span>
+        <span><i style={{ background: `${hatch}, ${c.raised}` }} />Too big for one card</span>
+      </figcaption>
+      <div className="eon-est-axis" aria-hidden="true" style={{ color: c.muted }}>
+        <span>Points</span>
+        <div>{WEEKDAYS.map(([day, short]) => <span key={day}><b className="is-long">{day}</b><b className="is-short">{short}</b></span>)}</div>
+      </div>
+      <ol className="eon-est-rows">
+        {scale.map((step, index) => {
+          const weeks = step.days / 5;
+          return (
+            <Fragment key={step.points}>
+              {step.oversized && !scale[index - 1]?.oversized && (
+                <li className="eon-est-split" style={{ color: c.muted }}>Split before it gets here</li>
+              )}
+              <li className={`eon-est-row${step.oversized ? " is-oversized" : ""}`}>
+                {index > 0 && <span className="eon-est-double" aria-hidden="true" style={{ color: c.muted }}>×2</span>}
+                <strong className="eon-est-points">{step.points}<span className="eon-visually-hidden"> points</span></strong>
+                <span className="eon-est-meaning" style={{ color: c.secondary }}>{step.meaning}<span className="eon-visually-hidden">, {estimateLength(step.days)}.</span></span>
+                <div className="eon-est-week" aria-hidden="true">
+                  {WEEKDAYS.map(([day], dayIndex) => {
+                    const filled = Math.max(0, Math.min(1, step.days - dayIndex));
+                    return (
+                      <span key={day} style={{ background: c.raised }}>
+                        {filled > 0 && <i style={{ width: `${filled * 100}%`, background: step.oversized ? hatch : step.anchor ? c.brand : c.secondary }} />}
+                      </span>
+                    );
+                  })}
+                </div>
+                {weeks > 1 && <span className="eon-est-more" aria-hidden="true" style={{ color: c.text }}>+{weeks - 1} {weeks - 1 === 1 ? "week" : "weeks"}</span>}
+                <p className="eon-est-note" style={{ color: c.muted }}>{step.note}</p>
+              </li>
+            </Fragment>
+          );
+        })}
+      </ol>
+    </figure>
+  );
+}
+
+function EstimateTicket({ c, id = "DES-###", title, hint, children }) {
+  return (
+    <div className="eon-est-ticket" style={{ background: c.raised }}>
+      <div>
+        <small style={{ color: c.muted }}>{id}</small>
+        <strong>{title}</strong>
+        {hint && <small style={{ color: c.muted }}>{hint}</small>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function EstimatePoints({ c, children, oversized = false }) {
+  return (
+    <span className="eon-est-pill" style={oversized ? { boxShadow: `inset 0 0 0 1px ${c.muted}`, color: c.secondary } : { background: c.panel, color: c.text }}>
+      {children}
+    </span>
+  );
+}
+
+function EstimateExamples({ c }) {
+  return (
+    <div className="eon-est-examples">
+      <figure style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+        <figcaption>
+          <strong>Split it</strong>
+          <p style={{ color: c.secondary }}>A card past 16 becomes smaller cards that each ship something.</p>
+        </figcaption>
+        <div className="eon-est-demo">
+          <EstimateTicket c={c} title="Trip review flow" hint="Too big to estimate honestly">
+            <EstimatePoints c={c} oversized>32</EstimatePoints>
+          </EstimateTicket>
+          <span className="eon-est-demo-arrow" style={{ color: c.muted }}><ArrowDown size={15} aria-hidden="true" />Split into</span>
+          <EstimateTicket c={c} title="Rate the trip">
+            <EstimatePoints c={c}>16</EstimatePoints>
+          </EstimateTicket>
+          <EstimateTicket c={c} title="Add photos to a review">
+            <EstimatePoints c={c}>16</EstimatePoints>
+          </EstimateTicket>
+        </div>
+      </figure>
+      <figure style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
+        <figcaption>
+          <strong>Re-point with a reason</strong>
+          <p style={{ color: c.secondary }}>When scope changes, change the number and say why on the card.</p>
+        </figcaption>
+        <div className="eon-est-demo">
+          <EstimateTicket c={c} title="Vehicle carousel scroll affordance">
+            <EstimatePoints c={c}><s style={{ color: c.muted }}>4</s><ArrowRight size={11} aria-hidden="true" /><span className="eon-visually-hidden">changed to</span>8</EstimatePoints>
+          </EstimateTicket>
+          <div className="eon-est-comment" style={{ background: c.active }}>
+            <span style={{ background: c.raised, color: c.brand }}>You</span>
+            <div>
+              <strong>Re-pointed 4 → 8</strong>
+              <p style={{ color: c.secondary }}>Review added the empty and loading states to the carousel.</p>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
   );
 }
 
