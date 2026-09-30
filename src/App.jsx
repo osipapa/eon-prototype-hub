@@ -10,11 +10,6 @@ const Prompts = lazy(() => import("./routes/Prompts"));
 const Admin = lazy(() => import("./routes/Admin"));
 const Mirror = lazy(() => import("./routes/Mirror"));
 const OAuthConsent = lazy(() => import("./routes/OAuthConsent"));
-const Embed = lazy(() => import("./routes/Embed"));
-
-// Inside another page (a Notion or Confluence embed), a prototype link shows
-// the embed instead of the hub, for anyone, like a Figma link does.
-const inFrame = (() => { try { return window.self !== window.top; } catch { return true; } })();
 
 function Splash({ children }) {
   return <LoadingScreen>{children}</LoadingScreen>;
@@ -59,8 +54,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<RequireAuth><Hub /></RequireAuth>} />
-            <Route path="/p/:slug" element={inFrame ? <Embed /> : <RequireAuth><Hub /></RequireAuth>} />
-            <Route path="/embed/:slug" element={<Embed />} />
+            <Route path="/p/:slug" element={<RequireAuth><Hub /></RequireAuth>} />
             <Route path="/design" element={<RequireAuth><Design /></RequireAuth>} />
             <Route path="/design/:slug" element={<RequireAuth><Design /></RequireAuth>} />
             <Route path="/prompts" element={<RequireAuth><Prompts /></RequireAuth>} />

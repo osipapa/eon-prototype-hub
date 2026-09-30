@@ -20,7 +20,7 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-09-30",
-    title: "A clearer estimation scale",
+    title: "Clearer estimation, no more embeds",
     image: "changelog/2026-09-30-estimation.png",
     imageAlt: "The Estimation page: one working week per point size, filled from Monday.",
     groups: [
@@ -30,6 +30,13 @@ export const CHANGELOG = [
           "Estimation shows every point size on one chart: a row per size, each a working week filled from Monday, so the doubling is easy to see.",
           "Sizes past 16 sit under a split line.",
           "Two worked examples: splitting a 32 into cards that each ship, and re-pointing a card with a reason.",
+        ],
+      },
+      {
+        label: "Behavior",
+        items: [
+          "Copy embed link is gone. Embeds didn't play in Notion, Confluence, or Miro, so share the prototype's hub link instead.",
+          "Prototype links need sign-in again everywhere, including inside other pages.",
         ],
       },
     ],
