@@ -28,7 +28,7 @@ export const CHANGELOG = [
         label: "New",
         items: [
           "Assets, at the top of a prototype's sidebar: each animation on its own, to preview, replay, and download as an HTML page, or all of them as a zip.",
-          "The setup prompt asks new prototypes to declare every animation as a standalone demo. Older prototypes show the CSS animations the hub can find.",
+          "The setup prompt asks prototypes to declare every animation as a standalone demo. Assets lists only those, so rebuild older prototypes to fill it.",
           "Admins see a new password in full when they set it, with Generate and Copy. It stays in the member's row until you leave the page.",
           "Everyone has their own profile icon: in the sidebar, on comments, on who's viewing, and on the admin page.",
         ],

@@ -35,13 +35,12 @@ export default function AssetsList({ c, animations, story, theme }) {
     return (
       <p className="eon-context-note" style={{ color: c.muted }}>
         {story.prototype_html
-          ? "No animations found. Prototypes built with the current setup prompt declare each one so it shows up here."
+          ? "This prototype doesn't declare any animations. Rebuild it with the current setup prompt and each one shows up here."
           : "Upload the prototype's HTML to see its animations here."}
       </p>
     );
   }
 
-  const detected = animations.some((animation) => animation.source === "detected");
   return (
     <>
       <ul className="eon-assets">
@@ -79,11 +78,6 @@ export default function AssetsList({ c, animations, story, theme }) {
           );
         })}
       </ul>
-      {detected && (
-        <p className="eon-context-note" style={{ color: c.muted }}>
-          Found in the prototype's CSS and shown on a sample shape. Rebuild it with the current setup prompt for exact demos.
-        </p>
-      )}
       <button className="eon-buttonish eon-context-action eon-assets-all" onClick={downloadAll} style={{ borderColor: c.border, color: c.secondary }}>
         <Download size={13} aria-hidden="true" /> Download all (.zip)
       </button>

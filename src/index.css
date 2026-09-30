@@ -572,6 +572,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-asset-head { display: flex; align-items: center; gap: 4px; padding-right: 4px; }
 .eon-asset-toggle { display: flex; min-width: 0; min-height: 44px; flex: 1; align-items: center; gap: 9px; padding: 6px 4px 6px 11px; border: 0; background: transparent; cursor: pointer; text-align: left; }
 .eon-asset-toggle > svg { flex: 0 0 auto; }
+.eon-asset-toggle:focus-visible, .eon-asset-download:focus-visible { outline-offset: -2px; border-radius: 10px; }
 .eon-asset-toggle > span { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
 .eon-asset-toggle strong, .eon-asset-toggle small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eon-asset-toggle strong { font-size: 12px; font-weight: 600; }
