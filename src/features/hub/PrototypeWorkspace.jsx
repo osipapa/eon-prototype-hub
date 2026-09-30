@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import {
   CANVAS_PRESETS, HUB, PROTOTYPE_SANDBOX, VIEWPORTS, currentArgs,
-  effectiveStory, parsePrototypeConfig, renderStory, stateCombos,
+  effectiveStory, parsePrototypeConfig, renderStory, stateCombos, tabsStyle,
 } from "./prototypes";
 import {
   LinearCard, MediaManager,
@@ -1445,7 +1445,7 @@ export default function PrototypeWorkspace({
           onOpenDesign={onOpenDesign} onOpenPrompts={onOpenPrompts} onOpenTracking={onOpenTracking} onOpenAdmin={onOpenAdmin} onSignOut={onSignOut}
           changelog={changelog}
           linearByProject={linearByProject}
-          unreadByProject={unreadByProject} commentCountByProject={commentCountByProject}
+          unreadByProject={unreadByProject}
           resize={sidebarResize}
           isDrawer={breakpoints.navDrawer && !focusMode} onClose={() => setNavOpen(false)}
           collapsed={navCollapsed}
@@ -1646,13 +1646,11 @@ function WorkspaceSidebar({
   onOpenDesign, onOpenPrompts, onOpenTracking,
   changelog,
   linearByProject,
-  unreadByProject, commentCountByProject,
+  unreadByProject,
   resize,
   isDrawer, onClose, collapsed = false, onToggleCollapse, peeking = null, onPeekStart, onPeekEnd,
 }) {
   const hasResults = sections.length > 0;
-  const prototypeCount = sections.reduce((total, section) => total + (section.kind === "archived" ? 0 : section.items.length), 0);
-  const mediaCount = Object.keys(media || {}).length;
   const [collapsedGroups, setCollapsedGroups] = useState({});
   // Archived stays folded until opened, searched, or holding the open prototype.
   const isCollapsed = (section) => collapsedGroups[section.key]
@@ -1798,13 +1796,9 @@ function WorkspaceSidebar({
           )}
         </div>
         <Tabs value={view} onValueChange={(item) => { setView(item); if (isDrawer) onClose(); }}>
-          <TabsList variant="line" className="eon-sidebar-tabs" aria-label="Prototype library view" style={{ borderColor: c.border }}>
-            <TabsTrigger variant="line" value="stories">
-              Prototypes <span className="eon-count" style={{ background: c.raised, color: c.muted }}>{prototypeCount}</span>
-            </TabsTrigger>
-            <TabsTrigger variant="line" value="media">
-              Media <span className="eon-count" style={{ background: c.raised, color: c.muted }}>{mediaCount}</span>
-            </TabsTrigger>
+          <TabsList variant="line" className="eon-tabs" aria-label="Prototype library view" style={tabsStyle(c)}>
+            <TabsTrigger variant="line" value="stories">Prototypes</TabsTrigger>
+            <TabsTrigger variant="line" value="media">Media</TabsTrigger>
           </TabsList>
         </Tabs>
         {view === "stories" && (
@@ -1941,11 +1935,6 @@ function WorkspaceSidebar({
                       <span className="eon-story-title">{item.title}</span>
                       {inSplit && <Columns2 className="eon-story-split" size={13} aria-hidden="true" style={{ color: c.muted }} />}
                       {unreadByProject[item.id] > 0 && <span className="eon-unread-count" style={{ background: c.brand, color: c.primaryText }}>{unreadByProject[item.id]}</span>}
-                      {!unreadByProject[item.id] && commentCountByProject[item.id] > 0 && (
-                        <span className="eon-comment-count" style={{ color: c.muted }} title={`${commentCountByProject[item.id]} comments`}>
-                          <MessageSquare size={11} aria-hidden="true" />{commentCountByProject[item.id]}
-                        </span>
-                      )}
                     </button>
                   )}
                   {renamingId !== item.id && !selecting && (
@@ -2389,6 +2378,7 @@ function ReviewInspector({
     : syncedAt ? `Synced ${new Date(syncedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
     : "Watching";
 
+  const hasResolved = comments.some((comment) => comment.resolved_at);
   return (
     <aside
       data-tutorial="review-panel"
@@ -2504,12 +2494,15 @@ function ReviewInspector({
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="eon-inspector-tabs">
-        <TabsList className="eon-review-tabs" style={{ background: c.raised }}>
-          <TabsTrigger data-tutorial="comments-tab" value="comments"><MessageSquare size={14} /> Comments <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{comments.length}</span></TabsTrigger>
-          <TabsTrigger data-tutorial="history-tab" value="history"><History size={14} /> History <span className="eon-count" style={{ background: c.panel, color: c.muted }}>{activity.length}</span></TabsTrigger>
+        <TabsList variant="line" className="eon-tabs eon-review-tabs" aria-label="Review" style={tabsStyle(c)}>
+          <TabsTrigger variant="line" data-tutorial="comments-tab" value="comments">Comments</TabsTrigger>
+          {(hasResolved || tab === "resolved") && <TabsTrigger variant="line" value="resolved">Resolved</TabsTrigger>}
+          <TabsTrigger variant="line" data-tutorial="history-tab" value="history">History</TabsTrigger>
         </TabsList>
-        <TabsContent data-tutorial="comments-thread" value="comments" className="eon-inspector-content">
-          <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} anchors={anchors} />
+        {/* Comments and Resolved share one thread, so a draft survives switching between them. */}
+        <TabsContent data-tutorial="comments-thread" value={tab === "resolved" ? "resolved" : "comments"} className="eon-inspector-content">
+          <CommentThread c={c} comments={comments} profile={profile} projectId={story.id} onCreateComment={onCreateComment} anchors={anchors}
+            filter={tab === "resolved" ? "resolved" : "open"} onFilterChange={(next) => setTab(next === "resolved" ? "resolved" : "comments")} />
         </TabsContent>
         <TabsContent data-tutorial="history-thread" value="history" className="eon-inspector-content">
           <HistoryTimeline c={c} activity={activity} currentUserId={profile?.id} />
@@ -2650,13 +2643,12 @@ function ContextLinkField({ c, label, value, placeholder, hasValue, editing, set
 }
 
 
-function CommentThread({ c, comments, profile, projectId, onCreateComment, anchors = {} }) {
+function CommentThread({ c, comments, profile, projectId, onCreateComment, anchors = {}, filter = "open", onFilterChange: setFilter = () => {} }) {
   const [draft, setDraft] = useState("");
   const [attachment, setAttachment] = useState(null); // { file, previewUrl }
   const [dragging, setDragging] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState("open");
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const initialScroll = useRef(true);
@@ -2784,17 +2776,6 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
 
   return (
     <div className="eon-comments">
-      {(resolvedComments.length > 0 || filter === "resolved") && (
-        <div className="eon-comment-filter" role="tablist" aria-label="Filter comments" style={{ borderColor: c.border }}>
-          {[["open", "Open", openComments.length], ["resolved", "Resolved", resolvedComments.length]].map(([key, label, count]) => (
-            <button key={key} role="tab" aria-selected={filter === key} className="eon-buttonish eon-comment-filter-tab"
-              onClick={() => setFilter(key)}
-              style={{ color: filter === key ? c.text : c.muted, borderColor: filter === key ? c.brand : "transparent" }}>
-              {label} <span style={{ color: c.muted }}>{count}</span>
-            </button>
-          ))}
-        </div>
-      )}
       <div ref={scrollRef} className="eon-comment-list" aria-live="polite">
         {shown.length === 0 ? (
           <div className="eon-comment-empty" style={{ color: c.muted }}>

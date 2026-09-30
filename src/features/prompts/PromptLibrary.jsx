@@ -4,7 +4,6 @@ import {
   Copy, Edit3, FolderCog, FolderPlus, Loader2, Menu, MoreHorizontal,
   Pencil, Plus, Save, Search, Trash2, X,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import DesignHubSwitcher from "@/components/DesignHubSwitcher";
@@ -387,7 +386,6 @@ function PromptSidebar({
             <span style={{ color: c.muted }}>Library</span>
             <strong>Prompts</strong>
           </div>
-          <Badge variant="secondary" style={{ background: c.raised, color: c.secondary }}>{filteredPrompts.length}</Badge>
         </div>
         <div className="eon-prompt-search">
           <Search size={15} aria-hidden="true" style={{ color: c.muted }} />
@@ -436,7 +434,7 @@ function PromptSidebar({
       <div className="eon-prompt-sidebar-scroll">
         <section className="eon-prompt-library-nav" aria-labelledby="eon-prompt-library-title">
           <div className="eon-prompt-nav-label" id="eon-prompt-library-title" style={{ color: c.muted }}>
-            Prompts <span>{prompts.length}</span>
+            Prompts
           </div>
           {groupedPrompts.length ? groupedPrompts.map(([category, items]) => {
             const collapsed = !query.trim() && Boolean(collapsedTopics[category]);
@@ -749,7 +747,6 @@ function PromptEditorModal({ c, prompt, categories, onClose, onSave }) {
           <section className="eon-prompt-editor-variables" aria-labelledby="eon-prompt-editor-variables-title">
             <div>
               <strong id="eon-prompt-editor-variables-title">Template inputs</strong>
-              <span style={{ color: c.muted }}>{variableKeys.length}</span>
             </div>
             {variableKeys.length ? variableKeys.map((key) => {
               const variable = variableFor(key);

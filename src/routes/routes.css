@@ -580,25 +580,6 @@
   line-height: 1.55;
 }
 
-.admin-member-count {
-  display: inline-flex;
-  min-height: 38px;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  border-radius: 10px;
-  background: var(--route-surface);
-  color: var(--route-muted);
-  box-shadow: 0 0 0 1px var(--route-border);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.admin-member-count strong {
-  color: var(--route-text);
-  font-variant-numeric: tabular-nums;
-}
-
 .route-notice {
   display: flex;
   min-height: 46px;

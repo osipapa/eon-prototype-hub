@@ -34,6 +34,10 @@ export const HUB = {
     well: "inset 0 1px 2px rgba(23,23,23,0.09), inset 0 0 0 1px rgba(23,23,23,0.07)" },
 };
 
+// Every tab bar reads its colours from these, so tabs in portals (dialogs)
+// match the theme of the page that opened them.
+export const tabsStyle = (c) => ({ "--tab-ink": c.text, "--tab-muted": c.muted, "--tab-line": c.border });
+
 export const VIEWPORTS = {
   desktop: { label: "Desktop", w: 1440, h: 900 },
   laptop: { label: "Laptop", w: 1280, h: 800 },

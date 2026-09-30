@@ -224,7 +224,6 @@ export default function Admin() {
             <h1>Team members</h1>
             <p>Manage who can access, edit, and administer your shared design workspace.</p>
           </div>
-          <span className="admin-member-count"><Users size={15} aria-hidden="true" /><strong>{loading ? "..." : rows.length}</strong> {!loading && rows.length === 1 ? "member" : "members"}</span>
         </header>
 
         {message && (

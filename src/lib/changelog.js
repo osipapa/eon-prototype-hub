@@ -20,7 +20,7 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-09-30",
-    title: "Clearer estimation, no more embeds",
+    title: "Estimation, one tab style, less noise",
     image: "changelog/2026-09-30-estimation.png",
     imageAlt: "The Estimation page: one working week per point size, filled from Monday.",
     groups: [
@@ -30,11 +30,14 @@ export const CHANGELOG = [
           "Estimation shows every point size on one chart: a row per size, each a working week filled from Monday, so the doubling is easy to see.",
           "Sizes past 16 sit under a split line.",
           "Two worked examples: splitting a 32 into cards that each ship, and re-pointing a card with a reason.",
+          "Every tab bar looks the same: plain labels, the active one underlined in white (ink in light mode).",
+          "Counts are gone from tabs, prototype rows, Media, Prompts, What's new, and Admin. Unread badges stay.",
         ],
       },
       {
         label: "Behavior",
         items: [
+          "Resolved comments have their own tab next to Comments and History, instead of a second row of tabs.",
           "Copy embed link is gone. Embeds didn't play in Notion, Confluence, or Miro, so share the prototype's hub link instead.",
           "Prototype links need sign-in again everywhere, including inside other pages.",
         ],
@@ -381,10 +384,6 @@ export const CHANGELOG = [
 export function changelogGroups(entry) {
   if (entry.groups?.length) return entry.groups.filter((group) => group.items?.length);
   return entry.items?.length ? [{ label: null, items: entry.items }] : [];
-}
-
-export function changelogCount(entry) {
-  return changelogGroups(entry).reduce((total, group) => total + group.items.length, 0);
 }
 
 export const CHANGELOG_SEEN_KEY = "eon-changelog-seen";

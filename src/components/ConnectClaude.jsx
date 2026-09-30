@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Copy, Plug, X } from "lucide-react";
+import { tabsStyle } from "@/features/hub/prototypes";
 import { copyText } from "@/lib/uiState";
 import { CLAUDE_CODE_COMMAND, CONNECTOR_URL, fetchSignInStatus } from "@/lib/claudeConnect";
 
@@ -207,14 +208,11 @@ function ConnectClaudeDialog({ c, isAdmin, initialPlatform, onClose }) {
         </div>
         <div className="eon-modal-body eon-connect-body" style={{ color: c.secondary }}>
           <SignInStatus c={c} status={status} isAdmin={isAdmin} />
-          <div className="eon-connect-tabs" role="tablist" aria-label="Where you use Claude" style={{ background: c.raised }}>
+          <div className="eon-tabs" role="tablist" aria-label="Where you use Claude" style={tabsStyle(c)}>
             {PLATFORMS.map((item) => (
               <button key={item.key} type="button" role="tab" id={`eon-connect-tab-${item.key}`}
                 aria-selected={platform === item.key} aria-controls="eon-connect-steps"
-                className="eon-buttonish" onClick={() => setPlatform(item.key)}
-                style={platform === item.key
-                  ? { background: c.nav, color: c.text, boxShadow: "var(--shadow-surface)" }
-                  : { color: c.muted }}>
+                className="eon-buttonish" onClick={() => setPlatform(item.key)}>
                 {item.label}
               </button>
             ))}

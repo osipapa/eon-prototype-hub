@@ -661,7 +661,6 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
         style={{ outline: pageDrag ? `1.5px dashed ${c.brand}` : "none" }}>
         <div className="eon-media-section-head">
           <h2 id="eon-media-library" style={{ color: c.text }}>Library</h2>
-          <span className="eon-count" style={{ background: c.raised, color: c.muted }}>{library.length}</span>
           {pageDrag && <span style={{ marginLeft: "auto", fontSize: 12, color: c.brand }}>Drop to add it to the library</span>}
         </div>
         {library.length ? (
@@ -678,7 +677,6 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
       <section className="eon-media-section" aria-labelledby="eon-media-builtin">
         <div className="eon-media-section-head">
           <h2 id="eon-media-builtin" style={{ color: c.text }}>Built-in</h2>
-          <span className="eon-count" style={{ background: c.raised, color: c.muted }}>{builtIn.length}</span>
           <span style={{ fontSize: 12, color: c.muted }}>Always available. Replace one to use your own image.</span>
         </div>
         <div className="eon-media-grid">{builtIn.map(tile)}</div>

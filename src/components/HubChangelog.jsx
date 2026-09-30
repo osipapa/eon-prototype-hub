@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
-  CHANGELOG, CHANGELOG_SEEN_KEY, changelogCount, changelogGroups,
+  CHANGELOG, CHANGELOG_SEEN_KEY, changelogGroups,
   latestChangelogDate, markChangelogSeen, readSeenChangelogDate,
 } from "@/lib/changelog";
 
@@ -80,8 +80,6 @@ export function HubChangelogDialog({ c, open, onClose }) {
     };
   };
 
-  const updateCount = CHANGELOG.reduce((total, entry) => total + changelogCount(entry), 0);
-
   return (
     <div className="eon-modal-overlay" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
@@ -91,7 +89,6 @@ export function HubChangelogDialog({ c, open, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="eon-changelog-title"
-        aria-describedby="eon-changelog-summary"
         className="eon-modal eon-changelog-dialog"
         style={{ background: c.nav, borderColor: c.border, "--changelog-accent": c.brand }}
       >
@@ -101,9 +98,6 @@ export function HubChangelogDialog({ c, open, onClose }) {
           </span>
           <div className="eon-changelog-heading">
             <strong id="eon-changelog-title" style={{ color: c.text }}>What's new</strong>
-            <span id="eon-changelog-summary" style={{ color: c.muted }}>
-              {CHANGELOG.length} releases · {updateCount} improvements
-            </span>
           </div>
           <button
             className="eon-buttonish eon-icon-button eon-changelog-close"
@@ -142,7 +136,6 @@ export function HubChangelogDialog({ c, open, onClose }) {
                           Latest
                         </Badge>
                       )}
-                      <span style={{ color: c.muted }}>{changelogCount(entry)} updates</span>
                     </div>
                     <h2 style={{ color: c.text }}>{entry.title}</h2>
                   </header>
