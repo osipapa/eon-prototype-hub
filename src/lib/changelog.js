@@ -28,7 +28,7 @@ export const CHANGELOG = [
         label: "Design",
         items: [
           "Estimation shows every point size on one chart: a row per size, each a working week filled from Monday, so the doubling is easy to see.",
-          "Sizes past 16 sit under a split line and say how many extra weeks they'd take.",
+          "Sizes past 16 sit under a split line.",
           "Two worked examples: splitting a 32 into cards that each ship, and re-pointing a card with a reason.",
         ],
       },
