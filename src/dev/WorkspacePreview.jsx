@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import LoadingScreen from "../components/LoadingScreen";
 import PrototypeWorkspace from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
-import { validTutorialPersona } from "../features/onboarding/tutorial";
 
 // A small clickable flow, so the preview can exercise interaction mirroring.
 export const CHECKOUT_DEMO = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
@@ -203,7 +202,6 @@ export default function WorkspacePreview() {
   ];
   const [activeId, setActiveId] = useState(initialProjects[0].id);
   const [tutorialOpen, setTutorialOpen] = useState(() => tutorialParams.get("tutorial") === "1");
-  const tutorialPersona = validTutorialPersona(tutorialParams.get("persona"));
 
   const patchProject = (id, patch) => {
     setProjects((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
@@ -328,7 +326,7 @@ export default function WorkspacePreview() {
         onOpenAdmin={() => {}}
         onSignOut={() => {}}
       />
-      {tutorialOpen && <FirstRunTutorial firstName="Mate" initialPersona={tutorialPersona} isQa onExit={() => setTutorialOpen(false)} />}
+      {tutorialOpen && <FirstRunTutorial isQa onExit={() => setTutorialOpen(false)} />}
     </>
   );
 }

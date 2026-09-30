@@ -646,7 +646,7 @@ export default function PrototypeWorkspace({
 
   useEffect(() => {
     const revealTutorialTarget = (event) => {
-      const { panel, tab } = event.detail || {};
+      const { panel, tab, row } = event.detail || {};
       if (panel === "library") {
         setNavOpen(true);
         setNavCollapsedValue("open");
@@ -656,6 +656,7 @@ export default function PrototypeWorkspace({
         setInspectorOpen(true);
         if (breakpoints.inspectorDrawer) setNavOpen(false);
       }
+      if (row) setOpenContextRow(row);
       if (["details", "linear"].includes(tab)) setOpenContextRow("linear");
       else if (["comments", "history"].includes(tab)) setInspectorTab(tab);
     };
@@ -2126,9 +2127,10 @@ function WorkspaceToolbar({
                 className="eon-icon-segment"
                 ariaLabel="Prototype viewport"
                 variant="icon"
+                tutorial="viewports"
               />
               <LiquidSegmentedControl
-                options={[["single", Square, "One screen"], ["grid", LayoutGrid, "Every state"]].map(([key, Icon, label]) => ({ value: key, Icon, title: `${label} (G)`, ariaLabel: label }))}
+                options={[["single", Square, "One screen"], ["grid", LayoutGrid, "Every state"]].map(([key, Icon, label]) => ({ value: key, Icon, title: `${label} (G)`, ariaLabel: label, tutorial: key === "grid" ? "layout-grid" : undefined }))}
                 value={layout}
                 onValueChange={setLayout}
                 c={c}

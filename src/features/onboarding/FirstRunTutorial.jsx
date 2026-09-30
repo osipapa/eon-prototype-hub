@@ -1,41 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight, Check, ChevronLeft, CircleDot, Code2, Copy, ListChecks,
-  MessageSquare, Monitor, Palette, PanelLeftOpen, SlidersHorizontal,
-  Smartphone, Sparkles, X,
+  ArrowRight, Check, ChevronLeft, Clapperboard, LayoutGrid, MonitorSmartphone,
+  QrCode, SlidersHorizontal, X,
 } from "lucide-react";
-import {
-  createTutorialSteps, TUTORIAL_PERSONAS, validTutorialPersona,
-} from "./tutorial";
-import { LinearIcon } from "../../components/BrandIcons";
+import { createTutorialSteps } from "./tutorial";
 import "./tutorial.css";
 
 const ICONS = {
-  library: PanelLeftOpen,
-  prototype: Monitor,
-  review: ListChecks,
-  comments: MessageSquare,
-  linear: LinearIcon,
-  status: CircleDot,
-  prompt: Copy,
-  mobile: Smartphone,
-  sliders: SlidersHorizontal,
-  sparkles: Sparkles,
-};
-
-const PERSONA_ICONS = {
-  designer: Palette,
-  operations: ListChecks,
-  engineer: Code2,
+  breakpoints: MonitorSmartphone,
+  states: SlidersHorizontal,
+  grid: LayoutGrid,
+  qr: QrCode,
+  animation: Clapperboard,
 };
 
 const FOCUSABLE = "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex='-1'])";
 const EDGE = 12;
 const GAP = 14;
 
-export default function FirstRunTutorial({ firstName, initialPersona = null, isQa = false, onPersonaSelect, onExit }) {
-  const [persona, setPersona] = useState(() => validTutorialPersona(initialPersona));
-  const steps = useMemo(() => createTutorialSteps(firstName, persona), [firstName, persona]);
+export default function FirstRunTutorial({ isQa = false, onExit }) {
+  const steps = useMemo(() => createTutorialSteps(), []);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   // A step whose target never shows up (a layout without it, or a UI change)
@@ -50,14 +34,14 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
   const step = steps[stepIndex] || null;
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
-  const Icon = step ? (ICONS[step.icon] || Sparkles) : Sparkles;
+  const Icon = (step && ICONS[step.icon]) || SlidersHorizontal;
 
   const requestExit = useCallback((reason) => {
     if (closing) return;
     setClosing(true);
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    exitTimerRef.current = window.setTimeout(() => onExit?.(reason, persona), reduceMotion ? 0 : 150);
-  }, [closing, onExit, persona]);
+    exitTimerRef.current = window.setTimeout(() => onExit?.(reason), reduceMotion ? 0 : 150);
+  }, [closing, onExit]);
 
   const locateTarget = useCallback(() => {
     if (!step) {
@@ -101,16 +85,6 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
     else goToStep(stepIndex + 1);
   }, [isLast, requestExit, step, stepIndex]);
 
-  const selectPersona = (nextPersona) => {
-    const valid = validTutorialPersona(nextPersona);
-    if (!valid) return;
-    setStepIndex(0);
-    setPersona(valid);
-    Promise.resolve(onPersonaSelect?.(valid)).catch((error) => {
-      console.error("Couldn't save tutorial role.", error);
-    });
-  };
-
   useEffect(() => {
     previousFocusRef.current = document.activeElement;
     return () => {
@@ -128,7 +102,7 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
     setTargetMissing(false);
     const missingTimer = window.setTimeout(() => { if (!targetRef.current) setTargetMissing(true); }, 900);
     window.dispatchEvent(new CustomEvent("eon:tutorial:reveal", {
-      detail: { panel: step.reveal || null, tab: step.tab || null },
+      detail: { panel: step.reveal || null, tab: step.tab || null, row: step.row || null },
     }));
     const refreshTarget = () => {
       if (!reviewTabHandled) {
@@ -201,14 +175,14 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
     });
     observer.observe(coach);
     return () => observer.disconnect();
-  }, [persona]);
+  }, []);
 
   useEffect(() => {
     const focusTimer = window.setTimeout(() => {
       coachRef.current?.querySelector("[data-tutorial-autofocus]")?.focus();
     }, 60);
     return () => window.clearTimeout(focusTimer);
-  }, [persona, stepIndex]);
+  }, [stepIndex]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -259,39 +233,7 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [goForward, requestExit, step, stepIndex]);
 
-  if (!step) {
-    return (
-      <div className={`eon-coach-root eon-persona-root is-ready${closing ? " is-closing" : ""}`}>
-        <div className="eon-persona-scrim" />
-        <section ref={coachRef} className="eon-persona-card" role="dialog" aria-labelledby="eon-persona-title" aria-describedby="eon-persona-description">
-          <header className="eon-persona-header">
-            <span className="eon-coach-icon eon-accent-icon" aria-hidden="true"><Sparkles size={15} /></span>
-            <span>Personalize your walkthrough</span>
-            {isQa && <span className="eon-coach-qa" aria-label="QA preview. Completion state will not change.">QA</span>}
-            <button className="eon-coach-close" type="button" onClick={() => requestExit("dismiss")} aria-label="Close walkthrough"><X size={17} /></button>
-          </header>
-          <div className="eon-persona-copy">
-            <span className="eon-persona-kicker">Hey {firstName}</span>
-            <h1 id="eon-persona-title">What do you do most?</h1>
-            <p id="eon-persona-description">Pick a track and I'll show only the workflow that matters to you.</p>
-          </div>
-          <div className="eon-persona-options">
-            {Object.entries(TUTORIAL_PERSONAS).map(([key, item], index) => {
-              const PersonaIcon = PERSONA_ICONS[key] || Sparkles;
-              return (
-                <button key={key} data-tutorial-autofocus={index === 0 || undefined} className="eon-persona-option" type="button" onClick={() => selectPersona(key)}>
-                  <span className="eon-persona-option-icon eon-accent-icon" aria-hidden="true"><PersonaIcon size={18} /></span>
-                  <span><strong>{item.label}</strong><small>{item.description}</small></span>
-                  <ArrowRight size={16} aria-hidden="true" />
-                </button>
-              );
-            })}
-          </div>
-          <p className="eon-persona-note">Admins can restart any track for QA or onboarding.</p>
-        </section>
-      </div>
-    );
-  }
+  if (!step) return null;
 
   const position = placeCoach(targetRect, step.placement, coachSize);
   const hole = targetRect && scrimGeometry(targetRect);
@@ -326,11 +268,11 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
           </button>
         </header>
 
-        <div className="eon-coach-copy" key={`${persona}-${step.key}`} aria-live="polite">
+        <div className="eon-coach-copy" key={step.key} aria-live="polite">
           <h1 id="eon-coach-title">{step.title}</h1>
           <p id="eon-coach-description">{step.body}</p>
           {step.interactive && (
-            <span className="eon-coach-try"><Sparkles size={12} aria-hidden="true" /> Try the highlighted area now</span>
+            <span className="eon-coach-try">You can try it while this is open.</span>
           )}
         </div>
 
@@ -348,7 +290,7 @@ export default function FirstRunTutorial({ firstName, initialPersona = null, isQ
               </button>
             )}
             <button data-tutorial-autofocus className="eon-coach-button is-primary" type="button" onClick={goForward}>
-              {isLast ? "Done" : isFirst ? "Start" : "Next"}
+              {isLast ? "Done" : "Next"}
               {isLast ? <Check size={16} aria-hidden="true" /> : <ArrowRight size={16} aria-hidden="true" />}
             </button>
           </div>

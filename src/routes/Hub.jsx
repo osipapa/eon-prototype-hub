@@ -5,9 +5,7 @@ import { cacheEonLogo } from "../lib/branding";
 import LoadingScreen from "../components/LoadingScreen";
 import PrototypeHub, { linearIdentifier } from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
-import {
-  firstNameFor, TUTORIAL_METADATA_KEY, tutorialStorageKey, validTutorialPersona,
-} from "../features/onboarding/tutorial";
+import { TUTORIAL_METADATA_KEY, tutorialStorageKey } from "../features/onboarding/tutorial";
 import {
   listProjects, patchProject as dbPatch, publishHtmlIfUnchanged, fetchProjectHtml, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
@@ -61,7 +59,7 @@ function tableIsMissing(error, table) {
 let toastSeq = 0;
 
 export default function Hub() {
-  const { user, profile, isAdmin, signOut, completeTutorial, saveTutorialPersona } = useAuth();
+  const { user, profile, isAdmin, signOut, completeTutorial } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { slug } = useParams();
@@ -83,7 +81,6 @@ export default function Hub() {
   const [tutorialMode, setTutorialMode] = useState(null);
   const tutorialParams = new URLSearchParams(location.search);
   const tutorialQaRequested = tutorialParams.get("tutorial") === "1";
-  const tutorialQaPersona = validTutorialPersona(tutorialParams.get("persona"));
 
   useEffect(() => {
     if (!projects || !user?.id) return;
@@ -100,9 +97,7 @@ export default function Hub() {
 
     if (tutorialQaRequested) {
       tutorialResolved.current = true;
-      setTutorialMode((current) => current?.kind === "qa"
-        ? current
-        : { kind: "qa", persona: tutorialQaPersona });
+      setTutorialMode((current) => current?.kind === "qa" ? current : { kind: "qa" });
       return;
     }
 
@@ -110,24 +105,24 @@ export default function Hub() {
     if (requestedAt && requestedAt !== handledTutorialRequest.current && requestedTime > completedTime) {
       handledTutorialRequest.current = requestedAt;
       tutorialResolved.current = true;
-      setTutorialMode({ kind: "assigned", persona: validTutorialPersona(profile?.tutorial_persona) });
+      setTutorialMode({ kind: "assigned" });
       return;
     }
 
     if (!tutorialResolved.current && !remoteComplete && !localComplete && !profile?.tutorial_completed_at) {
       tutorialResolved.current = true;
-      setTutorialMode({ kind: "first-run", persona: validTutorialPersona(profile?.tutorial_persona) });
+      setTutorialMode({ kind: "first-run" });
     }
-  }, [profile, projects, tutorialMode, tutorialQaPersona, tutorialQaRequested, user]);
+  }, [profile, projects, tutorialMode, tutorialQaRequested, user]);
 
-  const exitTutorial = (_reason, persona) => {
+  const exitTutorial = () => {
     if (["first-run", "assigned"].includes(tutorialMode?.kind) && user?.id) {
       try {
         window.localStorage.setItem(tutorialStorageKey(user.id), "complete");
       } catch {
         // Continue with auth metadata when private browsing blocks storage.
       }
-      completeTutorial(persona).catch((error) => {
+      completeTutorial().catch((error) => {
         console.error("Couldn't sync tutorial completion.", error);
       });
     }
@@ -636,13 +631,7 @@ export default function Hub() {
         onSignOut={signOut}
       />
       {tutorialMode && (
-        <FirstRunTutorial
-          firstName={firstNameFor(profile, user)}
-          initialPersona={tutorialMode.persona}
-          isQa={tutorialMode.kind === "qa"}
-          onPersonaSelect={tutorialMode.kind === "qa" ? undefined : saveTutorialPersona}
-          onExit={exitTutorial}
-        />
+        <FirstRunTutorial isQa={tutorialMode.kind === "qa"} onExit={exitTutorial} />
       )}
     </>
   );

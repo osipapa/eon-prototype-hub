@@ -1,18 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  AlertCircle, ArrowLeft, Check, CheckCircle2, Code2, Copy, Eye, EyeOff, KeyRound,
-  ListChecks, Loader2, MoreHorizontal, Palette, PlayCircle, RefreshCw, ShieldCheck,
+  AlertCircle, ArrowLeft, Check, CheckCircle2, Copy, Eye, EyeOff, KeyRound,
+  Loader2, MoreHorizontal, PlayCircle, RefreshCw, ShieldCheck,
   Shuffle, Trash2, UserPlus, Users, X,
 } from "lucide-react";
 import ProfileIcon from "../components/ProfileIcon";
 import { copyText } from "../lib/uiState";
 import { useAuth } from "../lib/auth";
 import * as data from "../lib/data";
-import { TUTORIAL_PERSONAS, validTutorialPersona } from "../features/onboarding/tutorial";
+import { validTutorialPersona } from "../features/onboarding/tutorial";
 import "./routes.css";
-
-const PERSONA_ICONS = { designer: Palette, operations: ListChecks, engineer: Code2 };
 
 // `api` and `auth` are swapped for mocks by the dev-only ?admin-preview route.
 export default function Admin({ api = data, auth: authOverride }) {
@@ -36,7 +34,6 @@ export default function Admin({ api = data, auth: authOverride }) {
   const [showResetPassword, setShowResetPassword] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [tutorialTarget, setTutorialTarget] = useState(null);
-  const [tutorialPersona, setTutorialPersona] = useState("designer");
   const modalRef = useRef(null);
   const modalReturnFocusRef = useRef(null);
   const modalBusyRef = useRef(false);
@@ -178,15 +175,14 @@ export default function Admin({ api = data, auth: authOverride }) {
 
   const openTutorial = (member, trigger) => {
     modalReturnFocusRef.current = trigger;
-    setTutorialPersona(validTutorialPersona(member.tutorial_persona) || "designer");
     setTutorialTarget(member);
   };
 
   const startTutorial = async () => {
     if (!tutorialTarget) return;
     const target = tutorialTarget;
-    const persona = validTutorialPersona(tutorialPersona) || "designer";
-    const label = TUTORIAL_PERSONAS[persona].label;
+    // Every track shows the same walkthrough now; the stored persona just has to be valid.
+    const persona = validTutorialPersona(target.tutorial_persona) || "designer";
     const success = await run(
       `tutorial-${target.id}`,
       async () => {
@@ -194,8 +190,8 @@ export default function Admin({ api = data, auth: authOverride }) {
         if (target.id === user?.id) await refreshProfile();
       },
       target.id === user?.id
-        ? `Your ${label} walkthrough is ready.`
-        : `${target.email} will see the ${label} walkthrough now or at next login.`,
+        ? "Your walkthrough is ready."
+        : `${target.email} sees the walkthrough now if they're online, or the next time they sign in.`,
     );
     if (!success) return;
     setTutorialTarget(null);
@@ -313,7 +309,6 @@ export default function Admin({ api = data, auth: authOverride }) {
                     const tutorialPending = pending[`tutorial-${member.id}`];
                     const rowBusy = passwordPending || deletePending || tutorialPending;
                     const name = member.full_name && member.full_name !== member.email ? member.full_name : null;
-                    const track = validTutorialPersona(member.tutorial_persona) ? `${TUTORIAL_PERSONAS[member.tutorial_persona].shortLabel} track` : null;
                     const isMe = member.id === user?.id;
                     return (
                       <tr key={member.id}>
@@ -325,7 +320,7 @@ export default function Admin({ api = data, auth: authOverride }) {
                                 <strong>{name || member.email}</strong>
                                 {isMe && <span className="admin-you-badge">You</span>}
                               </div>
-                              {(name || track) && <small>{[name && member.email, track].filter(Boolean).join(" · ")}</small>}
+                              {name && <small>{member.email}</small>}
                             </div>
                           </div>
                         </td>
@@ -504,36 +499,22 @@ export default function Admin({ api = data, auth: authOverride }) {
 
       {tutorialTarget && (
         <div className="route-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !pending[`tutorial-${tutorialTarget.id}`]) setTutorialTarget(null); }}>
-          <section ref={modalRef} data-route-modal className="route-modal route-tutorial-modal" role="dialog" aria-modal="true" aria-labelledby="tutorial-member-title" aria-describedby="tutorial-member-description">
+          <section ref={modalRef} data-route-modal className="route-modal route-modal--compact" role="dialog" aria-modal="true" aria-labelledby="tutorial-member-title" aria-describedby="tutorial-member-description">
             <div className="route-modal-header">
               <div>
-                <h2 id="tutorial-member-title">Start a personalized walkthrough</h2>
-                <p id="tutorial-member-description">Choose what {tutorialTarget.id === user?.id ? "you" : tutorialTarget.email} should learn first.</p>
+                <h2 id="tutorial-member-title">Start the walkthrough?</h2>
+                <p id="tutorial-member-description">
+                  It shows {tutorialTarget.id === user?.id ? "you" : tutorialTarget.email} how to check screen sizes and states, open a prototype on a phone with the QR code, and find its animations.
+                  {tutorialTarget.id === user?.id ? "" : " If they're online it starts right away, otherwise the next time they sign in."}
+                </p>
               </div>
               <button className="route-icon-button route-pressable" onClick={() => setTutorialTarget(null)} disabled={Boolean(pending[`tutorial-${tutorialTarget.id}`])} aria-label="Close tutorial dialog"><X size={17} /></button>
             </div>
-            <div className="route-modal-body">
-              <div className="admin-tutorial-personas" role="radiogroup" aria-label="Tutorial track">
-                {Object.entries(TUTORIAL_PERSONAS).map(([key, item]) => {
-                  const Icon = PERSONA_ICONS[key];
-                  const selected = tutorialPersona === key;
-                  return (
-                    <button key={key} data-autofocus={selected || undefined} className={`admin-tutorial-persona route-pressable${selected ? " is-selected" : ""}`}
-                      type="button" role="radio" aria-checked={selected} onClick={() => setTutorialPersona(key)}>
-                      <span><Icon size={17} /></span>
-                      <strong>{item.label}</strong>
-                      <small>{item.description}</small>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="admin-tutorial-help">If they're online, the walkthrough starts immediately. Otherwise it opens on their next login.</p>
-            </div>
             <div className="route-modal-footer">
               <button className="route-button route-button--secondary route-pressable" type="button" onClick={() => setTutorialTarget(null)} disabled={Boolean(pending[`tutorial-${tutorialTarget.id}`])}>Cancel</button>
-              <button className="route-button route-button--primary route-pressable" type="button" onClick={startTutorial} disabled={Boolean(pending[`tutorial-${tutorialTarget.id}`])}>
+              <button data-autofocus className="route-button route-button--primary route-pressable" type="button" onClick={startTutorial} disabled={Boolean(pending[`tutorial-${tutorialTarget.id}`])}>
                 {pending[`tutorial-${tutorialTarget.id}`] && <Loader2 className="route-spinner" size={16} />}
-                {pending[`tutorial-${tutorialTarget.id}`] ? "Starting…" : tutorialTarget.id === user?.id ? "Start my walkthrough" : "Trigger walkthrough"}
+                {pending[`tutorial-${tutorialTarget.id}`] ? "Starting…" : "Start walkthrough"}
               </button>
             </div>
           </section>

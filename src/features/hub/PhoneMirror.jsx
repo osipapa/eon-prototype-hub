@@ -129,7 +129,7 @@ export default function PhoneMirrorButton({ c, view, frameRef, transport = "supa
 
   return (
     <div ref={wrapRef} className="eon-mirror-wrap">
-      <button className="eon-buttonish eon-icon-button eon-mirror-button" onClick={toggle}
+      <button data-tutorial="phone-mirror" className="eon-buttonish eon-icon-button eon-mirror-button" onClick={toggle}
         aria-label={connected ? "Open on your phone, phone connected" : "Open on your phone"}
         aria-expanded={open} aria-haspopup="dialog" title="Open on your phone"
         style={{ color: connected ? c.brand : c.muted, boxShadow: "var(--shadow-surface)" }}>

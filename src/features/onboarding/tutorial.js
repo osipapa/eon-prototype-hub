@@ -1,212 +1,76 @@
 export const TUTORIAL_VERSION = 2;
 export const TUTORIAL_METADATA_KEY = `eon_tutorial_v${TUTORIAL_VERSION}_completed_at`;
 
-export const TUTORIAL_PERSONAS = {
-  designer: {
-    label: "Designer",
-    shortLabel: "Design",
-    description: "Build, compare, and refine prototypes.",
-  },
-  operations: {
-    label: "Operations",
-    shortLabel: "Ops",
-    description: "Coordinate reviews, status, and handoff.",
-  },
-  engineer: {
-    label: "Engineer",
-    shortLabel: "Eng",
-    description: "Review behavior, validate states, and leave actionable feedback.",
-  },
-};
+// The tracks a profile can still carry. They no longer change the walkthrough.
+const TUTORIAL_PERSONAS = new Set(["designer", "operations", "engineer"]);
 
 export function tutorialStorageKey(userId) {
   return `eon:tutorial:v${TUTORIAL_VERSION}:${userId}`;
 }
 
 export function validTutorialPersona(value) {
-  return Object.prototype.hasOwnProperty.call(TUTORIAL_PERSONAS, value) ? value : null;
+  return TUTORIAL_PERSONAS.has(value) ? value : null;
 }
 
-export function firstNameFor(profile, user) {
-  const candidate = user?.email?.split("@")[0]
-    || profile?.email?.split("@")[0]
-    || profile?.full_name
-    || user?.user_metadata?.full_name
-    || user?.user_metadata?.name
-    || "there";
-  const first = candidate.trim().split(/[\s._-]+/)[0] || "there";
-  if (first.toLowerCase() === "there") return "there";
-  return first === first.toLowerCase()
-    ? first.charAt(0).toUpperCase() + first.slice(1)
-    : first;
-}
-
-const DESIGNER_STEPS = [
+// One walkthrough for everyone: how to look at a prototype (screen sizes and
+// states), how to try it on a phone, and where its animations live.
+const STEPS = [
   {
-    key: "setup-prompt",
-    eyebrow: "Start with context",
-    title: "Copy the setup prompt first.",
-    body: "It carries the current variables, media, states, and viewport contract into your AI workspace.",
-    icon: "prompt",
-    targets: ['[data-tutorial="setup-prompt"]'],
-    placement: "right",
-    reveal: "library",
+    key: "breakpoints",
+    eyebrow: "Screen sizes",
+    title: "Check every breakpoint",
+    body: "These switch the frame between desktop, laptop, tablet, and phone. The prototype reflows the way it would on that device, so you see where the layout breaks. Keys 1 to 4 do the same.",
+    icon: "breakpoints",
+    targets: ['[data-tutorial="viewports"]'],
+    placement: "bottom",
     interactive: true,
   },
   {
-    key: "controls",
-    eyebrow: "Design every state",
-    title: "Review the whole experience.",
-    body: "Switch states and themes here instead of duplicating mockups.",
-    icon: "sliders",
+    key: "states",
+    eyebrow: "States",
+    title: "Switch between states",
+    body: "Each option here is a version of the screen the prototype was built with, like empty, loading, or an error. Pick one and the frame redraws in that state.",
+    icon: "states",
     targets: ['[data-tutorial="canvas-controls"]'],
     placement: "top",
     interactive: true,
   },
   {
-    key: "mobile",
-    eyebrow: "Mobile check",
-    title: "Catch narrow-screen issues early.",
-    body: "Tap mobile and test the real prototype at phone width.",
-    icon: "mobile",
-    targets: ['[data-tutorial="viewport-mobile"]'],
+    key: "every-state",
+    eyebrow: "States",
+    title: "Or see them all at once",
+    body: "The grid lays out every combination of states side by side, up to 16 frames. It's the fastest way to spot a state nobody designed. Press G to switch back and forth.",
+    icon: "grid",
+    targets: ['[data-tutorial="layout-grid"]'],
     placement: "bottom",
     interactive: true,
   },
   {
-    key: "comments",
-    eyebrow: "Design feedback",
-    title: "Keep critique beside the work.",
-    body: "Comments stay attached to this prototype and visible to the whole team.",
-    icon: "comments",
-    targets: ['[data-tutorial="comments-thread"]', '[data-tutorial="comments-tab"]'],
-    placement: "left",
-    reveal: "review",
-    tab: "comments",
+    key: "phone",
+    eyebrow: "On your phone",
+    title: "Open it on your phone",
+    body: "Click here for a QR code and scan it with your phone's camera. The prototype opens full screen on the phone, and a tap on either screen happens on both, so you can hold it in your hand while the team follows along.",
+    icon: "qr",
+    targets: ['[data-tutorial="phone-mirror"]'],
+    placement: "bottom",
     interactive: true,
   },
   {
-    key: "linear",
-    eyebrow: "Linear context",
-    title: "Connect the design to delivery.",
-    body: "Link the issue so status, ownership, and implementation context stay close.",
-    icon: "linear",
-    targets: ['[data-tutorial="context-linear"]'],
+    key: "animations",
+    eyebrow: "Animations",
+    title: "Every animation, on its own",
+    body: "Assets lists each animation in the prototype. Play one here, or open it on its own page with its timing and code for a developer to copy. Prototypes built with the current setup prompt fill this in.",
+    icon: "animation",
+    targets: ['[data-tutorial="context-assets"]'],
     placement: "left",
     reveal: "review",
+    row: "assets",
     interactive: true,
   },
 ];
 
-const OPERATIONS_STEPS = [
-  {
-    key: "review-status",
-    eyebrow: "Current status",
-    title: "See what needs attention now.",
-    body: "The workspace status tells the whole team what needs attention.",
-    icon: "status",
-    targets: ['[data-tutorial="review-status"]'],
-    placement: "bottom",
-    interactive: true,
-  },
-  {
-    key: "comments",
-    eyebrow: "Decision trail",
-    title: "Capture feedback where it happens.",
-    body: "Comments give the team one visible place for questions and decisions.",
-    icon: "comments",
-    targets: ['[data-tutorial="comments-thread"]', '[data-tutorial="comments-tab"]'],
-    placement: "left",
-    reveal: "review",
-    tab: "comments",
-    interactive: true,
-  },
-  {
-    key: "linear",
-    eyebrow: "Linear connection",
-    title: "Keep delivery status in reach.",
-    body: "The linked issue connects prototype review with the execution workflow.",
-    icon: "linear",
-    targets: ['[data-tutorial="context-linear"]'],
-    placement: "left",
-    reveal: "review",
-    interactive: true,
-  },
-  {
-    key: "mobile",
-    eyebrow: "Mobile review",
-    title: "Check the smallest workspace too.",
-    body: "Use the mobile viewport before moving work into handoff.",
-    icon: "mobile",
-    targets: ['[data-tutorial="viewport-mobile"]'],
-    placement: "bottom",
-    interactive: true,
-  },
-];
-
-const ENGINEER_STEPS = [
-  {
-    key: "controls",
-    eyebrow: "Review every state",
-    title: "Exercise the full interaction model.",
-    body: "Switch through the available states and themes to catch behavior that a single happy path can hide.",
-    icon: "sliders",
-    targets: ['[data-tutorial="canvas-controls"]'],
-    placement: "top",
-    interactive: true,
-  },
-  {
-    key: "mobile",
-    eyebrow: "Responsive review",
-    title: "Check the narrow breakpoint.",
-    body: "Use the phone viewport to review overflow, touch targets, and layout behavior.",
-    icon: "mobile",
-    targets: ['[data-tutorial="viewport-mobile"]'],
-    placement: "bottom",
-    interactive: true,
-  },
-  {
-    key: "split-view",
-    eyebrow: "Side by side",
-    title: "Compare two prototypes at once.",
-    body: "Drag a prototype from this list onto the canvas to open it beside the one you're reviewing.",
-    icon: "prototype",
-    targets: ['[data-tutorial="prototype-library"]'],
-    placement: "right",
-    reveal: "library",
-    interactive: true,
-  },
-  {
-    key: "linear",
-    eyebrow: "Review context",
-    title: "Read the linked Linear issue.",
-    body: "Confirm scope, status, ownership, and acceptance context before leaving feedback.",
-    icon: "linear",
-    targets: ['[data-tutorial="context-linear"]'],
-    placement: "left",
-    reveal: "review",
-    interactive: true,
-  },
-  {
-    key: "comments",
-    eyebrow: "Actionable feedback",
-    title: "Leave review notes beside the prototype.",
-    body: "Capture bugs, questions, and decisions where the whole team can follow the thread.",
-    icon: "comments",
-    targets: ['[data-tutorial="comments-thread"]', '[data-tutorial="comments-tab"]'],
-    placement: "left",
-    reveal: "review",
-    tab: "comments",
-    interactive: true,
-  },
-];
-
-// Product copy and target maps live here so each track can change without
-// touching spotlight geometry, accessibility, or persistence.
-export function createTutorialSteps(_firstName, persona) {
-  return {
-    designer: DESIGNER_STEPS,
-    operations: OPERATIONS_STEPS,
-    engineer: ENGINEER_STEPS,
-  }[validTutorialPersona(persona)] || [];
+// The persona a teammate picked or was given still gets stored, but every
+// track now walks through the same steps.
+export function createTutorialSteps() {
+  return STEPS;
 }

@@ -28,6 +28,7 @@ export default function LiquidSegmentedControl({
   ariaLabel,
   disabled = false,
   variant = "text",
+  tutorial,
 }) {
   const rootRef = useRef(null);
   const buttonRefs = useRef(new Map());
@@ -83,6 +84,7 @@ export default function LiquidSegmentedControl({
 
   return (
     <div
+      data-tutorial={tutorial}
       className={`eon-liquid-segment-shell is-${variant}`}
       style={{ background: c.raised, boxShadow: c.well, opacity: disabled ? 0.45 : 1 }}
     >
