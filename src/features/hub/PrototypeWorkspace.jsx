@@ -1614,7 +1614,7 @@ export default function PrototypeWorkspace({
       {showNewDialog && (
         <NewPrototypeDialog c={c} groups={allGroups} restoreFocus={newDialogReturnFocusRef.current} onClose={() => setShowNewDialog(false)} onCreate={onNewProject} />
       )}
-      <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
+      <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} newSince={changelog.newSince} />
       {touchFull && effStory && (
         <div className="eon-touch-full" style={{ background: canvasBg }}>
           <iframe ref={touchFullRef} className="eon-touch-full-frame" title={`${effStory.title}, full screen`}

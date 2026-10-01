@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Megaphone, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   CHANGELOG, CHANGELOG_SEEN_KEY, changelogGroups,
   latestChangelogDate, markChangelogSeen, readSeenChangelogDate,
@@ -9,6 +8,8 @@ import {
 export function useHubChangelog() {
   const [isOpen, setIsOpen] = useState(false);
   const [seenDate, setSeenDate] = useState(() => readSeenChangelogDate());
+  // What had been seen before this opening, so the dialog can mark what's new.
+  const [newSince, setNewSince] = useState("");
   const hasNew = seenDate < latestChangelogDate();
 
   useEffect(() => {
@@ -26,13 +27,14 @@ export function useHubChangelog() {
   }, []);
 
   const open = useCallback(() => {
+    setNewSince(readSeenChangelogDate());
     setIsOpen(true);
     markChangelogSeen();
     setSeenDate(latestChangelogDate());
   }, []);
   const close = useCallback(() => setIsOpen(false), []);
 
-  return { isOpen, hasNew, open, close };
+  return { isOpen, hasNew, newSince, open, close };
 }
 
 export function HubChangelogButton({ c, hasNew, onOpen }) {
@@ -51,13 +53,22 @@ export function HubChangelogButton({ c, hasNew, onOpen }) {
   );
 }
 
-export function HubChangelogDialog({ c, open, onClose }) {
+// Releases shown before "Show earlier updates".
+const FIRST_RELEASES = 4;
+
+const formatDate = (value) => new Date(`${value}T00:00:00`)
+  .toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+
+export function HubChangelogDialog({ c, open, onClose, newSince = "" }) {
   const dialogRef = useRef(null);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     if (!open) return undefined;
+    setShowAll(false);
     const returnFocusTo = document.activeElement;
-    dialogRef.current?.querySelector("button")?.focus();
+    // Focus the dialog itself, not its close button, so no ring shows on open.
+    dialogRef.current?.focus();
     const onKey = (event) => {
       if (event.key === "Escape") onClose();
     };
@@ -70,95 +81,60 @@ export function HubChangelogDialog({ c, open, onClose }) {
 
   if (!open) return null;
 
-  const formatDate = (value) => {
-    const date = new Date(`${value}T00:00:00`);
-    return {
-      month: date.toLocaleDateString(undefined, { month: "short" }),
-      day: date.toLocaleDateString(undefined, { day: "2-digit" }),
-      year: date.toLocaleDateString(undefined, { year: "numeric" }),
-      full: date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" }),
-    };
-  };
-
+  const releases = showAll ? CHANGELOG : CHANGELOG.slice(0, FIRST_RELEASES);
   return (
     <div className="eon-modal-overlay" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <div
         ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="eon-changelog-title"
         className="eon-modal eon-changelog-dialog"
-        style={{ background: c.nav, borderColor: c.border, "--changelog-accent": c.brand }}
+        style={{ background: c.nav, borderColor: c.border }}
       >
         <div className="eon-modal-head" style={{ borderColor: c.border }}>
-          <span className="eon-changelog-mark eon-accent-icon" style={{ background: c.active, color: c.brand }}>
-            <Megaphone size={15} />
-          </span>
-          <div className="eon-changelog-heading">
-            <strong id="eon-changelog-title" style={{ color: c.text }}>What's new</strong>
-          </div>
-          <button
-            className="eon-buttonish eon-icon-button eon-changelog-close"
-            type="button"
-            onClick={onClose}
-            aria-label="Close changelog"
-            style={{ background: c.raised, color: c.muted, boxShadow: "var(--shadow-surface)" }}
-          >
-            <X size={16} />
+          <strong id="eon-changelog-title" style={{ color: c.text }}>What's new</strong>
+          <button className="eon-buttonish eon-icon-button" type="button" onClick={onClose} aria-label="Close" style={{ color: c.muted }}>
+            <X size={17} />
           </button>
         </div>
         <div className="eon-modal-body eon-changelog-body">
-          {CHANGELOG.map((entry, index) => {
-            const date = formatDate(entry.date);
-            const isLatest = index === 0;
+          {releases.map((entry) => {
+            const isNew = Boolean(newSince) && entry.date > newSince;
             return (
-              <section
-                key={entry.date}
-                className={`eon-changelog-entry${isLatest ? " is-latest" : ""}`}
-                style={{ "--entry-index": index }}
-              >
-                <time className="eon-changelog-date" dateTime={entry.date} aria-label={date.full} style={{ color: c.muted }}>
-                  <span>{date.month}</span>
-                  <strong style={{ color: isLatest ? c.text : c.secondary }}>{date.day}</strong>
-                  <em>{date.year}</em>
-                </time>
-                <div className="eon-changelog-rail" aria-hidden="true">
-                  <span style={{ background: isLatest ? c.brand : c.muted }} />
-                  <i style={{ background: c.border }} />
-                </div>
-                <article className="eon-changelog-card" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
-                  <header>
-                    <div>
-                      {isLatest && (
-                        <Badge className="eon-changelog-latest" style={{ background: c.active, color: c.brand }}>
-                          Latest
-                        </Badge>
-                      )}
-                    </div>
-                    <h2 style={{ color: c.text }}>{entry.title}</h2>
-                  </header>
-                  {entry.image && (
-                    <figure className="eon-changelog-shot" style={{ background: c.raised, borderColor: c.border }}>
-                      <img src={`${import.meta.env.BASE_URL}${entry.image}`} alt={entry.imageAlt || ""} decoding="async" />
-                      {entry.imageAlt && <figcaption style={{ color: c.muted }}>{entry.imageAlt}</figcaption>}
-                    </figure>
-                  )}
-                  {changelogGroups(entry).map((group) => (
-                    <div key={group.label || "all"} className="eon-changelog-group">
-                      {group.label && <h3 style={{ color: c.muted }}>{group.label}</h3>}
-                      <ul style={{ color: c.secondary }}>
-                        {group.items.map((item) => (
-                          <li key={item} style={{ "--bullet": c.muted }}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </article>
-              </section>
+              <article key={entry.date} className="eon-changelog-entry" style={{ borderColor: c.border }}>
+                <p className="eon-changelog-meta" style={{ color: c.muted }}>
+                  <time dateTime={entry.date}>{formatDate(entry.date)}</time>
+                  {isNew && <span style={{ color: c.brand }}>New</span>}
+                </p>
+                <h2 style={{ color: c.text }}>{entry.title}</h2>
+                {entry.image && (
+                  <figure className="eon-changelog-shot">
+                    <img src={`${import.meta.env.BASE_URL}${entry.image}`} alt={entry.imageAlt || ""} decoding="async" loading="lazy"
+                      style={{ borderColor: c.border }} />
+                    {entry.imageAlt && <figcaption style={{ color: c.muted }}>{entry.imageAlt}</figcaption>}
+                  </figure>
+                )}
+                {changelogGroups(entry).map((group) => (
+                  <section key={group.label || "all"} className="eon-changelog-group">
+                    {group.label && <h3 style={{ color: c.text }}>{group.label}</h3>}
+                    <ul style={{ color: c.secondary }}>
+                      {group.items.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </section>
+                ))}
+              </article>
             );
           })}
+          {!showAll && CHANGELOG.length > FIRST_RELEASES && (
+            <button className="eon-buttonish eon-context-action eon-changelog-more" type="button" onClick={() => setShowAll(true)}
+              style={{ borderColor: c.border, color: c.secondary }}>
+              Show earlier updates
+            </button>
+          )}
         </div>
       </div>
     </div>

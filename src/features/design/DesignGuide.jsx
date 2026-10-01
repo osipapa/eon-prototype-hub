@@ -493,7 +493,7 @@ export default function DesignGuide({
           </div>
         </div>
       </main>
-      <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
+      <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} newSince={changelog.newSince} />
     </div>
   );
 }

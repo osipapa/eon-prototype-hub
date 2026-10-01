@@ -286,7 +286,7 @@ export default function PromptLibrary({
           onDelete={() => onDeleteCategory(categoryDeleteCandidate.category, categoryDeleteFallback)}
         />
       )}
-      <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} />
+      <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} newSince={changelog.newSince} />
     </div>
   );
 }
