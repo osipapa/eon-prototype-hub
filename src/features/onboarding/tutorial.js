@@ -1,6 +1,10 @@
 export const TUTORIAL_VERSION = 2;
 export const TUTORIAL_METADATA_KEY = `eon_tutorial_v${TUTORIAL_VERSION}_completed_at`;
 
+// The walkthrough opens this prototype first: it has states and animations
+// to point at.
+export const TUTORIAL_PROTOTYPE = "sdk-mate";
+
 // The tracks a profile can still carry. They no longer change the walkthrough.
 const TUTORIAL_PERSONAS = new Set(["designer", "operations", "engineer"]);
 
@@ -13,13 +17,13 @@ export function validTutorialPersona(value) {
 }
 
 // One walkthrough for everyone: how to look at a prototype (screen sizes and
-// states), how to try it on a phone, and where its animations live.
+// states), how to try it on a phone, and where its animations live. Titles
+// carry the whole message; nobody reads a paragraph under them.
 const STEPS = [
   {
     key: "breakpoints",
     eyebrow: "Screen sizes",
-    title: "Check every breakpoint",
-    body: "These switch the frame between desktop, laptop, tablet, and phone. The prototype reflows the way it would on that device, so you see where the layout breaks. Keys 1 to 4 do the same.",
+    title: "Switch screen sizes here to check each breakpoint",
     icon: "breakpoints",
     targets: ['[data-tutorial="viewports"]'],
     placement: "bottom",
@@ -28,8 +32,7 @@ const STEPS = [
   {
     key: "states",
     eyebrow: "States",
-    title: "Switch between states",
-    body: "Each option here is a version of the screen the prototype was built with, like empty, loading, or an error. Pick one and the frame redraws in that state.",
+    title: "Pick a state to see that version of the screen",
     icon: "states",
     targets: ['[data-tutorial="canvas-controls"]'],
     placement: "top",
@@ -38,8 +41,7 @@ const STEPS = [
   {
     key: "every-state",
     eyebrow: "States",
-    title: "Or see them all at once",
-    body: "The grid lays out every combination of states side by side, up to 16 frames. It's the fastest way to spot a state nobody designed. Press G to switch back and forth.",
+    title: "Open the grid to see every state at once",
     icon: "grid",
     targets: ['[data-tutorial="layout-grid"]'],
     placement: "bottom",
@@ -48,8 +50,7 @@ const STEPS = [
   {
     key: "phone",
     eyebrow: "On your phone",
-    title: "Open it on your phone",
-    body: "Click here for a QR code and scan it with your phone's camera. The prototype opens full screen on the phone, and a tap on either screen happens on both, so you can hold it in your hand while the team follows along.",
+    title: "Scan the QR code to try it on your phone",
     icon: "qr",
     targets: ['[data-tutorial="phone-mirror"]'],
     placement: "bottom",
@@ -58,8 +59,7 @@ const STEPS = [
   {
     key: "animations",
     eyebrow: "Animations",
-    title: "Every animation, on its own",
-    body: "Assets lists each animation in the prototype. Play one here, or open it on its own page with its timing and code for a developer to copy. Prototypes built with the current setup prompt fill this in.",
+    title: "Play each animation on its own in Assets",
     icon: "animation",
     targets: ['[data-tutorial="context-assets"]'],
     placement: "left",

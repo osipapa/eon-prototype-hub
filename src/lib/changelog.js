@@ -54,7 +54,7 @@ export const CHANGELOG = [
           "A prototype with no Linear issue says so quietly instead of in red.",
           "Notifications show at the top of the screen, clear of the comment box.",
           "Issue keys on prototype rows have a faint outline in their Linear status colour.",
-          "The walkthrough is one short tour for everyone: screen sizes, states, opening a prototype on your phone with the QR code, and animations. Admins start it for a teammate without picking a track.",
+          "The walkthrough is one short tour for everyone, opened on the SDK prototype: screen sizes, states, opening a prototype on your phone with the QR code, and animations. Each step is a single line, in your light or dark theme. Admins start it for a teammate without picking a track.",
           "Status / Groups sits full width above the prototype list instead of beside Copy setup prompt.",
           "Copy embed link is gone. Embeds didn't play in Notion, Confluence, or Miro, so share the prototype's hub link instead.",
           "Prototype links need sign-in again everywhere, including inside other pages.",

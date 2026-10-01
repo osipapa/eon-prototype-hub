@@ -5,7 +5,7 @@ import { cacheEonLogo } from "../lib/branding";
 import LoadingScreen from "../components/LoadingScreen";
 import PrototypeHub, { linearIdentifier } from "../features/hub/PrototypeWorkspace";
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
-import { TUTORIAL_METADATA_KEY, tutorialStorageKey } from "../features/onboarding/tutorial";
+import { TUTORIAL_METADATA_KEY, TUTORIAL_PROTOTYPE, tutorialStorageKey } from "../features/onboarding/tutorial";
 import {
   listProjects, patchProject as dbPatch, publishHtmlIfUnchanged, fetchProjectHtml, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
@@ -114,6 +114,17 @@ export default function Hub() {
       setTutorialMode({ kind: "first-run" });
     }
   }, [profile, projects, tutorialMode, tutorialQaRequested, user]);
+
+  // The walkthrough points at states and animations, so it opens on the
+  // prototype with the most of both. Once per tour: browsing away stays put.
+  const tutorialMovedTo = useRef(null);
+  useEffect(() => {
+    if (!tutorialMode) { tutorialMovedTo.current = null; return; }
+    if (tutorialMovedTo.current || !projects) return;
+    tutorialMovedTo.current = TUTORIAL_PROTOTYPE;
+    const target = projects.find((project) => project.slug === TUTORIAL_PROTOTYPE && !project.archived_at);
+    if (target && slug !== target.slug) navigate(`/p/${target.slug}${location.search}`, { replace: true });
+  }, [tutorialMode, projects]);
 
   const exitTutorial = () => {
     if (["first-run", "assigned"].includes(tutorialMode?.kind) && user?.id) {

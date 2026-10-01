@@ -4,6 +4,7 @@ import {
   QrCode, SlidersHorizontal, X,
 } from "lucide-react";
 import { createTutorialSteps } from "./tutorial";
+import { useSystemTheme } from "../../lib/systemTheme";
 import "./tutorial.css";
 
 const ICONS = {
@@ -20,6 +21,7 @@ const GAP = 14;
 
 export default function FirstRunTutorial({ isQa = false, onExit }) {
   const steps = useMemo(() => createTutorialSteps(), []);
+  const theme = useSystemTheme();
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   // A step whose target never shows up (a layout without it, or a UI change)
@@ -239,7 +241,7 @@ export default function FirstRunTutorial({ isQa = false, onExit }) {
   const hole = targetRect && scrimGeometry(targetRect);
 
   return (
-    <div className={`eon-coach-root${targetRect || targetMissing ? " is-ready" : ""}${closing ? " is-closing" : ""}`}>
+    <div className={`eon-coach-root${theme === "light" ? " is-light" : ""}${targetRect || targetMissing ? " is-ready" : ""}${closing ? " is-closing" : ""}`}>
       {hole && (
         <>
           <div className="eon-coach-scrim is-top" style={hole.top} />
@@ -257,7 +259,6 @@ export default function FirstRunTutorial({ isQa = false, onExit }) {
         style={{ left: position.left, top: position.top }}
         role="dialog"
         aria-labelledby="eon-coach-title"
-        aria-describedby="eon-coach-description"
       >
         <header className="eon-coach-header">
           <span className="eon-coach-icon eon-accent-icon" aria-hidden="true"><Icon size={15} /></span>
@@ -270,10 +271,6 @@ export default function FirstRunTutorial({ isQa = false, onExit }) {
 
         <div className="eon-coach-copy" key={step.key} aria-live="polite">
           <h1 id="eon-coach-title">{step.title}</h1>
-          <p id="eon-coach-description">{step.body}</p>
-          {step.interactive && (
-            <span className="eon-coach-try">You can try it while this is open.</span>
-          )}
         </div>
 
         <footer className="eon-coach-footer">

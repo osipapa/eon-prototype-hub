@@ -1,12 +1,23 @@
 .eon-coach-root,
 .eon-coach-root * { box-sizing: border-box; }
 
+/* Follows the hub's light or dark theme, with the hub's neutral buttons.
+   Outlines are the accent at 20% so the highlight frames without glaring. */
 .eon-coach-root {
+  --coach-card: rgba(26, 26, 26, .97);
+  --coach-text: #FAFAFA;
+  --coach-muted: #A1A1AA;
+  --coach-line: rgba(255, 255, 255, .1);
+  --coach-raised: #262626;
+  --coach-hover: #2E2E2E;
+  --coach-primary: #E8E8E8;
+  --coach-primary-text: #141414;
+  --coach-outline: rgba(241, 157, 255, .2);
   position: fixed;
   inset: 0;
   z-index: 1000;
   pointer-events: none;
-  color: #fff;
+  color: var(--coach-text);
   font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -22,6 +33,18 @@
   transition-timing-function: cubic-bezier(.23, 1, .32, 1);
 }
 
+.eon-coach-root.is-light {
+  --coach-card: rgba(255, 255, 255, .98);
+  --coach-text: #171717;
+  --coach-muted: #636369;
+  --coach-line: rgba(0, 0, 0, .1);
+  --coach-raised: #E4E4E7;
+  --coach-hover: #ECECEE;
+  --coach-primary: #171717;
+  --coach-primary-text: #FAFAFA;
+  --coach-outline: rgba(154, 0, 176, .2);
+}
+
 .eon-coach-root.is-ready .eon-coach-scrim { opacity: 1; }
 
 .eon-coach-spotlight {
@@ -30,10 +53,7 @@
   border-radius: 15px;
   pointer-events: none;
   opacity: 0;
-  box-shadow:
-    0 0 0 2px var(--eon-accent-end),
-    0 0 0 7px rgba(221, 14, 255, .12),
-    0 18px 50px rgba(0, 0, 0, .36);
+  box-shadow: 0 0 0 2px var(--coach-outline);
   transition-property: left, top, width, height, opacity, border-radius, box-shadow;
   transition-duration: 260ms;
   transition-timing-function: cubic-bezier(.23, 1, .32, 1);
@@ -48,13 +68,13 @@
   overflow: visible;
   border-radius: 18px;
   pointer-events: auto;
-  background: rgba(18, 18, 22, .96);
+  background: var(--coach-card);
   -webkit-backdrop-filter: blur(20px) saturate(1.12);
   backdrop-filter: blur(20px) saturate(1.12);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, .13),
-    0 2px 4px rgba(0, 0, 0, .28),
-    0 24px 70px rgba(0, 0, 0, .55);
+    0 0 0 1px var(--coach-line),
+    0 2px 4px rgba(0, 0, 0, .2),
+    0 24px 70px rgba(0, 0, 0, .4);
   opacity: 0;
   transform: translateY(7px) scale(.985);
   filter: blur(3px);
@@ -74,8 +94,8 @@
   position: absolute;
   width: 12px;
   height: 12px;
-  background: rgba(18, 18, 22, .98);
-  box-shadow: -1px -1px 0 rgba(255, 255, 255, .08);
+  background: var(--coach-card);
+  box-shadow: -1px -1px 0 var(--coach-line);
   transform: rotate(45deg);
 }
 .eon-coach-card[data-side="bottom"]::before { top: -6px; left: calc(50% - 6px); }
@@ -91,36 +111,34 @@
   align-items: center;
   gap: 9px;
   padding: 7px 7px 7px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, .075);
+  border-bottom: 1px solid var(--coach-line);
 }
-.eon-coach-icon { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 9px; background: #232329; color: var(--eon-accent-solid); box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); }
-.eon-coach-eyebrow { min-width: 0; overflow: hidden; flex: 1; color: #d7d7df; font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.eon-coach-qa { display: inline-flex; min-height: 22px; align-items: center; padding: 0 7px; border-radius: 7px; background: rgba(255, 255, 255, .055); color: #b8b5bd; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .075); font-size: 11px; font-weight: 750; }
-.eon-coach-close { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; padding: 0; border: 0; border-radius: 11px; background: transparent; color: #9094a5; cursor: pointer; transition-property: transform, background-color, color; transition-duration: 150ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
-.eon-coach-close:hover { background: #27272d; color: #fff; }
+.eon-coach-icon { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 9px; background: var(--coach-raised); color: var(--eon-accent-solid); }
+.eon-coach-eyebrow { min-width: 0; overflow: hidden; flex: 1; color: var(--coach-muted); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.eon-coach-qa { display: inline-flex; min-height: 22px; align-items: center; padding: 0 7px; border-radius: 7px; background: var(--coach-raised); color: var(--coach-muted); font-size: 11px; font-weight: 700; }
+.eon-coach-close { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; padding: 0; border: 0; border-radius: 11px; background: transparent; color: var(--coach-muted); cursor: pointer; transition-property: transform, background-color, color; transition-duration: 150ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
+.eon-coach-close:hover { background: var(--coach-hover); color: var(--coach-text); }
 .eon-coach-close:active { transform: scale(.96); }
 
 .eon-coach-copy { padding: 18px 18px 17px; animation: eon-coach-copy-in 240ms cubic-bezier(.23, 1, .32, 1) both; }
-.eon-coach-copy h1 { margin: 0; color: #fff; font-size: 19px; font-weight: 620; letter-spacing: -.027em; line-height: 1.16; text-wrap: balance; }
-.eon-coach-copy p { margin: 8px 0 0; color: #aaacb8; font-size: 12px; line-height: 1.5; text-wrap: pretty; }
-.eon-coach-try { display: inline-flex; min-height: 26px; align-items: center; gap: 6px; margin-top: 12px; padding: 0 8px; border-radius: 8px; background: rgba(255, 255, 255, .05); color: #b8b5bd; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07); font-size: 11px; font-weight: 650; letter-spacing: .015em; }
+.eon-coach-copy h1 { margin: 0; color: var(--coach-text); font-size: 18px; font-weight: 620; letter-spacing: -.027em; line-height: 1.16; text-wrap: balance; }
 
-.eon-coach-footer { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 9px 8px 14px; border-top: 1px solid rgba(255, 255, 255, .075); }
-.eon-coach-progress { display: flex; align-items: center; gap: 8px; color: #777a87; font-size: 11px; font-variant-numeric: tabular-nums; }
+.eon-coach-footer { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 9px 8px 14px; border-top: 1px solid var(--coach-line); }
+.eon-coach-progress { display: flex; align-items: center; gap: 8px; color: var(--coach-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .eon-coach-progress > div { display: flex; align-items: center; gap: 4px; }
-.eon-coach-progress i { display: block; width: 4px; height: 4px; border-radius: 3px; background: #3d3d46; transition-property: width, background-color; transition-duration: 180ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
-.eon-coach-progress i.is-complete { background: #9b22ad; }
-.eon-coach-progress i.is-active { width: 14px; background: var(--eon-accent-gradient); }
+.eon-coach-progress i { display: block; width: 4px; height: 4px; border-radius: 3px; background: var(--coach-raised); transition-property: width, background-color; transition-duration: 180ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
+.eon-coach-progress i.is-complete { background: var(--coach-muted); }
+.eon-coach-progress i.is-active { width: 14px; background: var(--coach-text); }
 .eon-coach-actions { display: flex; align-items: center; gap: 6px; }
 .eon-coach-button { display: inline-flex; min-width: 44px; min-height: 42px; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; border: 0; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 650; transition-property: transform, background-color, box-shadow, color; transition-duration: 150ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
 .eon-coach-button:active { transform: scale(.96); }
-.eon-coach-button.is-primary { padding-left: 14px; padding-right: 12px; background: var(--eon-accent-gradient); color: #160018; box-shadow: inset 0 1px rgba(255, 255, 255, .34), 0 8px 22px rgba(221, 14, 255, .16); }
-.eon-coach-button.is-primary:hover { filter: brightness(1.08); box-shadow: inset 0 1px rgba(255, 255, 255, .42), 0 10px 26px rgba(221, 14, 255, .22); }
-.eon-coach-button.is-secondary { padding: 0; background: #27272d; color: #c2c3cc; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
-.eon-coach-button.is-secondary:hover { background: #303037; color: #fff; }
-.eon-coach-button.is-quiet { background: transparent; color: #8f919e; }
-.eon-coach-button.is-quiet:hover { background: #26262c; color: #fff; }
-.eon-coach-root :focus-visible { outline: 2px solid var(--eon-accent-end); outline-offset: 2px; }
+.eon-coach-button.is-primary { padding-left: 14px; padding-right: 12px; background: var(--coach-primary); color: var(--coach-primary-text); }
+.eon-coach-button.is-primary:hover { filter: brightness(1.06); }
+.eon-coach-button.is-secondary { padding: 0; background: var(--coach-raised); color: var(--coach-text); }
+.eon-coach-button.is-secondary:hover { background: var(--coach-hover); }
+.eon-coach-button.is-quiet { background: transparent; color: var(--coach-muted); }
+.eon-coach-button.is-quiet:hover { background: var(--coach-hover); color: var(--coach-text); }
+.eon-coach-root :focus-visible { outline: 2px solid var(--coach-outline); outline-offset: 2px; }
 
 .eon-coach-root.is-closing .eon-coach-scrim,
 .eon-coach-root.is-closing .eon-coach-spotlight { opacity: 0; }
@@ -149,10 +167,10 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .eon-coach-card { background: #121216; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .eon-coach-card { background: var(--coach-card); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 
 @media (prefers-contrast: more) {
-  .eon-coach-card { background: #08080a; box-shadow: 0 0 0 2px #fff, 0 24px 70px #000; }
+  .eon-coach-card { box-shadow: 0 0 0 2px var(--coach-text), 0 24px 70px rgba(0, 0, 0, .6); }
   .eon-coach-scrim { background: rgba(0, 0, 0, .82); }
 }
