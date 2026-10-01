@@ -193,6 +193,11 @@ function declaredAnimations(html) {
 
 // The page an animation plays in: its demo alone, centred, in the given theme.
 // Used as an iframe srcdoc in the Assets panel and on the Animations page.
+//
+// A srcdoc frame can parse before its parent has laid it out, so a demo that
+// measures itself as it starts (a canvas sized from the viewport, say) would
+// see 0x0 and draw nothing. The demo waits in an inert template until the
+// frame has a size, then goes in; its scripts are recreated so they run.
 export function animationStageDocument(animation, { theme = "dark" } = {}) {
   const mode = theme === "light" ? "light" : "dark";
   const background = mode === "light" ? "#F4F4F5" : "#0D0D0D";
@@ -207,7 +212,24 @@ body { margin: 0; min-height: 100vh; display: grid; place-items: center; backgro
 </style>
 </head>
 <body>
-${animation?.content || ""}
+<template id="eon-demo">${animation?.content || ""}</template>
+<script>
+(function () {
+  function start() {
+    if (!window.innerWidth || !window.innerHeight) { setTimeout(start, 30); return; }
+    var source = document.getElementById("eon-demo");
+    var demo = source.content.cloneNode(true);
+    demo.querySelectorAll("script").forEach(function (inert) {
+      var live = document.createElement("script");
+      for (var i = 0; i < inert.attributes.length; i++) live.setAttribute(inert.attributes[i].name, inert.attributes[i].value);
+      live.textContent = inert.textContent;
+      inert.replaceWith(live);
+    });
+    source.replaceWith(demo);
+  }
+  start();
+})();
+</script>
 </body>
 </html>`;
 }

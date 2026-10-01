@@ -19,6 +19,18 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-10-01",
+    title: "Animations play again",
+    groups: [
+      {
+        label: "Fixes",
+        items: [
+          "Animations that size themselves as they start, like Key forms from dots, now play on the Animations page and in Assets instead of showing an empty box.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-09-30",
     title: "Animation assets, cleaner admin, less noise",
     image: "changelog/2026-09-30-estimation.png",
