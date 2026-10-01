@@ -13,6 +13,7 @@ import HubSidebarFooter from "@/components/HubSidebarFooter";
 import LiquidSegmentedControl from "@/components/LiquidSegmentedControl";
 import AssetsList, { assetsSummary } from "./AssetsPanel";
 import { extractAnimations } from "./animations";
+import { stageDevice } from "./DeviceStage";
 import ProfileIcon from "@/components/ProfileIcon";
 import PeekSegmented from "@/components/PeekSegmented";
 import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarResizeHandle";
@@ -2417,7 +2418,7 @@ function ReviewInspector({
           valueTone={animations.length ? undefined : c.muted}
           open={openRow === "assets"} onToggle={() => toggleRow("assets")}
         >
-          <AssetsList c={c} animations={animations} story={story} theme={protoTheme} />
+          <AssetsList c={c} animations={animations} story={story} theme={protoTheme} device={stageDevice(html)} />
         </ContextRow>
 
         <ContextRow

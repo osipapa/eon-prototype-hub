@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ExternalLink, Play, RotateCcw } from "lucide-react";
 import { animationStageDocument, animationsHref } from "./animations";
+import DeviceStage from "./DeviceStage";
 
 // What the Assets row reads when collapsed: the animation names, or that there are none.
 export function assetsSummary(animations) {
@@ -9,7 +10,7 @@ export function assetsSummary(animations) {
 
 /* The prototype's animations, each isolated so a developer can watch it on its
    own here or open it on the hosted Animations page, with its code. */
-export default function AssetsList({ c, animations, story, theme }) {
+export default function AssetsList({ c, animations, story, theme, device }) {
   const [openId, setOpenId] = useState(null);
   const [replay, setReplay] = useState(0);
 
@@ -48,7 +49,7 @@ export default function AssetsList({ c, animations, story, theme }) {
               </div>
               {open && (
                 <div className="eon-asset-stage">
-                  <iframe key={replay} title={`${animation.name} preview`} sandbox="allow-scripts"
+                  <DeviceStage key={replay} device={device} title={`${animation.name} preview`} height={device === "mobile" ? 320 : 220}
                     srcDoc={animationStageDocument(animation, { theme })} />
                   <button className="eon-buttonish eon-asset-replay" onClick={() => setReplay((count) => count + 1)}
                     style={{ background: c.nav, color: c.secondary, borderColor: c.border }}>

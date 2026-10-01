@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, Copy, Link2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, Link2, RotateCcw } from "lucide-react";
 import LiquidSegmentedControl from "@/components/LiquidSegmentedControl";
 import { HUB } from "./prototypes";
 import { animationStageDocument, animationsHref, extractAnimations } from "./animations";
+import CodeView from "./CodeView";
+import DeviceStage, { stageDevice } from "./DeviceStage";
 import { useSystemTheme } from "@/lib/systemTheme";
 import { copyText } from "@/lib/uiState";
 
@@ -12,6 +14,7 @@ export default function AnimationsView({ project, focusId }) {
   const hubTheme = useSystemTheme();
   const c = HUB[hubTheme];
   const [stageTheme, setStageTheme] = useState(hubTheme);
+  const [device, setDevice] = useState(() => stageDevice(project?.prototype_html));
   const animations = useMemo(() => extractAnimations(project?.prototype_html), [project?.prototype_html]);
 
   useEffect(() => { document.title = `Animations · ${project?.title || "Eon"}`; }, [project?.title]);
@@ -26,22 +29,32 @@ export default function AnimationsView({ project, focusId }) {
         <a className="eon-buttonish eon-anim-back" href={`#/p/${encodeURIComponent(project.slug)}`} style={{ color: c.secondary }}>
           <ArrowLeft size={15} aria-hidden="true" /> {project.title}
         </a>
-        <LiquidSegmentedControl
-          options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }]}
-          value={stageTheme}
-          onValueChange={setStageTheme}
-          c={c}
-          className="eon-anim-theme"
-          ariaLabel="Theme the animations play in"
-        />
+        <div className="eon-anim-switches">
+          <LiquidSegmentedControl
+            options={[{ value: "mobile", label: "Mobile" }, { value: "desktop", label: "Desktop" }]}
+            value={device}
+            onValueChange={setDevice}
+            c={c}
+            className="eon-anim-theme"
+            ariaLabel="Screen the animations play on"
+          />
+          <LiquidSegmentedControl
+            options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }]}
+            value={stageTheme}
+            onValueChange={setStageTheme}
+            c={c}
+            className="eon-anim-theme"
+            ariaLabel="Theme the animations play in"
+          />
+        </div>
       </header>
       <main className="eon-anim-main">
         <h1>Animations</h1>
         <p className="eon-anim-lede" style={{ color: c.secondary }}>
-          Every animation in {project.title}, each on its own. Replay it, check it in both themes, and copy its code.
+          Every animation in {project.title}, each on its own, with its code. Replay it, and check it on a phone or desktop in either theme.
         </p>
         {animations.length ? animations.map((animation) => (
-          <AnimationCard key={animation.id} c={c} animation={animation} theme={stageTheme}
+          <AnimationCard key={animation.id} c={c} animation={animation} theme={stageTheme} device={device}
             slug={project.slug} focused={animation.id === focusId} />
         )) : (
           <p className="eon-anim-empty" style={{ background: c.panel, color: c.secondary, boxShadow: "var(--shadow-surface)" }}>
@@ -65,7 +78,7 @@ function CopyAction({ c, text, icon: Icon, label, doneLabel = "Copied" }) {
   );
 }
 
-function AnimationCard({ c, animation, theme, slug, focused }) {
+function AnimationCard({ c, animation, theme, device, slug, focused }) {
   const [run, setRun] = useState(0);
   const details = [
     ["Trigger", animation.trigger],
@@ -84,12 +97,16 @@ function AnimationCard({ c, animation, theme, slug, focused }) {
             style={{ borderColor: c.border, color: c.secondary }}>
             <RotateCcw size={13} aria-hidden="true" /> Replay
           </button>
-          <CopyAction c={c} text={animation.code} icon={Copy} label="Copy code" />
           <CopyAction c={c} text={link} icon={Link2} label="Copy link" />
         </div>
       </header>
-      <iframe key={`${theme}-${run}`} className="eon-anim-stage" title={`${animation.name}`} sandbox="allow-scripts"
-        srcDoc={animationStageDocument(animation, { theme })} />
+      <div className={`eon-anim-body is-${device}`}>
+        <DeviceStage key={`${device}-${theme}-${run}`} device={device} title={animation.name} height={device === "mobile" ? 600 : 520}
+          srcDoc={animationStageDocument(animation, { theme })} />
+        <div className="eon-anim-code-panel">
+          <CodeView c={c} code={animation.code} />
+        </div>
+      </div>
       {details.length > 0 && (
         <dl className="eon-anim-details">
           {details.map(([label, value]) => (
@@ -97,10 +114,6 @@ function AnimationCard({ c, animation, theme, slug, focused }) {
           ))}
         </dl>
       )}
-      <details className="eon-anim-code" style={{ borderColor: c.border }}>
-        <summary style={{ color: c.secondary }}>Code</summary>
-        <pre style={{ background: c.raised }}><code>{animation.code}</code></pre>
-      </details>
     </section>
   );
 }

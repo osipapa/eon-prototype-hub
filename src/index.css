@@ -584,18 +584,49 @@ button.eon-save-state { cursor: pointer; }
 .eon-asset-toggle small { font-size: 11px; }
 .eon-asset-open { width: 34px; height: 34px; flex: 0 0 34px; }
 .eon-asset-stage { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 0 6px 8px; }
-.eon-asset-stage iframe { display: block; width: 100%; height: 180px; border: 0; border-radius: 9px; }
+.eon-asset-stage .eon-device-stage { padding-top: 2px; }
 .eon-asset-replay { position: absolute; top: 8px; right: 14px; display: inline-flex; min-height: 28px; align-items: center; gap: 5px; padding: 0 10px; border: 1px solid; border-radius: 999px; cursor: pointer; font-size: 11px; font-weight: 600; }
 .eon-asset-stage .eon-context-note { padding: 0 5px; }
 .eon-assets-all { display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; text-decoration: none; }
 .eon-asset-open { display: inline-grid; place-items: center; text-decoration: none; }
 
+/* A demo at a real device size, scaled to fit (DeviceStage). */
+.eon-device-stage { display: flex; min-width: 0; align-items: flex-start; justify-content: center; }
+.eon-device-screen { position: relative; overflow: hidden; flex: 0 0 auto; background: #0D0D0D; box-shadow: 0 0 0 1px rgba(255, 255, 255, .1); }
+.light .eon-device-screen { background: #F4F4F5; box-shadow: 0 0 0 1px rgba(0, 0, 0, .1); }
+.eon-device-screen iframe { position: absolute; top: 0; left: 0; display: block; border: 0; transform-origin: 0 0; }
+
+/* Read-only code (CodeView): line numbers, wrapped lines, light syntax colours. */
+.eon-code-view { position: relative; display: flex; overflow: hidden; flex-direction: column; border-radius: 16px; }
+.eon-code-tools { position: absolute; z-index: 1; top: 10px; right: 10px; display: flex; align-items: center; gap: 2px; padding: 3px 3px 3px 12px; border: 1px solid; border-radius: 999px; font-size: 12px; }
+.eon-code-tools button { display: grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 0; border-radius: 999px; background: transparent; cursor: pointer; }
+.eon-code-scroll { overflow: auto; flex: 1; min-height: 0; padding: 56px 0 20px; }
+.eon-code-lines { margin: 0; padding: 0; list-style: none; font: 12.5px/1.7 ui-monospace, "SF Mono", Menlo, monospace; }
+.eon-code-lines li { display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 14px; padding-right: 18px; }
+.eon-code-ln { text-align: right; user-select: none; font-variant-numeric: tabular-nums; }
+.eon-code-lines code { font: inherit; white-space: pre-wrap; word-break: break-all; }
+.eon-code-view .tok-com { color: #7C8190; font-style: italic; }
+.eon-code-view .tok-str { color: #E8CF86; }
+.eon-code-view .tok-num { color: #7FD4C9; }
+.eon-code-view .tok-prop, .eon-code-view .tok-attr { color: #E2A86F; }
+.eon-code-view .tok-key, .eon-code-view .tok-at { color: #F0A3B5; }
+.eon-code-view .tok-fn { color: #9FC4FF; }
+.eon-code-view .tok-tag { color: #A9B4C6; }
+.light .eon-code-view .tok-com { color: #8A8F99; }
+.light .eon-code-view .tok-str { color: #946B00; }
+.light .eon-code-view .tok-num { color: #00796B; }
+.light .eon-code-view .tok-prop, .light .eon-code-view .tok-attr { color: #A6511A; }
+.light .eon-code-view .tok-key, .light .eon-code-view .tok-at { color: #B0285A; }
+.light .eon-code-view .tok-fn { color: #2759C4; }
+.light .eon-code-view .tok-tag { color: #5A6478; }
+
 /* Hosted Animations page: one card per declared animation. */
 .eon-anim-page { min-height: 100vh; min-height: 100dvh; font-family: "DM Sans", sans-serif; }
-.eon-anim-top { position: sticky; top: 0; z-index: 5; display: flex; min-height: 60px; align-items: center; justify-content: space-between; gap: 12px; padding: 10px max(16px, calc((100vw - 880px) / 2)); border-bottom: 1px solid; }
+.eon-anim-top { position: sticky; top: 0; z-index: 5; display: flex; min-height: 60px; align-items: center; justify-content: space-between; gap: 12px; padding: 10px max(16px, calc((100vw - 1240px) / 2)); border-bottom: 1px solid; }
+.eon-anim-switches { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .eon-anim-back { display: inline-flex; min-width: 0; min-height: 40px; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; text-decoration: none; }
 .eon-anim-theme .eon-liquid-segment-button { min-height: 30px; padding: 4px 12px; font-size: 12px; }
-.eon-anim-main { display: flex; width: min(880px, 100%); margin: 0 auto; flex-direction: column; gap: 18px; padding: 40px 16px 80px; }
+.eon-anim-main { display: flex; width: min(1240px, 100%); margin: 0 auto; flex-direction: column; gap: 18px; padding: 40px 16px 80px; }
 .eon-anim-main h1 { margin: 0; font-size: clamp(32px, 5vw, 44px); font-weight: 650; letter-spacing: -.04em; }
 .eon-anim-lede { max-width: 620px; margin: -6px 0 10px; font-size: 15px; line-height: 1.6; }
 .eon-anim-empty { margin: 0; padding: 22px; border-radius: 20px; font-size: 14px; line-height: 1.6; }
@@ -604,13 +635,20 @@ button.eon-save-state { cursor: pointer; }
 .eon-anim-card h2 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
 .eon-anim-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .eon-anim-action { display: inline-flex; align-items: center; gap: 6px; }
-.eon-anim-stage { display: block; width: 100%; height: clamp(260px, 44vw, 420px); border: 0; border-radius: 16px; }
+/* Stage and code side by side. The code panel takes the stage's height and
+   scrolls inside it, so long demos don't stretch the row. */
+.eon-anim-body { display: grid; align-items: start; gap: 16px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.eon-anim-body.is-mobile { grid-template-columns: auto minmax(0, 1fr); }
+.eon-anim-code-panel { position: relative; align-self: stretch; min-height: 320px; }
+.eon-anim-code-panel > .eon-code-view { position: absolute; inset: 0; }
 .eon-anim-details { display: grid; margin: 0; gap: 8px; }
 .eon-anim-details > div { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; font-size: 13px; line-height: 1.5; }
 .eon-anim-details dd { margin: 0; }
-.eon-anim-code { border-top: 1px solid; padding-top: 12px; }
-.eon-anim-code summary { cursor: pointer; font-size: 13px; font-weight: 600; }
-.eon-anim-code pre { overflow: auto; max-height: 480px; margin: 12px 0 0; padding: 14px 16px; border-radius: 12px; font: 12px/1.6 ui-monospace, "SF Mono", Menlo, monospace; }
+@media (max-width: 900px) {
+  .eon-anim-body, .eon-anim-body.is-mobile { grid-template-columns: minmax(0, 1fr); }
+  .eon-anim-body.is-mobile .eon-device-stage { justify-self: center; }
+  .eon-anim-code-panel { height: 420px; }
+}
 @media (max-width: 560px) {
   .eon-anim-details > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 }

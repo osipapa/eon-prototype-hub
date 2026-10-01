@@ -20,8 +20,15 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-10-01",
-    title: "Animations play again",
+    title: "Animations on real screens, code alongside",
     groups: [
+      {
+        label: "Design",
+        items: [
+          "On the Animations page the code sits beside each animation, with line numbers, syntax colours, and a copy button.",
+          "Animations play on a real phone or desktop screen, scaled to fit, instead of a stretched box. Switch between them at the top; it starts on the device the prototype was built for.",
+        ],
+      },
       {
         label: "Fixes",
         items: [
