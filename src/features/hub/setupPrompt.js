@@ -156,10 +156,17 @@ export function buildSetupPrompt({
 - If mapboxgl is missing, mapboxgl.supported() is false, or the map emits an error before load, keep a neutral background in the map's tones so the rest of the flow still works.` : `5) MAPS
 - Maps are not configured in this build of the hub. When a screen needs a map, use a neutral placeholder background and say so in a visible note.`;
 
-  return `Build or update one polished, interactive UI prototype for the Eon Prototype Hub. Return a single self-contained HTML document that works both standalone and inside the hub's sandboxed iframe.
+  return `EON PROTOTYPE HUB: UNIVERSAL SETUP GUIDE
+Use this guide for any prototype: a new one, or an update to an existing one. It tells you how to build an interactive UI prototype as a single self-contained HTML document that works both standalone and inside the hub's sandboxed iframe.
+
+0) READ FIRST
+- Your task is whatever the person asks for alongside this guide. If they ask for nothing specific, update activePrototype below.
+- activePrototype is only the prototype that happened to be open when the guide was copied. When building a new prototype, ignore its title, brief, controls, and args; take the subject from the person's request and declare your own eon-config (section 3).
+- You never sign in, sign up, create an account, or connect to a backend. The hub's own login, team accounts, invites, and database are not part of your work and need nothing from you. Your output is the HTML document; the person adds it to the hub.
+- Sign-in, sign-up, phone, verification code, password, and profile screens inside a prototype are mock UI like any other screen: accept any input (or a stated demo value such as code 123456), validate locally, advance with in-memory state, and never call a real auth service or store what was typed.
 
 CURRENT WORKSPACE CONTEXT, GENERATED AT COPY TIME
-Treat this JSON as the source of truth for hub integration. Product requirements in reviewBrief are intentional; do not reinterpret media revisions as URLs or hardcode them.
+Treat this JSON as the source of truth for hub integration (theme, viewports, safe areas, media, maps). Product requirements in reviewBrief apply to activePrototype only; do not reinterpret media revisions as URLs or hardcode them.
 ${JSON.stringify(context, null, 2)}${combinationWarning}
 
 1) DELIVERABLE
@@ -179,8 +186,8 @@ ${JSON.stringify(context, null, 2)}${combinationWarning}
 - The hub reloads the frame when theme or arguments change. Derive the complete visual state deterministically during initial render.
 
 3) CONTROLS AND STATES
-- Preserve the effective control keys/options shown in the generated context when updating the active prototype.
-- For a new prototype, declare meaningful visual variants with strict JSON. Do not add comments or trailing commas:
+- When updating activePrototype, preserve the effective control keys/options shown in the generated context.
+- For a new prototype, ignore effectiveControls and effectiveDefaults, and declare meaningful visual variants with strict JSON. Do not add comments or trailing commas:
     <script type="application/json" id="eon-config">
     { "viewport": "mobile", "controls": [{ "key": "state", "label": "State", "options": ["default", "loading", "empty", "error"] }], "defaults": { "state": "default" } }
     </script>
@@ -231,9 +238,9 @@ ${mapsSection}
 - Leave out purely decorative motion the brief does not need rather than declaring it.
 
 9) SANDBOX LIMITS
-- The frame has an opaque origin: do not depend on localStorage, sessionStorage, cookies, service workers, authentication, parent-page DOM access, or same-origin behavior.
+- The frame has an opaque origin: do not depend on localStorage, sessionStorage, cookies, service workers, real sign-in sessions, parent-page DOM access, or same-origin behavior.
 - Remote fetches may fail because of CORS or network restrictions. The prototype must still work without a backend.
-- Do not navigate the top page, request real credentials, or perform real destructive/network mutations. Simulate product behavior locally.
+- Do not navigate the top page, send typed credentials anywhere, or perform real destructive/network mutations. Simulate product behavior, including any sign-in, locally (section 0).
 
 10) FINAL CHECK
 - Validate the HTML, both themes, all declared control options, all four viewports, keyboard navigation, focus visibility, overflow, and offline/CDN failure behavior.

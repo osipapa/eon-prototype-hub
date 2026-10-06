@@ -19,6 +19,18 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-10-06",
+    title: "A setup prompt that works for any prototype",
+    groups: [
+      {
+        label: "Behavior",
+        items: [
+          "Copy setup prompt now reads as a universal guide: it says when to update the open prototype and when to start a new one, that the AI never signs in to the hub, and that sign-in screens inside a prototype are mock UI.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-10-01",
     title: "Animations on real screens, code alongside",
     image: "changelog/2026-10-01-animations.png",
