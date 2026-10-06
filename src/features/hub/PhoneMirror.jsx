@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Copy, QrCode } from "lucide-react";
 import { renderSVG } from "uqr";
-import { MIRROR_PING_MS, mirrorSessionId, mirrorUrl, openMirrorChannel } from "@/lib/mirror";
+import { MIRROR_HANDOFF_MS, MIRROR_PING_MS, fetchMirrorHandoff, mirrorSessionId, mirrorUrl, openMirrorChannel } from "@/lib/mirror";
 import { copyText } from "@/lib/uiState";
 
 const ACTIVE_KEY = "eon-mirror-active";
@@ -29,6 +29,7 @@ export default function PhoneMirrorButton({ c, view, frameRef, transport = "supa
   const [lastSeen, setLastSeen] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const [copied, setCopied] = useState(false);
+  const [handoff, setHandoff] = useState(null);
   const wrapRef = useRef(null);
   const channelRef = useRef(null);
   const logRef = useRef([]);
@@ -92,6 +93,21 @@ export default function PhoneMirrorButton({ c, view, frameRef, transport = "supa
     // which is already loaded and won't announce itself again.
   }, [active, frameRef, view.slug]);
 
+  // While the QR is showing, it carries a fresh one-time sign-in token so the
+  // phone opens signed in. Without one, the phone signs in the usual way.
+  useEffect(() => {
+    if (!open || transport !== "supabase") return undefined;
+    let alive = true;
+    const refresh = () => fetchMirrorHandoff().then((token) => { if (alive) setHandoff(token); });
+    refresh();
+    const timer = window.setInterval(refresh, MIRROR_HANDOFF_MS);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      setHandoff(null);
+    };
+  }, [open, transport]);
+
   useEffect(() => {
     if (!open) return undefined;
     const dismiss = (event) => {
@@ -108,9 +124,10 @@ export default function PhoneMirrorButton({ c, view, frameRef, transport = "supa
 
   const connected = active && now - lastSeen < MIRROR_PING_MS * 2.5;
   const url = mirrorUrl(sessionId, view, { preview: transport === "local" });
+  const qrUrl = mirrorUrl(sessionId, view, { preview: transport === "local", handoff });
   const qr = useMemo(
-    () => renderSVG(url, { ecc: "M", border: 2, pixelSize: 4, whiteColor: "#FFFFFF", blackColor: "#000000" }),
-    [url],
+    () => renderSVG(qrUrl, { ecc: "M", border: 2, pixelSize: 4, whiteColor: "#FFFFFF", blackColor: "#000000" }),
+    [qrUrl],
   );
 
   const toggle = () => {

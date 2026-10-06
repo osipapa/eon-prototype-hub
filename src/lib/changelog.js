@@ -28,6 +28,12 @@ export const CHANGELOG = [
           "Copy setup prompt now reads as a universal guide: it says when to update the open prototype and when to start a new one, that the AI never signs in to the hub, and that sign-in screens inside a prototype are mock UI.",
         ],
       },
+      {
+        label: "Fixes",
+        items: [
+          "Open on your phone: scanning the QR now signs your phone in as you, so it goes straight to the prototype instead of stopping at a password form. The code holds a one-time sign-in that refreshes every few minutes; Copy link leaves it out.",
+        ],
+      },
     ],
   },
   {

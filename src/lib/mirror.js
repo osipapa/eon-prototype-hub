@@ -59,8 +59,9 @@ export function openMirrorChannel(sessionId, { transport = "supabase", onMessage
   };
 }
 
-export function mirrorUrl(sessionId, view, { preview = false } = {}) {
+export function mirrorUrl(sessionId, view, { preview = false, handoff = null } = {}) {
   const params = new URLSearchParams();
+  if (handoff) params.set("t", handoff);
   if (view?.slug) params.set("p", view.slug);
   if (view?.theme) params.set("theme", view.theme);
   Object.entries(view?.args || {}).forEach(([key, value]) => params.set(`arg.${key}`, JSON.stringify(value)));
@@ -68,6 +69,24 @@ export function mirrorUrl(sessionId, view, { preview = false } = {}) {
   return preview
     ? `${base}?mirror-preview=${sessionId}&${params}`
     : `${base}#/mirror/${sessionId}?${params}`;
+}
+
+/* Sign-in handoff. A phone that scans the QR is rarely signed in, and hub
+   passwords are admin-generated, so the QR carries a one-time token for the
+   desktop's user (the mirror-handoff edge function). Each new token replaces
+   the last; the desktop rotates it while the QR is open. "Copy link" leaves
+   it out, so a pasted link never signs anyone in. */
+export const MIRROR_HANDOFF_MS = 3 * 60 * 1000;
+
+export async function fetchMirrorHandoff() {
+  const { data, error } = await supabase.functions.invoke("mirror-handoff", { body: {} });
+  if (error || !data?.tokenHash) return null;
+  return data.tokenHash;
+}
+
+export async function redeemMirrorHandoff(tokenHash) {
+  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "email" });
+  return !error;
 }
 
 // The view a phone starts on before the desktop answers: whatever the QR held.

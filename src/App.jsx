@@ -1,6 +1,7 @@
-import { Component, lazy, Suspense } from "react";
-import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Component, lazy, Suspense, useEffect, useRef, useState } from "react";
+import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./lib/auth";
+import { redeemMirrorHandoff } from "./lib/mirror";
 import LoadingScreen from "./components/LoadingScreen";
 
 const Login = lazy(() => import("./routes/Login"));
@@ -47,6 +48,35 @@ function RequireAuth({ children, adminOnly }) {
   return children;
 }
 
+/* The phone mirror's QR carries a one-time sign-in token (?t=), so a phone
+   that isn't signed in lands on the prototype instead of a password form.
+   Redeemed once, then dropped from the URL; a used or expired token falls
+   through to the normal sign-in. A phone already signed in keeps its account. */
+function MirrorHandoff({ children }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const token = params.get("t");
+  const [failed, setFailed] = useState(false);
+  const tried = useRef(false);
+
+  useEffect(() => {
+    if (!token || loading) return;
+    if (user || failed) {
+      params.delete("t");
+      navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+      return;
+    }
+    if (tried.current) return;
+    tried.current = true;
+    redeemMirrorHandoff(token).then((ok) => { if (!ok) setFailed(true); });
+  }, [token, loading, user, failed]);
+
+  if (token) return <Splash>Signing you in…</Splash>;
+  return children;
+}
+
 export default function App() {
   return (
     <AppErrorBoundary>
@@ -65,7 +95,7 @@ export default function App() {
             {/* Tracking moved into Eon Design; keep old links working. */}
             <Route path="/tracking/*" element={<Navigate to="/design/tracking-mixpanel" replace />} />
             <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
-            <Route path="/mirror/:session" element={<RequireAuth><Mirror /></RequireAuth>} />
+            <Route path="/mirror/:session" element={<MirrorHandoff><RequireAuth><Mirror /></RequireAuth></MirrorHandoff>} />
             <Route path="/oauth/consent" element={<RequireAuth><OAuthConsent /></RequireAuth>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
