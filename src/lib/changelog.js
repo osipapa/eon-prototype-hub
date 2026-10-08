@@ -19,6 +19,31 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-10-08",
+    title: "Eon Design is now a knowledge base",
+    image: "changelog/2026-10-08-knowledge-base.png",
+    imageAlt: "The Color page: a page tree on the left, token tables with swatches, and Contents on the right.",
+    groups: [
+      {
+        label: "New",
+        items: [
+          "Foundations pages for Spacing, Color, Typography, Radius, and Elevation, each with its tokens in a table you can scan.",
+          "Edit any page, or add one, right in Eon Design. Edits show for everyone live.",
+          "Pages link to each other, and each page lists Related pages and the pages that use it.",
+          "Claude, through the hub connector, can now look up these pages and quote the right token for whatever it builds.",
+          "Download every page as an OKF bundle (okf.md) for any other agent.",
+        ],
+      },
+      {
+        label: "Design",
+        items: [
+          "Pages read like docs: a collapsible page tree with search, a narrower reading column, and Contents that follows you as you scroll.",
+          "Hover any heading to copy a link straight to that section.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-10-06",
     title: "A setup prompt that works for any prototype",
     groups: [

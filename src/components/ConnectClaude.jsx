@@ -237,7 +237,7 @@ function ConnectClaudeDialog({ c, isAdmin, initialPlatform, onClose }) {
             })}
           </ol>
           <p style={{ color: c.muted }}>
-            Claude can list, read, search, and edit prototype HTML. Everyone sees its edits live, and it can restore any of the last 30 saved revisions.
+            Claude can list, read, search, and edit prototype HTML, and read the Eon Design pages (tokens, spacing, Linear, tracking) to build with the right values. Everyone sees its edits live, and it can restore any of the last 30 saved revisions.
           </p>
         </div>
       </div>

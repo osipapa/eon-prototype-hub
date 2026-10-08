@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import DesignGuide, { DEFAULT_DESIGN_PAGE } from "@/features/design/DesignGuide";
+import { useKnowledgeBase } from "@/features/design/useKnowledgeBase";
 import { useAuth } from "@/lib/auth";
 import { cacheEonLogo } from "@/lib/branding";
 import { listAssets } from "@/lib/data";
 
 export default function Design() {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const { slug = DEFAULT_DESIGN_PAGE } = useParams();
+  const [search] = useSearchParams();
+  const kb = useKnowledgeBase({ teamId: profile?.team_id, userId: profile?.id });
   const [assets, setAssets] = useState(null);
 
   useEffect(() => {
@@ -27,11 +30,14 @@ export default function Design() {
   return (
     <DesignGuide
       activeSlug={slug}
+      activeSection={search.get("s")}
+      kb={kb}
       assets={assets || {}}
       logoLoading={assets === null}
       userEmail={user?.email}
       isAdmin={isAdmin}
-      onSelectPage={(page) => navigate(`/design/${page.slug}`)}
+      onSelectPage={(nextSlug, section) => navigate(`/design/${nextSlug}${section ? `?s=${section}` : ""}`)}
+      onOpenRoute={(route) => navigate(route)}
       onOpenPrototypes={() => navigate("/")}
       onOpenPrompts={() => navigate("/prompts")}
       onOpenAdmin={() => navigate("/admin")}

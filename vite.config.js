@@ -9,6 +9,10 @@ export default defineConfig({
   base: process.env.VITE_BASE || "/eon-prototype-hub/",
   plugins: [react()],
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      // Knowledge base code shared with the hub-mcp edge function.
+      "@kb": path.resolve(__dirname, "./supabase/functions/hub-mcp/kb"),
+    },
   },
 });

@@ -399,3 +399,53 @@ export async function syncLinearAttachment(slug, { deleted = false } = {}) {
   if (error || data?.error) return null;
   return data;
 }
+
+/* Knowledge base (Eon Design pages) ----------------------------------------*/
+const KB_FIELDS = "id,slug,type,title,summary,group_path,status,body_md,refs,sort_order,version,updated_at,updated_by";
+
+export async function listKbEntries() {
+  const { data, error } = await supabase
+    .from("kb_entries")
+    .select(KB_FIELDS)
+    .order("sort_order", { ascending: true })
+    .order("title", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function createKbEntry(entry) {
+  const { data, error } = await supabase.from("kb_entries").insert(entry).select(KB_FIELDS).single();
+  if (error) throw error;
+  return data;
+}
+
+// Saves only if nobody saved since baseVersion. Returns the row, or null on conflict.
+export async function updateKbEntry(id, patch, baseVersion) {
+  const { data, error } = await supabase
+    .from("kb_entries")
+    .update(patch)
+    .eq("id", id)
+    .eq("version", baseVersion)
+    .select(KB_FIELDS);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+// Fills a team's empty knowledge base with the bundled pages; existing slugs are kept.
+export async function seedKbEntries(rows) {
+  const { error } = await supabase.from("kb_entries").upsert(rows, { onConflict: "team_id,slug", ignoreDuplicates: true });
+  if (error) throw error;
+}
+
+export async function deleteKbEntry(id) {
+  const { error } = await supabase.from("kb_entries").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export function subscribeKb(cb) {
+  const ch = supabase
+    .channel("kb-changes")
+    .on("postgres_changes", { event: "*", schema: "public", table: "kb_entries" }, cb)
+    .subscribe();
+  return () => supabase.removeChannel(ch);
+}

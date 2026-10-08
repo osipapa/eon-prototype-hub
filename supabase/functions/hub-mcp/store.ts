@@ -1,6 +1,7 @@
 // PrototypeStore over supabase-js with the caller's token: every query is RLS-scoped.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { type PrototypeStore, RevisionNotFound, VersionConflict } from "./tools.ts";
+import type { KbRow, KbStore } from "./kbTools.ts";
 
 export function supabaseStore(db: SupabaseClient): PrototypeStore {
   return {
@@ -59,6 +60,51 @@ export function supabaseStore(db: SupabaseClient): PrototypeStore {
         throw error;
       }
       return data as number;
+    },
+  };
+}
+
+const KB_FIELDS = "id,slug,type,title,summary,group_path,status,body_md,refs,sort_order,version,updated_at";
+
+// KbStore over supabase-js with the caller's token: RLS scopes it to their team.
+export function supabaseKbStore(db: SupabaseClient, userId: string): KbStore {
+  return {
+    async list() {
+      const { data, error } = await db.from("kb_entries").select(KB_FIELDS)
+        .order("sort_order", { ascending: true }).order("title", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as KbRow[];
+    },
+
+    async get(slug) {
+      const { data, error } = await db.from("kb_entries").select(KB_FIELDS).eq("slug", slug).maybeSingle();
+      if (error) throw error;
+      return data as KbRow | null;
+    },
+
+    async search(query) {
+      const { data, error } = await db.from("kb_entries").select("slug")
+        .textSearch("search", query, { type: "websearch", config: "english" })
+        .limit(25);
+      if (error) throw error;
+      return (data ?? []).map((row) => row.slug);
+    },
+
+    async insert(row) {
+      const { data: profile, error: profileError } = await db.from("profiles").select("team_id").eq("id", userId).single();
+      if (profileError) throw profileError;
+      const { data, error } = await db.from("kb_entries")
+        .insert({ ...row, team_id: profile.team_id, created_by: userId })
+        .select(KB_FIELDS).single();
+      if (error) throw error;
+      return data as KbRow;
+    },
+
+    async swap(id, patch, baseVersion) {
+      const { data, error } = await db.from("kb_entries").update(patch)
+        .eq("id", id).eq("version", baseVersion).select(KB_FIELDS);
+      if (error) throw error;
+      return (data?.[0] as KbRow) ?? null;
     },
   };
 }

@@ -163,6 +163,7 @@ Use this guide for any prototype: a new one, or an update to an existing one. It
 - Your task is whatever the person asks for alongside this guide. If they ask for nothing specific, update activePrototype below.
 - activePrototype is only the prototype that happened to be open when the guide was copied. When building a new prototype, ignore its title, brief, controls, and args; take the subject from the person's request and declare your own eon-config (section 3).
 - You never sign in, sign up, create an account, or connect to a backend. The hub's own login, team accounts, invites, and database are not part of your work and need nothing from you. Your output is the HTML document; the person adds it to the hub.
+- Take colors, type, spacing, radius, and surfaces from the Eon Design knowledge base. If the Eon hub connector is available, call kb_index, then kb_read the pages you need (spacing, color, typography, radius, elevation) before choosing a value, and cite them as slug#section. Do not invent values between its steps.
 - Sign-in, sign-up, phone, verification code, password, and profile screens inside a prototype are mock UI like any other screen: accept any input (or a stated demo value such as code 123456), validate locally, advance with in-memory state, and never call a real auth service or store what was typed.
 
 CURRENT WORKSPACE CONTEXT, GENERATED AT COPY TIME
