@@ -1,4 +1,4 @@
-import { MAPBOX, PRESET_MEDIA, VIEWPORTS, safeMediaUrl } from "./prototypes.js";
+import { MAPBOX, PRESET_MEDIA, VIEWPORTS, isVideoUrl, safeMediaUrl } from "./prototypes.js";
 
 const CONTROL_KEY = /^[a-z][a-z0-9_-]*$/;
 const MEDIA_KEY = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
@@ -35,6 +35,7 @@ function availableMediaTokens(assets = {}) {
     .forEach((key) => tokens.push({
       key,
       source: "shared asset",
+      ...(isVideoUrl(assets[key]) ? { kind: "video" } : {}),
       revision: sourceRevision(safeMediaUrl(assets[key])),
     }));
 
@@ -202,6 +203,7 @@ ${JSON.stringify(context, null, 2)}${combinationWarning}
 - Use only the exact availableMediaTokens from the generated context. They are current shared variables; adding, removing, or replacing an asset changes the next generated prompt.
 - Keep the token in the HTML so future Media Library changes flow through automatically. Never replace it with a resolved URL or its revision.
 - Use <img src="{{cardImage}}" alt="Descriptive text"> or quoted CSS such as background-image:url("{{heroImage}}").
+- Tokens marked kind "video" are videos: use <video src="{{token}}" autoplay muted loop playsinline></video>, never <img> or CSS url().
 - {{placeholder:320x180}} and {{placeholder:320x180:Label}} are also supported for deliberate placeholders.
 - Unknown {{tokens}} remain literal and create broken resources. Reserve double braces exclusively for Eon media variables.
 - eonLogo and acmeLogo are available only when they appear in availableMediaTokens.

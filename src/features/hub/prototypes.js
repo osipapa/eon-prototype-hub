@@ -82,6 +82,10 @@ export const MAPBOX = {
 
 const DATA_IMAGE_URL = /^data:image\/(?:avif|gif|jpe?g|png|svg\+xml|webp)(?:;charset=[a-z0-9_-]+)?(?:;base64)?,/i;
 
+// Media library videos are plain URLs; the file extension is how prototypes,
+// previews, and the setup prompt tell them apart from images.
+export const isVideoUrl = (value) => /\.(?:mp4|m4v|webm|mov)(?:[?#]|$)/i.test(String(value || ""));
+
 // Assets are team-editable and some logo helpers return HTML strings. Keep URL
 // validation at that boundary so a pasted javascript: URL or quote cannot turn
 // into executable markup in the hub. Relative URLs remain supported for assets

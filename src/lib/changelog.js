@@ -19,6 +19,22 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-11-05",
+    title: "Videos in the media library",
+    image: "changelog/2026-11-05-media-videos.png",
+    imageAlt: "The media library with a video tile next to images, marked Video.",
+    groups: [
+      {
+        label: "New",
+        items: [
+          "Upload MP4, WebM, or MOV videos (up to 50 MB) to the media library, or paste a video link.",
+          "Use a video in a prototype with <video src=\"{{name}}\">. Replace it and every prototype updates.",
+          "Video tiles play on hover, and the setup prompt tells Claude which tokens are videos.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-10-08",
     title: "Eon Design is now a knowledge base",
     image: "changelog/2026-10-08-knowledge-base.png",

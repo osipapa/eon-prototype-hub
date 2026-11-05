@@ -277,23 +277,29 @@ export function subscribeAssets(cb) {
 }
 
 const MAX_MEDIA_BYTES = 10 * 1024 * 1024;
+// 50 MB is the storage upload ceiling on the free plan.
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 export const MEDIA_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml", "image/avif"];
+export const MEDIA_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 const LIBRARY_FOLDER = "library/";
 
 // Why a file can't go in the media library, or "" when it can.
 export function mediaFileProblem(file) {
-  if (!MEDIA_IMAGE_TYPES.includes(file?.type)) return "Use a PNG, JPG, GIF, WebP, SVG, or AVIF image.";
+  if (MEDIA_VIDEO_TYPES.includes(file?.type)) {
+    return file.size > MAX_VIDEO_BYTES ? "Videos need to be under 50 MB." : "";
+  }
+  if (!MEDIA_IMAGE_TYPES.includes(file?.type)) return "Use an image (PNG, JPG, GIF, WebP, SVG, AVIF) or a video (MP4, WebM, MOV).";
   if (file.size > MAX_MEDIA_BYTES) return "Images need to be under 10 MB.";
   return "";
 }
 
-// Upload an image for the media library and return its public URL. Library
+// Upload an image or video for the media library and return its public URL. Library
 // files sit under their own prefix so removing an asset can remove its file
 // without touching comment screenshots.
 export async function uploadMedia(file) {
   const problem = mediaFileProblem(file);
   if (problem) throw new Error(problem);
-  const safeName = (file.name || "image").replace(/[^\w.-]+/g, "-");
+  const safeName = (file.name || "media").replace(/[^\w.-]+/g, "-");
   const path = `${LIBRARY_FOLDER}${crypto.randomUUID()}-${safeName}`;
   const { error } = await supabase.storage
     .from("media").upload(path, file, { contentType: file.type, cacheControl: "31536000" });

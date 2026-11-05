@@ -686,10 +686,11 @@ create policy "auth delete library media" on storage.objects for delete
     and (storage.foldername(name))[1] = 'library'
   );
 
--- Images only, 10 MB each, matching the client's upload checks.
+-- Images (10 MB, enforced by the client) and videos up to 50 MB.
+-- Mirrors supabase/migrations/20261105_media_library_videos.sql.
 update storage.buckets
-set file_size_limit = 10485760,
-    allowed_mime_types = array['image/*']
+set file_size_limit = 52428800,
+    allowed_mime_types = array['image/*', 'video/mp4', 'video/webm', 'video/quicktime']
 where id = 'media';
 
 -- ---------------------------------------------------------------------------

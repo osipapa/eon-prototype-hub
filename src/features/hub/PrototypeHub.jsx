@@ -7,9 +7,9 @@ import {
   ExternalLink, ChevronDown, Upload, Trash2, Copy, Check, AlertCircle, Loader2, LayoutGrid,
   ImageOff, Link2, MoreHorizontal, RotateCcw,
 } from "lucide-react";
-import { VIEWPORTS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, safeMediaUrl } from "./prototypes";
+import { VIEWPORTS, MEDIA, PRESET_MEDIA, renderStory, currentArgs, stateCombos, safeMediaUrl, isVideoUrl } from "./prototypes";
 import { buildSetupPrompt } from "./setupPrompt";
-import { MEDIA_IMAGE_TYPES, mediaFileProblem, uploadMedia } from "@/lib/data";
+import { MEDIA_IMAGE_TYPES, MEDIA_VIDEO_TYPES, mediaFileProblem, uploadMedia } from "@/lib/data";
 
 export { buildSetupPrompt } from "./setupPrompt";
 
@@ -440,7 +440,7 @@ export function UploadPanel({
    calm: the team's own library, then the built-in logos and presets. Per-image
    actions live behind a menu so the grid reads as images, not forms. ---- */
 const EMPTY_DRAFT = { mode: "", name: "", url: "", file: null };
-const IMAGE_ACCEPT = MEDIA_IMAGE_TYPES.join(",");
+const MEDIA_ACCEPT = [...MEDIA_IMAGE_TYPES, ...MEDIA_VIDEO_TYPES].join(",");
 const LOGO_NOTES = { eonLogo: "Hub logo", acmeLogo: "Story logo" };
 
 // "Team photo 2.png" -> "teamPhoto2", so a dropped file arrives with a usable token.
@@ -455,6 +455,18 @@ function formatBytes(bytes) {
 
 const dragsFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
 const isUploadedMedia = (url) => /\/storage\/v1\/object\/public\/media\/library\//.test(url || "");
+
+// Library videos preview muted and play while hovered, so a grid of them stays still.
+function MediaPreview({ src, className, onError }) {
+  if (!isVideoUrl(src)) {
+    return <img src={src} alt="" className={className} loading="lazy" referrerPolicy="no-referrer" onError={onError} />;
+  }
+  return (
+    <video src={src} className={className} muted loop playsInline preload="metadata" onError={onError}
+      onMouseEnter={(event) => event.currentTarget.play().catch(() => {})}
+      onMouseLeave={(event) => event.currentTarget.pause()} />
+  );
+}
 
 export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
   const [ph, setPh] = useState({ w: 320, h: 180, label: "", bg: "#E5E7EB", fg: "#94A3B8", name: "" });
@@ -540,7 +552,7 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
       await onSetAsset(key, await uploadMedia(draft.file));
       setDraft(EMPTY_DRAFT);
     } catch (error) {
-      setMediaError(error?.message || "The image could not be uploaded. Try again.");
+      setMediaError(error?.message || "The file could not be uploaded. Try again.");
     } finally {
       setAdding(false);
     }
@@ -555,7 +567,7 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
     try {
       await onSetAsset(key, await uploadMedia(file));
     } catch (error) {
-      setMediaError(error?.message || "The image could not be uploaded. Try again.");
+      setMediaError(error?.message || "The file could not be uploaded. Try again.");
     } finally {
       setBusyKey("");
     }
@@ -593,7 +605,7 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
     .sort((left, right) => left.localeCompare(right))
     .map((key) => ({
       key, url: assets[key], linkUrl: safeAsset(key), previewSrc: safeAsset(key), removable: true,
-      note: isUploadedMedia(assets[key]) ? "Uploaded" : "Link",
+      note: `${isUploadedMedia(assets[key]) ? "Uploaded" : "Link"}${isVideoUrl(assets[key]) ? " · Video" : ""}`,
     }));
   const newKey = cleanKey(draft.name);
   const replacesKey = Boolean(newKey) && Boolean(assets[newKey] || LOGO_NOTES[newKey] || PRESET_MEDIA[newKey]);
@@ -618,7 +630,7 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
       onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPageDrag(false); }}
       onDrop={(event) => { if (!dragsFiles(event)) return; event.preventDefault(); setPageDrag(false); stageFile(event.dataTransfer.files?.[0]); }}>
       <header className="eon-media-head">
-        <p style={{ color: c.muted }}>Use any image in a prototype as <code style={{ color: c.text }}>{"{{name}}"}</code>. Replace it here and every prototype updates.</p>
+        <p style={{ color: c.muted }}>Use any image or video in a prototype as <code style={{ color: c.text }}>{"{{name}}"}</code>. Replace it here and every prototype updates.</p>
         <div className="eon-media-head-actions">
           <button type="button" className="eon-buttonish eon-secondary-button" onClick={() => { setMediaError(""); setDraft({ ...EMPTY_DRAFT, mode: "link" }); }}
             style={{ borderColor: c.border, color: c.secondary, background: "transparent" }}>
@@ -626,7 +638,7 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
           </button>
           <Button type="button" className="eon-buttonish" onClick={() => addFileRef.current?.click()}
             style={{ minHeight: 40, background: c.primary, color: c.primaryText, borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
-            <Upload size={15} aria-hidden="true" /> Upload image
+            <Upload size={15} aria-hidden="true" /> Upload
           </Button>
         </div>
       </header>
@@ -634,13 +646,15 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
       {draft.mode && (
         <form className="eon-media-draft" onSubmit={(event) => { event.preventDefault(); addImage(); }}
           style={{ background: c.panel, borderColor: c.border }}>
-          {draft.mode === "file" && <img src={stagedPreview} alt="" className="eon-media-draft-thumb" style={{ background: c.bg }} />}
+          {draft.mode === "file" && (draft.file.type.startsWith("video/")
+            ? <video src={stagedPreview} className="eon-media-draft-thumb" muted autoPlay loop playsInline style={{ background: c.bg }} />
+            : <img src={stagedPreview} alt="" className="eon-media-draft-thumb" style={{ background: c.bg }} />)}
           <div className="eon-media-draft-fields">
             {draft.mode === "file"
               ? <span className="eon-media-draft-file" style={{ color: c.muted }}><span style={{ color: c.text }}>{draft.file.name}</span> · {formatBytes(draft.file.size)}</span>
-              : <Input autoFocus value={draft.url} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="Paste an image link" aria-label="Image link" style={{ ...field, flex: "1 1 260px" }} />}
+              : <Input autoFocus value={draft.url} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="Paste an image or video link" aria-label="Media link" style={{ ...field, flex: "1 1 260px" }} />}
             <Input autoFocus={draft.mode === "file"} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              placeholder="Name, e.g. teamPhoto" aria-label="Image name" style={{ ...field, flex: "0 1 220px" }} />
+              placeholder="Name, e.g. teamPhoto" aria-label="Media name" style={{ ...field, flex: "0 1 220px" }} />
             <span style={{ fontSize: 12, color: c.muted }}>
               {newKey ? <>{replacesKey ? "Replaces" : "Use it as"} <code style={{ color: c.text }}>{`{{${newKey}}}`}</code></> : "Name it to get a token"}
             </span>
@@ -669,7 +683,7 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
           <button type="button" className="eon-dropzone eon-media-empty" onClick={() => addFileRef.current?.click()}
             style={{ borderColor: c.border, color: c.secondary }}>
             <Upload size={16} color={c.muted} aria-hidden="true" />
-            No images yet. Upload one or drop it here.
+            Nothing here yet. Upload an image or video, or drop one here.
           </button>
         )}
       </section>
@@ -677,7 +691,7 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
       <section className="eon-media-section" aria-labelledby="eon-media-builtin">
         <div className="eon-media-section-head">
           <h2 id="eon-media-builtin" style={{ color: c.text }}>Built-in</h2>
-          <span style={{ fontSize: 12, color: c.muted }}>Always available. Replace one to use your own image.</span>
+          <span style={{ fontSize: 12, color: c.muted }}>Always available. Replace one to use your own image or video.</span>
         </div>
         <div className="eon-media-grid">{builtIn.map(tile)}</div>
       </section>
@@ -707,9 +721,9 @@ export function MediaManager({ c, assets, onSetAsset, onDeleteAsset }) {
         </div>
       </details>
 
-      <input ref={addFileRef} type="file" accept={IMAGE_ACCEPT} className="eon-visually-hidden" tabIndex={-1} aria-hidden="true"
+      <input ref={addFileRef} type="file" accept={MEDIA_ACCEPT} className="eon-visually-hidden" tabIndex={-1} aria-hidden="true"
         onChange={(e) => { stageFile(e.target.files?.[0]); e.target.value = ""; }} />
-      <input ref={replaceFileRef} type="file" accept={IMAGE_ACCEPT} className="eon-visually-hidden" tabIndex={-1} aria-hidden="true"
+      <input ref={replaceFileRef} type="file" accept={MEDIA_ACCEPT} className="eon-visually-hidden" tabIndex={-1} aria-hidden="true"
         onChange={(e) => { replaceWithFile(replaceKeyRef.current, e.target.files?.[0]); e.target.value = ""; }} />
     </div>
     {deleteCandidate && (
@@ -762,8 +776,8 @@ function MediaTile({ c, item, busy, copied, onCopyToken, onCopyLink, onPickFile,
         {item.previewHtml
           ? <span dangerouslySetInnerHTML={{ __html: item.previewHtml }} />
           : item.previewSrc && !broken
-            ? <img src={item.previewSrc} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
-            : <span className="eon-media-thumb-empty" style={{ color: c.muted }}><ImageOff size={18} aria-hidden="true" />{item.previewSrc ? "Can't load this image" : "No image yet"}</span>}
+            ? <MediaPreview src={item.previewSrc} onError={() => setBroken(true)} />
+            : <span className="eon-media-thumb-empty" style={{ color: c.muted }}><ImageOff size={18} aria-hidden="true" />{item.previewSrc ? "Can't load this file" : "Nothing here yet"}</span>}
         {(busy || dragOver) && (
           <span className="eon-media-thumb-note">
             {busy ? <><Loader2 className="eon-spin" size={14} aria-hidden="true" />Working…</> : "Drop to replace"}
@@ -772,7 +786,7 @@ function MediaTile({ c, item, busy, copied, onCopyToken, onCopyLink, onPickFile,
       </div>
       <div className="eon-media-meta">
         {editingLink ? (
-          <Input autoFocus defaultValue={item.url} placeholder="Paste an image link" aria-label={`Image link for ${item.key}`}
+          <Input autoFocus defaultValue={item.url} placeholder="Paste an image or video link" aria-label={`Media link for ${item.key}`}
             onFocus={(event) => event.currentTarget.select()}
             onKeyDown={(event) => {
               if (event.key === "Enter") event.currentTarget.blur();
@@ -787,7 +801,7 @@ function MediaTile({ c, item, busy, copied, onCopyToken, onCopyLink, onPickFile,
         ) : (
           <>
             <button type="button" className="eon-media-token" onClick={onCopyToken} disabled={!available}
-              title={available ? `Copy {{${item.key}}}` : "Upload an image or paste a link to use this token"}
+              title={available ? `Copy {{${item.key}}}` : "Upload a file or paste a link to use this token"}
               aria-label={available ? `Copy token ${item.key}` : `${item.key}, no image yet`}>
               <span className="eon-media-token-name" style={{ color: copied ? c.brand : c.text }}>{copied ? "Copied" : item.key}</span>
               <span className="eon-media-token-note" style={{ color: c.muted }}>{item.note}</span>
@@ -799,9 +813,9 @@ function MediaTile({ c, item, busy, copied, onCopyToken, onCopyLink, onPickFile,
               </button>
               {menuOpen && (
                 <div className="eon-story-menu eon-media-menu" role="menu" style={{ background: c.panel, boxShadow: "var(--shadow-surface)" }}>
-                  <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onPickFile)} style={{ color: c.text }}><Upload size={14} /> Upload image</button>
+                  <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onPickFile)} style={{ color: c.text }}><Upload size={14} /> Upload file</button>
                   <button type="button" className="eon-buttonish" role="menuitem" onClick={act(() => setEditingLink(true))} style={{ color: c.text }}><Link2 size={14} /> Paste link</button>
-                  <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onCopyLink)} disabled={!available} style={{ color: c.text }}><Copy size={14} /> Copy image link</button>
+                  <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onCopyLink)} disabled={!available} style={{ color: c.text }}><Copy size={14} /> Copy link</button>
                   {item.removable
                     ? <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onRemove)} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
                     : item.url && <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onRemove)} style={{ color: c.text }}><RotateCcw size={14} /> Reset to default</button>}
