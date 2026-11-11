@@ -121,3 +121,34 @@ export function contextAround(html: string, index: number, radius = 2): string {
   for (let n = from; n <= to; n++) rows.push(`${n}\t${clipAround(lines[n - 1], n === lineNo ? column : 0, 300)}`);
   return rows.join("\n");
 }
+
+export type EditSpec = { old_string: string; new_string: string; replace_all?: boolean };
+export type MultiEditResult =
+  | { ok: true; html: string; counts: number[] }
+  | { ok: false; error: string };
+
+// Applies edits in order, each to the result of the one before it, so a later
+// edit can match text an earlier one wrote. All or nothing.
+export function applyEdits(html: string, edits: EditSpec[]): MultiEditResult {
+  if (!edits.length) return { ok: false, error: "edits is empty." };
+  let next = html;
+  const counts: number[] = [];
+  for (const [index, edit] of edits.entries()) {
+    const result = applyEdit(next, edit.old_string, edit.new_string, edit.replace_all ?? false);
+    if (!result.ok) {
+      const after = index === 0 ? "" : index === 1 ? " (after edit 1)" : ` (after edits 1-${index})`;
+      return { ok: false, error: `Edit ${index + 1} of ${edits.length}${after}: ${result.error} Nothing was saved.` };
+    }
+    next = result.html;
+    counts.push(result.count);
+  }
+  return { ok: true, html: next, counts };
+}
+
+// Hex SHA-256 of the UTF-8 bytes: the same value as `shasum -a 256 file.html`.
+export async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export const lineAt = (text: string, index: number) => text.slice(0, index).split("\n").length;

@@ -206,6 +206,7 @@ ${JSON.stringify(context, null, 2)}${combinationWarning}
 - Tokens marked kind "video" are videos: use <video src="{{token}}" autoplay muted loop playsinline></video>, never <img> or CSS url().
 - {{placeholder:320x180}} and {{placeholder:320x180:Label}} are also supported for deliberate placeholders.
 - Unknown {{tokens}} remain literal and create broken resources. Reserve double braces exclusively for Eon media variables.
+- Never embed large images as base64. If the Eon hub connector is available, save a new image with upload_media and use the {{key}} it returns; extract_media moves an image that is already inline.
 - eonLogo and acmeLogo are available only when they appear in availableMediaTokens.
 
 ${mapsSection}
@@ -250,5 +251,6 @@ ${mapsSection}
 - At the mobile size, confirm nothing readable or tappable falls under the Dynamic Island or the home indicator.
 - If the prototype has a map, confirm it renders in both themes and that the fallback background holds the layout together when the Mapbox script is blocked.
 - Confirm every animation in the prototype has a matching <template data-eon-animation> demo that plays on its own.
-- Confirm that media remains expressed as {{tokens}} and that the output contains no Markdown or prose outside the HTML document.`;
+- Confirm that media remains expressed as {{tokens}} and that the output contains no Markdown or prose outside the HTML document.
+- If the Eon hub connector is available, run check_prototype on the saved prototype (or pass your draft as html) and fix every error, then open its preview_links in a browser signed in to the hub to see each state as teammates do.`;
 }

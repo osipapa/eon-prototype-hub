@@ -1,26 +1,32 @@
-// PrototypeStore over supabase-js with the caller's token: every query is RLS-scoped.
+// Stores over supabase-js with the caller's token: every query is RLS-scoped.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { type PrototypeStore, RevisionNotFound, VersionConflict } from "./tools.ts";
+import { type MediaStore, type PrototypeStore, RevisionNotFound, SlugTaken, VersionConflict } from "./tools.ts";
 import type { KbRow, KbStore } from "./kbTools.ts";
 
-export function supabaseStore(db: SupabaseClient): PrototypeStore {
+const PROTO_FIELDS = "id,slug,title,prototype_html,html_version,controls,defaults";
+const LIBRARY_FOLDER = "library/";
+
+async function teamId(db: SupabaseClient, userId: string): Promise<string> {
+  const { data, error } = await db.from("profiles").select("team_id").eq("id", userId).single();
+  if (error) throw error;
+  return data.team_id;
+}
+
+export function supabaseStore(db: SupabaseClient, userId: string): PrototypeStore {
   return {
     async list() {
       const { data, error } = await db.from("projects")
-        .select("slug,title,group_name,status,html_version,updated_at,html_bytes")
+        .select("slug,title,group_name,status,html_version,updated_at,html_bytes,html_sha256")
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return (data ?? []).map((row) => ({
         slug: row.slug, title: row.title, group_name: row.group_name, status: row.status,
-        html_version: row.html_version, size: row.html_bytes ?? 0, updated_at: row.updated_at,
+        html_version: row.html_version, size: row.html_bytes ?? 0, sha256: row.html_sha256 ?? null, updated_at: row.updated_at,
       }));
     },
 
     async get(slug) {
-      const { data, error } = await db.from("projects")
-        .select("id,slug,title,prototype_html,html_version")
-        .eq("slug", slug)
-        .maybeSingle();
+      const { data, error } = await db.from("projects").select(PROTO_FIELDS).eq("slug", slug).maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -37,7 +43,7 @@ export function supabaseStore(db: SupabaseClient): PrototypeStore {
 
     async revisions(projectId) {
       const { data, error } = await db.from("prototype_revisions")
-        .select("version,kind,source,created_at,bytes,author:profiles!prototype_revisions_author_id_fkey(full_name,email)")
+        .select("version,kind,source,created_at,bytes,sha256:revision_sha256,author:profiles!prototype_revisions_author_id_fkey(full_name,email)")
         .eq("project_id", projectId)
         .order("version", { ascending: false });
       if (error) throw error;
@@ -45,7 +51,7 @@ export function supabaseStore(db: SupabaseClient): PrototypeStore {
         const author = row.author as { full_name?: string; email?: string } | null;
         return {
           version: row.version, kind: row.kind, source: row.source, created_at: row.created_at, size: row.bytes,
-          author: author?.full_name || author?.email || null,
+          sha256: row.sha256 ?? null, author: author?.full_name || author?.email || null,
         };
       });
     },
@@ -60,6 +66,62 @@ export function supabaseStore(db: SupabaseClient): PrototypeStore {
         throw error;
       }
       return data as number;
+    },
+
+    // Same row the hub's new-prototype dialog inserts (src/routes/Hub.jsx).
+    async create(input) {
+      const team = await teamId(db, userId);
+      const { count, error: countError } = await db.from("projects").select("id", { count: "exact", head: true });
+      if (countError) throw countError;
+      const { data, error } = await db.from("projects")
+        .insert({ ...input, team_id: team, controls: [], defaults: {}, sort_order: count ?? 0, created_by: userId })
+        .select(PROTO_FIELDS)
+        .single();
+      if (error) {
+        if (error.code === "23505") throw new SlugTaken();
+        throw error;
+      }
+      return data;
+    },
+
+    async setStates(id, controls, defaults) {
+      const { data, error } = await db.from("projects").update({ controls, defaults }).eq("id", id).select("id");
+      if (error) throw error;
+      if (!data?.length) throw new Error("the prototype couldn't be updated.");
+    },
+  };
+}
+
+// The media library the hub's Media tab manages: files in the public media
+// bucket under library/, keys in assets (src/lib/data.js does the same).
+export function supabaseMediaStore(db: SupabaseClient, userId: string): MediaStore {
+  const bucket = () => db.storage.from("media");
+  return {
+    async assets() {
+      const { data, error } = await db.from("assets").select("key,url");
+      if (error) throw error;
+      return Object.fromEntries((data ?? []).map((row) => [row.key, row.url]));
+    },
+
+    async upload(bytes, type, filename) {
+      const path = `${LIBRARY_FOLDER}${crypto.randomUUID()}-${filename}`;
+      const { error } = await bucket().upload(path, bytes, { contentType: type, cacheControl: "31536000" });
+      if (error) throw error;
+      return bucket().getPublicUrl(path).data.publicUrl;
+    },
+
+    async saveAsset(key, url) {
+      const team_id = await teamId(db, userId);
+      const { error } = await db.from("assets").upsert({ team_id, key, name: key, url }, { onConflict: "team_id,key" });
+      if (error) throw error;
+    },
+
+    async removeFile(url) {
+      const base = bucket().getPublicUrl("").data.publicUrl;
+      if (!url.startsWith(base + LIBRARY_FOLDER)) return;
+      const path = decodeURI(url.slice(base.length).split(/[?#]/)[0]);
+      const { error } = await bucket().remove([path]);
+      if (error) throw error;
     },
   };
 }
@@ -91,10 +153,9 @@ export function supabaseKbStore(db: SupabaseClient, userId: string): KbStore {
     },
 
     async insert(row) {
-      const { data: profile, error: profileError } = await db.from("profiles").select("team_id").eq("id", userId).single();
-      if (profileError) throw profileError;
+      const team_id = await teamId(db, userId);
       const { data, error } = await db.from("kb_entries")
-        .insert({ ...row, team_id: profile.team_id, created_by: userId })
+        .insert({ ...row, team_id, created_by: userId })
         .select(KB_FIELDS).single();
       if (error) throw error;
       return data as KbRow;

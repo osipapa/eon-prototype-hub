@@ -81,9 +81,15 @@ Open **Connect Claude** (the plug in the sidebar footer) for the URL and steps:
   then `/mcp` → eon-hub → sign in.
 
 Tools: `list_prototypes`, `read_prototype`, `search_prototype`, `edit_prototype`
-(exact-text replace, safe alongside a teammate's edits), `write_prototype`
+(exact-text replace, safe alongside a teammate's edits), `multi_edit_prototype`
+(many replacements in order, saved as one version), `write_prototype`
 (whole file, rejected if someone saved since your `base_version`),
-`list_revisions`, `restore_revision`, `whoami`.
+`list_revisions`, `restore_revision`, `create_prototype`, `get_states` /
+`set_states` (State options), `check_prototype` (the file against the setup
+guide), `preview_links` (hub links per state, theme, and screen size),
+`upload_media` / `extract_media` (media library files used as `{{key}}`), the
+`kb_*` knowledge base tools, and `whoami`. Every save returns the HTML's
+SHA-256, the same value as `shasum -a 256` on a local copy.
 The server is `supabase/functions/hub-mcp` (deploy with `verify_jwt: false`).
 
 ## Guardrails

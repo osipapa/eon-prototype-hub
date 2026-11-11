@@ -1,5 +1,7 @@
 import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
-import { applyEdit, clipAround, contextAround, decodeJwtPayload, PAGE_CHAR_BUDGET, pageLines, searchLines } from "./lib.ts";
+import {
+  applyEdit, applyEdits, clipAround, contextAround, decodeJwtPayload, PAGE_CHAR_BUDGET, pageLines, searchLines, sha256Hex,
+} from "./lib.ts";
 
 const b64url = (value: unknown) =>
   btoa(JSON.stringify(value)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
@@ -118,4 +120,27 @@ Deno.test("contextAround shows numbered lines around the change, clipped on mini
   const ctx = contextAround(minified, 2000);
   assertStringIncludes(ctx, "CHANGED");
   assert(ctx.length < 400);
+});
+
+Deno.test("applyEdits applies in order, later edits see earlier ones", () => {
+  const r = applyEdits("<p>a</p>", [
+    { old_string: "a", new_string: "b" },
+    { old_string: "<p>b</p>", new_string: "<p>b</p><p>b</p>" },
+    { old_string: "b", new_string: "c", replace_all: true },
+  ]);
+  assertEquals(r, { ok: true, html: "<p>c</p><p>c</p>", counts: [1, 1, 2] });
+});
+
+Deno.test("applyEdits is all or nothing and names the failing edit", () => {
+  const r = applyEdits("<p>a</p>", [{ old_string: "a", new_string: "b" }, { old_string: "a", new_string: "c" }]);
+  assert(!r.ok);
+  assertStringIncludes(r.error, "Edit 2 of 2 (after edit 1): old_string not found");
+  assertStringIncludes(r.error, "Nothing was saved.");
+});
+
+Deno.test("sha256Hex matches the standard test vector", async () => {
+  assertEquals(await sha256Hex("abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+  // UTF-8 bytes, like shasum on a saved file: "é" is c3 a9.
+  const utf8 = new Uint8Array(await crypto.subtle.digest("SHA-256", new Uint8Array([0xc3, 0xa9])));
+  assertEquals(await sha256Hex("é"), Array.from(utf8, (b) => b.toString(16).padStart(2, "0")).join(""));
 });

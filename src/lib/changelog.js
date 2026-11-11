@@ -19,6 +19,27 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-11-11",
+    title: "Claude connector: batch edits, checks, and media",
+    groups: [
+      {
+        label: "New",
+        items: [
+          "Claude can make many edits to a prototype in one step, saved as one version.",
+          "Claude can check a prototype against the setup guide (states, media, safe areas, animation demos) before handing it back.",
+          "Claude can save images to the media library, or move an image stuck inside a prototype there, and use it as a {{token}}.",
+          "Claude can read and change a prototype's State options, create prototypes, and open any state, theme, or screen size in the hub to look at it.",
+        ],
+      },
+      {
+        label: "Under the hood",
+        items: [
+          "Every save Claude makes reports the file's SHA-256, so it can confirm the hub matches its build.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-11-05",
     title: "Videos in the media library",
     image: "changelog/2026-11-05-media-videos.png",
