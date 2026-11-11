@@ -37,6 +37,7 @@ export const CHANGELOG = [
         label: "Under the hood",
         items: [
           "Every save Claude makes reports the file's SHA-256, so it can confirm the hub matches its build.",
+          "The Claude connector now gives apps the Eon logo as its icon, for those that show one.",
         ],
       },
       {

@@ -9,11 +9,18 @@ import { supabaseKbStore, supabaseMediaStore, supabaseStore } from "./store.ts";
 
 const HUB_URL = Deno.env.get("HUB_URL") ?? "https://osipapa.github.io/eon-prototype-hub/";
 
+// The Eon mark that MCP clients show for the connector (serverInfo.icons),
+// served from the hub's public/ folder.
+const ICONS = [
+  { src: new URL("eon-icon.png", HUB_URL).href, mimeType: "image/png", sizes: ["256x256"] },
+  { src: new URL("favicon.svg", HUB_URL).href, mimeType: "image/svg+xml", sizes: ["any"] },
+];
+
 type Claims = Record<string, unknown>;
 
 export function buildServer(db: SupabaseClient, user: User, claims: Claims) {
   const server = new McpServer(
-    { name: "eon-hub", version: "1.1.0" },
+    { name: "eon-hub", version: "1.2.0", websiteUrl: HUB_URL, icons: ICONS },
     {
       instructions: "Eon Prototype Hub. Tools read and edit the team's shared prototype HTML as the signed-in teammate. Edits appear live for everyone in the hub. " +
         "Send related changes as one multi_edit_prototype call: it saves one version. Every save returns the file's sha256, the same value as `shasum -a 256` on a local copy. " +
