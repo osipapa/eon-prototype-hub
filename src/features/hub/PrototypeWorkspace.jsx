@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import {
   CANVAS_PRESETS, HUB, PROTOTYPE_SANDBOX, VIEWPORTS, currentArgs,
-  effectiveStory, parsePrototypeConfig, renderStory, stateCombos, tabsStyle,
+  effectiveStory, insetCropStyle, parsePrototypeConfig, renderStory, stateCombos, tabsStyle,
 } from "./prototypes";
 import {
   LinearCard, MediaManager,
@@ -1176,6 +1176,7 @@ export default function PrototypeWorkspace({
       window.removeEventListener("keydown", onKey);
     };
   }, [touchFull, closeTouchFull]);
+  const touchFullCrop = useMemo(() => insetCropStyle(effStory?.prototype_html || ""), [effStory?.prototype_html]);
 
   useEffect(() => { if (story?.id) rememberRecent(story.id); }, [story?.id]);
 
@@ -1617,7 +1618,7 @@ export default function PrototypeWorkspace({
       <HubChangelogDialog c={c} open={changelog.isOpen} onClose={changelog.close} newSince={changelog.newSince} />
       {touchFull && effStory && (
         <div className="eon-touch-full" style={{ background: canvasBg }}>
-          <iframe ref={touchFullRef} className="eon-touch-full-frame" title={`${effStory.title}, full screen`}
+          <iframe ref={touchFullRef} className="eon-touch-full-frame" style={touchFullCrop} title={`${effStory.title}, full screen`}
             sandbox={PROTOTYPE_SANDBOX} srcDoc={injectFullViewExit(renderStory(effStory, protoTheme, media, args))} />
           <p className="eon-mirror-notice" role="status">Double-tap to exit</p>
         </div>

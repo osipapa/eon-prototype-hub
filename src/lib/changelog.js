@@ -20,7 +20,9 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-11-11",
-    title: "Claude connector: batch edits, checks, and media",
+    title: "Claude connector upgrades and full-height phone view",
+    image: "changelog/2026-11-11-phone-full-height.png",
+    imageAlt: "A prototype on a phone before and after: it now starts right under the status bar.",
     groups: [
       {
         label: "New",
@@ -35,6 +37,12 @@ export const CHANGELOG = [
         label: "Under the hood",
         items: [
           "Every save Claude makes reports the file's SHA-256, so it can confirm the hub matches its build.",
+        ],
+      },
+      {
+        label: "Fixes",
+        items: [
+          "On a phone, prototypes fill the screen from the status bar to the browser bar, without empty bands at the top and bottom.",
         ],
       },
     ],

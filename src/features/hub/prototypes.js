@@ -46,6 +46,26 @@ export const VIEWPORTS = {
   mobile: { label: "Mobile", w: 402, h: 874 },
 };
 
+// What the mobile mockup's hardware covers, in points: the Dynamic Island strip
+// on top and the home indicator below. Prototypes keep clear of them with
+// max(59px, env(safe-area-inset-top)) and max(34px, env(safe-area-inset-bottom)).
+export const MOBILE_SAFE_AREA = { top: 59, bottom: 34 };
+
+// On a real phone the browser's status bar and toolbar already sit outside the
+// page, so those strips read as empty bands above and below the prototype.
+// Full screen crops whichever strip the HTML reserves: a max() floor of at
+// least the mockup inset over env(safe-area-inset-*). The stylesheet applies
+// the crop at phone widths only.
+export function insetCropStyle(html = "") {
+  const reserves = (side, inset) => [
+    ...html.matchAll(new RegExp(`max\\(\\s*(\\d+(?:\\.\\d+)?)px\\s*,\\s*(?:calc\\(\\s*)?env\\(\\s*safe-area-inset-${side}`, "gi")),
+  ].some((match) => Number(match[1]) >= inset);
+  return {
+    "--crop-top": `${reserves("top", MOBILE_SAFE_AREA.top) ? MOBILE_SAFE_AREA.top : 0}px`,
+    "--crop-bottom": `${reserves("bottom", MOBILE_SAFE_AREA.bottom) ? MOBILE_SAFE_AREA.bottom : 0}px`,
+  };
+}
+
 export const STATUS_COLOR = {
   "In review": ["rgba(114,167,255,0.17)", "#72A7FF", "#245FD1"],
   "Handoff": ["rgba(255,179,79,0.17)", "#FFB34F", "#9A4A00"],

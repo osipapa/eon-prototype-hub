@@ -1,4 +1,4 @@
-import { MAPBOX, PRESET_MEDIA, VIEWPORTS, isVideoUrl, safeMediaUrl } from "./prototypes.js";
+import { MAPBOX, MOBILE_SAFE_AREA, PRESET_MEDIA, VIEWPORTS, isVideoUrl, safeMediaUrl } from "./prototypes.js";
 
 const CONTROL_KEY = /^[a-z][a-z0-9_-]*$/;
 const MEDIA_KEY = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
@@ -114,8 +114,8 @@ export function buildSetupPrompt({
     // with. Points, at the 402x874 mobile size.
     mobileSafeArea: {
       device: "iPhone 17 Pro",
-      top: 59,
-      bottom: 34,
+      top: MOBILE_SAFE_AREA.top,
+      bottom: MOBILE_SAFE_AREA.bottom,
       left: 0,
       right: 0,
       dynamicIsland: { width: 124, height: 36, offsetFromScreenTop: 14, centeredHorizontally: true },

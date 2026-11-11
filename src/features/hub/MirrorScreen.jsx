@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MIRROR_PING_MS, openMirrorChannel } from "@/lib/mirror";
 import { injectAnchorBridge } from "./anchorBridge";
-import { PROTOTYPE_SANDBOX, currentArgs, effectiveStory, renderStory } from "./prototypes";
+import { PROTOTYPE_SANDBOX, currentArgs, effectiveStory, insetCropStyle, renderStory } from "./prototypes";
 
 /* Phone side of the mirror: the prototype full screen and nothing else. It
    starts on the view the QR code held, then follows the desktop tab that
@@ -86,6 +86,7 @@ export default function MirrorScreen({ projects, media, sessionId, initialView, 
     () => (story ? injectAnchorBridge(renderStory(story, view.theme, media, args)) : ""),
     [story, view.theme, media, args],
   );
+  const crop = useMemo(() => insetCropStyle(html), [html]);
   const frameKey = project ? `${project.id}-${view.theme}-${JSON.stringify(args)}-${generation}` : "none";
   // A new frame isn't ready until its bridge says so.
   useEffect(() => { readyRef.current = false; }, [frameKey, html]);
@@ -106,6 +107,7 @@ export default function MirrorScreen({ projects, media, sessionId, initialView, 
           ref={frameRef}
           key={frameKey}
           className="eon-mirror-frame"
+          style={crop}
           title={story.title}
           sandbox={PROTOTYPE_SANDBOX}
           referrerPolicy="no-referrer"

@@ -680,12 +680,19 @@ button.eon-save-state { cursor: pointer; }
 .eon-mirror-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; }
 .eon-mirror-popover .eon-secondary-button { margin-top: 4px; }
 /* Full view on touch: the prototype alone, over everything. */
-.eon-touch-full { position: fixed; inset: 0; z-index: 90; }
+.eon-touch-full { position: fixed; inset: 0; z-index: 90; overflow: hidden; }
 .eon-touch-full-frame { display: block; width: 100%; height: 100%; border: 0; }
 /* The phone end: the prototype, full screen, and nothing else. */
-.eon-mirror { position: fixed; inset: 0; background: #000000; color: #A1A1AA; }
+.eon-mirror { position: fixed; inset: 0; overflow: hidden; background: #000000; color: #A1A1AA; }
 .eon-mirror.is-light { background: #FFFFFF; color: #636369; }
 .eon-mirror-frame { display: block; width: 100%; height: 100%; border: 0; }
+/* A phone browser keeps its status bar and toolbar outside the page, so the
+   strips a prototype reserves for the mockup's island and home indicator
+   (--crop-*, from insetCropStyle) slide out of view instead of showing as
+   bands. */
+@media (max-width: 500px) {
+  .eon-touch-full-frame, .eon-mirror-frame { position: absolute; top: calc(-1 * var(--crop-top, 0px)); left: 0; height: calc(100% + var(--crop-top, 0px) + var(--crop-bottom, 0px)); }
+}
 .eon-mirror-message { position: absolute; inset: 0; display: flex; margin: 0; padding: 32px; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font: 500 14px/1.5 "DM Sans", sans-serif; text-align: center; }
 .eon-mirror-message button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #E8E8E8; color: #141414; font: inherit; font-weight: 600; cursor: pointer; }
 .eon-mirror-notice { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom)); left: 50%; z-index: 2; margin: 0; padding: 8px 14px; border-radius: 999px; background: rgba(20, 20, 20, .86); color: #FFFFFF; font: 600 12px/1.2 "DM Sans", sans-serif; translate: -50%; pointer-events: none; animation: eon-mirror-notice 2400ms ease both; }
