@@ -38,6 +38,7 @@ import CanvasPane from "./CanvasPane";
 import SplitDropZones, { startPrototypeDrag } from "./SplitDropZones";
 import { buildSections, mergeStatusCache, readStatusCache } from "./statusGroups";
 import PhoneMirrorButton from "./PhoneMirror";
+import { fullViewUrl } from "@/lib/mirror";
 import PrototypeSwitcher, { SHORTCUT_MOD, rememberRecent } from "./PrototypeSwitcher";
 import { isForeignChange, reconnectPlan } from "./fileSyncGuard";
 import {
@@ -1144,6 +1145,8 @@ export default function PrototypeWorkspace({
     setNavCollapsedFromUser(!navCollapsed);
   };
   const patch = (field, value) => onPatchProject(story.id, { [field]: value });
+  // One desktop-size prototype on a desktop: Full view is its own tab.
+  const fullOpensTab = Boolean(effStory) && layout === "single" && !splitOpen && (viewport === "desktop" || viewport === "laptop");
   const openFull = () => {
     // Focus mode reveals the panels on edge hover. Without a hovering pointer
     // that's a trap, so touch gets the prototype alone, full screen, left with
@@ -1151,6 +1154,14 @@ export default function PrototypeWorkspace({
     if (!hasFinePointer()) {
       window.history.pushState({ ...window.history.state, eonFull: true }, "");
       setTouchFull(true);
+      return;
+    }
+    // A desktop prototype in the hub is a fixed frame scaled to fit. Its own
+    // tab lets it fill the window and lay out at the real screen size.
+    if (fullOpensTab) {
+      // Only what differs from the defaults, so the link stays short.
+      const changed = Object.fromEntries(Object.entries(args).filter(([key, value]) => String(value) !== String(effStory.defaults?.[key])));
+      window.open(fullViewUrl({ slug: effStory.slug, theme: protoTheme, args: changed }, { preview: mirrorTransport === "local" }), "_blank", "noopener");
       return;
     }
     setFocusMode(true);
@@ -1469,7 +1480,7 @@ export default function PrototypeWorkspace({
             setInspectorOpen(opening);
             if (opening) setNavOpen(false);
           }}
-          openFull={openFull}
+          openFull={openFull} fullOpensTab={fullOpensTab && hasFinePointer()}
           viewport={viewport} setViewport={setViewport} layout={layout} setLayout={setLayout}
           saveState={saveState} onRetrySave={onRetrySave}
           onOpenLinear={openLinearContext}
@@ -2050,7 +2061,7 @@ function WorkspaceSidebar({
 function WorkspaceToolbar({
   c, view, story, liveLinear, linearId, coViewers = [],
   navDrawer, navOpen, onOpenNav, navCollapsed, onExpandNav, inspectorDrawer, inspectorOpen, onToggleInspector,
-  openFull, viewport, setViewport, layout, setLayout,
+  openFull, fullOpensTab, viewport, setViewport, layout, setLayout,
   saveState, onRetrySave, onOpenLinear,
   showMirror, mirrorView, mirrorTransport, frameRef,
 }) {
@@ -2142,9 +2153,11 @@ function WorkspaceToolbar({
               />
             </div>
             {showMirror && <PhoneMirrorButton c={c} view={mirrorView} frameRef={frameRef} transport={mirrorTransport} />}
-            <button className="eon-buttonish eon-secondary-button eon-full-button" onClick={openFull} aria-label="Open prototype in full view" title="Open prototype in full view (F)"
+            <button className="eon-buttonish eon-secondary-button eon-full-button" onClick={openFull}
+              aria-label={fullOpensTab ? "Open prototype at full size in a new tab" : "Open prototype in full view"}
+              title={fullOpensTab ? "Open at full size in a new tab (F)" : "Open prototype in full view (F)"}
               style={{ borderColor: c.border, background: c.panel, color: c.secondary }}>
-              <Maximize2 size={15} /> <span>Full view</span>
+              {fullOpensTab ? <ExternalLink size={15} /> : <Maximize2 size={15} />} <span>Full view</span>
             </button>
             {inspectorDrawer && (
               <button

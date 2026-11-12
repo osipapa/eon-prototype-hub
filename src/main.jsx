@@ -10,6 +10,7 @@ import "./index.css";
 
 const DesignGuidePreview = React.lazy(() => import("./dev/DesignGuidePreview"));
 const MirrorPreview = React.lazy(() => import("./dev/MirrorPreview"));
+const FullPreview = React.lazy(() => import("./dev/FullPreview"));
 const ConsentPreview = React.lazy(() => import("./dev/ConsentPreview"));
 const AdminPreview = React.lazy(() => import("./dev/AdminPreview"));
 const AnimationsPreview = React.lazy(() => import("./dev/AnimationsPreview"));
@@ -21,6 +22,7 @@ const isWorkspacePreview = import.meta.env.DEV && previewParams.has("workspace-p
 const isPromptPreview = import.meta.env.DEV && previewParams.has("prompts-preview");
 const isDesignPreview = import.meta.env.DEV && previewParams.has("design-preview");
 const isMirrorPreview = import.meta.env.DEV && previewParams.has("mirror-preview");
+const isFullPreview = import.meta.env.DEV && previewParams.has("full-preview");
 const isConsentPreview = import.meta.env.DEV && previewParams.has("consent-preview");
 const isAdminPreview = import.meta.env.DEV && previewParams.has("admin-preview");
 const isAnimationsPreview = import.meta.env.DEV && previewParams.has("animations-preview");
@@ -34,6 +36,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <React.Suspense fallback={null}><AdminPreview /></React.Suspense>
     ) : isConsentPreview ? (
       <React.Suspense fallback={null}><ConsentPreview /></React.Suspense>
+    ) : isFullPreview ? (
+      <React.Suspense fallback={null}><FullPreview /></React.Suspense>
     ) : isMirrorPreview ? (
       <React.Suspense fallback={null}><MirrorPreview /></React.Suspense>
     ) : isDesignPreview ? (

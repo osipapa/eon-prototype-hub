@@ -10,6 +10,7 @@ const Design = lazy(() => import("./routes/Design"));
 const Prompts = lazy(() => import("./routes/Prompts"));
 const Admin = lazy(() => import("./routes/Admin"));
 const Mirror = lazy(() => import("./routes/Mirror"));
+const Full = lazy(() => import("./routes/Full"));
 const OAuthConsent = lazy(() => import("./routes/OAuthConsent"));
 const Animations = lazy(() => import("./routes/Animations"));
 
@@ -96,6 +97,7 @@ export default function App() {
             <Route path="/tracking/*" element={<Navigate to="/design/tracking-mixpanel" replace />} />
             <Route path="/admin" element={<RequireAuth adminOnly><Admin /></RequireAuth>} />
             <Route path="/mirror/:session" element={<MirrorHandoff><RequireAuth><Mirror /></RequireAuth></MirrorHandoff>} />
+            <Route path="/full/:slug" element={<RequireAuth><Full /></RequireAuth>} />
             <Route path="/oauth/consent" element={<RequireAuth><OAuthConsent /></RequireAuth>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

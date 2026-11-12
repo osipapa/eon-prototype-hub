@@ -19,6 +19,21 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-11-12",
+    title: "Full view at your real screen size",
+    image: "changelog/2026-11-12-full-view-tab.png",
+    imageAlt: "A desktop prototype in its own tab, filling the whole browser window.",
+    groups: [
+      {
+        label: "Behavior",
+        items: [
+          "Full view on a Desktop or Laptop prototype opens it in a new tab, where it fills your browser window instead of a fixed frame.",
+          "The tab keeps the theme and state you were on, and its link can be shared with teammates.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-11-11",
     title: "Claude connector upgrades and full-height phone view",
     image: "changelog/2026-11-11-phone-full-height.png",
