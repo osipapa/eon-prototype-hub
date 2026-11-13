@@ -19,6 +19,20 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-11-13",
+    title: "Full view follows your light or dark mode",
+    image: "changelog/2026-11-13-full-view-device-theme.png",
+    imageAlt: "The full view tab in light mode, matching a device set to light.",
+    groups: [
+      {
+        label: "Behavior",
+        items: [
+          "The full view tab uses your device's light or dark mode, and switches with it. A shared link shows each teammate their own mode.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-11-12",
     title: "Full view at your real screen size",
     image: "changelog/2026-11-12-full-view-tab.png",
@@ -28,7 +42,7 @@ export const CHANGELOG = [
         label: "Behavior",
         items: [
           "Full view on a Desktop or Laptop prototype opens it in a new tab, where it fills your browser window instead of a fixed frame.",
-          "The tab keeps the theme and state you were on, and its link can be shared with teammates.",
+          "The tab keeps the state you were on, and its link can be shared with teammates.",
         ],
       },
     ],

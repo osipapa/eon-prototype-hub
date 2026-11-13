@@ -1161,7 +1161,7 @@ export default function PrototypeWorkspace({
     if (fullOpensTab) {
       // Only what differs from the defaults, so the link stays short.
       const changed = Object.fromEntries(Object.entries(args).filter(([key, value]) => String(value) !== String(effStory.defaults?.[key])));
-      window.open(fullViewUrl({ slug: effStory.slug, theme: protoTheme, args: changed }, { preview: mirrorTransport === "local" }), "_blank", "noopener");
+      window.open(fullViewUrl({ slug: effStory.slug, args: changed }, { preview: mirrorTransport === "local" }), "_blank", "noopener");
       return;
     }
     setFocusMode(true);

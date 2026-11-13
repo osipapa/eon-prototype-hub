@@ -71,14 +71,16 @@ export function mirrorUrl(sessionId, view, { preview = false, handoff = null } =
     : `${base}#/mirror/${sessionId}?${params}`;
 }
 
-// Full view's own tab: one prototype filling the window (#/full/<slug>).
+// Full view's own tab: one prototype filling the window (#/full/<slug>). No
+// theme in the link: the tab follows the light or dark setting of the device
+// that opens it.
 export function fullViewUrl(view, { preview = false } = {}) {
   const params = new URLSearchParams();
-  if (view?.theme) params.set("theme", view.theme);
   Object.entries(view?.args || {}).forEach(([key, value]) => params.set(`arg.${key}`, JSON.stringify(value)));
   const base = `${window.location.origin}${import.meta.env.BASE_URL}`;
   const slug = encodeURIComponent(view.slug);
-  return preview ? `${base}?full-preview=${slug}&${params}` : `${base}#/full/${slug}?${params}`;
+  const query = params.size ? `?${params}` : "";
+  return preview ? `${base}?full-preview=${slug}${query.replace("?", "&")}` : `${base}#/full/${slug}${query}`;
 }
 
 /* Sign-in handoff. A phone that scans the QR is rarely signed in, and hub
