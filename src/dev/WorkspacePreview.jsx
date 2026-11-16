@@ -49,7 +49,10 @@ button.ghost{background:transparent;color:#a1a1aa}
 <div class="row"><button class="ghost" id="popup-back" onclick="step(-1)">Back</button><button id="popup-next" onclick="step(1)">Continue</button></div>
 </div></div>
 <script>var steps=[["Add a payment method","Pick how you want to pay for this trip."],["Confirm your card","We'll place a temporary hold of $1."],["You're all set","Your card is saved for next time."]],at=0;
-function step(by){at=Math.max(0,Math.min(steps.length-1,at+by));document.getElementById("popup-title").textContent=steps[at][0];document.getElementById("popup-body").textContent=steps[at][1];}</script>
+function step(by){at=Math.max(0,Math.min(steps.length-1,at+by));document.getElementById("popup-title").textContent=steps[at][0];document.getElementById("popup-body").textContent=steps[at][1];}
+/* Preview only: the sandbox keeps the hub out of this page, so a message
+   stands in for dragging over text. { demoSelect: { id, from, to } } */
+addEventListener("message",function(e){var m=e.data&&e.data.demoSelect;if(!m)return;var n=document.getElementById(m.id).firstChild,r=document.createRange();r.setStart(n,m.from);r.setEnd(n,m.to);var s=getSelection();s.removeAllRanges();s.addRange(r);dispatchEvent(new MouseEvent("mouseup",{bubbles:true}));});</script>
 </body></html>`;
 
 // Stands in for the linear-issue edge function, so status sections render.

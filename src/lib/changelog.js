@@ -20,13 +20,15 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 export const CHANGELOG = [
   {
     date: "2026-11-16",
-    title: "Pins stay on their step, and prototypes download",
-    image: "changelog/2026-11-16-download-prototype.png",
-    imageAlt: "The prototype menu in the sidebar, with the new Download action.",
+    title: "Suggest copy on the prototype",
+    image: "changelog/2026-11-16-suggest-copy.png",
+    imageAlt: "Text selected on a prototype, with new copy being suggested for it.",
     groups: [
       {
         label: "New",
         items: [
+          "Select text on a prototype and choose Suggest copy to propose new wording. The comment shows the old text and yours, and the text stays highlighted on the canvas.",
+          "In pin mode, drag over text (or double-click a word) to suggest copy for it. Change copy on the pin ring starts from the pinned text.",
           "Download a prototype's HTML from its … menu in the sidebar.",
         ],
       },

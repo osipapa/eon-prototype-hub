@@ -824,6 +824,14 @@ button.eon-save-state { cursor: pointer; }
 .eon-pin-ring-center { position: absolute; top: 50%; left: 50%; display: grid; width: 26px; height: 26px; place-items: center; padding: 0; border: 1px solid; border-radius: 999px; translate: -50% -50%; cursor: pointer; }
 @keyframes eon-ring-in { from { scale: 0.4; opacity: 0; } to { scale: 1; opacity: 1; } }
 .eon-pin-composer { position: absolute; z-index: 6; padding: 8px; border: 1px solid; border-radius: 13px; translate: 0 -50%; box-shadow: 0 10px 34px rgba(0,0,0,.35); animation: eon-ring-in 140ms var(--ease-out) backwards; pointer-events: auto; }
+.eon-pin-composer-quote { display: -webkit-box; margin: 2px 6px 8px; overflow: hidden; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.eon-copy-mark { position: absolute; border-radius: 3px; opacity: .22; pointer-events: none; transition: opacity 120ms linear; }
+.eon-copy-mark[data-strong] { opacity: .4; }
+.eon-copy-chip { position: absolute; z-index: 4; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; pointer-events: auto; box-shadow: 0 6px 20px rgba(0,0,0,.3); animation: eon-ring-in 140ms var(--ease-out) backwards; }
+.eon-copy-suggestion { position: relative; display: grid; gap: 4px; margin-top: 6px; padding: 8px 34px 8px 10px; border: 1px solid; border-radius: 10px; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.eon-copy-suggestion del { text-decoration: line-through; }
+.eon-copy-suggestion ins { font-weight: 600; text-decoration: none; }
+.eon-copy-suggestion .eon-comment-action { position: absolute; top: 6px; right: 6px; }
 .eon-pin-composer-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
 .eon-pin-composer-meta > span { font-size: 11px; }
 .eon-pin-composer-send { display: grid; width: 28px; height: 28px; place-items: center; padding: 0; border: 0; border-radius: 8px; cursor: pointer; }

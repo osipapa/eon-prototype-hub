@@ -6,7 +6,8 @@
 
    hub → prototype
      { eon:1, type:"eon-anchor-mode", on }        toggle pin-placement mode
-     { eon:1, type:"eon-anchor-query", targets }   pins to track: [{ key, selector, text?, heading? }]
+     { eon:1, type:"eon-anchor-query", targets }   pins to track: [{ key, selector, text?, heading?, quote? }]
+     { eon:1, type:"eon-anchor-deselect" }         drop the text selection (a copy suggestion was sent or cancelled)
      { eon:1, type:"eon-anchor-reveal", selector, text?, heading?, doc_x, doc_y, flash } show + scroll pin into view;
                                                    flash outlines the element for a moment (check findings)
      { eon:1, type:"eon-shot", code, scale }         render the viewport to a PNG (code is html-to-image)
@@ -14,9 +15,10 @@
      { eon:1, type:"eon-sync-apply", event }        replay what the other screen reported
    prototype → hub
      { eon:1, type:"eon-anchor-ready" }            bridge is live (iframe mounted)
-     { eon:1, type:"eon-anchor-click", selector, text, heading, rel_x, rel_y, x_pct, y_pct, doc_x, doc_y }
+     { eon:1, type:"eon-anchor-click", selector, text, heading, quote?, rel_x, rel_y, x_pct, y_pct, doc_x, doc_y }
+     { eon:1, type:"eon-anchor-select", quote, rect, ...the click fields }  text selected outside pin mode ("" when cleared)
      { eon:1, type:"eon-anchor-cancel" }           Esc pressed inside the iframe
-     { eon:1, type:"eon-anchor-rects", rects, scroll } key → {x,y,w,h} | {hidden} | null
+     { eon:1, type:"eon-anchor-rects", rects, scroll } key → {x,y,w,h,marks?} | {hidden} | null
      { eon:1, type:"eon-anchor-zoom", delta }      trackpad pinch over the prototype
      { eon:1, type:"eon-shot-result", blob | error }
      { eon:1, type:"eon-sync-event", event }        a tap, typed value, or scroll: { kind, selector, ... }
@@ -35,6 +37,12 @@
    the selector alone, as they always did. Rects are re-sent on DOM changes,
    so a step change needs no scroll to move or hide its pins.
 
+   Copy suggestions pin to selected text. In pin mode a drag (or double-click)
+   over text sends the selection as the click's quote; outside pin mode a
+   selection is reported so the hub can offer "Suggest copy" next to it. A pin
+   with a quote also gets marks: the boxes of that text inside its element,
+   which the hub paints as a highlight.
+
    Rects are iframe CSS pixels (the viewport space); the hub scales them by the
    canvas frame scale. The script is inert until the hub speaks to it.
 
@@ -42,7 +50,7 @@
    tap never echoes back. Scrolls fired by a replay are muted for a moment. */
 
 const BRIDGE_SCRIPT = `<script>(function(){
-var mode=false,watched=[],queued=false,hl=null,lastSent="",moTimer=0;
+var mode=false,watched=[],queued=false,hl=null,lastSent="",moTimer=0,swallow=false,down=false,hadSel=false,selTimer=0,selStyle=null;
 function post(m){m.eon=1;parent.postMessage(m,"*");}
 function selectorFor(el){
   var parts=[];
@@ -82,6 +90,60 @@ function locate(t){
   for(var i=0;i<all.length&&i<600;i++)if(all[i]!==el&&shown(all[i])&&matches(all[i],t))return all[i];
   return null;
 }
+function squash(s){return String(s||"").replace(/\\s+/g," ").trim();}
+/* The range of a quote inside an element, matched with whitespace collapsed
+   the same way the quote was when it was selected. */
+function findQuote(el,quote){
+  if(!quote||(el.textContent||"").length>20000)return null;
+  var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null),n,chars=[],map=[],gap=true;
+  while((n=w.nextNode())){
+    var d=n.data;
+    for(var i=0;i<d.length;i++){
+      var ch=d.charAt(i),sp=/\\s/.test(ch);
+      if(sp){if(gap)continue;ch=" ";}
+      gap=sp;chars.push(ch);map.push([n,i]);
+    }
+  }
+  var at=chars.join("").indexOf(quote);
+  if(at<0)return null;
+  var r=document.createRange(),a=map[at],b=map[at+quote.length-1];
+  r.setStart(a[0],a[1]);r.setEnd(b[0],b[1]+1);
+  return r;
+}
+function marksOf(el,quote){
+  var r=findQuote(el,quote),out=[];
+  if(!r)return out;
+  var list=r.getClientRects();
+  for(var i=0;i<list.length&&out.length<12;i++)if(list[i].width>0&&list[i].height>0)out.push({x:list[i].left,y:list[i].top,w:list[i].width,h:list[i].height});
+  return out;
+}
+/* The selected text as a pin: its smallest containing element, the quote, and
+   where the selection starts inside that element. */
+function selInfo(){
+  var s=window.getSelection&&getSelection();
+  if(!s||!s.rangeCount||s.isCollapsed)return null;
+  var r=s.getRangeAt(0),q=squash(r.toString());
+  if(!q||q.length>400)return null;
+  var n=r.commonAncestorContainer,el=n.nodeType===1?n:n.parentElement;
+  if(!el||(el.closest&&el.closest("[data-eon-overlay]")))return null;
+  var sel=selectorFor(el);
+  if(!sel)return null;
+  var b=r.getBoundingClientRect(),first=r.getClientRects()[0]||b,er=el.getBoundingClientRect();
+  return{selector:sel,text:norm(el.textContent),heading:headingOf(el),quote:q,
+    rel_x:er.width?(first.left-er.left)/er.width:.5,rel_y:er.height?(first.top-er.top)/er.height:.5,
+    x_pct:innerWidth?first.left/innerWidth*100:0,y_pct:innerHeight?first.top/innerHeight*100:0,
+    doc_x:first.left+pageXOffset,doc_y:first.top+pageYOffset,
+    rect:{x:b.left,y:b.top,w:b.width,h:b.height}};
+}
+function reportSelection(){
+  selTimer=0;
+  if(mode||down)return;
+  var info=selInfo();
+  if(info){info.type="eon-anchor-select";post(info);}
+  else if(hadSel)post({type:"eon-anchor-select",quote:""});
+  hadSel=!!info;
+}
+function queueSelection(){clearTimeout(selTimer);selTimer=setTimeout(reportSelection,180);}
 function rectOf(el){var r=el.getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height};}
 function shown(el){return el.getClientRects().length>0;}
 function sendRects(force){
@@ -89,7 +151,9 @@ function sendRects(force){
   var rects={};
   watched.forEach(function(t){
     var el=locate(t);
-    rects[t.key]=el?(shown(el)?rectOf(el):{hidden:true}):(typeof t.text==="string"?{hidden:true}:null);
+    var rect=el?(shown(el)?rectOf(el):{hidden:true}):(typeof t.text==="string"?{hidden:true}:null);
+    if(rect&&!rect.hidden&&t.quote){var marks=marksOf(el,t.quote);if(marks.length)rect.marks=marks;}
+    rects[t.key]=rect;
   });
   var scroll={x:pageXOffset,y:pageYOffset},sig=JSON.stringify([rects,scroll]);
   if(!force&&sig===lastSent)return;
@@ -130,9 +194,20 @@ function flash(el){
   clearTimeout(flTimer);flTimer=setTimeout(function(){fl.style.opacity="0";},2400);
 }
 function onMove(e){if(!mode)return;highlight(e.target===document.documentElement||e.target===document.body?null:e.target);}
+/* Pin mode: releasing over selected text pins the selection, and the click
+   that follows the release is not a second pin. */
+function onUp(){
+  if(!mode)return;
+  var info=selInfo();
+  if(!info)return;
+  swallow=true;
+  info.type="eon-anchor-click";delete info.rect;
+  post(info);
+}
 function onClick(e){
   if(!mode)return;
   e.preventDefault();e.stopPropagation();
+  if(swallow){swallow=false;return;}
   var el=e.target===document.documentElement?document.body:e.target;
   var r=el.getBoundingClientRect();
   post({type:"eon-anchor-click",selector:selectorFor(el),text:norm(el.textContent),heading:headingOf(el),
@@ -144,6 +219,9 @@ function onKey(e){if(mode&&e.key==="Escape")post({type:"eon-anchor-cancel"});}
 function setMode(on){
   mode=on;
   document.documentElement.style.cursor=on?"crosshair":"";
+  /* Text stays selectable while pinning, even where the prototype turns it off. */
+  if(on&&!selStyle){selStyle=document.createElement("style");selStyle.setAttribute("data-eon-overlay","");selStyle.textContent="*{-webkit-user-select:text!important;user-select:text!important}";document.documentElement.appendChild(selStyle);}
+  else if(!on&&selStyle){selStyle.remove();selStyle=null;}
   if(!on)highlight(null);
 }
 addEventListener("message",function(e){
@@ -151,6 +229,7 @@ addEventListener("message",function(e){
   if(!m||m.eon!==1)return;
   if(m.type==="eon-anchor-mode")setMode(!!m.on);
   else if(m.type==="eon-anchor-query"){watched=Array.isArray(m.targets)?m.targets.filter(function(t){return t&&t.key&&t.selector;}):[];sendRects(true);}
+  else if(m.type==="eon-anchor-deselect"){var s=window.getSelection&&getSelection();if(s)s.removeAllRanges();}
   else if(m.type==="eon-anchor-reveal"){
     var pinned=typeof m.text==="string",el=locate(m);
     if(!el&&pinned){
@@ -228,7 +307,12 @@ function onWheel(e){
   post({type:"eon-anchor-zoom",delta:e.deltaY});
 }
 addEventListener("wheel",onWheel,{passive:false,capture:true});
-addEventListener("pointerdown",function(){post({type:"eon-frame-pointer"});},true);
+addEventListener("pointerdown",function(){down=true;swallow=false;post({type:"eon-frame-pointer"});},true);
+addEventListener("pointerup",function(){down=false;if(!mode)queueSelection();},true);
+addEventListener("pointercancel",function(){down=false;},true);
+addEventListener("mouseup",onUp,true);
+document.addEventListener("selectionchange",function(){if(!mode)queueSelection();});
+addEventListener("scroll",function(){if(hadSel)queueSelection();},true);
 addEventListener("click",onClick,true);
 addEventListener("click",onSyncClick,true);
 addEventListener("input",onSyncValue,true);
@@ -305,6 +389,8 @@ export function anchorMatchesState(anchor, viewport, args, theme) {
 export function anchorPoint(anchor, tracked, vpWidth, vpHeight, scroll) {
   const rect = anchor?.selector ? tracked : null;
   if (rect?.hidden) return null;
+  // A pin on selected text sits at the start of that text.
+  if (rect?.marks?.length) return { x: rect.marks[0].x + 2, y: rect.marks[0].y, tracked: true };
   if (rect) return { x: rect.x + rect.w * (anchor.rel_x ?? 0.5), y: rect.y + rect.h * (anchor.rel_y ?? 0.5), tracked: true };
   if (Number.isFinite(anchor?.doc_x) && Number.isFinite(anchor?.doc_y) && scroll) {
     return { x: anchor.doc_x - scroll.x, y: anchor.doc_y - scroll.y, tracked: false };
@@ -321,7 +407,13 @@ export function anchorTarget(key, anchor) {
   return {
     key, selector: anchor.selector,
     ...(typeof anchor.text === "string" ? { text: anchor.text, heading: anchor.heading || "" } : {}),
+    ...(anchor.quote ? { quote: anchor.quote } : {}),
   };
+}
+
+// The comment text a copy suggestion carries when it has no note of its own.
+export function suggestionBody(anchor) {
+  return `“${anchor.quote}” → “${anchor.suggestion}”`;
 }
 
 export function anchorStateLabel(anchor) {

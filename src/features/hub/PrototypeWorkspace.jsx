@@ -42,7 +42,7 @@ import { fullViewUrl } from "@/lib/mirror";
 import PrototypeSwitcher, { SHORTCUT_MOD, rememberRecent } from "./PrototypeSwitcher";
 import { isForeignChange, reconnectPlan } from "./fileSyncGuard";
 import {
-  anchorMatchesState, anchorPoint, anchorStateLabel, anchorTarget, injectAnchorBridge, injectFullViewExit, isBridgeMessage,
+  anchorMatchesState, anchorPoint, anchorStateLabel, anchorTarget, injectAnchorBridge, injectFullViewExit, isBridgeMessage, suggestionBody,
 } from "./anchorBridge";
 import {
   ensureReadPermission, ensureWritePermission, forgetFileLink, pickHtmlFile, recallFileLink,
@@ -228,6 +228,8 @@ export default function PrototypeWorkspace({
   const [breakpoints, setBreakpoints] = useState({ navDrawer: false, inspectorDrawer: false, noCompare: false, compactControls: false });
   const [anchorMode, setAnchorMode] = useState(false);
   const [pendingAnchor, setPendingAnchor] = useState(null);
+  // Text selected in the prototype outside pin mode: offers "Suggest copy".
+  const [textSelection, setTextSelection] = useState(null);
   const [ringOpen, setRingOpen] = useState(false);
   const [pinWriteOpen, setPinWriteOpen] = useState(false);
   const [anchorRects, setAnchorRects] = useState({});
@@ -453,16 +455,30 @@ export default function PrototypeWorkspace({
           // The variation the pin sits on: the element's text and nearest heading.
           ...(message.selector && typeof message.text === "string"
             ? { text: message.text, heading: typeof message.heading === "string" ? message.heading : "" } : {}),
+          ...(message.selector && typeof message.quote === "string" && message.quote ? { quote: message.quote } : {}),
           rel_x: message.rel_x, rel_y: message.rel_y,
           x_pct: message.x_pct, y_pct: message.y_pct,
           doc_x: message.doc_x, doc_y: message.doc_y,
           viewport, args, theme: protoTheme,
         });
         setAnchorMode(false);
+        setTextSelection(null);
         // The quick-comment ring opens at the pin; "Write…" swaps it for an
-        // inline composer in place.
-        setPinWriteOpen(false);
-        setRingOpen(true);
+        // inline composer in place. Selected text goes straight to the
+        // composer, which suggests new copy for it.
+        setPinWriteOpen(Boolean(message.quote));
+        setRingOpen(!message.quote);
+      } else if (message.type === "eon-anchor-select") {
+        setTextSelection(message.quote && message.selector && message.rect ? {
+          rect: message.rect,
+          anchor: {
+            selector: message.selector, text: message.text, heading: message.heading || "", quote: message.quote,
+            rel_x: message.rel_x, rel_y: message.rel_y,
+            x_pct: message.x_pct, y_pct: message.y_pct,
+            doc_x: message.doc_x, doc_y: message.doc_y,
+            viewport, args, theme: protoTheme,
+          },
+        } : null);
       }
     };
     window.addEventListener("message", onMessage);
@@ -493,8 +509,7 @@ export default function PrototypeWorkspace({
   }, [anchorMode, ringOpen, pinWriteOpen]);
 
   // Ring choices: post the preset instantly at the pin, or write in place.
-  const quickComment = (body) => {
-    const anchor = pendingAnchor;
+  const quickComment = (body, anchor = pendingAnchor) => {
     setRingOpen(false);
     setPinWriteOpen(false);
     setPendingAnchor(null);
@@ -509,6 +524,31 @@ export default function PrototypeWorkspace({
     setRingOpen(false);
     setPinWriteOpen(true);
   };
+  // A copy suggestion: the pin carries the original text and its replacement.
+  const suggestCopy = (suggestion) => {
+    const anchor = { ...pendingAnchor, suggestion };
+    quickComment(suggestionBody(anchor), anchor);
+  };
+  // "Change copy" on the ring: suggest new copy for the pinned element's text.
+  // Text cut short when it was captured can't be matched, so it stays a note.
+  const pinnedText = pendingAnchor?.text && pendingAnchor.text.length < 120 ? pendingAnchor.text : "";
+  const suggestForPin = pinnedText && !pendingAnchor.quote ? () => {
+    setPendingAnchor((current) => (current ? { ...current, quote: current.text } : current));
+    writeComment();
+  } : null;
+  // "Suggest copy" next to text selected in the prototype.
+  const suggestForSelection = () => {
+    if (!textSelection) return;
+    setPendingAnchor(textSelection.anchor);
+    setTextSelection(null);
+    writeComment();
+  };
+  // Once a suggestion is sent or dropped, the prototype lets go of the selection.
+  const pendingQuoteRef = useRef(false);
+  useEffect(() => {
+    if (pendingQuoteRef.current && !pendingAnchor?.quote) postToFrame({ type: "eon-anchor-deselect" });
+    pendingQuoteRef.current = Boolean(pendingAnchor?.quote);
+  }, [pendingAnchor]);
   const cancelRing = () => {
     setRingOpen(false);
     setPinWriteOpen(false);
@@ -519,9 +559,11 @@ export default function PrototypeWorkspace({
   useEffect(() => {
     setPendingAnchor((current) =>
       current && !anchorMatchesState(current, viewport, args, protoTheme) ? null : current);
+    setTextSelection(null);
   }, [viewport, args, protoTheme]);
   useEffect(() => {
     setPendingAnchor(null);
+    setTextSelection(null);
     setActiveAnchorId(null);
     setAnchorMode(false);
     setAnchorRects({});
@@ -1543,8 +1585,11 @@ export default function PrototypeWorkspace({
                     <PinOverlay
                       c={c} pins={visiblePins} pendingAnchor={pendingAnchor} rects={anchorRects} scroll={anchorScroll}
                       vp={vp} frameScale={frameScale} activeAnchorId={activeAnchorId} currentUserId={profile?.id}
-                      ringOpen={ringOpen} pinWriteOpen={pinWriteOpen} onQuickComment={quickComment}
+                      ringOpen={ringOpen} pinWriteOpen={pinWriteOpen} onQuickComment={(body) => quickComment(body)}
                       onWriteComment={writeComment} onCancelRing={cancelRing}
+                      onSuggestCopy={suggestCopy} onSuggestForPin={suggestForPin}
+                      textSelection={canPlacePin && !anchorMode && !pendingAnchor ? textSelection : null}
+                      onSuggestForSelection={suggestForSelection}
                       onPickPin={(comment) => {
                         setActiveAnchorId((current) => (current === comment.id ? null : comment.id));
                         setInspectorTab("comments");
@@ -2866,7 +2911,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
         {anchors.pendingAnchor && (
           <div className="eon-composer-pin" style={{ borderColor: c.border, background: c.raised, color: c.secondary }}>
             <span className="eon-pin-dot" style={{ background: c.brand, color: c.primaryText }}><Pin size={11} /></span>
-            <span>Pinned · {anchorStateLabel(anchors.pendingAnchor)}</span>
+            <span>{anchors.pendingAnchor.quote ? `“${anchors.pendingAnchor.quote}”` : `Pinned · ${anchorStateLabel(anchors.pendingAnchor)}`}</span>
             <button type="button" className="eon-buttonish eon-text-button" onClick={() => anchors.clearPendingAnchor?.()}
               aria-label="Remove pin" style={{ color: c.muted }}><X size={13} /></button>
           </div>
@@ -2928,6 +2973,17 @@ function CommentBubble({
   const mine = comment.author_id === currentUserId;
   const resolved = Boolean(comment.resolved_at);
   const canChange = mine && !comment.pending && onEdit && onDelete;
+  // A copy suggestion shows as old → new. Its stand-in body says the same thing
+  // in plain text, so it is only shown once the author writes a note over it.
+  const suggestion = comment.anchor?.quote && comment.anchor?.suggestion ? comment.anchor : null;
+  const bodyIsSuggestion = Boolean(suggestion) && comment.body === suggestionBody(suggestion);
+  const [copiedSuggestion, setCopiedSuggestion] = useState(false);
+  const copySuggestion = () => {
+    navigator.clipboard?.writeText(suggestion.suggestion).then(() => {
+      setCopiedSuggestion(true);
+      window.setTimeout(() => setCopiedSuggestion(false), 1600);
+    }, () => {});
+  };
   const canSave = Boolean(draft.trim() || comment.image_url) && draft.trim() !== comment.body && !saving;
   const saveEdit = async () => {
     if (!canSave) return;
@@ -2973,8 +3029,8 @@ function CommentBubble({
           {comment.pending && <span className="eon-pending-label" style={{ color: c.muted }}>Sending…</span>}
           {canChange && !mode && (
             <span className="eon-comment-actions">
-              <button type="button" className="eon-buttonish eon-comment-action" onClick={() => { setDraft(comment.body || ""); setMode("edit"); }}
-                aria-label="Edit comment" title="Edit" style={{ color: c.muted }}><Pencil size={13} /></button>
+              <button type="button" className="eon-buttonish eon-comment-action" onClick={() => { setDraft(bodyIsSuggestion ? "" : comment.body || ""); setMode("edit"); }}
+                aria-label={bodyIsSuggestion ? "Add a note" : "Edit comment"} title={bodyIsSuggestion ? "Add a note" : "Edit"} style={{ color: c.muted }}><Pencil size={13} /></button>
               <button type="button" className="eon-buttonish eon-comment-action" onClick={() => setMode("delete")}
                 aria-label="Delete comment" title="Delete" style={{ color: c.muted }}><Trash2 size={13} /></button>
             </span>
@@ -3002,7 +3058,17 @@ function CommentBubble({
                 style={{ background: c.primary, color: c.primaryText, opacity: canSave ? 1 : 0.5 }}>{saving ? "Saving…" : "Save"}</button>
             </div>
           </div>
-        ) : comment.body && <p style={{ color: c.secondary }}>{comment.body}</p>}
+        ) : comment.body && !bodyIsSuggestion && <p style={{ color: c.secondary }}>{comment.body}</p>}
+        {suggestion && (
+          <div className="eon-copy-suggestion" style={{ borderColor: c.border, background: c.raised }}>
+            <del style={{ color: c.muted }}>{suggestion.quote}</del>
+            <ins style={{ color: c.text }}>{suggestion.suggestion}</ins>
+            <button type="button" className="eon-buttonish eon-comment-action" onClick={copySuggestion}
+              aria-label="Copy the suggested copy" title={copiedSuggestion ? "Copied" : "Copy"} style={{ color: copiedSuggestion ? c.brand : c.muted }}>
+              {copiedSuggestion ? <Check size={13} /> : <Copy size={13} />}
+            </button>
+          </div>
+        )}
         {mode === "delete" && (
           <div className="eon-comment-edit-actions" role="group" aria-label="Delete this comment?">
             <span style={{ color: c.secondary }}>Delete this comment?</span>
@@ -3063,7 +3129,7 @@ function CommentBubble({
    Emoji options post as-is; labeled options post their body; Write… falls
    through to the composer. ---- */
 const QUICK_PIN_OPTIONS = [
-  { key: "copy",  icon: "✏️", label: "Change copy", body: "✏️ Change copy" },
+  { key: "copy",  icon: "✏️", label: "Change copy", body: "✏️ Change copy", suggest: true },
   { key: "slop",  icon: "🤖", label: "AI slop", body: "This reads like AI. Give it a human pass." },
   { key: "up",    icon: "👍", label: "Like", body: "👍" },
   { key: "love",  icon: "❤️", label: "Love", body: "❤️" },
@@ -3072,7 +3138,7 @@ const QUICK_PIN_OPTIONS = [
   { key: "write", icon: null, label: "Write…", write: true },
 ];
 
-function PinRing({ c, x, y, onPick, onWrite, onCancel }) {
+function PinRing({ c, x, y, onPick, onWrite, onSuggest, onCancel }) {
   const radius = 74;
   const size = 188;
   const [expanded, setExpanded] = useState(false);
@@ -3108,7 +3174,7 @@ function PinRing({ c, x, y, onPick, onWrite, onCancel }) {
           >
             <button type="button" role="menuitem" className="eon-buttonish eon-pin-ring-item"
               style={{ borderColor: c.border, color: c.text }}
-              onClick={() => (option.write ? onWrite() : onPick(option.body))}
+              onClick={() => (option.write ? onWrite() : option.suggest && onSuggest ? onSuggest() : onPick(option.body))}
               aria-label={option.label}>
               {option.icon || <MessageSquare size={15} />}
               <span className="eon-ring-label" style={{ background: c.panel, borderColor: c.border, color: c.secondary }}>{option.label}</span>
@@ -3125,31 +3191,42 @@ function PinRing({ c, x, y, onPick, onWrite, onCancel }) {
 }
 
 /* ---- Inline composer at the pin: type, Enter posts the anchored comment ---- */
-function PinComposer({ c, x, y, frameWidth, onSubmit, onCancel }) {
-  const [draft, setDraft] = useState("");
+function PinComposer({ c, x, y, frameWidth, quote = "", below = null, onSubmit, onCancel }) {
+  // With a quote this suggests copy: it starts from the original text, and
+  // sends once the text is different.
+  const [draft, setDraft] = useState(quote);
   const inputRef = useRef(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+    if (quote) inputRef.current?.select();
+  }, []);
+  const ready = Boolean(draft.trim()) && draft.trim() !== quote;
   // Flip to the left of the pin when the panel would spill past the frame.
-  const width = 232;
+  const width = quote ? 272 : 232;
   const flip = x + 16 + width > frameWidth;
   const finePointer = hasFinePointer();
   return (
-    <div className="eon-pin-composer" style={{ left: flip ? x - 16 - width : x + 16, top: y, width, background: c.panel, borderColor: c.border }}>
-      <Textarea ref={inputRef} value={draft} maxLength={4000} rows={2}
+    <div className="eon-pin-composer"
+      style={below == null
+        ? { left: flip ? x - 16 - width : x + 16, top: y, width, background: c.panel, borderColor: c.border }
+        // A copy suggestion sits under the text it rewrites, so both stay in view.
+        : { left: Math.max(4, Math.min(x, frameWidth - width - 4)), top: below, translate: "none", width, background: c.panel, borderColor: c.border }}>
+      {quote && <del className="eon-pin-composer-quote" style={{ color: c.muted }}>{quote}</del>}
+      <Textarea ref={inputRef} value={draft} maxLength={quote ? 1000 : 4000} rows={2}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
           if (finePointer && event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault();
-            if (draft.trim()) onSubmit(draft.trim());
+            if (ready) onSubmit(draft.trim());
           }
         }}
-        placeholder="Comment…" aria-label="Write a pinned comment"
+        placeholder={quote ? "Suggested copy…" : "Comment…"} aria-label={quote ? "Suggest new copy" : "Write a pinned comment"}
         style={{ minHeight: 54, maxHeight: 120, resize: "none", background: c.raised, borderColor: c.border, color: c.text, borderRadius: 18, fontSize: 13, lineHeight: 1.45 }} />
       <div className="eon-pin-composer-meta">
-        <span style={{ color: c.muted }}>{finePointer ? "Enter to send" : ""}</span>
-        <button type="button" className="eon-buttonish eon-pin-composer-send" onClick={() => draft.trim() && onSubmit(draft.trim())}
-          disabled={!draft.trim()} aria-label="Send pinned comment"
-          style={{ background: c.primary, color: c.primaryText, opacity: draft.trim() ? 1 : 0.5 }}>
+        <span style={{ color: c.muted }}>{quote ? "Suggest copy" : finePointer ? "Enter to send" : ""}</span>
+        <button type="button" className="eon-buttonish eon-pin-composer-send" onClick={() => ready && onSubmit(draft.trim())}
+          disabled={!ready} aria-label={quote ? "Send copy suggestion" : "Send pinned comment"}
+          style={{ background: c.primary, color: c.primaryText, opacity: ready ? 1 : 0.5 }}>
           <Send size={13} />
         </button>
       </div>
@@ -3169,7 +3246,14 @@ const PENDING_PIN_KEY = "pending";
 function PinOverlay({
   c, pins, pendingAnchor, rects, scroll, vp, frameScale, activeAnchorId, currentUserId, onPickPin,
   ringOpen, pinWriteOpen, onQuickComment, onWriteComment, onCancelRing,
+  onSuggestCopy, onSuggestForPin, textSelection, onSuggestForSelection,
 }) {
+  // Highlight boxes over the text a copy suggestion (or pinned quote) covers.
+  const marks = (key, strong) => (rects?.[key]?.marks || []).map((mark, index) => (
+    <span key={`${key}-${index}`} className="eon-copy-mark" data-strong={strong || undefined}
+      style={{ left: mark.x * frameScale, top: mark.y * frameScale, width: mark.w * frameScale, height: mark.h * frameScale, background: c.brand }} />
+  ));
+  const selectionRect = textSelection?.rect;
   const place = (anchor, key) => {
     const point = anchorPoint(anchor, rects?.[key], vp.w, vp.h, scroll);
     if (!point) return null;
@@ -3180,8 +3264,23 @@ function PinOverlay({
     };
   };
   const pendingPoint = pendingAnchor ? place(pendingAnchor, PENDING_PIN_KEY) : null;
+  const pendingMarks = rects?.[PENDING_PIN_KEY]?.marks;
+  const pendingBelow = pendingAnchor?.quote && pendingMarks?.length
+    ? Math.max(...pendingMarks.map((mark) => mark.y + mark.h)) * frameScale + 10 : null;
   return (
-    <div className="eon-pin-overlay" aria-hidden={pins.length === 0 && !pendingPoint}>
+    <div className="eon-pin-overlay" aria-hidden={pins.length === 0 && !pendingPoint && !selectionRect}>
+      {pins.map(({ comment }) => marks(comment.id, comment.id === activeAnchorId))}
+      {pendingAnchor && marks(PENDING_PIN_KEY, true)}
+      {selectionRect && (
+        <button type="button" className="eon-buttonish eon-copy-chip" onClick={onSuggestForSelection}
+          style={{
+            left: Math.min(Math.max(selectionRect.x * frameScale, 4), Math.max(4, vp.w * frameScale - 128)),
+            top: Math.min((selectionRect.y + selectionRect.h) * frameScale + 6, vp.h * frameScale - 34),
+            background: c.panel, borderColor: c.border, color: c.text,
+          }}>
+          <Pencil size={12} aria-hidden="true" /> Suggest copy
+        </button>
+      )}
       {pins.map(({ comment, number }) => {
         const point = place(comment.anchor, comment.id);
         if (!point) return null;
@@ -3216,11 +3315,12 @@ function PinOverlay({
           <div className="eon-ring-backdrop" onClick={onCancelRing} aria-hidden="true" />
           {ringOpen && (
             <PinRing c={c} x={pendingPoint.left} y={pendingPoint.top}
-              onPick={onQuickComment} onWrite={onWriteComment} onCancel={onCancelRing} />
+              onPick={onQuickComment} onWrite={onWriteComment} onSuggest={onSuggestForPin} onCancel={onCancelRing} />
           )}
           {pinWriteOpen && (
-            <PinComposer c={c} x={pendingPoint.left} y={pendingPoint.top} frameWidth={vp.w * frameScale}
-              onSubmit={onQuickComment} onCancel={onCancelRing} />
+            <PinComposer key={pendingAnchor.quote || ""} c={c} x={pendingPoint.left} y={pendingPoint.top} frameWidth={vp.w * frameScale}
+              quote={pendingAnchor.quote || ""} below={pendingBelow}
+              onSubmit={pendingAnchor.quote ? onSuggestCopy : onQuickComment} onCancel={onCancelRing} />
           )}
         </>
       )}
