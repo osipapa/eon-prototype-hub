@@ -84,7 +84,7 @@ export default function CanvasPane({
     if (wasActive.current && !active) {
       const target = localFrameRef.current?.contentWindow;
       target?.postMessage({ eon: 1, type: "eon-anchor-mode", on: false }, "*");
-      target?.postMessage({ eon: 1, type: "eon-anchor-query", selectors: [] }, "*");
+      target?.postMessage({ eon: 1, type: "eon-anchor-query", targets: [] }, "*");
     }
     wasActive.current = active;
   }, [active]);

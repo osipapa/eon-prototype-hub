@@ -34,6 +34,24 @@ input{box-sizing:border-box;width:100%;min-height:48px;margin:0 0 14px;padding:0
 </template>
 </body></html>`;
 
+// A popup that walks through steps by swapping the text of the same nodes, so
+// the preview can check that a pin stays with the step it was placed on.
+export const STEPPED_POPUP_DEMO = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px/1.45 system-ui,sans-serif;background:#0b0b0c;color:#fafafa}
+.card{box-sizing:border-box;width:min(360px,calc(100vw - 32px));padding:24px;border:1px solid #2a2a2e;border-radius:20px;background:#161618}
+h2{margin:0 0 6px;font-size:20px}p{margin:0 0 20px;color:#a1a1aa}
+.row{display:flex;gap:10px;justify-content:flex-end}
+button{min-height:44px;padding:0 18px;border:0;border-radius:12px;background:#e8e8e8;color:#141414;font:inherit;font-weight:600}
+button.ghost{background:transparent;color:#a1a1aa}
+</style></head><body>
+<div class="overlay"><div class="card" role="dialog" aria-labelledby="popup-title">
+<h2 id="popup-title">Add a payment method</h2><p id="popup-body">Pick how you want to pay for this trip.</p>
+<div class="row"><button class="ghost" id="popup-back" onclick="step(-1)">Back</button><button id="popup-next" onclick="step(1)">Continue</button></div>
+</div></div>
+<script>var steps=[["Add a payment method","Pick how you want to pay for this trip."],["Confirm your card","We'll place a temporary hold of $1."],["You're all set","Your card is saved for next time."]],at=0;
+function step(by){at=Math.max(0,Math.min(steps.length-1,at+by));document.getElementById("popup-title").textContent=steps[at][0];document.getElementById("popup-body").textContent=steps[at][1];}</script>
+</body></html>`;
+
 // Stands in for the linear-issue edge function, so status sections render.
 const PREVIEW_ISSUES = {
   "DES-706": { title: "Rate your trip", state: { name: "In Review", color: "#4CB782", type: "started" } },
@@ -96,6 +114,18 @@ export const initialProjects = [
     notes: "",
     sort_order: 2,
   },
+  {
+    id: "preview-popup",
+    slug: "stepped-popup",
+    title: "Payment popup",
+    group_name: "Growth experiments",
+    status: "In review",
+    prototype_html: STEPPED_POPUP_DEMO,
+    issue_id: "",
+    issue_url: "",
+    notes: "",
+    sort_order: 3,
+  },
 ];
 
 const initialComments = [
@@ -148,6 +178,21 @@ const initialComments = [
     created_at: new Date(Date.now() - 9 * 60 * 1000).toISOString(),
     author: { id: "teammate-2", full_name: "Priya Nair", email: "priya@example.com" },
   },
+  // Two pins on the popup's one title node, each placed on a different step.
+  // Only the pin for the step on screen shows.
+  ...[["Add a payment method", "Should this say \"Choose\" instead of \"Add\"?"], ["Confirm your card", "Mention the hold amount in the title?"]].map(([title, body], index) => ({
+    id: `comment-popup-step-${index + 1}`,
+    project_id: "preview-popup",
+    author_id: "teammate-1",
+    body,
+    anchor: {
+      selector: "div:nth-of-type(1) > div:nth-of-type(1) > h2:nth-of-type(1)", text: title, heading: title,
+      rel_x: 0.5, rel_y: 0.5, x_pct: 50, y_pct: 45,
+      viewport: "laptop", args: {}, theme: "dark",
+    },
+    created_at: new Date(Date.now() - (8 - index) * 60 * 1000).toISOString(),
+    author: { id: "teammate-1", full_name: "Alex Chen", email: "alex@example.com" },
+  })),
   {
     id: "comment-resolved",
     project_id: "preview-dashboard",

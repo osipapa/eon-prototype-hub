@@ -20,7 +20,7 @@ import SidebarResizeHandle, { useResizableSidebar } from "@/components/SidebarRe
 import { Liquid } from "liquid-gooey";
 import {
   AlertCircle, Archive, ArchiveRestore, ArrowDown, ArrowUp, Camera, Check, ChevronDown, ChevronLeft, Circle, Copy,
-  ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, Loader2,
+  Download, ExternalLink, FolderInput, History, ImagePlus, LayoutGrid, Loader2,
   Pin, Maximize2, Minimize2, MessageSquare, Minus, Monitor, Laptop, Columns2,
   Menu, MoreHorizontal, Package, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Send, SlidersHorizontal, Smartphone, SmilePlus, Square, SquareCheck, SquareMinus,
   Tablet, Trash2, Upload, X,
@@ -42,7 +42,7 @@ import { fullViewUrl } from "@/lib/mirror";
 import PrototypeSwitcher, { SHORTCUT_MOD, rememberRecent } from "./PrototypeSwitcher";
 import { isForeignChange, reconnectPlan } from "./fileSyncGuard";
 import {
-  anchorMatchesState, anchorPoint, anchorStateLabel, injectAnchorBridge, injectFullViewExit, isBridgeMessage,
+  anchorMatchesState, anchorPoint, anchorStateLabel, anchorTarget, injectAnchorBridge, injectFullViewExit, isBridgeMessage,
 } from "./anchorBridge";
 import {
   ensureReadPermission, ensureWritePermission, forgetFileLink, pickHtmlFile, recallFileLink,
@@ -419,12 +419,12 @@ export default function PrototypeWorkspace({
     () => anchoredPins.filter(({ comment }) => anchorMatchesState(comment.anchor, viewport, args, protoTheme)),
     [anchoredPins, viewport, args, protoTheme],
   );
-  const watchedSelectors = useMemo(() => {
-    const selectors = new Set();
-    visiblePins.forEach(({ comment }) => comment.anchor.selector && selectors.add(comment.anchor.selector));
-    if (pendingAnchor?.selector) selectors.add(pendingAnchor.selector);
-    return [...selectors];
-  }, [visiblePins, pendingAnchor?.selector]);
+  // Each pin is tracked on its own (keyed by comment), so two pins on one node
+  // in different steps of a flow don't share a position.
+  const watchedTargets = useMemo(() => [
+    ...visiblePins.map(({ comment }) => anchorTarget(comment.id, comment.anchor)),
+    anchorTarget(PENDING_PIN_KEY, pendingAnchor),
+  ].filter(Boolean), [visiblePins, pendingAnchor]);
   const postToFrame = (message) => frameRef.current?.contentWindow?.postMessage({ eon: 1, ...message }, "*");
   const pinchZoom = (delta) => setZoom((value) => Math.min(4, Math.max(0.25, +(value * Math.exp(-delta / 240)).toFixed(3))));
 
@@ -437,7 +437,7 @@ export default function PrototypeWorkspace({
       const message = event.data;
       if (message.type === "eon-anchor-ready") {
         postToFrame({ type: "eon-anchor-mode", on: anchorMode });
-        postToFrame({ type: "eon-anchor-query", selectors: watchedSelectors });
+        postToFrame({ type: "eon-anchor-query", targets: watchedTargets });
         if (pendingRevealRef.current) {
           postToFrame(pendingRevealRef.current);
           pendingRevealRef.current = null;
@@ -450,6 +450,9 @@ export default function PrototypeWorkspace({
       } else if (message.type === "eon-anchor-click") {
         setPendingAnchor({
           selector: message.selector || null,
+          // The variation the pin sits on: the element's text and nearest heading.
+          ...(message.selector && typeof message.text === "string"
+            ? { text: message.text, heading: typeof message.heading === "string" ? message.heading : "" } : {}),
           rel_x: message.rel_x, rel_y: message.rel_y,
           x_pct: message.x_pct, y_pct: message.y_pct,
           doc_x: message.doc_x, doc_y: message.doc_y,
@@ -464,12 +467,12 @@ export default function PrototypeWorkspace({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [anchorMode, watchedSelectors, viewport, args, protoTheme]);
+  }, [anchorMode, watchedTargets, viewport, args, protoTheme]);
 
   // A pane switch hands the pins to a frame that is already loaded and will
   // not say "ready" again, so the new active frame is told directly.
   useEffect(() => { postToFrame({ type: "eon-anchor-mode", on: anchorMode }); }, [anchorMode, story?.id]);
-  useEffect(() => { postToFrame({ type: "eon-anchor-query", selectors: watchedSelectors }); }, [watchedSelectors, story?.id]);
+  useEffect(() => { postToFrame({ type: "eon-anchor-query", targets: watchedTargets }); }, [watchedTargets, story?.id]);
 
   // Placement is a single-view affair; leaving it cancels cleanly.
   const canPlacePin = view === "stories" && layout === "single";
@@ -536,7 +539,10 @@ export default function PrototypeWorkspace({
     if (["light", "dark"].includes(anchor.theme)) setProtoTheme(anchor.theme);
     if (anchor.args && story) setLiveArgs((current) => ({ ...current, [story.id]: { ...current[story.id], ...anchor.args } }));
     setActiveAnchorId(comment.id);
-    const reveal = { type: "eon-anchor-reveal", selector: anchor.selector || null, doc_x: anchor.doc_x, doc_y: anchor.doc_y };
+    const reveal = {
+      type: "eon-anchor-reveal", selector: anchor.selector || null, doc_x: anchor.doc_x, doc_y: anchor.doc_y,
+      ...(anchor.selector && typeof anchor.text === "string" ? { text: anchor.text, heading: anchor.heading || "" } : {}),
+    };
     // Theme and argument changes remount the iframe because its key includes both.
     // Wait for the new frame's "ready" before revealing. Otherwise post now.
     const willRemount = (anchor.theme && anchor.theme !== protoTheme)
@@ -1345,6 +1351,28 @@ export default function PrototypeWorkspace({
     if (!failed) return;
     showError(ids.length === 1 ? "Couldn't delete that prototype. Try again." : `Couldn't delete ${failed} of ${ids.length} prototypes. Try again.`);
   };
+  // The … menu's Download: the prototype's HTML exactly as saved, so it uploads
+  // back unchanged. Read fresh, since a teammate may have saved since this
+  // tab last heard. A built-in with no upload downloads as rendered.
+  const downloadStory = async (item) => {
+    let html = item.prototype_html;
+    try {
+      const fresh = await fetchHtmlRef.current?.(item.id);
+      if (typeof fresh?.prototype_html === "string") html = fresh.prototype_html;
+    } catch (error) {
+      console.warn("Couldn't refresh the prototype before downloading.", error);
+    }
+    if (!html) html = renderStory(effectiveStory(item), protoTheme, media);
+    if (!html) { showError("Couldn't download that prototype. Try again."); return; }
+    const link = Object.assign(document.createElement("a"), {
+      href: URL.createObjectURL(new Blob([html], { type: "text/html" })),
+      download: `${item.slug || "prototype"}.html`,
+    });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  };
   const archiveProjects = (ids, archive) => {
     const archived_at = archive ? new Date().toISOString() : null;
     projects
@@ -1450,7 +1478,7 @@ export default function PrototypeWorkspace({
           renamingId={renamingId} setRenamingId={setRenamingId} commitRename={commitRename}
           renamingGroup={renamingGroup} setRenamingGroup={setRenamingGroup} commitGroupRename={commitGroupRename}
           storyMenuId={storyMenuId} setStoryMenuId={setStoryMenuId}
-          deleteProjects={deleteProjects} archiveProjects={archiveProjects}
+          deleteProjects={deleteProjects} archiveProjects={archiveProjects} downloadStory={downloadStory}
           moveStory={moveStory}
           moveToGroup={moveToGroup} allGroups={allGroups}
           copiedPrompt={copiedPrompt} copySetupPrompt={copySetupPrompt} userEmail={userEmail}
@@ -1654,7 +1682,7 @@ function WorkspaceSidebar({
   renamingId, setRenamingId, commitRename,
   renamingGroup, setRenamingGroup, commitGroupRename,
   storyMenuId, setStoryMenuId,
-  deleteProjects, archiveProjects, moveStory, moveToGroup, allGroups, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
+  deleteProjects, archiveProjects, downloadStory, moveStory, moveToGroup, allGroups, copiedPrompt, copySetupPrompt, userEmail, onOpenAdmin, onSignOut,
   onOpenDesign, onOpenPrompts, onOpenTracking,
   changelog,
   linearByProject,
@@ -1969,7 +1997,7 @@ function WorkspaceSidebar({
                       </button>
                       {storyMenuId === item.id && menuRect && (
                         <FloatingMenu c={c} anchor={menuRect} storyId={item.id} triggerRef={menuTriggerRef} onClose={() => setStoryMenuId(null)}
-                          itemCount={menuPanel === "actions" ? (canSplit ? 8 : 7) : Math.min(allGroups.length, 6) + 2}>
+                          itemCount={menuPanel === "actions" ? (canSplit ? 9 : 8) : Math.min(allGroups.length, 6) + 2}>
                           {menuPanel === "actions" ? <>
                             {canSplit && (
                               <button className="eon-buttonish" role="menuitem" disabled={active || inSplit}
@@ -1982,6 +2010,7 @@ function WorkspaceSidebar({
                             <button className="eon-buttonish" role="menuitem" disabled={itemIndex === section.items.length - 1} onClick={() => { moveStory(item.id, 1); setStoryMenuId(null); }} style={{ color: c.text }}><ArrowDown size={14} /> Move down</button>
                             <button className="eon-buttonish" role="menuitem" aria-haspopup="menu" onClick={() => setMenuPanel("groups")} style={{ color: c.text }}><FolderInput size={14} /> Move to group</button>
                             <button className="eon-buttonish" role="menuitem" onClick={() => { setStoryMenuId(null); toggleSelected(item.id, false); }} style={{ color: c.text }}><SquareCheck size={14} /> Select</button>
+                            <button className="eon-buttonish" role="menuitem" onClick={() => { setStoryMenuId(null); downloadStory(item); }} style={{ color: c.text }}><Download size={14} /> Download</button>
                             <button className="eon-buttonish" role="menuitem" onClick={() => { archiveProjects([item.id], !item.archived_at); setStoryMenuId(null); }} style={{ color: c.text }}>
                               {item.archived_at ? <><ArchiveRestore size={14} /> Restore</> : <><Archive size={14} /> Archive</>}
                             </button>
@@ -3136,12 +3165,13 @@ function emojiOnlyBody(body) {
 }
 
 /* ---- Pins on the canvas: dots over the iframe at each anchored comment ---- */
+const PENDING_PIN_KEY = "pending";
 function PinOverlay({
   c, pins, pendingAnchor, rects, scroll, vp, frameScale, activeAnchorId, currentUserId, onPickPin,
   ringOpen, pinWriteOpen, onQuickComment, onWriteComment, onCancelRing,
 }) {
-  const place = (anchor) => {
-    const point = anchorPoint(anchor, rects, vp.w, vp.h, scroll);
+  const place = (anchor, key) => {
+    const point = anchorPoint(anchor, rects?.[key], vp.w, vp.h, scroll);
     if (!point) return null;
     // Clamp inside the frame so pins on scrolled-away elements stay reachable.
     return {
@@ -3149,11 +3179,11 @@ function PinOverlay({
       top: Math.min(Math.max(point.y * frameScale, 10), vp.h * frameScale - 10),
     };
   };
-  const pendingPoint = pendingAnchor ? place(pendingAnchor) : null;
+  const pendingPoint = pendingAnchor ? place(pendingAnchor, PENDING_PIN_KEY) : null;
   return (
     <div className="eon-pin-overlay" aria-hidden={pins.length === 0 && !pendingPoint}>
       {pins.map(({ comment, number }) => {
-        const point = place(comment.anchor);
+        const point = place(comment.anchor, comment.id);
         if (!point) return null;
         const active = comment.id === activeAnchorId;
         // Quick emoji takes wear the emoji itself; everything else is numbered.

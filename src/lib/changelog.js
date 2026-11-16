@@ -19,6 +19,27 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-11-16",
+    title: "Pins stay on their step, and prototypes download",
+    image: "changelog/2026-11-16-download-prototype.png",
+    imageAlt: "The prototype menu in the sidebar, with the new Download action.",
+    groups: [
+      {
+        label: "New",
+        items: [
+          "Download a prototype's HTML from its … menu in the sidebar.",
+        ],
+      },
+      {
+        label: "Fixes",
+        items: [
+          "A comment pin stays with the step it was placed on. In a popup that changes its title from step to step, the pin shows only on its own step.",
+          "Pins move or hide as soon as the prototype changes, without waiting for a scroll.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-11-13",
     title: "Full view follows your light or dark mode",
     image: "changelog/2026-11-13-full-view-device-theme.png",
