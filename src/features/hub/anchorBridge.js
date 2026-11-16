@@ -37,7 +37,7 @@
    the selector alone, as they always did. Rects are re-sent on DOM changes,
    so a step change needs no scroll to move or hide its pins.
 
-   Copy suggestions pin to selected text. In pin mode a drag (or double-click)
+   Copy suggestions pin to selected text. In pin mode a drag
    over text sends the selection as the click's quote; outside pin mode a
    selection is reported so the hub can offer "Suggest copy" next to it. A pin
    with a quote also gets marks: the boxes of that text inside its element,
@@ -50,7 +50,7 @@
    tap never echoes back. Scrolls fired by a replay are muted for a moment. */
 
 const BRIDGE_SCRIPT = `<script>(function(){
-var mode=false,watched=[],queued=false,hl=null,lastSent="",moTimer=0,swallow=false,down=false,hadSel=false,selTimer=0,selStyle=null;
+var mode=false,watched=[],queued=false,hl=null,lastSent="",moTimer=0,swallow=false,down=false,downX=0,downY=0,hadSel=false,selTimer=0,selStyle=null;
 function post(m){m.eon=1;parent.postMessage(m,"*");}
 function selectorFor(el){
   var parts=[];
@@ -194,10 +194,16 @@ function flash(el){
   clearTimeout(flTimer);flTimer=setTimeout(function(){fl.style.opacity="0";},2400);
 }
 function onMove(e){if(!mode)return;highlight(e.target===document.documentElement||e.target===document.body?null:e.target);}
-/* Pin mode: releasing over selected text pins the selection, and the click
-   that follows the release is not a second pin. */
-function onUp(){
+/* Pin mode: releasing after a drag over text pins the selection, and the click
+   that follows the release is not a second pin. A press that barely moved is
+   a plain pin, even if it caught a character on the way. */
+function onUp(e){
   if(!mode)return;
+  if(Math.abs(e.clientX-downX)+Math.abs(e.clientY-downY)<8){
+    var s=window.getSelection&&getSelection();
+    if(s&&!s.isCollapsed)s.removeAllRanges();
+    return;
+  }
   var info=selInfo();
   if(!info)return;
   swallow=true;
@@ -307,7 +313,7 @@ function onWheel(e){
   post({type:"eon-anchor-zoom",delta:e.deltaY});
 }
 addEventListener("wheel",onWheel,{passive:false,capture:true});
-addEventListener("pointerdown",function(){down=true;swallow=false;post({type:"eon-frame-pointer"});},true);
+addEventListener("pointerdown",function(e){down=true;swallow=false;downX=e.clientX;downY=e.clientY;post({type:"eon-frame-pointer"});},true);
 addEventListener("pointerup",function(){down=false;if(!mode)queueSelection();},true);
 addEventListener("pointercancel",function(){down=false;},true);
 addEventListener("mouseup",onUp,true);

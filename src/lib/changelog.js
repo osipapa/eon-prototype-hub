@@ -28,7 +28,7 @@ export const CHANGELOG = [
         label: "New",
         items: [
           "Select text on a prototype and choose Suggest copy to propose new wording. The comment shows the old text and yours, and the text stays highlighted on the canvas.",
-          "In pin mode, drag over text (or double-click a word) to suggest copy for it. Change copy on the pin ring starts from the pinned text.",
+          "In pin mode, drag over text to suggest copy for it. Change copy on the pin ring starts from the pinned text.",
           "Download a prototype's HTML from its … menu in the sidebar.",
         ],
       },

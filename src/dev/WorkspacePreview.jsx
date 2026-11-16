@@ -52,7 +52,7 @@ button.ghost{background:transparent;color:#a1a1aa}
 function step(by){at=Math.max(0,Math.min(steps.length-1,at+by));document.getElementById("popup-title").textContent=steps[at][0];document.getElementById("popup-body").textContent=steps[at][1];}
 /* Preview only: the sandbox keeps the hub out of this page, so a message
    stands in for dragging over text. { demoSelect: { id, from, to } } */
-addEventListener("message",function(e){var m=e.data&&e.data.demoSelect;if(!m)return;var n=document.getElementById(m.id).firstChild,r=document.createRange();r.setStart(n,m.from);r.setEnd(n,m.to);var s=getSelection();s.removeAllRanges();s.addRange(r);dispatchEvent(new MouseEvent("mouseup",{bubbles:true}));});</script>
+addEventListener("message",function(e){var m=e.data&&e.data.demoSelect;if(!m)return;var n=document.getElementById(m.id).firstChild,r=document.createRange();r.setStart(n,m.from);r.setEnd(n,m.to);var s=getSelection();s.removeAllRanges();s.addRange(r);dispatchEvent(new MouseEvent("mouseup",{bubbles:true,clientX:400,clientY:400}));});</script>
 </body></html>`;
 
 // Stands in for the linear-issue edge function, so status sections render.
