@@ -1,16 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-256 -256 512 512">
   <title>Eon Design</title>
   <defs>
-    <linearGradient id="eon-bpi-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2F6BF2" />
-      <stop offset="1" stop-color="#1638B4" />
-    </linearGradient>
     <clipPath id="eon-bpi-clip">
       <rect x="-256" y="-256" width="512" height="512" rx="118" />
     </clipPath>
   </defs>
-  <rect x="-256" y="-256" width="512" height="512" rx="118" fill="url(#eon-bpi-bg)" />
+  <rect x="-256" y="-256" width="512" height="512" rx="118" fill="#000" />
   <g clip-path="url(#eon-bpi-clip)" fill="none" stroke="#fff">
+    <rect x="-250" y="-250" width="500" height="500" rx="112" stroke-opacity=".22" stroke-width="12" />
     <path stroke-opacity=".14" stroke-width="4" d="M-171 -256V256M-85 -256V256M85 -256V256M171 -256V256M-256 -171H256M-256 -85H256M-256 85H256M-256 171H256" />
     <g transform="scale(.74)">
       <path stroke-opacity=".5" stroke-width="7" d="M-346 0H346M0 -346V346M-166.7 155.3L318.3 -124.7M-166.7 155.3L257.6 -269M-166.7 155.3L103.3 -312.4" />

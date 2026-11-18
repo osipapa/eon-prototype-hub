@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from "r
 import { useAuth } from "./lib/auth";
 import { redeemMirrorHandoff } from "./lib/mirror";
 import LoadingScreen from "./components/LoadingScreen";
+import { useLoaderHold } from "./lib/loaderClock";
 
 const Login = lazy(() => import("./routes/Login"));
 const Hub = lazy(() => import("./routes/Hub"));
@@ -16,6 +17,28 @@ const Animations = lazy(() => import("./routes/Animations"));
 
 function Splash({ children }) {
   return <LoadingScreen>{children}</LoadingScreen>;
+}
+
+// Once a loading screen has shown, keep one over the page until its sequence
+// is complete, so a fast load never cuts the mark off half-built. It then
+// fades out; the page underneath is already there.
+function LoaderHold() {
+  const holding = useLoaderHold();
+  const [mounted, setMounted] = useState(holding);
+  useEffect(() => {
+    if (holding) {
+      setMounted(true);
+      return undefined;
+    }
+    const id = window.setTimeout(() => setMounted(false), 240);
+    return () => window.clearTimeout(id);
+  }, [holding]);
+  if (!holding && !mounted) return null;
+  return (
+    <div className={`eon-loading-hold${holding ? "" : " is-leaving"}`}>
+      <LoadingScreen />
+    </div>
+  );
 }
 
 class AppErrorBoundary extends Component {
@@ -102,6 +125,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        <LoaderHold />
       </HashRouter>
     </AppErrorBoundary>
   );

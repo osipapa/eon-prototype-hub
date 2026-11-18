@@ -5,22 +5,19 @@ export const EON_MARK_PATH = "M 236.0 -77.3 L 161.2 -34.0 C 163.5 -23.1 164.7 -1
 export const EON_MARK_DOT = { cx: 156.2, cy: -172.1, r: 60.5 };
 
 // The mark in blueprint style: white construction lines and the outlined mark
-// on a blue tile. public/favicon.svg is this same drawing as a static file;
+// on a black tile with a hairline edge. public/favicon.svg is this same drawing as a static file;
 // change them together.
 export function EonBlueprintIcon({ size = 30, className }) {
   return (
     <svg className={className} viewBox="-256 -256 512 512" width={size} height={size} aria-hidden="true">
       <defs>
-        <linearGradient id="eon-bpi-bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#2F6BF2" />
-          <stop offset="1" stopColor="#1638B4" />
-        </linearGradient>
         <clipPath id="eon-bpi-clip">
           <rect x="-256" y="-256" width="512" height="512" rx="118" />
         </clipPath>
       </defs>
-      <rect x="-256" y="-256" width="512" height="512" rx="118" fill="url(#eon-bpi-bg)" />
+      <rect x="-256" y="-256" width="512" height="512" rx="118" fill="#000" />
       <g clipPath="url(#eon-bpi-clip)" fill="none" stroke="#fff">
+        <rect x="-250" y="-250" width="500" height="500" rx="112" strokeOpacity=".22" strokeWidth="12" />
         <path strokeOpacity=".14" strokeWidth="4" d="M-171 -256V256M-85 -256V256M85 -256V256M171 -256V256M-256 -171H256M-256 -85H256M-256 85H256M-256 171H256" />
         <g transform="scale(.74)">
           <path strokeOpacity=".5" strokeWidth="7" d="M-346 0H346M0 -346V346M-166.7 155.3L318.3 -124.7M-166.7 155.3L257.6 -269M-166.7 155.3L103.3 -312.4" />

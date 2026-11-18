@@ -4,15 +4,15 @@
 /* Follows the hub's light or dark theme, with the hub's neutral buttons.
    Outlines are the accent at 20% so the highlight frames without glaring. */
 .eon-coach-root {
-  --coach-card: rgba(26, 26, 26, .97);
-  --coach-text: #FAFAFA;
-  --coach-muted: #A1A1AA;
+  --coach-card: rgba(28, 29, 31, .97);   /* Safari elevation/surface/overlay */
+  --coach-text: #F7F8FA;
+  --coach-muted: #A1A7B3;
   --coach-line: rgba(255, 255, 255, .1);
-  --coach-raised: #262626;
-  --coach-hover: #2E2E2E;
-  --coach-primary: #E8E8E8;
-  --coach-primary-text: #141414;
-  --coach-outline: rgba(241, 157, 255, .2);
+  --coach-raised: #2A2E35;
+  --coach-hover: #3D424B;
+  --coach-primary: #F7F8FA;
+  --coach-primary-text: #0B0D10;
+  --coach-outline: rgba(255, 141, 214, .2);
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -35,14 +35,14 @@
 
 .eon-coach-root.is-light {
   --coach-card: rgba(255, 255, 255, .98);
-  --coach-text: #171717;
-  --coach-muted: #636369;
-  --coach-line: rgba(0, 0, 0, .1);
-  --coach-raised: #E4E4E7;
-  --coach-hover: #ECECEE;
-  --coach-primary: #171717;
-  --coach-primary-text: #FAFAFA;
-  --coach-outline: rgba(154, 0, 176, .2);
+  --coach-text: #0B0D10;
+  --coach-muted: #5B6170;
+  --coach-line: rgba(11, 13, 16, .09);
+  --coach-raised: #F0F2F5;
+  --coach-hover: #E5E8EC;
+  --coach-primary: #0B0D10;
+  --coach-primary-text: #FFFFFF;
+  --coach-outline: rgba(209, 0, 143, .2);
 }
 
 .eon-coach-root.is-ready .eon-coach-scrim { opacity: 1; }
