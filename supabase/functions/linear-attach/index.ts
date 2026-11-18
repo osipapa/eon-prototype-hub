@@ -103,7 +103,7 @@ Deno.serve(async (req: Request) => {
           issueId: issue.id,
           url,
           title: project.title,
-          subtitle: "Prototype · Eon Design Hub",
+          subtitle: "Prototype · Eon Design",
           iconUrl: `${HUB_URL}linear-icon.png`,
           metadata: { source: SOURCE },
         },

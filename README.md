@@ -1,4 +1,4 @@
-# Eon Design Hub
+# Eon Design
 
 A shared design hub for interactive HTML prototypes, reusable prompts, and implementation-ready tracking references.
 Sign in, browse prototypes by group, preview them across device sizes, copy

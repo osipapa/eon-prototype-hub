@@ -14,7 +14,7 @@ export default function FullScreen({ projects, media, view }) {
   const crop = useMemo(() => insetCropStyle(html), [html]);
 
   useEffect(() => {
-    document.title = story ? `${story.title} · Eon` : "Eon Design Hub";
+    document.title = story ? `${story.title} · Eon` : "Eon Design";
   }, [story]);
 
   return (

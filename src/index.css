@@ -227,8 +227,6 @@ svg.eon-accent-icon,
 .eon-design-switcher-logo { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; }
 .eon-design-switcher-trigger .eon-brand-logo { width: 30px; height: 30px; flex-basis: 30px; border-radius: 9px; }
 .eon-design-switcher-label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 650; letter-spacing: -.02em; }
-.eon-design-switcher-trigger > svg { flex: 0 0 auto; transition-property: transform; transition-duration: 160ms; transition-timing-function: var(--ease-out); }
-.eon-design-switcher-trigger > svg.is-open { transform: rotate(180deg); }
 .eon-design-switcher-menu { position: absolute; z-index: 90; top: calc(100% + 7px); left: 0; width: min(286px, calc(100vw - 28px)); padding: 6px; border-radius: 16px; opacity: 1; transform: translateY(0) scale(1); transform-origin: top left; transition-property: opacity, transform; transition-duration: 160ms; transition-timing-function: var(--ease-out); }
 @starting-style { .eon-design-switcher-menu { opacity: 0; transform: translateY(-5px) scale(.98); } }
 .eon-design-switcher-menu > button { display: flex; width: 100%; min-height: 58px; align-items: center; gap: 10px; padding: 7px 9px; border: 0; border-radius: 10px; cursor: pointer; text-align: left; }

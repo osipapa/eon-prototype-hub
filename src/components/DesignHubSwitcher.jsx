@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  BookOpen, Check, ChevronDown, Monitor, Shapes,
+  BookOpen, Check, Monitor, Shapes,
 } from "lucide-react";
 import EonMark from "@/components/EonMark";
 
@@ -46,7 +46,6 @@ export default function DesignHubSwitcher({ active, c, logo, logoLoading = false
       >
         <span className="eon-design-switcher-logo"><EonMark src={logo} loading={logoLoading} /></span>
         <span className="eon-design-switcher-label">Eon Design</span>
-        <ChevronDown className={open ? "is-open" : ""} size={15} aria-hidden="true" style={{ color: c.muted }} />
       </button>
 
       {open && (

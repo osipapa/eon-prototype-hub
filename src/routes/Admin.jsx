@@ -441,7 +441,7 @@ export default function Admin({ api = data, auth: authOverride }) {
                 </dl>
               </div>
               <div className="admin-created-actions">
-                <CopyButton text={`Eon Design Hub\n${window.location.origin}${window.location.pathname}\nEmail: ${created.email}\nPassword: ${created.password}`} label="Copy login" />
+                <CopyButton text={`Eon Design\n${window.location.origin}${window.location.pathname}\nEmail: ${created.email}\nPassword: ${created.password}`} label="Copy login" />
                 <button className="route-icon-button route-pressable" type="button" onClick={() => setCreated(null)} aria-label="Hide login details"><X size={15} /></button>
               </div>
             </div>

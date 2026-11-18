@@ -92,7 +92,7 @@ export default function MirrorScreen({ projects, media, sessionId, initialView, 
   useEffect(() => { readyRef.current = false; }, [frameKey, html]);
 
   useEffect(() => {
-    document.title = story ? `${story.title} · Eon` : "Eon Design Hub";
+    document.title = story ? `${story.title} · Eon` : "Eon Design";
   }, [story]);
 
   const dark = view.theme !== "light";
