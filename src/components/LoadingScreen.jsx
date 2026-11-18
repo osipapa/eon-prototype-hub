@@ -4,7 +4,7 @@
 export default function LoadingScreen({ children = "Loading…" }) {
   return (
     <div className="eon-loading-screen" role="status" aria-live="polite">
-      <strong>Eon Design Hub</strong>
+      <strong>Eon Design</strong>
       <span className="sr-only">{children}</span>
     </div>
   );
