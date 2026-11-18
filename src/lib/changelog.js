@@ -19,6 +19,20 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-11-18",
+    title: "A metallic loading screen",
+    image: "changelog/2026-11-18-loading-screen.png",
+    imageAlt: "The loading screen, with a flash of light crossing the chrome title and bar.",
+    groups: [
+      {
+        label: "Design",
+        items: [
+          "The loading screen shows EON DESIGN HUB in bold chrome, and a flash of light sweeps across the title and the bar while the hub loads.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-11-16",
     title: "Suggest copy on the prototype",
     image: "changelog/2026-11-16-suggest-copy.png",
