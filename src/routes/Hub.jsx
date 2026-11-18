@@ -589,7 +589,7 @@ export default function Hub() {
           <div style={{ maxWidth: 420, textAlign: "center" }}>
             <div style={{ fontSize: 16, fontWeight: 600 }}>Couldn't load the workspace</div>
             <p style={{ margin: "8px 0 18px", color: "#9094A5", fontSize: 13, lineHeight: 1.5 }}>{loadError}</p>
-            <button onClick={retryLoad} style={{ minHeight: 40, padding: "0 16px", border: 0, borderRadius: 10, background: "var(--eon-accent-solid)", color: "var(--eon-accent-foreground)", cursor: "pointer", fontWeight: 600 }}>
+            <button onClick={retryLoad} style={{ minHeight: 40, padding: "0 16px", border: 0, borderRadius: 10, background: "linear-gradient(135deg, #DD0EFF 0%, #F19DFF 100%)", color: "#160018", cursor: "pointer", fontWeight: 600 }}>
               Try again
             </button>
           </div>
