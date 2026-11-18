@@ -35,7 +35,6 @@ export default function DesignGuide({
   activeSection,
   kb,
   assets = {},
-  logoLoading = false,
   userEmail,
   isAdmin,
   onSelectPage,
@@ -125,7 +124,7 @@ export default function DesignGuide({
           {!narrow && <SidebarResizeHandle resize={sidebarResize} label="Resize Eon Design navigation" />}
           <div className="eon-design-sidebar-head" style={{ borderColor: c.border }}>
             <div className="eon-brand-row">
-              <DesignHubSwitcher active="design" c={c} logo={assets.eonLogo} logoLoading={logoLoading} onSelect={navigateProduct} />
+              <DesignHubSwitcher active="design" c={c} onSelect={navigateProduct} />
               {narrow && <button className="eon-buttonish eon-icon-button" type="button" onClick={() => setNavOpen(false)} aria-label="Close Eon Design navigation" style={{ color: c.muted }}><X size={17} /></button>}
             </div>
           </div>

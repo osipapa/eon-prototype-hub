@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  BookOpen, Check, Monitor, Shapes,
+  BookOpen, Check, ChevronDown, Monitor, Shapes,
 } from "lucide-react";
-import EonMark from "@/components/EonMark";
+import EonGlyph from "@/components/EonGlyph";
 
 const PRODUCTS = [
   { id: "design", label: "Eon Design", description: "How Eon designs and ships", Icon: Shapes },
@@ -10,7 +10,7 @@ const PRODUCTS = [
   { id: "prompts", label: "Prompts", description: "Reusable team prompts", Icon: BookOpen },
 ];
 
-export default function DesignHubSwitcher({ active, c, logo, logoLoading = false, onSelect }) {
+export default function DesignHubSwitcher({ active, c, onSelect }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -44,8 +44,9 @@ export default function DesignHubSwitcher({ active, c, logo, logoLoading = false
         aria-expanded={open}
         style={{ color: c.text, background: open ? c.raised : "transparent" }}
       >
-        <span className="eon-design-switcher-logo"><EonMark src={logo} loading={logoLoading} /></span>
+        <span className="eon-design-switcher-logo"><EonGlyph size={24} /></span>
         <span className="eon-design-switcher-label">Eon Design</span>
+        <ChevronDown className={open ? "is-open" : ""} size={15} aria-hidden="true" style={{ color: c.muted }} />
       </button>
 
       {open && (

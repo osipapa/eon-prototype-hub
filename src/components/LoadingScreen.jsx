@@ -1,10 +1,13 @@
+import { useState } from "react";
+import { EON_MARK_DOT, EON_MARK_PATH } from "@/components/EonGlyph";
+
 // Full-screen loading state, shared by the app splash (auth/chunk loads) and
 // the hub's first data fetch. Above the title, the Eon mark is constructed
 // like a logo sheet: axes, circles and guide lines assemble, then the mark is
-// drawn over them. A light sweeps across the title. The status line is for
-// screen readers only.
+// drawn over them. That plays once per page load; after it, the title pulses
+// for as long as loading lasts. The status line is for screen readers only.
 
-// Geometry of the mark, with the ring's centre at 0,0 (see public/favicon.svg).
+// Geometry of the mark, with the ring's centre at 0,0 (see EonGlyph).
 // R/r: outer and inner ring radius. M: the band's centre line. W: half the
 // band. The cut faces fan out 15 degrees either side of a 45 degree bisector
 // from V; the dot (D, radius DR) sits on that bisector, and a circle of twice
@@ -14,17 +17,25 @@ const r = 165;
 const M = 207;
 const W = 42;
 const V = [-166.7, 155.3];
-const D = [156.2, -172.1];
-const DR = 60.5;
+const D = [EON_MARK_DOT.cx, EON_MARK_DOT.cy];
+const DR = EON_MARK_DOT.r;
 const SQ = 116.7; // half side of the square inscribed in the inner circle
-const MARK = "M 236.0 -77.3 L 161.2 -34.0 C 163.5 -23.1 164.7 -11.7 164.7 -0.0 C 164.7 58.3 134.4 109.8 88.6 139.1 C 63.0 155.6 32.6 165.1 0.0 165.1 C -90.8 165.1 -164.7 91.0 -164.7 -0.0 C -164.7 -44.6 -147.0 -85.1 -118.2 -114.9 C -88.3 -145.9 -46.4 -165.2 0.0 -165.2 C 6.0 -165.2 11.9 -164.9 17.8 -164.2 L 61.6 -240.3 L 61.8 -241.1 C 42.1 -246.2 21.3 -248.9 0.0 -248.9 C -77.3 -248.9 -146.4 -213.3 -192.0 -157.6 C -227.2 -114.6 -248.2 -59.7 -248.2 0.0 C -248.2 137.3 -136.9 248.9 0.0 248.9 C 47.8 248.9 92.5 235.3 130.4 211.7 C 201.1 167.8 248.2 89.3 248.2 0.0 C 248.2 -27.0 243.9 -52.9 235.9 -77.3 L 236.0 -77.3Z";
 
 // `i` is a part's place in the stagger.
 const at = (i) => ({ "--i": i });
 
+// The splash, the hub's first fetch and later route loads each mount their own
+// LoadingScreen. They share one clock, so a later one picks the animation up
+// where the first has got to (or shows it finished) instead of replaying it.
+let startedAt = null;
+
 export default function LoadingScreen({ children = "Loading…" }) {
+  const [elapsed] = useState(() => {
+    if (startedAt === null) startedAt = performance.now();
+    return Math.round(performance.now() - startedAt);
+  });
   return (
-    <div className="eon-loading-screen" role="status" aria-live="polite">
+    <div className="eon-loading-screen" role="status" aria-live="polite" style={{ "--t0": `${-elapsed}ms` }}>
       <svg className="eon-loading-blueprint" viewBox="-330 -330 660 660" aria-hidden="true">
         {/* Axes, with ticks where the circles cross them */}
         <path className="bp bp-fade bp-solid" style={at(0)} d="M-318 0H318M0 -318V318" />
@@ -83,7 +94,7 @@ export default function LoadingScreen({ children = "Loading…" }) {
         <text className="bp bp-fade" style={at(13)} x={-M} y={-W - 8} textAnchor="middle">84</text>
 
         {/* The mark itself, drawn over its construction */}
-        <path className="bp-mark bp-draw" style={at(12)} pathLength="1" d={MARK} />
+        <path className="bp-mark bp-draw" style={at(12)} pathLength="1" d={EON_MARK_PATH} />
         <circle className="bp-mark bp bp-grow" style={at(24)} cx={D[0]} cy={D[1]} r={DR} />
       </svg>
       <strong>Eon Design</strong>

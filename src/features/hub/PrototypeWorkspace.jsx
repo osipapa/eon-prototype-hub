@@ -1863,7 +1863,6 @@ function WorkspaceSidebar({
           <DesignHubSwitcher
             active="prototypes"
             c={c}
-            logo={media.eonLogo}
             onSelect={(product) => {
               if (product === "design") onOpenDesign?.();
               if (product === "prompts") onOpenPrompts?.();

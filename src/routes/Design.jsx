@@ -33,7 +33,6 @@ export default function Design() {
       activeSection={search.get("s")}
       kb={kb}
       assets={assets || {}}
-      logoLoading={assets === null}
       userEmail={user?.email}
       isAdmin={isAdmin}
       onSelectPage={(nextSlug, section) => navigate(`/design/${nextSlug}${section ? `?s=${section}` : ""}`)}

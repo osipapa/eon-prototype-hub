@@ -138,7 +138,6 @@ export default function PromptLibrary({
       {navOpen && (
         <PromptSidebar
           c={c}
-          logo={assets.eonLogo}
           prompts={prompts}
           categories={categories}
           query={query}
@@ -293,7 +292,6 @@ export default function PromptLibrary({
 
 function PromptSidebar({
   c,
-  logo,
   prompts,
   categories,
   query,
@@ -369,7 +367,6 @@ function PromptSidebar({
           <DesignHubSwitcher
             active="prompts"
             c={c}
-            logo={logo}
             onSelect={(product) => {
               if (product === "design") onOpenDesign?.();
               if (product === "prototypes") onOpenPrototypes?.();

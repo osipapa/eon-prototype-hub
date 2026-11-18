@@ -28,9 +28,10 @@ export const CHANGELOG = [
         label: "Design",
         items: [
           "The hub is now called Eon Design: in the browser tab, the Full view and Mirror tabs, and the login details admins copy.",
-          "The loading screen shows EON DESIGN in bold chrome, with a light sweeping slowly across it from left to right.",
-          "While it loads, the Eon mark is constructed above the title like a logo sheet: axes, circles, guides and measures assemble, then the mark is drawn over them.",
-          "The Eon Design switcher at the top of the sidebar no longer shows a chevron.",
+          "The loading screen shows EON DESIGN in bold chrome.",
+          "While it loads, the Eon mark is constructed above the title like a logo sheet: axes, circles, guides and measures assemble, then the mark is drawn over them. It plays once; after that the title pulses until the hub is ready.",
+          "The sidebar switcher shows the Eon mark, the same one the loading screen draws.",
+          "The browser tab icon stays the Eon mark; it no longer turns into a cursor.",
         ],
       },
     ],

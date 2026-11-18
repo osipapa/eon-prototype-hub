@@ -5,7 +5,6 @@ import { AuthProvider } from "./lib/auth";
 import WorkspacePreview from "./dev/WorkspacePreview";
 import PromptLibraryPreview from "./dev/PromptLibraryPreview";
 import EonAccentDefs from "./components/EonAccentDefs";
-import { startAnimatedFavicon } from "./lib/animatedFavicon";
 import "./index.css";
 
 const DesignGuidePreview = React.lazy(() => import("./dev/DesignGuidePreview"));
@@ -14,8 +13,6 @@ const FullPreview = React.lazy(() => import("./dev/FullPreview"));
 const ConsentPreview = React.lazy(() => import("./dev/ConsentPreview"));
 const AdminPreview = React.lazy(() => import("./dev/AdminPreview"));
 const AnimationsPreview = React.lazy(() => import("./dev/AnimationsPreview"));
-
-startAnimatedFavicon();
 
 const previewParams = new URLSearchParams(window.location.search);
 const isWorkspacePreview = import.meta.env.DEV && previewParams.has("workspace-preview");
