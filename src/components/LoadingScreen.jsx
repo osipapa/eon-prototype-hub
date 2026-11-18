@@ -87,10 +87,6 @@ export default function LoadingScreen({ children = "Loading…" }) {
     <div className="eon-loading-screen" role="status" aria-live="polite" style={{ "--t0": `${-elapsed}ms` }}>
       <svg className="eon-loading-blueprint" viewBox="-330 -330 660 660" aria-hidden="true">
         <defs>
-          <linearGradient id="eon-bp-chrome" gradientUnits="userSpaceOnUse" x1={-R} y1={-R} x2={R} y2={R}>
-            <stop offset="0" stopColor="#FFFFFF" />
-            <stop offset="1" stopColor="#6F6E73" />
-          </linearGradient>
           {DOTTED.map(([d, start, duration], n) => (
             <mask key={d} id={`eon-bp-m${n}`} maskUnits="userSpaceOnUse" x="-330" y="-330" width="660" height="660">
               <path className="bp-reveal" style={at(start, duration)} pathLength="1" d={d} />
@@ -118,13 +114,8 @@ export default function LoadingScreen({ children = "Loading…" }) {
           <text className="bp-fade" style={at(1040)} x={-M} y={-W - 8} textAnchor="middle">84</text>
         </g>
 
-        {/* The mark fades in over its construction: a faint chrome fill and a
-            strong outline */}
+        {/* The mark fades in over its construction as a strong outline */}
         <g className="bp-mark">
-          <g className="bp-fill">
-            <path d={EON_MARK_PATH} />
-            <circle cx={D[0]} cy={D[1]} r={DR} />
-          </g>
           <path d={EON_MARK_PATH} />
           <circle cx={D[0]} cy={D[1]} r={DR} />
         </g>

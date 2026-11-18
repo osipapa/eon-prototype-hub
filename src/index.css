@@ -107,10 +107,8 @@
 .eon-loading-blueprint .bp-hair { stroke: rgba(214, 214, 217, .3); stroke-width: 1.9; }
 .eon-loading-blueprint .bp-fade { animation: eon-bp-fade 500ms var(--ease-out) calc(var(--d, 0ms) + var(--t0, 0ms)) backwards; }
 .eon-loading-blueprint text { fill: rgba(214, 214, 217, .6); font-size: 13px; font-weight: 500; letter-spacing: .04em; }
-/* The mark fades in once the construction is up: a strong outline over a
-   faint chrome fill. */
+/* The mark fades in once the construction is up, as a strong outline. */
 .eon-loading-blueprint .bp-mark { stroke: #F2F2F3; stroke-width: 4.6; stroke-linejoin: round; animation: eon-bp-fade-only 600ms ease-out calc(1200ms + var(--t0, 0ms)) backwards; }
-.eon-loading-blueprint .bp-fill { fill: url(#eon-bp-chrome); stroke: none; opacity: .2; }
 @keyframes eon-bp-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes eon-bp-fade { from { opacity: 0; transform: translateY(4px); } }
 @keyframes eon-bp-fade-only { from { opacity: 0; } }
