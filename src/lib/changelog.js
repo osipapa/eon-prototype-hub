@@ -22,13 +22,14 @@ export const CHANGELOG = [
     date: "2026-11-18",
     title: "Eon Design, with a metallic loading screen",
     image: "changelog/2026-11-18-loading-screen.png",
-    imageAlt: "The loading screen: the chrome title with a light crossing it.",
+    imageAlt: "The loading screen: the chrome title inside a dotted blueprint of the hub.",
     groups: [
       {
         label: "Design",
         items: [
           "The hub is now called Eon Design: in the browser tab, the Full view and Mirror tabs, and the login details admins copy.",
           "The loading screen is just EON DESIGN in bold chrome, with a light sweeping slowly across it from left to right.",
+          "While it loads, a dotted blueprint of the hub assembles behind the title: sidebar, toolbar, canvas and comments.",
           "The Eon Design switcher at the top of the sidebar no longer shows a chevron.",
         ],
       },
