@@ -7,9 +7,9 @@ import { EON_MARK_DOT, EON_MARK_PATH } from "@/components/EonGlyph";
 // logo sheet: axes shoot out from the centre, circles are swept round as if by
 // a compass, guides and measures extend. Then the mark fades in over them as a
 // strong outline and the guides recede. That plays once per page load (see
-// loaderClock, which also keeps this screen up until it has finished); after
-// it, the title pulses for as long as loading lasts. The status line is for
-// screen readers.
+// loaderClock, which also keeps this screen up until it has finished). A light
+// sweeps across the title for as long as loading lasts. The status line is
+// for screen readers.
 
 // Geometry of the mark, with the ring's centre at 0,0 (see EonGlyph).
 // R/r: outer and inner ring radius. M: the band's centre line. W: half the
