@@ -86,19 +86,20 @@
 /* One band of light crosses the title left to right at a constant, unhurried
    speed (about 1.2s over the letters), then rests. */
 .eon-loading-screen strong { position: relative; display: block; width: var(--eon-loading-size); white-space: nowrap; text-align: center; font-size: 18px; font-weight: 700; letter-spacing: .04em; text-indent: .04em; text-transform: uppercase; color: #A2A2A6; background: linear-gradient(100deg, transparent 40%, #fff 48%, #fff 52%, transparent 60%) no-repeat, linear-gradient(90deg, #D6D6D9 25%, #A2A2A6 50%, #5E5D61 75%); background-size: 300% 100%, 100% 100%; background-position: 100% 0, 0 0; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: eon-loading-flash 2.6s linear infinite; }
-/* The blueprint: dotted outlines of the hub that assemble behind the title.
-   Each part fades in while moving the last few pixels into place from the
-   side it belongs to, 60ms apart. Transform and opacity only. */
-.eon-loading-blueprint { position: absolute; top: 50%; left: 50%; width: min(760px, 94vw); height: auto; overflow: visible; transform: translate(-50%, -50%); fill: none; stroke: rgba(214, 214, 217, .3); stroke-width: 1; stroke-linecap: round; stroke-dasharray: 1.5 4.5; pointer-events: none; }
-.eon-loading-blueprint > * { --dx: 0px; --dy: 0px; --s: 1; vector-effect: non-scaling-stroke; transform-box: fill-box; transform-origin: center; animation: eon-blueprint-in 600ms var(--ease-out) calc(var(--i, 0) * 60ms) both; }
-.eon-loading-blueprint .bp-left { --dx: -14px; }
-.eon-loading-blueprint .bp-right { --dx: 14px; }
-.eon-loading-blueprint .bp-top { --dy: -12px; }
-.eon-loading-blueprint .bp-bottom { --dy: 12px; }
+/* The blueprint: the Eon mark's construction, assembled above the title.
+   Guides fade in (circles and squares also settle from 96%), 60ms apart, then
+   the mark is drawn over them. Dotted lines are shapes, solid hairlines are
+   axes, guides and measures. */
+.eon-loading-blueprint { width: min(420px, 84vw, 58vh); height: auto; margin-bottom: 10px; overflow: visible; fill: none; stroke: rgba(214, 214, 217, .34); stroke-width: 1; stroke-linecap: round; stroke-dasharray: 1.5 4.5; pointer-events: none; }
+.eon-loading-blueprint .bp { --s: 1; vector-effect: non-scaling-stroke; transform-box: fill-box; transform-origin: center; animation: eon-blueprint-in 600ms var(--ease-out) calc(var(--i, 0) * 60ms) both; }
 .eon-loading-blueprint .bp-grow { --s: .96; }
-.eon-loading-blueprint .bp-solid { stroke-dasharray: none; stroke: rgba(214, 214, 217, .4); }
-@media (max-width: 640px) { .eon-loading-blueprint { width: 170vw; } }
-@keyframes eon-blueprint-in { from { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(var(--s)); } to { opacity: 1; transform: none; } }
+.eon-loading-blueprint .bp-solid { stroke-dasharray: none; stroke: rgba(214, 214, 217, .2); }
+.eon-loading-blueprint .bp-centerline { stroke-dasharray: 9 4 1.5 4; stroke: rgba(214, 214, 217, .2); }
+.eon-loading-blueprint text { fill: rgba(214, 214, 217, .5); stroke: none; font-size: 13px; font-weight: 500; letter-spacing: .04em; }
+.eon-loading-blueprint .bp-mark { stroke: #D6D6D9; stroke-width: 3.2; stroke-linejoin: round; stroke-dasharray: none; vector-effect: none; }
+.eon-loading-blueprint .bp-draw { stroke-dasharray: 1; animation: eon-blueprint-draw 1000ms cubic-bezier(.65, 0, .35, 1) calc(var(--i, 0) * 60ms) both; }
+@keyframes eon-blueprint-in { from { opacity: 0; transform: scale(var(--s)); } to { opacity: 1; transform: none; } }
+@keyframes eon-blueprint-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes eon-loading-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes eon-loading-flash { 0% { background-position: 100% 0, 0 0; } 86%, 100% { background-position: 0% 0, 0 0; } }
 .eon-app-error { padding: 24px; }
@@ -1401,8 +1402,9 @@ button.eon-save-state { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .eon-modal { transition-duration: 0ms; transform: none; }
   .eon-spin, .eon-app-spinner, .eon-loading-screen strong { animation: none; }
-  /* The blueprint still fades in, but nothing moves. */
-  .eon-loading-blueprint > * { --dx: 0px !important; --dy: 0px !important; --s: 1 !important; }
+  /* The blueprint still fades in, but nothing moves and the mark is not drawn on. */
+  .eon-loading-blueprint .bp { --s: 1 !important; }
+  .eon-loading-blueprint .bp-draw { animation-name: eon-loading-fade; animation-duration: 400ms; stroke-dasharray: none; }
   .eon-toast { animation: none; }
   .eon-live-dot, .eon-sync-chip.is-syncing { animation: none; }
 }
