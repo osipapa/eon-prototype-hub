@@ -83,14 +83,10 @@
 .eon-app-splash { grid-auto-flow: column; gap: 10px; font-size: 13px; }
 .eon-app-spinner { width: 16px; height: 16px; border: 2px solid rgba(221, 14, 255, .16); border-top-color: var(--eon-accent-end); border-radius: 50%; animation: eon-spin 800ms linear infinite; }
 .eon-loading-screen { display: flex; min-height: 100vh; min-height: 100dvh; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #000; color: #fff; font-family: 'DM Sans', sans-serif; animation: eon-loading-fade 220ms ease-out; }
-.eon-loading-mark { position: relative; display: grid; width: 64px; height: 64px; place-items: center; animation: eon-loading-breathe 2.2s ease-in-out infinite; }
-.eon-loading-mark img { width: 34px; height: 34px; object-fit: contain; }
-.eon-loading-screen strong { display: inline-block; white-space: nowrap; font-size: 18px; font-weight: 700; letter-spacing: .16em; text-indent: .16em; text-transform: uppercase; color: #A2A2A6; background: linear-gradient(100deg, transparent 36%, #fff 47%, #fff 53%, transparent 64%) no-repeat, linear-gradient(180deg, #C9C9CC 0%, #A2A2A6 38%, #5E5D61 62%, #8B8B90 100%); background-size: 250% 100%, 100% 100%; background-position: 100% 0, 0 0; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: eon-loading-flash 1.9s cubic-bezier(.65,0,.35,1) infinite; }
-.eon-loading-bar { width: 132px; height: 3px; overflow: hidden; border-radius: 999px; background: linear-gradient(180deg, rgba(227,227,228,.2), rgba(120,119,122,.2)); }
+.eon-loading-screen strong { display: inline-block; white-space: nowrap; font-size: 18px; font-weight: 700; letter-spacing: .16em; text-indent: .16em; text-transform: uppercase; color: #A2A2A6; background: linear-gradient(100deg, transparent 36%, #fff 47%, #fff 53%, transparent 64%) no-repeat, linear-gradient(90deg, #D6D6D9 0%, #A2A2A6 45%, #5E5D61 100%); background-size: 250% 100%, 100% 100%; background-position: 100% 0, 0 0; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: eon-loading-flash 1.9s cubic-bezier(.65,0,.35,1) infinite; }
+.eon-loading-bar { width: 132px; height: 3px; overflow: hidden; border-radius: 999px; background: linear-gradient(90deg, rgba(227,227,228,.22), rgba(120,119,122,.14)); }
 .eon-loading-bar span { display: block; width: 42%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, transparent, #78777A 20%, #E3E3E4 40%, #fff 50%, #E3E3E4 60%, #78777A 80%, transparent); transform: translateX(-110%); animation: eon-loading-slide 1.9s cubic-bezier(.65,0,.35,1) infinite; }
-.eon-loading-status { font-size: 12px; color: #9094A5; }
 @keyframes eon-loading-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes eon-loading-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
 /* One pass of light, then a rest: the title and the bar flash together. */
 @keyframes eon-loading-slide { 0% { transform: translateX(-110%); } 48%, 100% { transform: translateX(350%); } }
 @keyframes eon-loading-flash { 0% { background-position: 100% 0, 0 0; } 48%, 100% { background-position: 0% 0, 0 0; } }
@@ -1395,7 +1391,7 @@ button.eon-save-state { cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   .eon-modal { transition-duration: 0ms; transform: none; }
-  .eon-spin, .eon-app-spinner, .eon-loading-mark, .eon-loading-bar span, .eon-loading-screen strong { animation: none; }
+  .eon-spin, .eon-app-spinner, .eon-loading-bar span, .eon-loading-screen strong { animation: none; }
   .eon-loading-bar span { transform: none; width: 100%; opacity: .6; }
   .eon-toast { animation: none; }
   .eon-live-dot, .eon-sync-chip.is-syncing { animation: none; }

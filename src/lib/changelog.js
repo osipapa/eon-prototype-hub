@@ -27,7 +27,7 @@ export const CHANGELOG = [
       {
         label: "Design",
         items: [
-          "The loading screen shows EON DESIGN HUB in bold chrome, and a flash of light sweeps across the title and the bar while the hub loads.",
+          "The loading screen is just EON DESIGN HUB in bold chrome and a bar. A flash of light sweeps across both, left to right, while the hub loads.",
         ],
       },
     ],
