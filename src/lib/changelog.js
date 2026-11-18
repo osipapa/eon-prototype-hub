@@ -22,12 +22,12 @@ export const CHANGELOG = [
     date: "2026-11-18",
     title: "A metallic loading screen",
     image: "changelog/2026-11-18-loading-screen.png",
-    imageAlt: "The loading screen, with a flash of light crossing the chrome title and bar.",
+    imageAlt: "The loading screen, with the light crossing the title and lighting the Eon mark behind it.",
     groups: [
       {
         label: "Design",
         items: [
-          "The loading screen is just EON DESIGN HUB in bold chrome and a bar. A flash of light sweeps across both, left to right, while the hub loads.",
+          "The loading screen is just EON DESIGN HUB in bold chrome. A light sweeps across it, left to right, and for a moment lights the Eon mark in the dark behind it.",
         ],
       },
     ],

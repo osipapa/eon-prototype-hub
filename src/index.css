@@ -82,14 +82,15 @@
 .eon-app-splash, .eon-app-error { display: grid; min-height: 100vh; min-height: 100dvh; place-items: center; background: #000; color: #9094A5; }
 .eon-app-splash { grid-auto-flow: column; gap: 10px; font-size: 13px; }
 .eon-app-spinner { width: 16px; height: 16px; border: 2px solid rgba(221, 14, 255, .16); border-top-color: var(--eon-accent-end); border-radius: 50%; animation: eon-spin 800ms linear infinite; }
-.eon-loading-screen { display: flex; min-height: 100vh; min-height: 100dvh; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #000; color: #fff; font-family: 'DM Sans', sans-serif; animation: eon-loading-fade 220ms ease-out; }
-.eon-loading-screen strong { display: inline-block; white-space: nowrap; font-size: 18px; font-weight: 700; letter-spacing: .16em; text-indent: .16em; text-transform: uppercase; color: #A2A2A6; background: linear-gradient(100deg, transparent 36%, #fff 47%, #fff 53%, transparent 64%) no-repeat, linear-gradient(90deg, #D6D6D9 0%, #A2A2A6 45%, #5E5D61 100%); background-size: 250% 100%, 100% 100%; background-position: 100% 0, 0 0; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: eon-loading-flash 1.9s cubic-bezier(.65,0,.35,1) infinite; }
-.eon-loading-bar { width: 132px; height: 3px; overflow: hidden; border-radius: 999px; background: linear-gradient(90deg, rgba(227,227,228,.22), rgba(120,119,122,.14)); }
-.eon-loading-bar span { display: block; width: 42%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, transparent, #78777A 20%, #E3E3E4 40%, #fff 50%, #E3E3E4 60%, #78777A 80%, transparent); transform: translateX(-110%); animation: eon-loading-slide 1.9s cubic-bezier(.65,0,.35,1) infinite; }
+.eon-loading-screen { --eon-loading-size: min(340px, 86vw); position: relative; display: flex; min-height: 100vh; min-height: 100dvh; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; background: #000; color: #fff; font-family: 'DM Sans', sans-serif; animation: eon-loading-fade 220ms ease-out; }
+/* The title and the mark behind it are the same width and share one light:
+   a band that crosses left to right, then rests. The mark is masked by the
+   band, so it only shows while the light is on it. */
+.eon-loading-screen strong { position: relative; display: block; width: var(--eon-loading-size); white-space: nowrap; text-align: center; font-size: 18px; font-weight: 700; letter-spacing: .04em; text-indent: .04em; text-transform: uppercase; color: #A2A2A6; background: linear-gradient(100deg, transparent 40%, #fff 48%, #fff 52%, transparent 60%) no-repeat, linear-gradient(90deg, #D6D6D9 25%, #A2A2A6 50%, #5E5D61 75%); background-size: 300% 100%, 100% 100%; background-position: 100% 0, 0 0; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: eon-loading-flash 1.9s cubic-bezier(.65,0,.35,1) infinite; }
+.eon-loading-glyph { position: absolute; top: 50%; left: 50%; width: var(--eon-loading-size); height: var(--eon-loading-size); transform: translate(-50%, -50%); opacity: .7; -webkit-mask: linear-gradient(100deg, transparent 40%, #000 48%, #000 52%, transparent 60%) 100% 0 / 300% 100% no-repeat; mask: linear-gradient(100deg, transparent 40%, #000 48%, #000 52%, transparent 60%) 100% 0 / 300% 100% no-repeat; animation: eon-loading-reveal 1.9s cubic-bezier(.65,0,.35,1) infinite; }
 @keyframes eon-loading-fade { from { opacity: 0; } to { opacity: 1; } }
-/* One pass of light, then a rest: the title and the bar flash together. */
-@keyframes eon-loading-slide { 0% { transform: translateX(-110%); } 48%, 100% { transform: translateX(350%); } }
 @keyframes eon-loading-flash { 0% { background-position: 100% 0, 0 0; } 48%, 100% { background-position: 0% 0, 0 0; } }
+@keyframes eon-loading-reveal { 0% { -webkit-mask-position: 100% 0; mask-position: 100% 0; } 48%, 100% { -webkit-mask-position: 0% 0; mask-position: 0% 0; } }
 .eon-app-error { padding: 24px; }
 .eon-app-error > div { width: min(420px, 100%); padding: 28px; border-radius: 18px; background: #121216; box-shadow: var(--shadow-surface); text-align: center; }
 .eon-app-error span { color: #fff; font-size: 17px; font-weight: 650; }
@@ -1391,8 +1392,7 @@ button.eon-save-state { cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   .eon-modal { transition-duration: 0ms; transform: none; }
-  .eon-spin, .eon-app-spinner, .eon-loading-bar span, .eon-loading-screen strong { animation: none; }
-  .eon-loading-bar span { transform: none; width: 100%; opacity: .6; }
+  .eon-spin, .eon-app-spinner, .eon-loading-screen strong, .eon-loading-glyph { animation: none; }
   .eon-toast { animation: none; }
   .eon-live-dot, .eon-sync-chip.is-syncing { animation: none; }
 }
