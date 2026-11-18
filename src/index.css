@@ -85,22 +85,41 @@
 /* --t0 is how far into the sequence this screen mounted (0 or negative): every
    delay adds it, so a second loading screen carries on instead of replaying. */
 .eon-loading-screen { position: relative; display: flex; min-height: 100vh; min-height: 100dvh; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; background: #000; color: #fff; font-family: 'DM Sans', sans-serif; animation: eon-loading-fade 220ms ease-out var(--t0, 0ms) both; }
-/* Once the mark is built (about 2.1s), the title breathes: opacity only. */
-.eon-loading-screen strong { position: relative; display: inline-block; white-space: nowrap; font-size: 16px; font-weight: 700; letter-spacing: .04em; text-indent: .04em; text-transform: uppercase; color: #A2A2A6; background: linear-gradient(90deg, #D6D6D9 0%, #A2A2A6 45%, #5E5D61 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: eon-loading-pulse 1400ms cubic-bezier(.45, 0, .55, 1) calc(2100ms + var(--t0, 0ms)) infinite alternate; }
-/* The blueprint: the Eon mark's construction, assembled above the title.
-   Guides fade in (circles and squares also settle from 96%), 60ms apart, then
-   the mark is drawn over them. Dotted lines are shapes, solid hairlines are
-   axes, guides and measures. */
-.eon-loading-blueprint { width: min(340px, 76vw, 50vh); height: auto; margin-bottom: 10px; overflow: visible; fill: none; stroke: rgba(214, 214, 217, .34); stroke-width: 1; stroke-linecap: round; stroke-dasharray: 1.5 4.5; pointer-events: none; }
-.eon-loading-blueprint .bp { --s: 1; vector-effect: non-scaling-stroke; transform-box: fill-box; transform-origin: center; animation: eon-blueprint-in 600ms var(--ease-out) calc(var(--i, 0) * 60ms + var(--t0, 0ms)) both; }
-.eon-loading-blueprint .bp-grow { --s: .96; }
-.eon-loading-blueprint .bp-solid { stroke-dasharray: none; stroke: rgba(214, 214, 217, .2); }
-.eon-loading-blueprint .bp-centerline { stroke-dasharray: 9 4 1.5 4; stroke: rgba(214, 214, 217, .2); }
-.eon-loading-blueprint text { fill: rgba(214, 214, 217, .5); stroke: none; font-size: 13px; font-weight: 500; letter-spacing: .04em; }
-.eon-loading-blueprint .bp-mark { stroke: #D6D6D9; stroke-width: 3.2; stroke-linejoin: round; stroke-dasharray: none; vector-effect: none; }
-.eon-loading-blueprint .bp-draw { stroke-dasharray: 1; animation: eon-blueprint-draw 1000ms cubic-bezier(.65, 0, .35, 1) calc(var(--i, 0) * 60ms + var(--t0, 0ms)) both; }
-@keyframes eon-blueprint-in { from { opacity: 0; transform: scale(var(--s)); } to { opacity: 1; transform: none; } }
-@keyframes eon-blueprint-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+/* The title settles in at once and, when the mark is finished (about 2.8s),
+   breathes: opacity only. */
+.eon-loading-screen strong { position: relative; display: inline-block; white-space: nowrap; font-size: 16px; font-weight: 700; letter-spacing: .04em; text-indent: .04em; text-transform: uppercase; color: #A2A2A6; background: linear-gradient(90deg, #D6D6D9 0%, #A2A2A6 45%, #5E5D61 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: eon-loading-title-in 600ms var(--ease-out) var(--t0, 0ms) both, eon-loading-pulse 1400ms cubic-bezier(.45, 0, .55, 1) calc(2800ms + var(--t0, 0ms)) infinite alternate; }
+/* The blueprint: the Eon mark drafted above the title. Every part's resting
+   style is its finished state and each animation only fills backwards, so
+   with animations off the finished drawing shows. --d is a part's start,
+   --dur its length. */
+.eon-loading-blueprint { width: min(340px, 76vw, 50vh); height: auto; margin-bottom: 10px; overflow: visible; fill: none; pointer-events: none; }
+.eon-loading-blueprint .bp-guides { opacity: .55; animation: eon-bp-recede 700ms ease-out calc(2150ms + var(--t0, 0ms)) backwards; }
+/* Solid hairlines draw themselves from their first point. */
+.eon-loading-blueprint .bp-line { stroke: rgba(214, 214, 217, .26); stroke-width: 1.9; stroke-dasharray: 1; animation: eon-bp-draw var(--dur, 500ms) var(--ease-out) calc(var(--d, 0ms) + var(--t0, 0ms)) backwards; }
+/* Dotted shapes sit still; the mask over each one is what gets drawn. */
+.eon-loading-blueprint .bp-dotted { stroke: rgba(214, 214, 217, .4); stroke-width: 1; stroke-linecap: round; stroke-dasharray: 1.5 4.5; vector-effect: non-scaling-stroke; }
+.eon-loading-blueprint .bp-centerline { stroke: rgba(214, 214, 217, .24); stroke-dasharray: 9 4 1.5 4; }
+.eon-loading-blueprint .bp-reveal { stroke: #fff; stroke-width: 12; stroke-dasharray: 1; animation: eon-bp-draw var(--dur, 700ms) cubic-bezier(.65, 0, .35, 1) calc(var(--d, 0ms) + var(--t0, 0ms)) backwards; }
+.eon-loading-blueprint .bp-hair { stroke: rgba(214, 214, 217, .3); stroke-width: 1.9; }
+.eon-loading-blueprint .bp-fade { animation: eon-bp-fade 500ms var(--ease-out) calc(var(--d, 0ms) + var(--t0, 0ms)) backwards; }
+.eon-loading-blueprint text { fill: rgba(214, 214, 217, .6); font-size: 13px; font-weight: 500; letter-spacing: .04em; }
+/* The mark: traced, then the dot lands with a little overshoot. */
+.eon-loading-blueprint .bp-mark, .eon-loading-blueprint .bp-markdot { stroke: #D6D6D9; stroke-width: 3.2; stroke-linejoin: round; }
+.eon-loading-blueprint .bp-mark { stroke-dasharray: 1; animation: eon-bp-draw 1100ms cubic-bezier(.65, 0, .35, 1) calc(1000ms + var(--t0, 0ms)) backwards; }
+.eon-loading-blueprint .bp-markdot { transform-box: fill-box; transform-origin: center; animation: eon-bp-pop 520ms cubic-bezier(.34, 1.56, .64, 1) calc(1950ms + var(--t0, 0ms)) backwards; }
+.eon-loading-blueprint .bp-pen { display: none; }
+@supports (offset-path: path("M0 0L1 1")) {
+  .eon-loading-blueprint .bp-pen { display: inline; offset-rotate: 0deg; offset-distance: 100%; opacity: 0; animation: eon-bp-pen-move 1100ms cubic-bezier(.65, 0, .35, 1) calc(1000ms + var(--t0, 0ms)) backwards, eon-bp-pen-show 1100ms linear calc(1000ms + var(--t0, 0ms)) backwards; }
+}
+.eon-loading-blueprint .bp-fill { fill: url(#eon-bp-chrome); opacity: .2; animation: eon-bp-fade-only 600ms ease-out calc(2200ms + var(--t0, 0ms)) backwards; }
+@keyframes eon-bp-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes eon-bp-fade { from { opacity: 0; transform: translateY(4px); } }
+@keyframes eon-bp-fade-only { from { opacity: 0; } }
+@keyframes eon-bp-recede { from { opacity: 1; } }
+@keyframes eon-bp-pop { from { opacity: 0; transform: scale(.6); } }
+@keyframes eon-bp-pen-move { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@keyframes eon-bp-pen-show { 0% { opacity: 0; } 8%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes eon-loading-title-in { from { opacity: 0; transform: translateY(6px); filter: blur(6px); } }
 @keyframes eon-loading-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes eon-loading-pulse { from { opacity: 1; } to { opacity: .4; } }
 .eon-app-error { padding: 24px; }
@@ -1404,9 +1423,9 @@ button.eon-save-state { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .eon-modal { transition-duration: 0ms; transform: none; }
   .eon-spin, .eon-app-spinner { animation: none; }
-  /* The blueprint still fades in, but nothing moves and the mark is not drawn on. */
-  .eon-loading-blueprint .bp { --s: 1 !important; }
-  .eon-loading-blueprint .bp-draw { animation-name: eon-loading-fade; animation-duration: 400ms; stroke-dasharray: none; }
+  /* The finished drawing shows at once; the title still breathes. */
+  .eon-loading-blueprint * { animation: none !important; }
+  .eon-loading-screen strong { animation: eon-loading-pulse 1400ms cubic-bezier(.45, 0, .55, 1) infinite alternate; }
   .eon-toast { animation: none; }
   .eon-live-dot, .eon-sync-chip.is-syncing { animation: none; }
 }

@@ -22,16 +22,16 @@ export const CHANGELOG = [
     date: "2026-11-18",
     title: "Eon Design, with a metallic loading screen",
     image: "changelog/2026-11-18-loading-screen.png",
-    imageAlt: "The loading screen: the Eon mark drawn over its construction lines, above the chrome title.",
+    imageAlt: "The loading screen: the finished Eon mark over its construction lines, above the chrome title.",
     groups: [
       {
         label: "Design",
         items: [
           "The hub is now called Eon Design: in the browser tab, the Full view and Mirror tabs, and the login details admins copy.",
           "The loading screen shows EON DESIGN in bold chrome.",
-          "While it loads, the Eon mark is constructed above the title like a logo sheet: axes, circles, guides and measures assemble, then the mark is drawn over them. It plays once; after that the title pulses until the hub is ready.",
-          "The sidebar switcher shows the Eon mark, the same one the loading screen draws.",
-          "The browser tab icon stays the Eon mark; it no longer turns into a cursor.",
+          "While it loads, the Eon mark is drafted above the title like a logo sheet: axes shoot out from the centre, circles are swept round, guides and measures extend, then a point of light traces the mark. It plays once; after that the title pulses until the hub is ready.",
+          "The sidebar switcher and the browser tab show a new icon: a white blueprint of the Eon mark on blue.",
+          "The browser tab icon no longer turns into a cursor.",
         ],
       },
     ],
