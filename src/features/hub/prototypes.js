@@ -20,18 +20,19 @@ export const HUB = {
   // 12.4:1 in dark, where the pill is the light one. Light mode keeps the
   // white-pill-in-a-well reading, so the track is deepened and the lift comes
   // from the well's inset shadow rather than from the pill's own colour.
-  dark: { bg: "#000000", nav: "#0D0D0D", panel: "#1A1A1A", raised: "#262626", border: "rgba(255,255,255,0.10)",
-    text: "#FAFAFA", muted: "#A1A1AA", secondary: "rgba(250,250,250,0.72)",
-    hover: "#262626", active: "#1F1F1F", brand: "#F19DFF",
-    primary: "#E8E8E8", primaryText: "#141414",
-    selected: "#E8E8E8", selectedText: "#141414",
+  // Values are Safari design system tokens (stone / neutral / magenta palette).
+  dark: { bg: "#080808", nav: "#0C0D0E", panel: "#1C1D1F", raised: "#2A2E35", border: "rgba(255,255,255,0.10)",
+    text: "#F7F8FA", muted: "#A1A7B3", secondary: "rgba(247,248,250,0.72)",
+    hover: "#2A2E35", active: "#1C2027", brand: "#FF8DD6",
+    primary: "#F7F8FA", primaryText: "#0B0D10",
+    selected: "#F7F8FA", selectedText: "#0B0D10",
     well: "inset 0 0 0 1px rgba(255,255,255,0.07)" },
-  light: { bg: "#F4F4F5", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#E4E4E7", border: "rgba(0,0,0,0.12)",
-    text: "#171717", muted: "#636369", secondary: "rgba(23,23,23,0.72)",
-    hover: "#ECECEE", active: "#E0E0E4", brand: "#9A00B0",
-    primary: "#171717", primaryText: "#FAFAFA",
-    selected: "#FFFFFF", selectedText: "#171717",
-    well: "inset 0 1px 2px rgba(23,23,23,0.09), inset 0 0 0 1px rgba(23,23,23,0.07)" },
+  light: { bg: "#F0F2F5", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#DFE3E8", border: "rgba(11,13,16,0.09)",
+    text: "#0B0D10", muted: "#5B6170", secondary: "rgba(11,13,16,0.72)",
+    hover: "#F0F2F5", active: "#DFE3E8", brand: "#D1008F",
+    primary: "#0B0D10", primaryText: "#FFFFFF",
+    selected: "#FFFFFF", selectedText: "#0B0D10",
+    well: "inset 0 1px 2px rgba(11,13,16,0.09), inset 0 0 0 1px rgba(11,13,16,0.07)" },
 };
 
 // Every tab bar reads its colours from these, so tabs in portals (dialogs)

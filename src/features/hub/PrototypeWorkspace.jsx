@@ -94,7 +94,7 @@ function linearConnectionState(issue, identifier, c) {
   return {
     kind: "error",
     label: `Linear unavailable${team ? ` · ${team}` : ""}`,
-    color: c.bg === "#000000" ? "#FF7A8A" : "#B42335",
+    color: c.bg === HUB.dark.bg ? "#FF6259" : "#BB0C04",
   };
 }
 
@@ -1622,7 +1622,7 @@ export default function PrototypeWorkspace({
                     />
                   )}
                   {breakpoints.compactControls && layout === "single" && (
-                    <div className="eon-zoom eon-zoom-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+                    <div className="eon-zoom eon-zoom-float" style={{ background: c.panel, border: `1px solid ${c.border}`, boxShadow: c.bg === HUB.dark.bg ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
                       <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.max(0.25, +(value - 0.1).toFixed(2)))} aria-label="Zoom out" style={{ color: c.muted }}><Minus size={15} /></button>
                       <button className="eon-buttonish eon-zoom-value" onClick={() => setZoom(1)} title="Fit prototype to canvas" aria-label={`Zoom ${Math.round(activeScale * zoom * 100)}%. Fit prototype to canvas`} style={{ color: c.text }}>{Math.round(activeScale * zoom * 100)}%</button>
                       <button className="eon-buttonish eon-icon-button" onClick={() => setZoom((value) => Math.min(4, +(value + 0.1).toFixed(2)))} aria-label="Zoom in" style={{ color: c.muted }}><Plus size={15} /></button>
@@ -2320,7 +2320,7 @@ function CanvasControlBar({
       <div className="eon-mobile-controls">
         <button data-tutorial="canvas-controls" className="eon-buttonish eon-controls-trigger" onClick={() => setOpen(true)}
           aria-expanded={open} aria-haspopup="dialog" aria-controls="eon-mobile-controls-sheet"
-          style={{ background: c.panel, color: c.text, boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
+          style={{ background: c.panel, color: c.text, boxShadow: c.bg === HUB.dark.bg ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)" }}>
           <SlidersHorizontal size={16} aria-hidden="true" />
           <span>Controls</span>
           <span className="eon-controls-trigger-value" style={{ color: c.muted }}>{String(activeSummary || "")}</span>
@@ -2382,7 +2382,7 @@ function CanvasViewControls({
   const surface = {
     background: c.panel,
     border: `1px solid ${c.border}`,
-    boxShadow: c.bg === "#000000" ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)",
+    boxShadow: c.bg === HUB.dark.bg ? "0 8px 30px rgba(0,0,0,.35)" : "0 8px 30px rgba(0,0,0,.14)",
   };
 
   return (

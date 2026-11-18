@@ -390,7 +390,7 @@ export function UploadPanel({
           style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap", border: 0 }} />
       </div>
       )}
-      {fileLinkError && <div role="alert" style={{ fontSize: 12, color: "#FF508F" }}>{fileLinkError}</div>}
+      {fileLinkError && <div role="alert" style={{ fontSize: 12, color: "var(--ds-text-danger)" }}>{fileLinkError}</div>}
 
       <button type="button" className="eon-buttonish eon-upload-disclosure" onClick={() => setShowSource((v) => !v)}
         aria-expanded={showSource} style={{ color: c.secondary }}>
@@ -413,7 +413,7 @@ export function UploadPanel({
         </>
       )}
 
-      {err && <div role="alert" style={{ fontSize: 12, color: "#FF508F" }}>{err}</div>}
+      {err && <div role="alert" style={{ fontSize: 12, color: "var(--ds-text-danger)" }}>{err}</div>}
 
       <div className="eon-upload-actions">
         <Button onClick={() => hasHtml && onSave(html)} disabled={!hasHtml}
