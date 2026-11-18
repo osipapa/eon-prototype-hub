@@ -89,7 +89,7 @@ function TerminalArt({ c, lines }) {
   return (
     <div className="eon-art-terminal">
       {lines.map(([text, highlight], index) => (
-        <span key={index} style={{ color: highlight ? c.brand : "#b9b9b9" }}>{text}</span>
+        <span key={index} style={{ color: highlight ? c.brand : "#A1A7B3" }}>{text}</span>
       ))}
     </div>
   );
@@ -140,7 +140,7 @@ function SignInStatus({ c, status, isAdmin }) {
   if (status === "ready") {
     return (
       <p className="eon-connect-status" style={{ color: c.secondary }}>
-        <span className="eon-connect-dot" style={{ background: "#4CB782" }} aria-hidden="true" />
+        <span className="eon-connect-dot" style={{ background: "#5FD38A" }} aria-hidden="true" />
         Claude sign-in is on.
       </p>
     );
@@ -152,7 +152,7 @@ function SignInStatus({ c, status, isAdmin }) {
     : "In Supabase, open Authentication → OAuth Server and turn on dynamic client registration.";
   return (
     <div className="eon-connect-status is-off" role="status" style={{ background: c.raised, borderColor: c.border, color: c.secondary }}>
-      <span className="eon-connect-dot" style={{ background: "#F2C94C" }} aria-hidden="true" />
+      <span className="eon-connect-dot" style={{ background: "#FFD200" }} aria-hidden="true" />
       <p>
         <strong style={{ color: c.text }}>{title}</strong>{" "}
         {isAdmin ? adminFix : "Ask a hub admin to finish setup, then come back here."}

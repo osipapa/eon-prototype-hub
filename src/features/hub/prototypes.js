@@ -25,12 +25,14 @@ export const HUB = {
     text: "#F7F8FA", muted: "#A1A7B3", secondary: "rgba(247,248,250,0.72)",
     hover: "#2A2E35", active: "#1C2027", brand: "#FF8DD6",
     primary: "#F7F8FA", primaryText: "#0B0D10",
+    danger: "#FF6259", dangerSoft: "rgba(255,98,89,0.16)", dangerText: "#0B0D10",
     selected: "#F7F8FA", selectedText: "#0B0D10",
     well: "inset 0 0 0 1px rgba(255,255,255,0.07)" },
   light: { bg: "#F0F2F5", nav: "#FFFFFF", panel: "#FFFFFF", raised: "#DFE3E8", border: "rgba(11,13,16,0.09)",
     text: "#0B0D10", muted: "#5B6170", secondary: "rgba(11,13,16,0.72)",
     hover: "#F0F2F5", active: "#DFE3E8", brand: "#D1008F",
     primary: "#0B0D10", primaryText: "#FFFFFF",
+    danger: "#BB0C04", dangerSoft: "#FFF2F0", dangerText: "#FFFFFF",
     selected: "#FFFFFF", selectedText: "#0B0D10",
     well: "inset 0 1px 2px rgba(11,13,16,0.09), inset 0 0 0 1px rgba(11,13,16,0.07)" },
 };
@@ -68,9 +70,9 @@ export function insetCropStyle(html = "") {
 }
 
 export const STATUS_COLOR = {
-  "In review": ["rgba(114,167,255,0.17)", "#72A7FF", "#245FD1"],
-  "Handoff": ["rgba(255,179,79,0.17)", "#FFB34F", "#9A4A00"],
-  "Shipped": ["rgba(98,229,139,0.16)", "#62E58B", "#147A36"],
+  "In review": ["rgba(133,181,255,0.15)", "#7DB4FF", "#0657CD"],
+  "Handoff": ["rgba(255,210,0,0.2)", "#FFD200", "#7B6000"],
+  "Shipped": ["rgba(95,211,138,0.22)", "#5FD38A", "#018031"],
 };
 
 export const CANVAS_PRESETS = ["#FFFFFF", "#000000"];
@@ -143,7 +145,7 @@ function boundedDimension(value, fallback) {
 
 export const MEDIA = {
   logos: {
-    eon: (stroke = "#FFFFFF", brand = "#F19DFF", img) => {
+    eon: (stroke = "#FFFFFF", brand = "#FF8DD6", img) => {
       const src = safeMediaUrl(img);
       return src
         ? `<img src="${escapeMarkup(src)}" alt="logo" style="width:24px;height:24px;border-radius:6px;object-fit:cover"/>`
@@ -158,7 +160,7 @@ export const MEDIA = {
         : `<div style="width:${safeSize}px;height:${safeSize}px;border-radius:${safeRadius}px;background:${escapeMarkup(bg)};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${Math.round(safeSize * 0.44)}px">A</div>`;
     },
   },
-  avatar: (initials = "SL", bg = "#1E1E22", fg = "#9094A5", size = 32) =>
+  avatar: (initials = "SL", bg = "#2A2E35", fg = "#A1A7B3", size = 32) =>
     `<div style="width:${boundedDimension(size, 32)}px;height:${boundedDimension(size, 32)}px;border-radius:50%;background:${escapeMarkup(bg)};display:flex;align-items:center;justify-content:center;color:${escapeMarkup(fg)};font-size:12px;font-weight:600">${escapeMarkup(initials)}</div>`,
   placeholder: (w = 320, h = 180, label, bg = "#E5E7EB", fg = "#94A3B8") => {
     const width = boundedDimension(w, 320);

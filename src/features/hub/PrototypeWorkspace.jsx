@@ -94,7 +94,7 @@ function linearConnectionState(issue, identifier, c) {
   return {
     kind: "error",
     label: `Linear unavailable${team ? ` · ${team}` : ""}`,
-    color: c.bg === HUB.dark.bg ? "#FF6259" : "#BB0C04",
+    color: c.danger,
   };
 }
 
@@ -2058,7 +2058,7 @@ function WorkspaceSidebar({
                             <button className="eon-buttonish" role="menuitem" onClick={() => { archiveProjects([item.id], !item.archived_at); setStoryMenuId(null); }} style={{ color: c.text }}>
                               {item.archived_at ? <><ArchiveRestore size={14} /> Restore</> : <><Archive size={14} /> Archive</>}
                             </button>
-                            <button className="eon-buttonish" role="menuitem" onClick={() => { setStoryMenuId(null); deleteProjects([item.id]); }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
+                            <button className="eon-buttonish" role="menuitem" onClick={() => { setStoryMenuId(null); deleteProjects([item.id]); }} style={{ color: c.danger }}><Trash2 size={14} /> Delete</button>
                           </> : <>
                             <button autoFocus className="eon-buttonish eon-menu-back" role="menuitem" onClick={() => setMenuPanel("actions")} style={{ color: c.muted }}><ChevronLeft size={14} /> Move to group</button>
                             {groupPicker([item.id], () => setStoryMenuId(null))}
@@ -2103,7 +2103,7 @@ function WorkspaceSidebar({
               {allArchived ? <><ArchiveRestore size={14} aria-hidden="true" /> Restore</> : <><Archive size={14} aria-hidden="true" /> Archive</>}
             </button>
             <button className="eon-buttonish" disabled={!selected.length} onClick={() => { deleteProjects(selected); exitSelecting(); }}
-              style={{ borderColor: c.border, color: "#D98295" }}>
+              style={{ borderColor: c.border, color: c.danger }}>
               <Trash2 size={14} aria-hidden="true" /> Delete
             </button>
           </div>
@@ -2420,7 +2420,7 @@ function CanvasViewControls({
           <button className="eon-buttonish eon-icon-button" onClick={onScreenshot} disabled={shotState === "working"}
             aria-label={shotState === "done" ? "Screenshot copied" : shotState === "error" ? "Couldn't copy the screenshot" : "Copy a screenshot of the prototype"}
             title={shotState === "error" ? "Couldn't copy the screenshot" : "Copy screenshot"}
-            style={{ color: shotState === "done" ? c.brand : shotState === "error" ? "#D98295" : c.muted }}>
+            style={{ color: shotState === "done" ? c.brand : shotState === "error" ? c.danger : c.muted }}>
             {shotState === "working" ? <Loader2 size={15} className="eon-spin" />
               : shotState === "done" ? <Check size={15} />
               : shotState === "error" ? <AlertCircle size={15} />
@@ -2551,7 +2551,7 @@ function ReviewInspector({
                     ? "Rendering the built-in demo for this slug. Upload HTML to replace it."
                     : "Upload an HTML file to render this prototype."}
           </p>
-          {fileLinkError && <p className="eon-context-note" role="alert" style={{ color: "#FF7A8A" }}>{fileLinkError}</p>}
+          {fileLinkError && <p className="eon-context-note" role="alert" style={{ color: c.danger }}>{fileLinkError}</p>}
           {isLiveLinked && fileSync?.phase === "conflict" && (
             <div className="eon-sync-conflict" role="alert">
               <p className="eon-context-note" style={{ color: c.text }}>
@@ -2927,7 +2927,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
         <Textarea value={draft} maxLength={4000} onChange={(event) => setDraft(event.target.value)} onPaste={onPaste}
           onKeyDown={(event) => { if (finePointer && event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }}
           placeholder={anchors.pendingAnchor ? "Describe what the pin points at…" : "Write a comment…"} aria-label="Write a comment"
-          style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.raised, borderColor: error ? "#D98295" : dragging ? c.brand : c.border, color: c.text, borderRadius: 20, fontSize: 14, lineHeight: 1.5 }} />
+          style={{ minHeight: 76, maxHeight: 180, resize: "vertical", background: c.raised, borderColor: error ? c.danger : dragging ? c.brand : c.border, color: c.text, borderRadius: 20, fontSize: 14, lineHeight: 1.5 }} />
         <div className="eon-composer-meta">
           <input ref={fileInputRef} type="file" accept="image/*" hidden
             onChange={(event) => { attach(event.target.files?.[0]); event.target.value = ""; }} />
@@ -2945,7 +2945,7 @@ function CommentThread({ c, comments, profile, projectId, onCreateComment, ancho
             style={{ borderColor: c.border, background: c.panel, color: c.secondary, opacity: sending ? 0.5 : 1 }}>
             <ImagePlus size={15} />
           </button>
-          <span role={error ? "alert" : "status"} style={{ color: error ? "#D98295" : anchors.anchorMode ? c.brand : c.muted }}>{error || status}</span>
+          <span role={error ? "alert" : "status"} style={{ color: error ? c.danger : anchors.anchorMode ? c.brand : c.muted }}>{error || status}</span>
           <Button className="eon-buttonish" onClick={submit} disabled={!canSend}
             style={{ minWidth: 40, minHeight: 40, padding: 0, borderRadius: 10, background: c.primary, color: c.primaryText, opacity: canSend ? 1 : 0.5 }} aria-label="Send comment">
             <Send size={15} />
@@ -3073,7 +3073,7 @@ function CommentBubble({
             <span style={{ color: c.secondary }}>Delete this comment?</span>
             <button type="button" className="eon-buttonish eon-text-button" onClick={() => setMode(null)} style={{ color: c.muted }}>Cancel</button>
             <button type="button" className="eon-buttonish eon-comment-save" onClick={() => { setMode(null); onDelete(); }}
-              style={{ background: "#D98295", color: "#210C12" }}>Delete</button>
+              style={{ background: c.danger, color: c.dangerText }}>Delete</button>
           </div>
         )}
         {comment.image_url && (
@@ -3409,7 +3409,7 @@ function HistoryTimeline({ c, activity, currentUserId }) {
         const name = item.actor_id === currentUserId ? "You" : (item.actor_name || "A teammate");
         return (
           <article key={item.id} className="eon-history-item">
-            <span className={`eon-history-icon${isDangerAction(item.action) ? "" : " eon-accent-icon"}`} style={{ background: c.raised, color: isDangerAction(item.action) ? "#D98295" : c.brand }}>
+            <span className={`eon-history-icon${isDangerAction(item.action) ? "" : " eon-accent-icon"}`} style={{ background: c.raised, color: isDangerAction(item.action) ? c.danger : c.brand }}>
               <Icon size={13} />
             </span>
             <div className="eon-history-body">
@@ -3467,7 +3467,7 @@ function Toast({ c, toast, onDismiss }) {
   const Icon = error ? AlertCircle : activityMeta(toast.action).icon;
   return (
     <div className="eon-toast" style={{ background: c.panel, borderColor: c.border, boxShadow: hubShadow(c) }}>
-      <span className={`eon-toast-icon${danger ? "" : " eon-accent-icon"}`} style={{ background: c.raised, color: danger ? "#D98295" : c.brand }}>
+      <span className={`eon-toast-icon${danger ? "" : " eon-accent-icon"}`} style={{ background: c.raised, color: danger ? c.danger : c.brand }}>
         <Icon size={14} />
       </span>
       <div className="eon-toast-body">
@@ -3587,7 +3587,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
               aria-invalid={Boolean(ticket.trim() && !issue)} aria-describedby="eon-new-ticket-hint"
               onKeyDown={(event) => { if (event.key === "Enter") submit(); }}
               placeholder="Paste the issue URL or DES-123" aria-label="Linear ticket" style={fieldStyle} />
-            <span id="eon-new-ticket-hint" style={{ fontSize: 11, color: ticket.trim() && !issue ? "#D98295" : c.muted }}>
+            <span id="eon-new-ticket-hint" style={{ fontSize: 11, color: ticket.trim() && !issue ? c.danger : c.muted }}>
               {ticket.trim() && !issue ? "That isn't a Linear issue URL or key." : issue ? <>Linked to <code style={{ color: c.text }}>{issue.issue_id}</code></> : "Required. Every prototype tracks a ticket."}
             </span>
           </div>
@@ -3635,7 +3635,7 @@ function NewPrototypeDialog({ c, groups, restoreFocus, onClose, onCreate }) {
           </div>
         </div>
         <div className="eon-modal-foot" style={{ borderColor: c.border }}>
-          <span role="alert" style={{ flex: 1, fontSize: 12, color: "#D98295" }}>{error}</span>
+          <span role="alert" style={{ flex: 1, fontSize: 12, color: c.danger }}>{error}</span>
           <button className="eon-buttonish eon-secondary-button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, background: "transparent", color: c.secondary }}>Cancel</button>
           <Button className="eon-buttonish" onClick={submit} disabled={!ready || busy}
             style={{ minHeight: 40, padding: "0 16px", borderRadius: 999, background: c.primary, color: c.primaryText, fontSize: 13, fontWeight: 600, opacity: !ready || busy ? 0.5 : 1 }}>
@@ -3688,7 +3688,7 @@ function SaveIndicator({ c, state, onRetry, compact = false }) {
   const content = {
     saving: { icon: <Loader2 size={13} className="eon-spin" />, label: "Saving…", color: c.muted },
     saved: { icon: <Check size={13} />, label: "Saved", color: c.muted },
-    error: { icon: <AlertCircle size={13} />, label: "Save failed", color: "#D98295" },
+    error: { icon: <AlertCircle size={13} />, label: "Save failed", color: c.danger },
   }[state];
   if (!content) return null;
   const Tag = state === "error" && onRetry ? "button" : "span";

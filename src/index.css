@@ -44,6 +44,8 @@
     --ds-input: #151618;
     --ds-input-hovered: #1C1D1F;
     --ds-blanket: #0B0D10BF;
+    --ds-skeleton: #FFFFFF0F;
+    --ds-skeleton-subtle: #FFFFFF08;
     --ds-brand-subtlest: #3C2D39;
     --ds-brand-subtlest-hovered: #4A3546;
     --ds-selected: #3C2D3933;
@@ -127,6 +129,8 @@
     --ds-input: #FFFFFF;
     --ds-input-hovered: #FBFBFA;
     --ds-blanket: #0B0D1080;
+    --ds-skeleton: #0B0D100D;
+    --ds-skeleton-subtle: #0B0D1008;
     --ds-brand-subtlest: #FFF0F9;
     --ds-brand-subtlest-hovered: #FFDDF1;
     --ds-selected: #FFF0F9;
@@ -214,7 +218,7 @@
 @keyframes eon-loading-pulse { from { opacity: 1; } to { opacity: .4; } }
 .eon-app-error { padding: 24px; }
 .eon-app-error > div { width: min(420px, 100%); padding: 28px; border-radius: 18px; background: var(--ds-surface-raised); box-shadow: var(--shadow-surface); text-align: center; }
-.eon-app-error span { color: #fff; font-size: 17px; font-weight: 650; }
+.eon-app-error span { color: var(--ds-text); font-size: 17px; font-weight: 650; }
 .eon-app-error p { margin: 8px 0 18px; font-size: 13px; line-height: 1.5; }
 .eon-app-error button { min-height: 42px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--eon-accent-solid); color: var(--eon-accent-foreground); cursor: pointer; font-size: 13px; font-weight: 650; transition: transform 150ms var(--ease-out), filter 150ms var(--ease-out); }
 .eon-app-error button:active { transform: scale(.96); }
@@ -335,16 +339,16 @@ svg.eon-accent-icon,
 .eon-sidebar-head { padding: 14px 14px 12px; border-bottom: 1px solid; }
 .eon-brand-row { display: flex; min-height: 40px; align-items: center; gap: 8px; margin-bottom: 12px; }
 .eon-brand { display: flex; min-width: 0; flex: 1; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; letter-spacing: -.015em; }
-.eon-brand-logo { display: block; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 7px; object-fit: cover; outline: 1px solid rgba(255, 255, 255, .1); outline-offset: -1px; }
-.light .eon-brand-logo { outline-color: rgba(0, 0, 0, .1); }
+.eon-brand-logo { display: block; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 7px; object-fit: cover; outline: 1px solid var(--ds-border); outline-offset: -1px; }
+.light .eon-brand-logo { outline-color: var(--ds-border); }
 .eon-brand-slot { position: relative; display: grid; overflow: hidden; object-fit: initial; }
 .eon-brand-image, .eon-brand-skeleton { position: absolute; inset: 0; width: 100%; height: 100%; }
 .eon-brand-image { display: block; object-fit: cover; opacity: 0; transition-property: opacity; transition-duration: 180ms; transition-timing-function: var(--ease-out); }
 .eon-brand-skeleton { border-radius: inherit; opacity: 1; transition-property: opacity; transition-duration: 140ms; transition-timing-function: var(--ease-out); }
 .eon-brand-slot.is-loaded .eon-brand-image { opacity: 1; }
 .eon-brand-slot.is-loaded .eon-brand-skeleton { opacity: 0; pointer-events: none; }
-.eon-skeleton { background: linear-gradient(100deg, rgba(255, 255, 255, .055) 20%, rgba(255, 255, 255, .12) 40%, rgba(255, 255, 255, .055) 60%); background-size: 220% 100%; animation: eon-skeleton-shimmer 1.45s ease-in-out infinite; }
-.light .eon-skeleton { background-image: linear-gradient(100deg, rgba(0, 0, 0, .055) 20%, rgba(0, 0, 0, .1) 40%, rgba(0, 0, 0, .055) 60%); }
+.eon-skeleton { background: linear-gradient(100deg, var(--ds-skeleton) 20%, var(--ds-neutral-pressed) 40%, var(--ds-skeleton) 60%); background-size: 220% 100%; animation: eon-skeleton-shimmer 1.45s ease-in-out infinite; }
+.light .eon-skeleton { background-image: linear-gradient(100deg, var(--ds-skeleton) 20%, var(--ds-neutral-pressed) 40%, var(--ds-skeleton) 60%); }
 @keyframes eon-skeleton-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 .eon-design-switcher { position: relative; min-width: 0; flex: 1; }
 .eon-design-switcher-trigger { display: flex; width: 100%; min-height: 42px; align-items: center; gap: 9px; padding: 5px 8px 5px 6px; border: 0; border-radius: 12px; cursor: pointer; text-align: left; }
@@ -552,7 +556,7 @@ button.eon-save-state { cursor: pointer; }
 }
 .eon-controls-trigger { position: absolute; bottom: 14px; left: 14px; z-index: 13; display: flex; min-width: 126px; max-width: calc(100% - 174px); min-height: 44px; align-items: center; gap: 8px; padding: 0 12px; border: 0; border-radius: 13px; font-size: 12px; font-weight: 650; }
 .eon-controls-trigger-value { min-width: 0; margin-left: auto; overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; white-space: nowrap; font-size: 11px; font-weight: 500; }
-.eon-controls-scrim { position: absolute; inset: 0; z-index: 30; border: 0; background: rgba(0, 0, 0, .52); backdrop-filter: blur(3px); cursor: default; animation: eon-scrim-in 160ms var(--ease-out); }
+.eon-controls-scrim { position: absolute; inset: 0; z-index: 30; border: 0; background: var(--ds-blanket); backdrop-filter: blur(3px); cursor: default; animation: eon-scrim-in 160ms var(--ease-out); }
 .eon-controls-sheet { position: absolute; right: 0; bottom: 0; left: 0; z-index: 31; display: flex; max-height: min(72%, 620px); flex-direction: column; overflow: hidden; border-radius: 24px 24px 0 0; transition-property: transform, opacity; transition-duration: 220ms, 160ms; transition-timing-function: var(--ease-drawer), var(--ease-out); }
 .eon-controls-sheet-head { display: flex; min-height: 64px; flex: 0 0 auto; align-items: center; gap: 12px; padding: 10px 12px 10px 18px; border-bottom: 1px solid; }
 .eon-controls-sheet-head > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
@@ -678,7 +682,7 @@ button.eon-save-state { cursor: pointer; }
 /* Context panel: the links stay above the tabs, one line each. */
 .eon-context { display: flex; flex: 0 0 auto; flex-direction: column; max-height: 52%; overflow-y: auto; border-bottom: 1px solid; }
 
-.eon-context-row + .eon-context-row { border-top: 1px solid rgba(144, 148, 165, .12); }
+.eon-context-row + .eon-context-row { border-top: 1px solid var(--ds-border); }
 .eon-context-row-head { display: flex; align-items: center; gap: 4px; padding-right: 8px; }
 .eon-context-row-main { display: flex; min-width: 0; min-height: 42px; flex: 1; align-items: center; gap: 9px; padding: 0 4px 0 16px; border: 0; background: transparent; cursor: pointer; text-align: left; }
 .eon-context-row-label { flex: 0 0 auto; font-size: 12px; }
@@ -711,8 +715,8 @@ button.eon-save-state { cursor: pointer; }
 
 /* A demo at a real device size, scaled to fit (DeviceStage). */
 .eon-device-stage { display: flex; min-width: 0; align-items: flex-start; justify-content: center; }
-.eon-device-screen { position: relative; overflow: hidden; flex: 0 0 auto; background: #0D0D0D; box-shadow: 0 0 0 1px rgba(255, 255, 255, .1); }
-.light .eon-device-screen { background: #F4F4F5; box-shadow: 0 0 0 1px rgba(0, 0, 0, .1); }
+.eon-device-screen { position: relative; overflow: hidden; flex: 0 0 auto; background: var(--ds-surface); box-shadow: 0 0 0 1px var(--ds-border); }
+.light .eon-device-screen { background: var(--ds-surface); box-shadow: 0 0 0 1px var(--ds-border); }
 .eon-device-screen iframe { position: absolute; top: 0; left: 0; display: block; border: 0; transform-origin: 0 0; }
 
 /* Read-only code (CodeView): line numbers, wrapped lines, light syntax colours. */
@@ -802,8 +806,8 @@ button.eon-save-state { cursor: pointer; }
 .eon-touch-full { position: fixed; inset: 0; z-index: 90; overflow: hidden; }
 .eon-touch-full-frame { display: block; width: 100%; height: 100%; border: 0; }
 /* The phone end: the prototype, full screen, and nothing else. */
-.eon-mirror { position: fixed; inset: 0; overflow: hidden; background: #000000; color: #A1A1AA; }
-.eon-mirror.is-light { background: #FFFFFF; color: #636369; }
+.eon-mirror { position: fixed; inset: 0; overflow: hidden; background: #000000; color: #A1A7B3; }
+.eon-mirror.is-light { background: #FFFFFF; color: #5B6170; }
 .eon-mirror-frame { display: block; width: 100%; height: 100%; border: 0; }
 /* A phone browser keeps its status bar and toolbar outside the page, so the
    strips a prototype reserves for the mockup's island and home indicator
@@ -813,7 +817,7 @@ button.eon-save-state { cursor: pointer; }
   .eon-touch-full-frame, .eon-mirror-frame { position: absolute; top: calc(-1 * var(--crop-top, 0px)); left: 0; height: calc(100% + var(--crop-top, 0px) + var(--crop-bottom, 0px)); }
 }
 .eon-mirror-message { position: absolute; inset: 0; display: flex; margin: 0; padding: 32px; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font: 500 14px/1.5 "DM Sans", sans-serif; text-align: center; }
-.eon-mirror-message button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #E8E8E8; color: #141414; font: inherit; font-weight: 600; cursor: pointer; }
+.eon-mirror-message button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #F7F8FA; color: #0B0D10; font: inherit; font-weight: 600; cursor: pointer; }
 .eon-mirror-notice { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom)); left: 50%; z-index: 2; margin: 0; padding: 8px 14px; border-radius: 999px; background: rgba(20, 20, 20, .86); color: #FFFFFF; font: 600 12px/1.2 "DM Sans", sans-serif; translate: -50%; pointer-events: none; animation: eon-mirror-notice 2400ms ease both; }
 @keyframes eon-mirror-notice { 0% { opacity: 0; transform: translateY(6px); } 12%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .eon-mirror-notice { animation: none; } }
@@ -822,7 +826,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-context-edit { display: inline-flex; align-self: flex-start; align-items: center; gap: 5px; }
 
 /* Setup tasks open over the canvas instead of pushing it down. */
-.eon-sheet-scrim { position: fixed; inset: 0; z-index: 60; border: 0; background: rgba(0, 0, 0, .5); backdrop-filter: blur(3px); cursor: default; animation: eon-scrim-in 160ms var(--ease-out); }
+.eon-sheet-scrim { position: fixed; inset: 0; z-index: 60; border: 0; background: var(--ds-blanket); backdrop-filter: blur(3px); cursor: default; animation: eon-scrim-in 160ms var(--ease-out); }
 .eon-sheet { position: fixed; top: 50%; left: 50%; z-index: 61; display: flex; width: min(620px, calc(100vw - 32px)); max-height: min(80vh, 720px); flex-direction: column; overflow: hidden; border: 1px solid; border-radius: 20px; transform: translate(-50%, -50%); }
 .eon-sheet-head { display: flex; min-height: 60px; flex: 0 0 auto; align-items: center; gap: 12px; padding: 10px 12px 10px 20px; border-bottom: 1px solid; }
 .eon-sheet-head > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
@@ -963,7 +967,7 @@ button.eon-save-state { cursor: pointer; }
 }
 .eon-reaction-picker { position: absolute; bottom: calc(100% + 5px); left: 0; z-index: 6; display: flex; gap: 2px; padding: 4px; border: 1px solid; border-radius: 10px; }
 .eon-reaction-picker button { padding: 3px 5px; border: 0; background: none; border-radius: 7px; font-size: 15px; cursor: pointer; }
-.eon-reaction-picker button:hover { background: rgba(128,128,128,.18); }
+.eon-reaction-picker button:hover { background: var(--ds-neutral-pressed); }
 .eon-comment-image { display: block; width: fit-content; max-width: 100%; margin-top: 6px; overflow: hidden; border: 1px solid; border-radius: 10px; }
 .eon-comment-image img { display: block; max-width: 100%; max-height: 280px; object-fit: contain; }
 .eon-comment-composer { flex: 0 0 auto; padding: 12px; border-top: 1px solid; }
@@ -1021,7 +1025,7 @@ button.eon-save-state { cursor: pointer; }
 /* In split view the pane headers own the top edge, so it waits below them. */
 .eon-focus-exit.is-split { top: 58px; }
 
-.eon-drawer-scrim { position: fixed; inset: 0; z-index: 24; border: 0; background: rgba(0, 0, 0, .52); backdrop-filter: blur(3px); cursor: default; animation: eon-scrim-in 160ms var(--ease-out); }
+.eon-drawer-scrim { position: fixed; inset: 0; z-index: 24; border: 0; background: var(--ds-blanket); backdrop-filter: blur(3px); cursor: default; animation: eon-scrim-in 160ms var(--ease-out); }
 @keyframes eon-scrim-in { from { opacity: 0; } }
 
 @media (max-width: 899px) {
@@ -1072,12 +1076,12 @@ button.eon-save-state { cursor: pointer; }
 @media (hover: hover) and (pointer: fine) {
   .eon-buttonish:hover:not(:disabled) { filter: brightness(1.08); }
   .light .eon-buttonish:hover:not(:disabled) { filter: brightness(.97); }
-  .eon-icon-button:hover:not(:disabled), .eon-text-button:hover:not(:disabled) { background: rgba(144, 148, 165, .12) !important; }
-  .eon-linear-open:hover { background: rgba(144, 148, 165, .12); }
+  .eon-icon-button:hover:not(:disabled), .eon-text-button:hover:not(:disabled) { background: var(--ds-neutral-hovered) !important; }
+  .eon-linear-open:hover { background: var(--ds-neutral-hovered); }
   .eon-secondary-button:hover:not(:disabled) { box-shadow: var(--shadow-surface-hover); }
-  .eon-story-row:hover { background: rgba(144, 148, 165, .07) !important; }
+  .eon-story-row:hover { background: var(--ds-neutral) !important; }
   .eon-group-label-row:hover .eon-group-edit { opacity: 1; }
-  .eon-story-menu button:hover { background: rgba(144, 148, 165, .12); }
+  .eon-story-menu button:hover { background: var(--ds-neutral-hovered); }
 }
 @media (hover: none) {
   .eon-group-edit { opacity: 1; }
@@ -1276,8 +1280,8 @@ button.eon-save-state { cursor: pointer; }
 .eon-prompt-editor-error { display: flex; align-items: flex-start; gap: 7px; color: var(--ds-text-danger); font-size: 11px; line-height: 1.45; }
 .eon-prompt-editor-error svg { flex: 0 0 auto; margin-top: 1px; }
 .eon-prompt-editor-spacer { min-width: 0; flex: 1; }
-.eon-prompt-workspace input::placeholder, .eon-prompt-workspace textarea::placeholder { color: #8F9099; opacity: 1; }
-.light.eon-prompt-workspace input::placeholder, .light.eon-prompt-workspace textarea::placeholder { color: #696A73; }
+.eon-prompt-workspace input::placeholder, .eon-prompt-workspace textarea::placeholder { color: var(--ds-text-subtlest); opacity: 1; }
+.light.eon-prompt-workspace input::placeholder, .light.eon-prompt-workspace textarea::placeholder { color: var(--ds-text-subtlest); }
 .eon-prompt-editor-cancel, .eon-prompt-editor-save, .eon-prompt-delete-confirm {
   display: inline-flex;
   min-height: 42px;
@@ -1394,7 +1398,7 @@ button.eon-save-state { cursor: pointer; }
 }
 
 /* New-prototype dialog */
-.eon-modal-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .62); backdrop-filter: blur(8px); }
+.eon-modal-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 20px; background: var(--ds-blanket); backdrop-filter: blur(8px); }
 .eon-modal { display: flex; width: min(600px, 100%); max-height: 100%; flex-direction: column; border: 1px solid; border-radius: 24px; box-shadow: var(--shadow-surface), 0 24px 80px rgba(0, 0, 0, .32); transition: transform 180ms var(--ease-out), opacity 140ms var(--ease-out); }
 .eon-connect-dialog { width: min(640px, 100%); }
 .eon-modal-body.eon-connect-body { display: grid; gap: 16px; padding: 18px 20px 22px; overflow: auto; font-size: 13px; line-height: 1.5; }
@@ -1429,7 +1433,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-art-chat { display: grid; gap: 6px; width: 100%; }
 .eon-art-bubble { justify-self: start; max-width: 88%; padding: 4px 7px; border-radius: 9px; }
 .eon-art-bubble.is-me { justify-self: end; }
-.eon-art-terminal { display: grid; gap: 3px; width: calc(100% + 20px); height: calc(100% + 20px); align-content: center; margin: -10px; padding: 10px 12px; background: #0b0b0c; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+.eon-art-terminal { display: grid; gap: 3px; width: calc(100% + 20px); height: calc(100% + 20px); align-content: center; margin: -10px; padding: 10px 12px; background: #0B0D10; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
 .eon-art-terminal span { overflow: hidden; white-space: pre; text-overflow: ellipsis; }
 @media (max-width: 560px) {
   .eon-connect-step { grid-template-columns: 1fr; gap: 8px; }
@@ -1478,7 +1482,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-sync-conflict { display: grid; gap: 8px; margin-top: 8px; }
 .eon-sync-conflict-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .eon-live-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 2px; padding: 2px 7px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: .02em; }
-.eon-live-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: #7FA78A; animation: eon-live-pulse 1.6s ease-in-out infinite; }
+.eon-live-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--ds-success-bold); animation: eon-live-pulse 1.6s ease-in-out infinite; }
 @keyframes eon-live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
 /* Presence avatars */
@@ -1644,7 +1648,7 @@ button.eon-save-state { cursor: pointer; }
 .eon-doc-list { max-width: 720px; margin: 10px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.65; }
 .eon-doc-list li { margin-top: 6px; padding-left: 4px; }
 .eon-doc-link { display: inline-flex; min-height: 36px; align-items: center; gap: 7px; margin-top: 14px; padding: 0 12px; border: 1px solid; border-radius: 9px; background: transparent; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 500; }
-.eon-doc-link:hover { background: rgba(144,148,165,.12); }
+.eon-doc-link:hover { background: var(--ds-neutral-hovered); }
 .eon-doc-code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: .9em; overflow-wrap: anywhere; }
 
 .eon-doc-table-wrap { width: 100%; margin-top: 18px; overflow-x: auto; border-top: 1px solid; }
@@ -1705,11 +1709,11 @@ button.eon-save-state { cursor: pointer; }
 .eon-doc-figure .ty-number { fill: #D19A66; }
 .eon-doc-figure .ty-boolean { fill: #C678DD; }
 .eon-doc-figure .ty-string { fill: #98C379; }
-.eon-doc-figure .ty-null { fill: #A1A1AA; }
+.eon-doc-figure .ty-null { fill: var(--ds-text-subtlest); }
 .light .eon-doc-figure .ty-number { fill: #B45309; }
 .light .eon-doc-figure .ty-boolean { fill: #7C3AED; }
 .light .eon-doc-figure .ty-string { fill: var(--ds-text-success); }
-.light .eon-doc-figure .ty-null { fill: #636369; }
+.light .eon-doc-figure .ty-null { fill: var(--ds-text-subtlest); }
 .eon-doc-type { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; }
 .eon-doc-type.is-number { color: #D19A66; }
 .eon-doc-type.is-boolean { color: #C678DD; }
@@ -1943,12 +1947,12 @@ button.eon-save-state { cursor: pointer; }
 .eon-docs-tree-toggle svg.is-open { transform: rotate(90deg); }
 .eon-docs-tree-item span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eon-docs-tree-item em { flex: 0 0 auto; font-size: 11px; font-style: normal; }
-.eon-docs-tree-item:hover, .eon-docs-tree-toggle:hover { background: rgba(144, 148, 165, .12) !important; }
+.eon-docs-tree-item:hover, .eon-docs-tree-toggle:hover { background: var(--ds-neutral-hovered) !important; }
 .eon-docs-tree-empty { margin: 8px 12px; font-size: 12.5px; }
 .eon-docs-sidebar-actions { display: flex; flex: 0 0 auto; gap: 2px; padding: 8px; border-top: 1px solid; }
 .eon-docs-sidebar-actions button { display: inline-flex; min-height: 32px; align-items: center; gap: 6px; padding: 0 9px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 500; }
 .eon-docs-sidebar-actions button:first-child { margin-right: auto; }
-.eon-docs-sidebar-actions button:hover:not(:disabled) { background: rgba(144, 148, 165, .12); }
+.eon-docs-sidebar-actions button:hover:not(:disabled) { background: var(--ds-neutral-hovered); }
 .eon-docs-crumb { display: inline-flex; align-items: center; gap: inherit; }
 
 .eon-docs-button { display: inline-flex; min-height: 32px; align-items: center; gap: 6px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; cursor: pointer; font-size: 12.5px; font-weight: 500; }

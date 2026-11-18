@@ -499,7 +499,7 @@ function PromptSidebar({
                                   const restoreFocus = event.currentTarget.closest("[data-prompt-menu]")?.querySelector('button[aria-label^="Actions for"]');
                                   setPromptMenuId(null);
                                   onRequestDeletePrompt(prompt, restoreFocus);
-                                }} style={{ color: "#D98295" }}>
+                                }} style={{ color: c.danger }}>
                                   <Trash2 size={14} aria-hidden="true" /> Delete
                                 </button>
                               )}
@@ -572,7 +572,7 @@ function PromptArticle({
             {menuOpen && (
               <div className="eon-story-menu" role="menu" style={{ background: c.panel, boxShadow: hubShadow(c) }}>
                 {canEdit && <button className="eon-buttonish" type="button" role="menuitem" onClick={() => { setMenuOpen(false); onEdit(); }} style={{ color: c.text }}><Pencil size={14} /> Edit</button>}
-                {canDelete && <button className="eon-buttonish" type="button" role="menuitem" onClick={() => { setMenuOpen(false); onDelete(); }} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>}
+                {canDelete && <button className="eon-buttonish" type="button" role="menuitem" onClick={() => { setMenuOpen(false); onDelete(); }} style={{ color: c.danger }}><Trash2 size={14} /> Delete</button>}
               </div>
             )}
           </div>
@@ -833,7 +833,7 @@ function PromptDeleteModal({ c, prompt, restoreFocus, onClose, onDelete }) {
         aria-describedby="eon-delete-prompt-body"
         style={{ background: c.panel, borderColor: c.border }}
       >
-        <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
+        <div className="eon-confirm-icon" style={{ background: c.dangerSoft, color: c.danger }}><Trash2 size={18} /></div>
         <h2 id="eon-delete-prompt-title">Delete "{prompt.title}"?</h2>
         <p id="eon-delete-prompt-body" style={{ color: c.secondary }}>
           This removes the prompt and its reusable template for everyone on the team. This can't be undone.
@@ -975,7 +975,7 @@ function CategoryManagerModal({
                       onClick={() => onRequestDelete(category)}
                       aria-label={`Delete ${category.name} category`}
                       title="Delete category"
-                      style={{ color: "#D98295" }}
+                      style={{ color: c.danger }}
                     >
                       <Trash2 size={15} />
                     </button>
@@ -1048,7 +1048,7 @@ function CategoryDeleteModal({
         aria-describedby="eon-delete-category-body"
         style={{ background: c.panel, borderColor: c.border }}
       >
-        <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><AlertTriangle size={18} /></div>
+        <div className="eon-confirm-icon" style={{ background: c.dangerSoft, color: c.danger }}><AlertTriangle size={18} /></div>
         <h2 id="eon-delete-category-title">Delete "{category.name}"?</h2>
         <p id="eon-delete-category-body" style={{ color: c.secondary }}>
           {!fallbackCategoryName

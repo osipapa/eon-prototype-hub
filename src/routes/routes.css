@@ -91,7 +91,7 @@
 
 .route-card {
   border-radius: 24px;
-  background: rgba(21, 21, 21, 0.98);
+  background: rgba(21, 22, 24, 0.98);
   box-shadow: var(--route-card-shadow);
 }
 
@@ -176,7 +176,7 @@
 }
 
 .route-input::placeholder {
-  color: #686c7a;
+  color: #6b7280;
 }
 
 .route-input:hover:not(:disabled),
@@ -276,7 +276,7 @@
 
 .route-button--primary {
   background: var(--route-primary);
-  color: #141414;
+  color: #0b0d10;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
@@ -294,7 +294,7 @@
 
 .route-button--secondary:hover:not(:disabled),
 .route-button--quiet:hover:not(:disabled) {
-  background: #2b2b2b;
+  background: #2a2e35;
   color: var(--route-text);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.13);
 }
@@ -305,11 +305,11 @@
 
 .route-button--danger {
   background: var(--route-danger);
-  color: #130006;
+  color: #0b0d10;
 }
 
 .route-button--danger:hover:not(:disabled) {
-  background: #ff82a0;
+  background: #ff3e46;
 }
 
 .route-button--wide {
@@ -348,14 +348,14 @@
 .route-icon-button--danger:hover:not(:disabled) {
   background: var(--route-danger-soft);
   color: var(--route-danger);
-  box-shadow: 0 0 0 1px rgba(255, 107, 138, 0.25);
+  box-shadow: 0 0 0 1px rgba(255, 98, 89, 0.25);
 }
 
 .route-inline-error {
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  color: #ff7898;
+  color: var(--route-danger);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -378,7 +378,7 @@
 
 .route-state--error {
   background: var(--route-danger-soft);
-  box-shadow: 0 0 0 1px rgba(255, 107, 138, 0.18) inset;
+  box-shadow: 0 0 0 1px rgba(255, 98, 89, 0.18) inset;
 }
 
 .route-state-icon {
@@ -397,7 +397,7 @@
 .route-section-icon svg,
 
 .route-state--error .route-state-icon {
-  background: rgba(255, 107, 138, 0.12);
+  background: rgba(255, 98, 89, 0.12);
   color: var(--route-danger);
 }
 
@@ -432,7 +432,7 @@
   background:
     radial-gradient(circle at 18% 12%, rgba(255, 141, 214, 0.055), transparent 30%),
     radial-gradient(circle at 84% 82%, rgba(255, 255, 255, 0.028), transparent 26%),
-    #000000;
+    var(--route-bg);
 }
 
 .auth-shell::before {
@@ -586,14 +586,14 @@
 
 .route-notice--success {
   background: var(--route-success-soft);
-  color: #a4f6ac;
-  box-shadow: 0 0 0 1px rgba(111, 236, 123, 0.18) inset;
+  color: var(--route-success);
+  box-shadow: 0 0 0 1px rgba(95, 211, 138, 0.18) inset;
 }
 
 .route-notice--error {
   background: var(--route-danger-soft);
-  color: #ff93ac;
-  box-shadow: 0 0 0 1px rgba(255, 107, 138, 0.18) inset;
+  color: var(--route-danger);
+  box-shadow: 0 0 0 1px rgba(255, 98, 89, 0.18) inset;
 }
 
 .route-notice > svg {
@@ -889,7 +889,7 @@
   padding: 14px 16px;
   border-radius: 14px;
   background: var(--route-success-soft);
-  box-shadow: 0 0 0 1px rgba(143, 180, 154, 0.22);
+  box-shadow: 0 0 0 1px rgba(95, 211, 138, 0.22);
 }
 
 .admin-created strong { color: var(--route-text); font-size: 13px; }
@@ -951,7 +951,7 @@
 .admin-loading-line {
   display: block;
   border-radius: 8px;
-  background: linear-gradient(90deg, #1b1b20, #26262c, #1b1b20);
+  background: linear-gradient(90deg, #151618, #1c1d1f, #151618);
   background-size: 220% 100%;
   animation: route-shimmer 1.5s ease-in-out infinite;
 }

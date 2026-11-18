@@ -817,7 +817,7 @@ function MediaTile({ c, item, busy, copied, onCopyToken, onCopyLink, onPickFile,
                   <button type="button" className="eon-buttonish" role="menuitem" onClick={act(() => setEditingLink(true))} style={{ color: c.text }}><Link2 size={14} /> Paste link</button>
                   <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onCopyLink)} disabled={!available} style={{ color: c.text }}><Copy size={14} /> Copy link</button>
                   {item.removable
-                    ? <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onRemove)} style={{ color: "#D98295" }}><Trash2 size={14} /> Delete</button>
+                    ? <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onRemove)} style={{ color: c.danger }}><Trash2 size={14} /> Delete</button>
                     : item.url && <button type="button" className="eon-buttonish" role="menuitem" onClick={act(onRemove)} style={{ color: c.text }}><RotateCcw size={14} /> Reset to default</button>}
                 </div>
               )}
@@ -857,13 +857,13 @@ function DeleteMediaDialog({ c, item, busy, error, onClose, onConfirm }) {
   return (
     <div className="eon-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <div ref={dialogRef} className="eon-modal eon-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="eon-delete-media-title" aria-describedby="eon-delete-media-body" style={{ background: c.panel, borderColor: c.border }}>
-        <div className="eon-confirm-icon" style={{ background: "rgba(217,130,149,.1)", color: "#D98295" }}><Trash2 size={18} /></div>
+        <div className="eon-confirm-icon" style={{ background: c.dangerSoft, color: c.danger }}><Trash2 size={18} /></div>
         <h2 id="eon-delete-media-title">Delete "{item.label}"?</h2>
         <p id="eon-delete-media-body" style={{ color: c.muted }}>This removes the shared token and image for everyone. Prototypes that use <code>{`{{${item.key}}}`}</code> will no longer resolve it.</p>
         {error && <p role="alert" className="eon-copy-error"><AlertCircle size={14} />{error}</p>}
         <div className="eon-confirm-actions">
           <button autoFocus className="eon-buttonish eon-secondary-button" type="button" onClick={onClose} disabled={busy} style={{ borderColor: c.border, color: c.secondary }}>Cancel</button>
-          <Button className="eon-buttonish" type="button" onClick={onConfirm} disabled={busy} style={{ minHeight: 40, background: "#D98295", color: "#210C12", borderRadius: 10, fontWeight: 650 }}>
+          <Button className="eon-buttonish" type="button" onClick={onConfirm} disabled={busy} style={{ minHeight: 40, background: c.danger, color: c.dangerText, borderRadius: 10, fontWeight: 650 }}>
             {busy ? <><Loader2 className="eon-spin" size={15} />Deleting…</> : <><Trash2 size={15} />Delete media</>}
           </Button>
         </div>
