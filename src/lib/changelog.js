@@ -19,6 +19,20 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-11-19",
+    title: "A blueprint tile for the Eon Design logo",
+    image: "changelog/2026-11-19-blueprint-tile.png",
+    imageAlt: "The new logo: the white Eon mark on a black tile with blueprint grid lines, on dark and light.",
+    groups: [
+      {
+        label: "Design",
+        items: [
+          "The sidebar logo is now an app-icon tile: the Eon mark in white on black glass, over a blueprint grid and guide circle.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-11-18",
     title: "Eon Design, with a metallic loading screen",
     image: "changelog/2026-11-18-loading-screen.png",
