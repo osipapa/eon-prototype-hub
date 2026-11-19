@@ -31,7 +31,7 @@ export function EonBlueprintTile({ size = 30, className }) {
       <g clipPath={`url(#${id}l)`}><path transform="scale(1.12)" strokeWidth="6.2" d="M-128 -256V256M0 -256V256M128 -256V256M-256 -128H256M-256 0H256M-256 128H256" /></g>
       <path d="M-206 0A206 206 0 1 0 206 0A206 206 0 1 0 -206 0Z" />
       <path d="M-134 -222H134A88 88 0 0 1 222 -134V134A88 88 0 0 1 134 222H-134A88 88 0 0 1 -222 134V-134A88 88 0 0 1 -134 -222Z" stroke="#fff" strokeOpacity=".14" strokeWidth="4.9" />
-      <g transform="scale(0.6)" fill="none" stroke="#FFFFFF" strokeOpacity="1" strokeWidth="30" strokeLinejoin="round"><path d={EON_MARK_PATH} /><circle {...EON_MARK_DOT} /></g>
+      <g transform="scale(0.6)" fill="none" stroke="#FFFFFF" strokeOpacity="1" strokeWidth="18" strokeLinejoin="round"><path d={EON_MARK_PATH} /><circle {...EON_MARK_DOT} /></g>
       <path d="M-138 -250H138A112 112 0 0 1 250 -138V138A112 112 0 0 1 138 250H-138A112 112 0 0 1 -250 138V-138A112 112 0 0 1 -138 -250Z" stroke={`url(#${id}r)`} strokeOpacity="1" strokeWidth="12" />
       </g>
     </svg>
