@@ -21,18 +21,15 @@ export function EonBlueprintTile({ size = 30, className }) {
       <clipPath id={`${id}f`}><path clipRule="evenodd" d="M-134 -222H134A88 88 0 0 1 222 -134V134A88 88 0 0 1 134 222H-134A88 88 0 0 1 -222 134V-134A88 88 0 0 1 -134 -222ZM-206 0A206 206 0 1 0 206 0A206 206 0 1 0 -206 0Z" /></clipPath>
       <clipPath id={`${id}l`}><path d="M-206 0A206 206 0 1 0 206 0A206 206 0 1 0 -206 0Z" /></clipPath>
       <linearGradient id={`${id}t`} x1="0" y1="-256" x2="0" y2="256" gradientUnits="userSpaceOnUse"><stop stopColor="#1C1E22" /><stop offset="1" stopColor="#000" /></linearGradient>
-      <radialGradient id={`${id}g`} cx="0" cy="0" r="230" gradientUnits="userSpaceOnUse"><stop stopColor="#AEB6C2" stopOpacity=".3" /><stop offset="1" stopColor="#AEB6C2" stopOpacity="0" /></radialGradient>
       <linearGradient id={`${id}e`} x1="-256" y1="-256" x2="256" y2="256" gradientUnits="userSpaceOnUse"><stop stopColor="#fff" stopOpacity=".16" /><stop offset=".5" stopColor="#fff" stopOpacity=".03" /><stop offset="1" stopColor="#fff" stopOpacity=".1" /></linearGradient>
-      <radialGradient id={`${id}d`} cx="-80" cy="-110" r="330" gradientUnits="userSpaceOnUse"><stop stopColor="#fff" stopOpacity=".2" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
       <linearGradient id={`${id}m`} x1="-150" y1="-150" x2="150" y2="150" gradientUnits="userSpaceOnUse"><stop stopColor="#FFFFFF" /><stop offset="1" stopColor="#AEB6C2" /></linearGradient>
       <linearGradient id={`${id}r`} x1="0" y1="-256" x2="0" y2="256" gradientUnits="userSpaceOnUse"><stop stopColor="#fff" stopOpacity=".38" /><stop offset="1" stopColor="#fff" stopOpacity=".08" /></linearGradient>
       </defs>
       <path d="M-138 -256H138A118 118 0 0 1 256 -138V138A118 118 0 0 1 138 256H-138A118 118 0 0 1 -256 138V-138A118 118 0 0 1 -138 -256Z" fill={`url(#${id}t)`} />
       <g clipPath={`url(#${id}c)`} stroke="#C9D2DE" strokeOpacity=".34" strokeWidth="7">
-      <circle r="230" fill={`url(#${id}g)`} stroke="none" />
       <g clipPath={`url(#${id}b)`}><path d="M-138 -256H138A118 118 0 0 1 256 -138V138A118 118 0 0 1 138 256H-138A118 118 0 0 1 -256 138V-138A118 118 0 0 1 -138 -256Z" fill={`url(#${id}e)`} stroke="none" /><path transform="scale(.88)" strokeWidth="8.0" d="M-128 -256V256M0 -256V256M128 -256V256M-256 -128H256M-256 0H256M-256 128H256" /></g>
       <g clipPath={`url(#${id}f)`}><path d="M-128 -256V256M0 -256V256M128 -256V256M-256 -128H256M-256 0H256M-256 128H256" /></g>
-      <g clipPath={`url(#${id}l)`}><path d="M-206 0A206 206 0 1 0 206 0A206 206 0 1 0 -206 0Z" fill={`url(#${id}d)`} stroke="none" /><path transform="scale(1.12)" strokeWidth="6.2" d="M-128 -256V256M0 -256V256M128 -256V256M-256 -128H256M-256 0H256M-256 128H256" /></g>
+      <g clipPath={`url(#${id}l)`}><path transform="scale(1.12)" strokeWidth="6.2" d="M-128 -256V256M0 -256V256M128 -256V256M-256 -128H256M-256 0H256M-256 128H256" /></g>
       <path d="M-206 0A206 206 0 1 0 206 0A206 206 0 1 0 -206 0Z" />
       <path d="M-134 -222H134A88 88 0 0 1 222 -134V134A88 88 0 0 1 134 222H-134A88 88 0 0 1 -222 134V-134A88 88 0 0 1 -134 -222Z" stroke="#fff" strokeOpacity=".14" strokeWidth="4.9" />
       <g transform="scale(0.6)" fill={`url(#${id}m)`} stroke="#FFFFFF" strokeOpacity=".7" strokeWidth="8" strokeLinejoin="round"><path d={EON_MARK_PATH} /><circle {...EON_MARK_DOT} /></g>
