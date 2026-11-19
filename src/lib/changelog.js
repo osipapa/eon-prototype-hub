@@ -31,6 +31,8 @@ export const CHANGELOG = [
           "The loading screen shows EON DESIGN in bold chrome.",
           "While it loads, the Eon mark is drafted above the title like a logo sheet: axes shoot out from the centre, circles are swept round, guides and measures extend, then the mark fades in as a strong outline. It plays once and always finishes (about 2 seconds) before the hub appears, while a light sweeps across the title.",
           "The sidebar switcher shows the Eon mark as an outline. The browser tab icon is the same drawing, dark or light to suit the tab bar.",
+          "When loading ends, the loading screen no longer cuts to the page: the mark breaks into dashes, the guides scatter, and the page fades through.",
+          "With a prototype open, the others in the sidebar step back to half strength, so you can see at a glance which one you are on. Hover a row to bring it back.",
           "The browser tab icon no longer turns into a cursor.",
           "The hub's colours, corner radii and spacing now come from the Safari design system: Safari greys for surfaces and text, Safari pink for the accent, and Safari red, amber, green and blue for errors and statuses, in light and dark. Hover tints, loading skeletons, dimmed backdrops behind dialogs, and the sign-in and admin pages use Safari too.",
         ],

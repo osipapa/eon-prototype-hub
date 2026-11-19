@@ -2001,13 +2001,13 @@ function WorkspaceSidebar({
               const identifier = linearIdentifier(item);
               const connection = linearConnectionState(linearByProject[item.id], identifier, c);
               return (
-                <div className={`eon-story-row${checked ? " is-selected" : ""}`} key={item.id} draggable data-story-menu={item.id}
+                <div className={`eon-story-row${checked ? " is-selected" : ""}${activeId && !active && !inSplit && !selecting ? " is-dim" : ""}`} key={item.id} draggable data-story-menu={item.id}
                   onDragStart={(event) => { startPrototypeDrag(event, item.id); setDragId(item.id); }}
                   onDragEnd={onDragEnd}
                   onDragOver={(event) => { if (canDropOn(item.id)) { event.preventDefault(); setDropTargetId(item.id); } }}
                   onDragLeave={() => setDropTargetId((current) => current === item.id ? null : current)}
                   onDrop={() => handleDrop(item.id)}
-                  style={{ "--row-selected": `color-mix(in srgb, ${c.brand} 14%, transparent)`, background: active ? c.active : "transparent", borderTopColor: dropTargetId === item.id && dragId !== item.id ? c.brand : "transparent", opacity: dragId === item.id ? 0.45 : 1 }}>
+                  style={{ "--row-selected": `color-mix(in srgb, ${c.brand} 14%, transparent)`, background: active ? c.active : "transparent", borderTopColor: dropTargetId === item.id && dragId !== item.id ? c.brand : "transparent", opacity: dragId === item.id ? 0.45 : undefined }}>
                   {renamingId === item.id ? (
                     <div className="eon-story-rename">
                       <Circle size={13} color={c.brand} />

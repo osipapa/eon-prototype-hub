@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { loaderElapsed } from "@/lib/loaderClock";
+import { loaderElapsed, useLoaderPresence } from "@/lib/loaderClock";
 import { EON_MARK_DOT, EON_MARK_PATH } from "@/components/EonGlyph";
 
 // Full-screen loading state, shared by the app splash (auth/chunk loads) and
@@ -8,8 +8,9 @@ import { EON_MARK_DOT, EON_MARK_PATH } from "@/components/EonGlyph";
 // a compass, guides and measures extend. Then the mark fades in over them as a
 // strong outline and the guides recede. That plays once per page load (see
 // loaderClock, which also keeps this screen up until it has finished). A light
-// sweeps across the title for as long as loading lasts. The status line is
-// for screen readers.
+// sweeps across the title for as long as loading lasts. When loading ends the
+// app's overlay copy takes the exit: the mark breaks into dashes, the guides
+// scatter, and the page shows through. The status line is for screen readers.
 
 // Geometry of the mark, with the ring's centre at 0,0 (see EonGlyph).
 // R/r: outer and inner ring radius. M: the band's centre line. W: half the
@@ -81,8 +82,9 @@ const MARKS = [
 
 const at = (start, duration) => ({ "--d": `${start}ms`, ...(duration ? { "--dur": `${duration}ms` } : {}) });
 
-export default function LoadingScreen({ children = "Loading…" }) {
+export default function LoadingScreen({ children = "Loading…", overlay = false }) {
   const [elapsed] = useState(loaderElapsed);
+  useLoaderPresence(!overlay);
   return (
     <div className="eon-loading-screen" role="status" aria-live="polite" style={{ "--t0": `${-elapsed}ms` }}>
       <svg className="eon-loading-blueprint" viewBox="-330 -330 660 660" aria-hidden="true">

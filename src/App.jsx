@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from "r
 import { useAuth } from "./lib/auth";
 import { redeemMirrorHandoff } from "./lib/mirror";
 import LoadingScreen from "./components/LoadingScreen";
-import { useLoaderHold } from "./lib/loaderClock";
+import { LOADER_EXIT_MS, useLoaderUp } from "./lib/loaderClock";
 
 const routeLoaders = {
   login: () => import("./routes/Login"),
@@ -46,24 +46,33 @@ function Splash({ children }) {
   return <LoadingScreen>{children}</LoadingScreen>;
 }
 
-// Once a loading screen has shown, keep one over the page until its sequence
-// is complete, so a fast load never cuts the mark off half-built. It then
-// fades out; the page underneath is already there.
+// While any loading screen is up (and until its opening sequence is complete),
+// keep one over the page. When loading ends it plays the exit over the page
+// that is already there: the mark breaks up and the screen fades through.
 function LoaderHold() {
-  const holding = useLoaderHold();
-  const [mounted, setMounted] = useState(holding);
+  const up = useLoaderUp();
+  const [phase, setPhase] = useState(up ? "up" : "gone");
   useEffect(() => {
-    if (holding) {
-      setMounted(true);
+    if (up) {
+      setPhase("up");
       return undefined;
     }
-    const id = window.setTimeout(() => setMounted(false), 240);
-    return () => window.clearTimeout(id);
-  }, [holding]);
-  if (!holding && !mounted) return null;
+    // A short grace, so the splash handing over to a route's own loading
+    // screen does not start an exit.
+    let done;
+    const start = window.setTimeout(() => {
+      setPhase((current) => (current === "up" ? "leaving" : current));
+      done = window.setTimeout(() => setPhase("gone"), LOADER_EXIT_MS);
+    }, 80);
+    return () => {
+      window.clearTimeout(start);
+      window.clearTimeout(done);
+    };
+  }, [up]);
+  if (phase === "gone") return null;
   return (
-    <div className={`eon-loading-hold${holding ? "" : " is-leaving"}`}>
-      <LoadingScreen />
+    <div className={`eon-loading-hold${phase === "leaving" ? " is-leaving" : ""}`} aria-hidden="true">
+      <LoadingScreen overlay />
     </div>
   );
 }
