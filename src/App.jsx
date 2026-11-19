@@ -5,15 +5,42 @@ import { redeemMirrorHandoff } from "./lib/mirror";
 import LoadingScreen from "./components/LoadingScreen";
 import { useLoaderHold } from "./lib/loaderClock";
 
-const Login = lazy(() => import("./routes/Login"));
-const Hub = lazy(() => import("./routes/Hub"));
-const Design = lazy(() => import("./routes/Design"));
-const Prompts = lazy(() => import("./routes/Prompts"));
-const Admin = lazy(() => import("./routes/Admin"));
-const Mirror = lazy(() => import("./routes/Mirror"));
-const Full = lazy(() => import("./routes/Full"));
-const OAuthConsent = lazy(() => import("./routes/OAuthConsent"));
-const Animations = lazy(() => import("./routes/Animations"));
+const routeLoaders = {
+  login: () => import("./routes/Login"),
+  hub: () => import("./routes/Hub"),
+  design: () => import("./routes/Design"),
+  prompts: () => import("./routes/Prompts"),
+  admin: () => import("./routes/Admin"),
+  mirror: () => import("./routes/Mirror"),
+  full: () => import("./routes/Full"),
+  oauth: () => import("./routes/OAuthConsent"),
+  animations: () => import("./routes/Animations"),
+};
+const Login = lazy(routeLoaders.login);
+const Hub = lazy(routeLoaders.hub);
+const Design = lazy(routeLoaders.design);
+const Prompts = lazy(routeLoaders.prompts);
+const Admin = lazy(routeLoaders.admin);
+const Mirror = lazy(routeLoaders.mirror);
+const Full = lazy(routeLoaders.full);
+const OAuthConsent = lazy(routeLoaders.oauth);
+const Animations = lazy(routeLoaders.animations);
+
+// Start downloading the page this link opens right away, while the session is
+// still being checked, instead of after. Only with a stored session: a signed-
+// out visitor is headed for the sign-in page.
+function preloadOpeningRoute() {
+  try {
+    const signedIn = Object.keys(window.localStorage).some((key) => /^sb-.+-auth-token$/.test(key));
+    const first = window.location.hash.replace(/^#\/?/, "").split(/[/?]/)[0];
+    const name = first === "" || first === "p" ? "hub" : first;
+    const load = signedIn ? routeLoaders[name] || routeLoaders.hub : routeLoaders.login;
+    load().catch(() => {});
+  } catch {
+    // Storage blocked: the route loads when it renders, as before.
+  }
+}
+preloadOpeningRoute();
 
 function Splash({ children }) {
   return <LoadingScreen>{children}</LoadingScreen>;

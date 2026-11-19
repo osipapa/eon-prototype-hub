@@ -35,6 +35,14 @@ export const CHANGELOG = [
           "The hub's colours, corner radii and spacing now come from the Safari design system: Safari greys for surfaces and text, Safari pink for the accent, and Safari red, amber, green and blue for errors and statuses, in light and dark. Hover tints, loading skeletons, dimmed backdrops behind dialogs, and the sign-in and admin pages use Safari too.",
         ],
       },
+      {
+        label: "Under the hood",
+        items: [
+          "The hub opens faster: it loads only the prototype you open, not every prototype's HTML up front. The others load when you switch to them.",
+          "Open on your phone and Full view load just the one prototype they show.",
+          "The page starts downloading while your sign-in is checked, and the code that rarely changes stays cached between releases.",
+        ],
+      },
     ],
   },
   {

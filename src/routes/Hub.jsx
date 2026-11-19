@@ -7,15 +7,18 @@ import PrototypeHub, { linearIdentifier } from "../features/hub/PrototypeWorkspa
 import FirstRunTutorial from "../features/onboarding/FirstRunTutorial";
 import { TUTORIAL_METADATA_KEY, TUTORIAL_PROTOTYPE, tutorialStorageKey } from "../features/onboarding/tutorial";
 import {
-  listProjects, patchProject as dbPatch, publishHtmlIfUnchanged, fetchProjectHtml, createProject, deleteProject, subscribeProjects,
+  listProjects, patchProject as dbPatch, publishHtmlIfUnchanged, fetchProjectHtml, fetchProjectBySlug, createProject, deleteProject, subscribeProjects,
   listAssets, upsertAsset, deleteAsset, subscribeAssets, removeMediaFile, listComments, createComment, subscribeComments,
   setCommentResolved, addCommentReaction, removeCommentReaction, listActivity, subscribeActivity,
   updateCommentBody, deleteComment, syncLinearAttachment,
 } from "../lib/data";
 import { joinTeamPresence } from "../lib/presence";
+import { carryHtml, withFetchedHtml } from "../lib/projectHtml";
 
 const SAVE_DEBOUNCE_MS = 600;
 const SAVED_VISIBLE_MS = 1800;
+// After a prototype's HTML fails to load, wait this long before asking again.
+const HTML_RETRY_MS = 5000;
 
 // A prototype's link on its Linear issue. One sync at a time per prototype, so
 // an older one can't land after a newer one. Each prototype also syncs once per
@@ -76,6 +79,7 @@ export default function Hub() {
   const savedTimers = useRef({});
   const pending = useRef({});
   const inFlight = useRef({});
+  const htmlLoads = useRef({});
   const tutorialResolved = useRef(false);
   const handledTutorialRequest = useRef(null);
   const [tutorialMode, setTutorialMode] = useState(null);
@@ -153,8 +157,13 @@ export default function Hub() {
     };
   }
 
-  function mergeProjectRows(rows) {
-    setProjects(sortProjects(rows.map(withLocalDraft)));
+  // The list arrives without HTML: keep what this browser has already loaded.
+  // `fetched` is one prototype's HTML that came in alongside the list.
+  function mergeProjectRows(rows, fetched) {
+    setProjects((current) => sortProjects(rows.map((row) => {
+      const carried = carryHtml(row, current?.find((item) => item.id === row.id));
+      return withLocalDraft(fetched?.id === row.id ? withFetchedHtml(carried, fetched) : carried);
+    })));
   }
 
   async function refreshProjects() {
@@ -176,6 +185,9 @@ export default function Hub() {
   async function load() {
     setLoadError(null);
     try {
+      // The prototype this link opens loads alongside the list, so the hub
+      // renders after one round trip. The others load when they're opened.
+      const openingHtml = slug ? fetchProjectBySlug(slug).catch(() => null) : null;
       const [projectRows, assetRows, commentRows, activityRows] = await Promise.all([
         listProjects(),
         listAssets(),
@@ -190,7 +202,15 @@ export default function Hub() {
           return [];
         }),
       ]);
-      mergeProjectRows(projectRows);
+      let opening = await openingHtml;
+      if (!opening) {
+        // The same pick the workspace makes when the link names no prototype.
+        const sorted = sortProjects(projectRows);
+        const first = sorted.find((project) => project.slug === slug)
+          || sorted.find((project) => !project.archived_at) || sorted[0];
+        if (first?.html_version > 0) opening = await fetchProjectHtml(first.id).catch(() => null);
+      }
+      mergeProjectRows(projectRows, opening);
       setAssets(assetMap(assetRows));
       setComments(commentRows);
       setActivity(activityRows);
@@ -260,9 +280,12 @@ export default function Hub() {
             // Keep TOASTed columns that did not change, such as prototype_html when
             // only issue_url was edited. An absent key means "unchanged";
             // a present key (even null) is a real change.
-            return withLocalDraft({ ...item, ...row });
+            // The server's HTML moving on without it arriving here marks
+            // this copy stale, and the open prototype then refetches it.
+            const html = "prototype_html" in row ? row.prototype_html : undefined;
+            return withLocalDraft(carryHtml({ ...item, ...row, prototype_html: html }, item));
           })
-          : [...current, withLocalDraft(row)];
+          : [...current, withLocalDraft(carryHtml(row))];
         return sortProjects(next);
       });
       return;
@@ -360,7 +383,7 @@ export default function Hub() {
       }
       setProjects((current) => current?.map((project) =>
         project.id === id
-          ? { ...saved, ...(pending.current[id] || {}) }
+          ? { ...carryHtml(saved, project), ...(pending.current[id] || {}) }
           : project) ?? current);
       delete inFlight.current[id];
 
@@ -401,7 +424,7 @@ export default function Hub() {
     const saved = await publishHtmlIfUnchanged(id, html, baseVersion);
     if (!saved) return { conflict: true };
     setProjects((current) => current?.map((project) =>
-      project.id === id ? withLocalDraft({ ...project, prototype_html: html, ...saved }) : project) ?? current);
+      project.id === id ? withLocalDraft({ ...project, prototype_html: html, ...saved, html_stale: false }) : project) ?? current);
     return { version: saved.html_version };
   }
 
@@ -409,8 +432,20 @@ export default function Hub() {
   async function onFetchHtml(id) {
     const fresh = await fetchProjectHtml(id);
     setProjects((current) => current?.map((project) =>
-      project.id === id ? withLocalDraft({ ...project, ...fresh }) : project) ?? current);
+      project.id === id ? withLocalDraft(withFetchedHtml(project, fresh)) : project) ?? current);
     return fresh;
+  }
+
+  // The workspace asks for a prototype's HTML when it shows one this browser
+  // hasn't loaded, or holds an older version of. One request per prototype.
+  function onNeedHtml(id) {
+    const state = htmlLoads.current[id];
+    if (state === "loading" || (state && Date.now() - state < HTML_RETRY_MS)) return;
+    htmlLoads.current[id] = "loading";
+    onFetchHtml(id).then(
+      () => { delete htmlLoads.current[id]; },
+      (error) => { htmlLoads.current[id] = Date.now(); reportRefreshError(error); },
+    );
   }
 
   // An uploaded file goes once its asset stops pointing at it, unless another
@@ -626,6 +661,7 @@ export default function Hub() {
         onPatchProject={onPatchProject}
         onPublishHtml={onPublishHtml}
         onFetchHtml={onFetchHtml}
+        onNeedHtml={onNeedHtml}
         onSetAsset={onSetAsset}
         onDeleteAsset={onDeleteAsset}
         onNewProject={onNewProject}

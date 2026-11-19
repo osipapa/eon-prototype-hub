@@ -11,7 +11,7 @@ export default function Full() {
   const { slug } = useParams();
   const location = useLocation();
   const view = useMemo(() => ({ ...parseMirrorParams(location.search), slug }), [location.search, slug]);
-  const { projects, assets, error } = useLiveWorkspace();
+  const { projects, assets, error, needHtml } = useLiveWorkspace(slug);
 
   if (error) {
     return (
@@ -24,5 +24,5 @@ export default function Full() {
     );
   }
   if (!projects) return <LoadingScreen>Loading prototype…</LoadingScreen>;
-  return <FullScreen projects={projects} media={assets} view={view} />;
+  return <FullScreen projects={projects} media={assets} view={view} onNeedHtml={needHtml} />;
 }

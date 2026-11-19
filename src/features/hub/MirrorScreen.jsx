@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MIRROR_PING_MS, openMirrorChannel } from "@/lib/mirror";
+import { htmlNeeded, htmlPending } from "@/lib/projectHtml";
 import { injectAnchorBridge } from "./anchorBridge";
 import { PROTOTYPE_SANDBOX, currentArgs, effectiveStory, insetCropStyle, renderStory } from "./prototypes";
 
@@ -8,7 +9,7 @@ import { PROTOTYPE_SANDBOX, currentArgs, effectiveStory, insetCropStyle, renderS
    showed the code, including what's done inside the prototype, and sends its
    own taps, typing, and scrolling back. New HTML arrives through the projects
    list the route keeps live, so an upload on the desktop shows up here too. */
-export default function MirrorScreen({ projects, media, sessionId, initialView, transport = "supabase" }) {
+export default function MirrorScreen({ projects, media, sessionId, initialView, transport = "supabase", onNeedHtml }) {
   const [view, setView] = useState(initialView);
   const [generation, setGeneration] = useState(0);
   const [linked, setLinked] = useState(false);
@@ -80,10 +81,15 @@ export default function MirrorScreen({ projects, media, sessionId, initialView, 
   }, [linked]);
 
   const project = projects.find((item) => item.slug === view.slug) || null;
+  // The route loads a prototype's HTML when this screen shows it.
+  const needsHtml = htmlNeeded(project);
+  useEffect(() => { if (needsHtml) onNeedHtml?.(project.id); }, [project?.id, needsHtml]);
   const story = useMemo(() => effectiveStory(project), [project]);
   const args = useMemo(() => (story ? currentArgs(story, view.args) : {}), [story, view.args]);
+  // No frame until the prototype's HTML is here: an empty one would report
+  // ready and use up the desktop's replay log before the real page exists.
   const html = useMemo(
-    () => (story ? injectAnchorBridge(renderStory(story, view.theme, media, args)) : ""),
+    () => (story && !htmlPending(story) ? injectAnchorBridge(renderStory(story, view.theme, media, args)) : ""),
     [story, view.theme, media, args],
   );
   const crop = useMemo(() => insetCropStyle(html), [html]);

@@ -50,6 +50,7 @@ import {
 } from "@/lib/localFile";
 import { useSystemTheme } from "@/lib/systemTheme";
 import { copyText, useStoredState } from "@/lib/uiState";
+import { htmlNeeded, htmlPending } from "@/lib/projectHtml";
 
 const VP_ICON = { desktop: Monitor, laptop: Laptop, tablet: Tablet, mobile: Smartphone };
 
@@ -136,7 +137,7 @@ export default function PrototypeWorkspace({
   projects, assets = {}, comments = [], activity = [], coViewers = [],
   toasts = [], onDismissToast, isAdmin, profile, userEmail,
   activeId, onSelectStory,
-  onPatchProject, onPublishHtml, onFetchHtml, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
+  onPatchProject, onPublishHtml, onFetchHtml, onNeedHtml, onSetAsset, onDeleteAsset, onNewProject, onDeleteProject, onReorder, initialView = "stories",
   onCreateComment, onResolveComment, onEditComment, onDeleteComment, onToggleReaction, onOpenDesign, onOpenPrompts, onOpenTracking, onOpenAdmin, onSignOut,
   saveState = "idle", onRetrySave, loadError, onRetryLoad,
   mirrorTransport = "supabase", loadLinearIssue = fetchLinearIssue,
@@ -257,6 +258,7 @@ export default function PrototypeWorkspace({
   autoPublishRef.current = autoPublish;
   const publishHtmlRef = useRef(onPublishHtml);
   publishHtmlRef.current = onPublishHtml;
+  const readyStoryIdRef = useRef(null);
   const fetchHtmlRef = useRef(onFetchHtml);
   fetchHtmlRef.current = onFetchHtml;
   const fileLinkRef = useRef(null);
@@ -272,8 +274,15 @@ export default function PrototypeWorkspace({
   const [statusCache, setStatusCache] = useState(readStatusCache);
 
   const c = HUB[hubTheme];
-  const story = projects.find((item) => item.id === activeId)
+  const wantedStory = projects.find((item) => item.id === activeId)
     || projects.find((item) => !item.archived_at) || projects[0];
+  // A prototype's HTML loads when it's opened. Switching waits for it and keeps
+  // showing the current one meanwhile: the device, the states and the linked
+  // file all read their setup from that HTML when the open prototype changes.
+  if (wantedStory && !htmlPending(wantedStory)) readyStoryIdRef.current = wantedStory.id;
+  const story = (htmlPending(wantedStory) && projects.find((item) => item.id === readyStoryIdRef.current))
+    || wantedStory;
+  const storyPending = htmlPending(story);
   storyIdRef.current = story?.id || null;
   const media = assets;
   const navCollapsed = navCollapsedValue === "collapsed" && !breakpoints.navDrawer;
@@ -335,14 +344,21 @@ export default function PrototypeWorkspace({
     [effStory, liveArgs],
   );
   useEffect(() => {
-    if (!story?.id) return;
+    if (!story?.id || storyPending) return;
     // Both panes share the device, so while split view is open (or a pane is
     // handing over to the other one) the device only changes when asked.
     if (splitOpen || paneSwitchRef.current === story.id) return;
     const phone = window.matchMedia("(max-width: 680px)").matches;
     const next = readViewportMemory()[story.id] || (phone ? null : cfg.viewport);
     if (VIEWPORTS[next]) setViewportState(next);
-  }, [story?.id]);
+  }, [story?.id, storyPending]);
+  // Ask for the HTML of whatever is on screen that isn't loaded or is behind
+  // the server. The hub sends one request per prototype, so every render can ask.
+  useEffect(() => {
+    [wantedStory, splitOpen && leftProject, splitOpen && rightProject].forEach((item) => {
+      if (item && htmlNeeded(item)) onNeedHtml?.(item.id);
+    });
+  });
 
   const vp = VIEWPORTS[viewport];
   const html = useMemo(
@@ -1404,7 +1420,7 @@ export default function PrototypeWorkspace({
     } catch (error) {
       console.warn("Couldn't refresh the prototype before downloading.", error);
     }
-    if (!html) html = renderStory(effectiveStory(item), protoTheme, media);
+    if (!html && !htmlPending(item)) html = renderStory(effectiveStory(item), protoTheme, media);
     if (!html) { showError("Couldn't download that prototype. Try again."); return; }
     const link = Object.assign(document.createElement("a"), {
       href: URL.createObjectURL(new Blob([html], { type: "text/html" })),
@@ -1513,7 +1529,7 @@ export default function PrototypeWorkspace({
         <WorkspaceSidebar
           c={c} media={media} view={view} setView={setView} query={query} setQuery={setQuery}
           sections={sections} groupBy={groupBy === "groups" ? "groups" : "status"} setGroupBy={setGroupBy}
-          activeId={story.id} splitId={otherProject?.id || null} onSelect={selectStory} isAdmin={isAdmin}
+          activeId={wantedStory.id} splitId={otherProject?.id || null} onSelect={selectStory} isAdmin={isAdmin}
           canSplit={!breakpoints.noCompare} onOpenSplit={openInSplit}
           onNewProject={(event) => { newDialogReturnFocusRef.current = event.currentTarget; setShowNewDialog(true); }} dragId={dragId} setDragId={setDragId}
           dropTargetId={dropTargetId} setDropTargetId={setDropTargetId} handleDrop={handleDrop} canDropOn={canDropOn} onDragEnd={endDrags}
@@ -1682,7 +1698,7 @@ export default function PrototypeWorkspace({
         <AnchorLeaderLine c={c} commentId={activeAnchorId} />
       )}
 
-      {showUpload && view === "stories" && (
+      {showUpload && view === "stories" && !storyPending && (
         <SourceSheet c={c} story={story} onClose={() => setShowUpload(false)}>
           <UploadPanel key={story.id} c={c} story={story}
             onSave={(source) => { patch("prototype_html", source); setShowUpload(false); }}

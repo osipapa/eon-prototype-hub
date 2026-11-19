@@ -1,16 +1,22 @@
 import { supabase } from "./supabase";
 
 /* Projects (stories) --------------------------------------------------------*/
+// Every column but prototype_html. The list carries no HTML: each prototype's
+// HTML is fetched when it's opened (see projectHtml.js). Add new columns here.
+const PROJECT_COLUMNS = "id,team_id,slug,title,group_name,status,controls,defaults,figma_url,issue_id,issue_url,notes,sort_order,created_by,updated_at,html_version,archived_at";
+
 export async function listProjects() {
   const { data, error } = await supabase
-    .from("projects").select("*").order("sort_order", { ascending: true });
+    .from("projects").select(PROJECT_COLUMNS).order("sort_order", { ascending: true });
   if (error) throw error;
   return data;
 }
 
 export async function patchProject(id, patch) {
   const { data, error } = await supabase
-    .from("projects").update(patch).eq("id", id).select().single();
+    .from("projects").update(patch).eq("id", id)
+    // The HTML comes back only when this save changed it.
+    .select("prototype_html" in patch ? "*" : PROJECT_COLUMNS).single();
   if (error) throw error;
   return data;
 }
@@ -42,7 +48,7 @@ export async function fetchProjectHtml(id) {
 // Animations page). Null when there's no such prototype.
 export async function fetchProjectBySlug(slug) {
   const { data, error } = await supabase
-    .from("projects").select("id,slug,title,prototype_html")
+    .from("projects").select("id,slug,title,prototype_html,html_version,updated_at")
     .eq("slug", slug).maybeSingle();
   if (error) throw error;
   return data;

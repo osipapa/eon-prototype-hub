@@ -2,17 +2,20 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { AuthProvider } from "./lib/auth";
-import WorkspacePreview from "./dev/WorkspacePreview";
-import PromptLibraryPreview from "./dev/PromptLibraryPreview";
 import EonAccentDefs from "./components/EonAccentDefs";
 import "./index.css";
 
-const DesignGuidePreview = React.lazy(() => import("./dev/DesignGuidePreview"));
-const MirrorPreview = React.lazy(() => import("./dev/MirrorPreview"));
-const FullPreview = React.lazy(() => import("./dev/FullPreview"));
-const ConsentPreview = React.lazy(() => import("./dev/ConsentPreview"));
-const AdminPreview = React.lazy(() => import("./dev/AdminPreview"));
-const AnimationsPreview = React.lazy(() => import("./dev/AnimationsPreview"));
+// Dev-only preview routes. The DEV check sits on each import so the production
+// build drops them, and nothing they pull in lands in the entry bundle.
+const DEV = import.meta.env.DEV;
+const WorkspacePreview = DEV ? React.lazy(() => import("./dev/WorkspacePreview")) : null;
+const PromptLibraryPreview = DEV ? React.lazy(() => import("./dev/PromptLibraryPreview")) : null;
+const DesignGuidePreview = DEV ? React.lazy(() => import("./dev/DesignGuidePreview")) : null;
+const MirrorPreview = DEV ? React.lazy(() => import("./dev/MirrorPreview")) : null;
+const FullPreview = DEV ? React.lazy(() => import("./dev/FullPreview")) : null;
+const ConsentPreview = DEV ? React.lazy(() => import("./dev/ConsentPreview")) : null;
+const AdminPreview = DEV ? React.lazy(() => import("./dev/AdminPreview")) : null;
+const AnimationsPreview = DEV ? React.lazy(() => import("./dev/AnimationsPreview")) : null;
 
 const previewParams = new URLSearchParams(window.location.search);
 const isWorkspacePreview = import.meta.env.DEV && previewParams.has("workspace-preview");
@@ -40,9 +43,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     ) : isDesignPreview ? (
       <React.Suspense fallback={null}><DesignGuidePreview /></React.Suspense>
     ) : isPromptPreview ? (
-      <PromptLibraryPreview />
+      <React.Suspense fallback={null}><PromptLibraryPreview /></React.Suspense>
     ) : isWorkspacePreview ? (
-      <WorkspacePreview />
+      <React.Suspense fallback={null}><WorkspacePreview /></React.Suspense>
     ) : (
       <AuthProvider>
         <App />

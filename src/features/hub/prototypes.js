@@ -2,6 +2,7 @@
    A project row with `prototype_html` renders that HTML directly. Projects whose
    slug matches a built-in builder (signin, dashboard) render from code so the
    seed works before any HTML is uploaded. */
+import { htmlPending } from "@/lib/projectHtml";
 
 export const HUB = {
   // Neutral shadcn-style surfaces do the structural work. The vivid Eon accent
@@ -281,6 +282,8 @@ const BUILDERS = {
 export function renderStory(project, theme, media = {}, args) {
   const a = args || currentArgs(project);
   if (project?.prototype_html) return decorateUploadedHtml(project.prototype_html, theme, a, media);
+  // Its HTML is still on the way: an empty themed page, never the placeholder.
+  if (htmlPending(project)) return docWrap("", proto(theme));
   const builder = BUILDERS[project?.slug];
   if (builder) return builder(a, theme, media);
   const p = proto(theme);

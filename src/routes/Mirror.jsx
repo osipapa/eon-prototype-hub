@@ -11,7 +11,7 @@ export default function Mirror() {
   const { session } = useParams();
   const location = useLocation();
   const [initialView] = useState(() => parseMirrorParams(location.search));
-  const { projects, assets, error } = useLiveWorkspace();
+  const { projects, assets, error, needHtml } = useLiveWorkspace(initialView.slug);
 
   if (error) {
     return (
@@ -24,5 +24,5 @@ export default function Mirror() {
     );
   }
   if (!projects) return <LoadingScreen>Loading prototype…</LoadingScreen>;
-  return <MirrorScreen projects={projects} media={assets} sessionId={session} initialView={initialView} />;
+  return <MirrorScreen projects={projects} media={assets} sessionId={session} initialView={initialView} onNeedHtml={needHtml} />;
 }
