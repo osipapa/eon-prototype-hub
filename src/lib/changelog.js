@@ -30,7 +30,7 @@ export const CHANGELOG = [
           "The sidebar logo is now an app-icon tile: the Eon mark as a white outline on black glass, over a blueprint grid and guide circle.",
           "The tile is glass: the grid lines bend at the bevelled edge and inside the round lens behind the mark.",
           "The browser tab icon is the same tile, so it shows on any tab colour.",
-          "The loading screen now reads Loading Eon Design… under the mark, no longer in capitals.",
+          "The loading screen now reads Loading Eon Design… under the mark, in regular weight and no longer in capitals.",
           "On the loading screen the mark is drawn on together with its blueprint lines, not faded in afterwards.",
         ],
       },
