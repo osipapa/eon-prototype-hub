@@ -122,7 +122,7 @@ export default function LoadingScreen({ children = "Loading…", overlay = false
           <circle cx={D[0]} cy={D[1]} r={DR} />
         </g>
       </svg>
-      <strong>Eon Design</strong>
+      <strong aria-hidden="true">Loading Eon Design…</strong>
       <span className="sr-only">{children}</span>
     </div>
   );
