@@ -22,12 +22,12 @@ export const CHANGELOG = [
     date: "2026-11-19",
     title: "A blueprint tile for the Eon Design logo",
     image: "changelog/2026-11-19-blueprint-tile.png",
-    imageAlt: "The new logo: the white Eon mark on a black glass tile with blueprint grid lines, in the sidebar and as the tab icon.",
+    imageAlt: "The new logo: the outlined Eon mark on a black glass tile with blueprint grid lines, in the sidebar and as the tab icon.",
     groups: [
       {
         label: "Design",
         items: [
-          "The sidebar logo is now an app-icon tile: the Eon mark in white on black glass, over a blueprint grid and guide circle.",
+          "The sidebar logo is now an app-icon tile: the Eon mark as a white outline on black glass, over a blueprint grid and guide circle.",
           "The tile is glass: the grid lines bend at the bevelled edge and inside the round lens behind the mark.",
           "The browser tab icon is the same tile, so it shows on any tab colour.",
         ],

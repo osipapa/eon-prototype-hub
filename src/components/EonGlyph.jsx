@@ -7,7 +7,7 @@ export const EON_MARK_PATH = "M 236.0 -77.3 L 161.2 -34.0 C 163.5 -23.1 164.7 -1
 export const EON_MARK_DOT = { cx: 156.2, cy: -172.1, r: 60.5 };
 
 // The mark as an app-icon tile, in the style of a blueprint: a black glass tile,
-// a grid with one guide circle behind, and the mark filled solid on top. The
+// a grid with one guide circle behind, and the mark as a white outline on top. The
 // glass is drawn, not filtered: the grid is redrawn at a different scale in the
 // bevel band and inside the lens, so the lines jog where the glass bends. Ids
 // are namespaced with useId so more than one tile can sit on a page.
@@ -22,7 +22,6 @@ export function EonBlueprintTile({ size = 30, className }) {
       <clipPath id={`${id}l`}><path d="M-206 0A206 206 0 1 0 206 0A206 206 0 1 0 -206 0Z" /></clipPath>
       <linearGradient id={`${id}t`} x1="0" y1="-256" x2="0" y2="256" gradientUnits="userSpaceOnUse"><stop stopColor="#1C1E22" /><stop offset="1" stopColor="#000" /></linearGradient>
       <linearGradient id={`${id}e`} x1="-256" y1="-256" x2="256" y2="256" gradientUnits="userSpaceOnUse"><stop stopColor="#fff" stopOpacity=".16" /><stop offset=".5" stopColor="#fff" stopOpacity=".03" /><stop offset="1" stopColor="#fff" stopOpacity=".1" /></linearGradient>
-      <linearGradient id={`${id}m`} x1="-150" y1="-150" x2="150" y2="150" gradientUnits="userSpaceOnUse"><stop stopColor="#FFFFFF" /><stop offset="1" stopColor="#AEB6C2" /></linearGradient>
       <linearGradient id={`${id}r`} x1="0" y1="-256" x2="0" y2="256" gradientUnits="userSpaceOnUse"><stop stopColor="#fff" stopOpacity=".38" /><stop offset="1" stopColor="#fff" stopOpacity=".08" /></linearGradient>
       </defs>
       <path d="M-138 -256H138A118 118 0 0 1 256 -138V138A118 118 0 0 1 138 256H-138A118 118 0 0 1 -256 138V-138A118 118 0 0 1 -138 -256Z" fill={`url(#${id}t)`} />
@@ -32,7 +31,7 @@ export function EonBlueprintTile({ size = 30, className }) {
       <g clipPath={`url(#${id}l)`}><path transform="scale(1.12)" strokeWidth="6.2" d="M-128 -256V256M0 -256V256M128 -256V256M-256 -128H256M-256 0H256M-256 128H256" /></g>
       <path d="M-206 0A206 206 0 1 0 206 0A206 206 0 1 0 -206 0Z" />
       <path d="M-134 -222H134A88 88 0 0 1 222 -134V134A88 88 0 0 1 134 222H-134A88 88 0 0 1 -222 134V-134A88 88 0 0 1 -134 -222Z" stroke="#fff" strokeOpacity=".14" strokeWidth="4.9" />
-      <g transform="scale(0.6)" fill={`url(#${id}m)`} stroke="#FFFFFF" strokeOpacity=".7" strokeWidth="8" strokeLinejoin="round"><path d={EON_MARK_PATH} /><circle {...EON_MARK_DOT} /></g>
+      <g transform="scale(0.6)" fill="none" stroke="#FFFFFF" strokeOpacity="1" strokeWidth="30" strokeLinejoin="round"><path d={EON_MARK_PATH} /><circle {...EON_MARK_DOT} /></g>
       <path d="M-138 -250H138A112 112 0 0 1 250 -138V138A112 112 0 0 1 138 250H-138A112 112 0 0 1 -250 138V-138A112 112 0 0 1 -138 -250Z" stroke={`url(#${id}r)`} strokeOpacity="1" strokeWidth="12" />
       </g>
     </svg>
