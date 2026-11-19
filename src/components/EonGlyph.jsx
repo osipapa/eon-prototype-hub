@@ -7,8 +7,8 @@ export const EON_MARK_DOT = { cx: 156.2, cy: -172.1, r: 60.5 };
 // The mark in blueprint style, with no tile behind it: the outlined mark and
 // its construction lines (axes, the cut's lines, dotted square and circles) in
 // the current text colour, so it works on light and dark. public/favicon.svg
-// is the same drawing on a black tile, which a browser tab needs to stay
-// visible on any tab colour.
+// is the same drawing with heavier strokes; it picks dark or light lines from
+// the browser's colour scheme.
 export function EonBlueprintIcon({ size = 30, className }) {
   return (
     <svg className={className} viewBox="-256 -256 512 512" width={size} height={size} fill="none" stroke="currentColor" aria-hidden="true">
