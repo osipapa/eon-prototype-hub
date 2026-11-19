@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   BookOpen, Check, ChevronDown, Monitor, Shapes,
 } from "lucide-react";
-import { EonBlueprintIcon } from "@/components/EonGlyph";
+import { EonMarkOutline } from "@/components/EonGlyph";
 
 const PRODUCTS = [
   { id: "design", label: "Eon Design", description: "How Eon designs and ships", Icon: Shapes },
@@ -44,7 +44,7 @@ export default function DesignHubSwitcher({ active, c, onSelect }) {
         aria-expanded={open}
         style={{ color: c.text, background: open ? c.raised : "transparent" }}
       >
-        <span className="eon-design-switcher-logo"><EonBlueprintIcon size={30} /></span>
+        <span className="eon-design-switcher-logo"><EonMarkOutline size={30} /></span>
         <span className="eon-design-switcher-label">Eon Design</span>
         <ChevronDown className={open ? "is-open" : ""} size={15} aria-hidden="true" style={{ color: c.muted }} />
       </button>
