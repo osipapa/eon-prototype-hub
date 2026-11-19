@@ -5,8 +5,8 @@ import { EON_MARK_DOT, EON_MARK_PATH } from "@/components/EonGlyph";
 // Full-screen loading state, shared by the app splash (auth/chunk loads) and
 // the hub's first data fetch. Above the title, the Eon mark is drafted like a
 // logo sheet: axes shoot out from the centre, circles are swept round as if by
-// a compass, guides and measures extend. Then the mark fades in over them as a
-// strong outline and the guides recede. That plays once per page load (see
+// a compass, guides and measures extend. The mark is drawn on at the same time
+// as a strong outline, then the guides recede. That plays once per page load (see
 // loaderClock, which also keeps this screen up until it has finished). A light
 // sweeps across the title for as long as loading lasts. When loading ends the
 // app's overlay copy takes the exit: the mark breaks into dashes, the guides
@@ -94,6 +94,12 @@ export default function LoadingScreen({ children = "Loading…", overlay = false
               <path className="bp-reveal" style={at(start, duration)} pathLength="1" d={d} />
             </mask>
           ))}
+          {/* The mark is revealed through a mask that is drawn on, so the
+              group keeps its own dashes free for the exit. */}
+          <mask id="eon-bp-mark" maskUnits="userSpaceOnUse" x="-330" y="-330" width="660" height="660">
+            <path className="bp-reveal" style={at(80, 1000)} pathLength="1" d={EON_MARK_PATH} />
+            <path className="bp-reveal" style={at(660, 450)} pathLength="1" d={circle(D[0], D[1], DR, -45)} />
+          </mask>
         </defs>
 
         <g className="bp-guides">
@@ -116,8 +122,8 @@ export default function LoadingScreen({ children = "Loading…", overlay = false
           <text className="bp-fade" style={at(1040)} x={-M} y={-W - 8} textAnchor="middle">84</text>
         </g>
 
-        {/* The mark fades in over its construction as a strong outline */}
-        <g className="bp-mark">
+        {/* The mark is drawn on with its construction as a strong outline */}
+        <g className="bp-mark" mask="url(#eon-bp-mark)">
           <path d={EON_MARK_PATH} />
           <circle cx={D[0]} cy={D[1]} r={DR} />
         </g>
