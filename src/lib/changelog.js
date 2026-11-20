@@ -19,6 +19,21 @@ export const GROUP_ORDER = ["New", "Design", "Behavior", "Under the hood", "Fixe
 
 export const CHANGELOG = [
   {
+    date: "2026-11-20",
+    title: "State pills that hold still on hover",
+    image: "changelog/2026-11-20-state-pills.png",
+    imageAlt: "A long state pill open on hover, unfolded in place over its neighbour while the rest of the bar stays put.",
+    groups: [
+      {
+        label: "Fixes",
+        items: [
+          "Hovering a long state pill on the canvas no longer makes the pills jump between rows or swap places on their own. It unfolds where it sits, over its neighbours, and the rest of the bar stays put.",
+          "Picking an option in an open state pill no longer slides the list under the cursor, and arrow keys keep the chosen option fully in view.",
+        ],
+      },
+    ],
+  },
+  {
     date: "2026-11-19",
     title: "A blueprint tile for the Eon Design logo",
     image: "changelog/2026-11-19-blueprint-tile.png",

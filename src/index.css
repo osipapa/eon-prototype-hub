@@ -512,16 +512,23 @@ button.eon-save-state { cursor: pointer; }
 .eon-icon-segment .eon-icon-button { width: 36px; height: 34px; flex-basis: 36px; border-radius: 8px; }
 /* The track's well comes from the palette (HUB.well) so it can deepen in
    light mode, where the pill is white and needs something to sit inside. */
-/* Windowed segmented control: see PeekSegmented. */
+/* Windowed segmented control: see PeekSegmented. The outer element is a slot
+   that keeps the collapsed width in the bar; the pill inside grows out of it
+   over its neighbours, so opening one never reflows the bar. */
 .eon-peek-segment { --peek-ease: cubic-bezier(.22, 1, .36, 1); --peek-duration: 340ms; display: flex; min-width: 0; }
-/* The pill's surface is painted by the outer element, which is never masked,
-   so its rounded edge stays crisp. The window inside it carries the mask, so
-   the fade is measured against what you can actually see. */
-.eon-peek-segment.is-peekable {
-  border-radius: 999px;
+.eon-peek-segment-pill { display: flex; min-width: 0; flex: 1 1 auto; border-radius: inherit; }
+.eon-peek-segment.is-peekable { position: relative; z-index: 0; border-radius: 999px; }
+/* Open, and on its way back, the pill stays above the neighbours it covers. */
+.eon-peek-segment.is-closing { z-index: 1; }
+.eon-peek-segment.is-open { z-index: 2; }
+/* The pill paints the surface and is never masked, so its rounded edge stays
+   crisp. The window inside it carries the mask, so the fade is measured
+   against what you can actually see. */
+.eon-peek-segment.is-peekable .eon-peek-segment-pill {
+  flex: none;
   background: var(--peek-surface);
-  transition: width var(--peek-duration) var(--peek-ease);
-  will-change: width;
+  transition: width var(--peek-duration) var(--peek-ease), margin-left var(--peek-duration) var(--peek-ease);
+  will-change: width, margin-left;
 }
 .eon-peek-segment.is-peekable .eon-liquid-segment-shell { background: transparent !important; }
 .eon-peek-segment-window { position: relative; display: flex; min-width: 0; width: 100%; border-radius: inherit; overflow: hidden; }
@@ -1075,7 +1082,7 @@ button.eon-save-state { cursor: pointer; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .eon-peek-segment.is-peekable, .eon-peek-segment-track,
+  .eon-peek-segment-pill, .eon-peek-segment-track,
   .eon-buttonish, .eon-comment, .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar, .eon-modal, .eon-controls-sheet, .eon-sheet, .eon-liquid-segment-indicator, .eon-brand-image, .eon-brand-skeleton { transition-duration: 0ms; }
   .eon-buttonish:active:not(:disabled) { transform: none; }
   .eon-story-menu, .eon-design-switcher-menu, .eon-inspector, .eon-sidebar { transform: none; }

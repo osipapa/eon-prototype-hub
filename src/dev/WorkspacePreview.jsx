@@ -105,14 +105,17 @@ export const initialProjects = [
     status: "In review",
     prototype_html: CHECKOUT_DEMO,
     issue_url: "https://linear.app/eon/issue/DES-712/checkout-concept",
-    // Deliberately long, so the preview exercises the collapsed state control.
+    // Three controls, one deliberately long, so the preview exercises the
+    // collapsed state control inside a bar that wraps.
     controls: [
+      { key: "page", label: "Page", options: ["listing", "car-settings"] },
       { key: "state", label: "State", options: [
         "trip-details", "free-slots", "last-free", "first-paid", "mixed",
         "duplicate", "at-limit", "declined", "sent",
       ] },
+      { key: "tab", label: "Tab", options: ["calendar", "settings", "settings-error"] },
     ],
-    defaults: { state: "mixed" },
+    defaults: { page: "car-settings", state: "mixed", tab: "calendar" },
     issue_id: "",
     notes: "",
     sort_order: 2,
