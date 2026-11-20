@@ -25,6 +25,12 @@ export const CHANGELOG = [
     imageAlt: "A long state pill open on hover, unfolded in place over its neighbour while the rest of the bar stays put.",
     groups: [
       {
+        label: "Behavior",
+        items: [
+          "A state pill opens when the pointer rests on it, not while it passes over, so crossing one on the way to the next no longer covers the pill you were aiming for.",
+        ],
+      },
+      {
         label: "Fixes",
         items: [
           "Hovering a long state pill on the canvas no longer makes the pills jump between rows or swap places on their own. It unfolds where it sits, over its neighbours, and the rest of the bar stays put.",

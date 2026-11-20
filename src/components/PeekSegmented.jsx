@@ -4,7 +4,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
    Collapsed, it shows the current selection centred with its neighbours
    peeking in and fading out at both edges, so a nine-state prototype costs
-   about the width of three. Hover (or keyboard focus) opens it to full width.
+   about the width of three. Resting the pointer on it (or keyboard focus)
+   opens it to full width. A pointer only passing over, on its way to another
+   pill, leaves it shut: open, it would cover the pill being aimed at.
 
    Opening never changes the room it takes in the bar. The outer element is a
    slot fixed at the collapsed width, and the pill inside grows out of it, over
@@ -21,6 +23,11 @@ const WORTH_IT = 28;  // below this saving, stay expanded and skip the effect
 const RESERVED = 96;  // canvas width the open pill leaves free
 const EDGE = 12;      // the open pill's closest approach to a canvas edge
 const DURATION = 340; // --peek-duration in index.css
+// Hover intent: the pointer is sampled this often, and opens the pill once it
+// has moved less than INTENT_DISTANCE since the last sample. A sweep never
+// slows that much; a pointer aiming at the pill does within a sample or two.
+const INTENT_INTERVAL = 80; // ms
+const INTENT_DISTANCE = 6;  // px
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -29,6 +36,9 @@ export default function PeekSegmented({ value, optionsKey, surface, enabled = tr
   const trackRef = useRef(null);
   const scrollRef = useRef(null);
   const closeTimer = useRef(0);
+  const intentTimer = useRef(0);
+  const pointer = useRef({ x: 0, y: 0 });
+  const openRef = useRef(null);
   const [metrics, setMetrics] = useState(null);
   // An open pill keeps the measurements it opened with. Picking another option
   // re-measures, and applying that while the cursor is still on the pill would
@@ -80,7 +90,10 @@ export default function PeekSegmented({ value, optionsKey, surface, enabled = tr
     };
   }, [enabled, value, optionsKey]);
 
-  useEffect(() => () => clearTimeout(closeTimer.current), []);
+  useEffect(() => () => {
+    clearTimeout(closeTimer.current);
+    clearTimeout(intentTimer.current);
+  }, []);
 
   const openPeek = () => {
     clearTimeout(closeTimer.current);
@@ -105,8 +118,29 @@ export default function PeekSegmented({ value, optionsKey, surface, enabled = tr
     setOpened({ metrics, left, scroll: Math.round(clamp(metrics.offset - left, 0, maxScroll)) });
     onOpenChange?.(true);
   };
+  // The intent timer fires after later renders, so it opens through the latest
+  // openPeek rather than the one it was started with.
+  openRef.current = openPeek;
+
+  const watchIntent = (event) => {
+    clearTimeout(intentTimer.current);
+    if (!metrics || opened) return;
+    pointer.current = { x: event.clientX, y: event.clientY };
+    let last = pointer.current;
+    const sample = () => {
+      const now = pointer.current;
+      if (Math.abs(now.x - last.x) + Math.abs(now.y - last.y) < INTENT_DISTANCE) {
+        openRef.current();
+        return;
+      }
+      last = now;
+      intentTimer.current = setTimeout(sample, INTENT_INTERVAL);
+    };
+    intentTimer.current = setTimeout(sample, INTENT_INTERVAL);
+  };
 
   const closePeek = () => {
+    clearTimeout(intentTimer.current);
     onOpenChange?.(false);
     if (!opened) return;
     setOpened(null);
@@ -155,7 +189,8 @@ export default function PeekSegmented({ value, optionsKey, surface, enabled = tr
     <div
       ref={slotRef}
       className={`eon-peek-segment${shown ? " is-peekable" : ""}${opened ? " is-open" : ""}${closing ? " is-closing" : ""}${scrolls ? " is-scrolling" : ""}`}
-      onMouseEnter={openPeek}
+      onMouseEnter={watchIntent}
+      onMouseMove={(event) => { pointer.current = { x: event.clientX, y: event.clientY }; }}
       onMouseLeave={closePeek}
       onFocusCapture={openPeek}
       onBlurCapture={(event) => {
